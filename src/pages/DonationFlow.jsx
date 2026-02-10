@@ -83,15 +83,20 @@ const translations = {
     
     // Step 3 - Payment Methods
     selectPayment: 'اختر طريقة الدفع',
-    bankTransfer: 'تحويل بنكي',
-    bankTransferDesc: 'CIH, BMCE, Attijari',
-    creditCard: 'بطاقة بنكية',
-    creditCardDesc: 'Visa, Mastercard, CMI',
-    cash: 'نقدي عبر الوكالة',
-    cashDesc: 'Wafacash, Cash Plus',
-    cmi: 'CMI',
-    cmiDesc: 'الدفع الإلكتروني',
+    bankTransfer: 'التحويل البنكي',
+    bankTransferDesc: 'Attijariwafa Bank، CIH، BMCE',
+    localAgencies: 'الوكالات المحلية',
+    localAgenciesDesc: 'الدفع النقدي في الوكالات',
+    cardPayment: 'البطاقة البنكية',
+    cardPaymentDesc: 'Visa، Mastercard، PayPal',
     paymentInfo: 'اختر وسيلة الدفع المناسبة لك. سيتم توجيهك لإتمام العملية.',
+    bankDetailsTitle: 'تفاصيل الحساب البنكي',
+    bankName: 'البنك',
+    agencyCash: 'نقدي',
+    agenciesList: 'Wafacash، Cash Plus',
+    
+    accountHolder: 'صاحب الحساب',
+    rib: 'رقم الحساب (RIB)',
     
     // Step 4 - Receipt Upload
     receiptUpload: 'رفع الإيصال',
@@ -162,14 +167,16 @@ const translations = {
     // Step 3 - Payment Methods
     selectPayment: 'Choisir un mode de paiement',
     bankTransfer: 'Virement bancaire',
-    bankTransferDesc: 'CIH, BMCE, Attijari',
-    creditCard: 'Carte bancaire',
-    creditCardDesc: 'Visa, Mastercard, CMI',
-    cash: 'Espèces via agence',
-    cashDesc: 'Wafacash, Cash Plus',
-    cmi: 'CMI',
-    cmiDesc: 'Paiement en ligne',
+    bankTransferDesc: 'Attijariwafa Bank, CIH, BMCE',
+    localAgencies: 'Agences locales',
+    localAgenciesDesc: 'Paiement en espèces dans les agences',
+    cardPayment: 'Carte bancaire',
+    cardPaymentDesc: 'Visa, Mastercard, PayPal',
     paymentInfo: 'Choisissez votre méthode de paiement. Vous serez redirigé pour finaliser.',
+    bankDetailsTitle: 'Coordonnées bancaires',
+    bankName: 'Banque',
+    agencyCash: 'Espèces',
+    agenciesList: 'Wafacash, Cash Plus',
     
     // Step 4 - Receipt Upload
     receiptUpload: 'Télécharger le reçu',
@@ -240,14 +247,16 @@ const translations = {
     // Step 3 - Payment Methods
     selectPayment: 'Select Payment Method',
     bankTransfer: 'Bank Transfer',
-    bankTransferDesc: 'CIH, BMCE, Attijari',
-    creditCard: 'Credit Card',
-    creditCardDesc: 'Visa, Mastercard, CMI',
-    cash: 'Cash via Agency',
-    cashDesc: 'Wafacash, Cash Plus',
-    cmi: 'CMI',
-    cmiDesc: 'Online Payment',
+    bankTransferDesc: 'Attijariwafa Bank, CIH, BMCE',
+    localAgencies: 'Local Agencies',
+    localAgenciesDesc: 'Cash payment at local agencies',
+    cardPayment: 'Card Payment',
+    cardPaymentDesc: 'Visa, Mastercard, PayPal',
     paymentInfo: 'Choose your preferred payment method. You will be redirected to complete.',
+    bankDetailsTitle: 'Bank Account Details',
+    bankName: 'Bank',
+    agencyCash: 'Cash',
+    agenciesList: 'Wafacash, Cash Plus',
     
     // Step 4 - Receipt Upload
     receiptUpload: 'Upload Receipt',
@@ -652,55 +661,121 @@ const Step1Amount = ({ tx, lang, project, donationData, setDonationData, formatC
 
 // Step 2: Payment Methods
 const Step2PaymentMethods = ({ tx, isRTL, donationData, setDonationData }) => {
-  const paymentMethods = [
-    { id: 'bank', icon: 'account_balance', title: tx.bankTransfer, desc: tx.bankTransferDesc },
-    { id: 'card', icon: 'credit_card', title: tx.creditCard, desc: tx.creditCardDesc },
-    { id: 'cash', icon: 'payments', title: tx.cash, desc: tx.cashDesc },
-    { id: 'cmi', icon: 'security', title: tx.cmi, desc: tx.cmiDesc },
+  const paymentSections = [
+    {
+      id: 'bank',
+      icon: 'account_balance',
+      title: tx.bankTransfer,
+      desc: tx.bankTransferDesc,
+      details: [
+        { label: tx.bankName, value: 'Attijariwafa Bank' },
+        { label: tx.accountHolder, value: BANK_INFO.name },
+        { label: tx.rib, value: BANK_INFO.rib },
+      ],
+    },
+    {
+      id: 'cash',
+      icon: 'payments',
+      title: tx.localAgencies,
+      desc: tx.localAgenciesDesc,
+      subtitle: tx.agencyCash,
+      subtitleValue: tx.agenciesList,
+    },
+    {
+      id: 'card',
+      icon: 'credit_card',
+      title: tx.cardPayment,
+      desc: tx.cardPaymentDesc,
+      cards: ['visa', 'mastercard', 'paypal'],
+    },
   ];
-  
+
   return (
     <div className="px-6 flex-1 pb-8">
       <h3 className="text-gray-900 dark:text-white text-2xl font-bold leading-tight pb-6">
         {tx.selectPayment}
       </h3>
-      
+
       <div className="space-y-4">
-        {paymentMethods.map((method) => (
+        {paymentSections.map((section) => (
           <button
-            key={method.id}
-            onClick={() => setDonationData(prev => ({ ...prev, paymentMethod: method.id }))}
+            key={section.id}
+            onClick={() => setDonationData(prev => ({ ...prev, paymentMethod: section.id }))}
             className={`
-              w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-right
-              ${donationData.paymentMethod === method.id
+              w-full flex flex-col rounded-2xl border transition-all text-right overflow-hidden
+              ${donationData.paymentMethod === section.id
                 ? 'border-primary bg-primary/5'
                 : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50'
               }
             `}
           >
-            <div className={`
-              flex items-center justify-center rounded-lg shrink-0 size-12
-              ${donationData.paymentMethod === method.id ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}
-            `}>
-              <span className="material-symbols-outlined text-2xl">{method.icon}</span>
+            {/* Header */}
+            <div className="flex items-center gap-4 p-4">
+              <div className={`
+                flex items-center justify-center rounded-lg shrink-0 size-12
+                ${donationData.paymentMethod === section.id ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}
+              `}>
+                <span className="material-symbols-outlined text-2xl">{section.icon}</span>
+              </div>
+              <div className="flex flex-col grow text-right">
+                <p className={`text-base font-bold leading-normal ${donationData.paymentMethod === section.id ? 'text-primary' : 'text-gray-900 dark:text-white'}`}>
+                  {section.title}
+                </p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm font-normal leading-normal">
+                  {section.desc}
+                </p>
+              </div>
+              <div className="text-gray-300">
+                <span className="material-symbols-outlined">
+                  {isRTL ? 'chevron_left' : 'chevron_right'}
+                </span>
+              </div>
             </div>
-            <div className="flex flex-col grow text-right">
-              <p className={`text-base font-bold leading-normal ${donationData.paymentMethod === method.id ? 'text-primary' : 'text-gray-900 dark:text-white'}`}>
-                {method.title}
-              </p>
-              <p className="text-gray-500 dark:text-gray-400 text-sm font-normal leading-normal">
-                {method.desc}
-              </p>
-            </div>
-            <div className="text-gray-300">
-              <span className="material-symbols-outlined">
-                {isRTL ? 'chevron_left' : 'chevron_right'}
-              </span>
-            </div>
+
+            {/* Expanded Content */}
+            {donationData.paymentMethod === section.id && (
+              <div className="px-4 pb-4 pt-2 border-t border-primary/20">
+                {section.id === 'bank' && section.details && (
+                  <div className="space-y-3">
+                    <p className="text-sm font-semibold text-primary mb-2">{tx.bankDetailsTitle}</p>
+                    {section.details.map((detail, idx) => (
+                      <div key={idx} className="flex justify-between items-center text-sm">
+                        <span className="text-gray-500 dark:text-gray-400">{detail.label}:</span>
+                        <span className="font-medium text-gray-900 dark:text-white" dir="ltr">{detail.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {section.id === 'cash' && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">{section.subtitle}:</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{section.subtitleValue}</span>
+                    </div>
+                  </div>
+                )}
+                {section.id === 'card' && section.cards && (
+                  <div className="flex items-center justify-end gap-3 pt-2">
+                    <div className="flex items-center gap-2 bg-white dark:bg-gray-700 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600">
+                      <span className="text-xs font-medium text-gray-600 dark:text-gray-300">Visa</span>
+                      <span className="material-symbols-outlined text-blue-600 text-lg">credit_card</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-white dark:bg-gray-700 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600">
+                      <span className="text-xs font-medium text-gray-600 dark:text-gray-300">Mastercard</span>
+                      <span className="material-symbols-outlined text-orange-600 text-lg">credit_card</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-white dark:bg-gray-700 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600">
+                      <span className="text-xs font-medium text-gray-600 dark:text-gray-300">PayPal</span>
+                      <span className="material-symbols-outlined text-blue-800 text-lg">account_balance_wallet</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </button>
         ))}
       </div>
-      
+
       <div className="mt-8 p-4 bg-primary/5 rounded-xl border border-dashed border-primary/30">
         <div className="flex gap-3">
           <span className="material-symbols-outlined text-primary">info</span>
