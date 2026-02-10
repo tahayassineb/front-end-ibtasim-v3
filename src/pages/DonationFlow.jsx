@@ -302,7 +302,7 @@ const Step0Auth = ({
   handleAuthChange,
   handlePhoneChange,
   formatPhoneDisplay,
-  setAuthMode,
+  handleAuthModeSwitch,
   setOtpValues,
   setOtpTimer,
   setStep,
@@ -343,6 +343,8 @@ const Step0Auth = ({
   }, [otpSent, otpTimer, setOtpTimer]);
   
   if (otpSent) {
+    const isOtpComplete = otpValues.every(v => v.length === 1);
+    
     return (
       <div className="flex-1 flex flex-col items-center px-6 pt-10 pb-8">
         <div className="mb-8 p-4 bg-primary/10 rounded-full">
@@ -375,7 +377,7 @@ const Step0Auth = ({
           </fieldset>
         </div>
         
-        <div className="mt-10 flex flex-col items-center gap-4">
+        <div className="mt-10 flex flex-col items-center gap-4 w-full max-w-sm">
           {otpTimer > 0 ? (
             <div className="flex items-center gap-3 py-2 px-6 bg-primary/5 dark:bg-primary/10 rounded-full border border-primary/10">
               <span className="material-symbols-outlined text-primary text-sm">schedule</span>
@@ -391,6 +393,18 @@ const Step0Auth = ({
               {tx.resendCode}
             </button>
           )}
+          
+          {/* VERIFY OTP BUTTON - This was missing! */}
+          <Button
+            onClick={handleOtpVerify}
+            disabled={!isOtpComplete || isLoading}
+            fullWidth
+            size="xl"
+            loading={isLoading}
+            className="mt-6"
+          >
+            {tx.continueToDonation}
+          </Button>
         </div>
       </div>
     );
@@ -408,7 +422,7 @@ const Step0Auth = ({
       {/* Auth Mode Toggle */}
       <div className="flex h-12 items-center justify-center rounded-xl bg-gray-200/50 dark:bg-white/10 p-1 mb-6">
         <button
-          onClick={() => setAuthMode('login')}
+          onClick={() => handleAuthModeSwitch('login')}
           className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
             authMode === 'login'
               ? 'bg-white dark:bg-primary text-primary dark:text-white shadow-sm'
@@ -418,7 +432,7 @@ const Step0Auth = ({
           {tx.login}
         </button>
         <button
-          onClick={() => setAuthMode('register')}
+          onClick={() => handleAuthModeSwitch('register')}
           className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
             authMode === 'register'
               ? 'bg-white dark:bg-primary text-primary dark:text-white shadow-sm'
@@ -1189,6 +1203,17 @@ const DonationFlow = () => {
     return `${phone.slice(0, 2)} ${phone.slice(2, 5)} ${phone.slice(5, 8)} ${phone.slice(8)}`;
   };
   
+  // Handle auth mode switch - clears errors when switching
+  const handleAuthModeSwitch = (mode) => {
+    setAuthMode(mode);
+    setAuthErrors({});
+    // Clear OTP state when switching
+    if (otpSent) {
+      setOtpSent(false);
+      setOtpValues(['', '', '', '']);
+    }
+  };
+
   // Handle login submission
   const handleLogin = async () => {
     const errors = {};
@@ -1313,7 +1338,7 @@ const DonationFlow = () => {
             {authMode === 'login' ? tx.login : tx.continueToDonation}
           </Button>
           <button
-            onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+            onClick={() => handleAuthModeSwitch(authMode === 'login' ? 'register' : 'login')}
             className="w-full mt-4 text-primary text-sm font-medium hover:underline"
           >
             {authMode === 'login' ? `${tx.noAccount} ${tx.register}` : `${tx.haveAccount} ${tx.login}`}
@@ -1378,7 +1403,7 @@ const DonationFlow = () => {
     handleAuthChange,
     handlePhoneChange,
     formatPhoneDisplay,
-    setAuthMode,
+    handleAuthModeSwitch,
     setOtpValues,
     setOtpTimer,
     setStep,

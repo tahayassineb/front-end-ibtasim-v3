@@ -1,419 +1,491 @@
-import React, { useState, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 
 // ============================================
-// REGISTER PAGE - User Registration (Email + Password)
+// REGISTER PAGE - Phone + Password with OTP
+// Matching DonationFlow auth design
 // ============================================
 
 const Register = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t, currentLanguage, login, showToast } = useApp();
   
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-  });
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   
+  // OTP states
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpValues, setOtpValues] = useState(['', '', '', '']);
+  const [otpTimer, setOtpTimer] = useState(120);
+  const otpRefs = [useRef(), useRef(), useRef(), useRef()];
+  
+  const phoneInputRef = useRef(null);
+  const cursorPositionRef = useRef(0);
+  
   const isRTL = currentLanguage.dir === 'rtl';
+  const lang = currentLanguage.code;
+  
+  // Get return URL from location state or default to home
+  const returnUrl = location.state?.returnUrl || '/';
   
   // Translations
   const translations = {
     ar: {
-      title: 'أنشئ حسابك',
-      subtitle: 'انضم إلى مجتمعنا من المتبرعين وساهم في دعم المشاريع الإنسانية.',
+      welcome: 'إنشاء حساب',
+      subtitle: 'أنشئ حساباً للمتابعة',
       fullNameLabel: 'الاسم الكامل',
-      fullNamePlaceholder: 'أدخل اسمك الكامل',
+      fullNamePlaceholder: 'محمد العلوي',
       emailLabel: 'البريد الإلكتروني',
-      emailPlaceholder: 'example@mail.com',
+      emailPlaceholder: 'exemple@mail.com',
+      phoneLabel: 'رقم الهاتف',
+      phonePlaceholder: '6XXXXXXXX',
       passwordLabel: 'كلمة المرور',
       passwordPlaceholder: '••••••••',
       confirmPasswordLabel: 'تأكيد كلمة المرور',
-      confirmPasswordPlaceholder: '••••••••',
-      termsText: 'أوافق على ',
-      termsLink: 'الشروط والأحكام',
-      andText: ' و ',
-      privacyLink: 'سياسة الخصوصية',
-      termsSuffix: ' لجمعية الأمل.',
-      submitButton: 'إنشاء حساب',
-      haveAccount: 'لديك حساب بالفعل؟',
-      loginLink: 'تسجيل الدخول',
-      nameError: 'يرجى إدخال الاسم الكامل',
-      emailError: 'يرجى إدخال بريد إلكتروني صحيح',
-      passwordError: 'يجب أن تكون كلمة المرور 6 أحرف على الأقل',
-      confirmPasswordError: 'كلمتا المرور غير متطابقتين',
-      termsError: 'يجب الموافقة على الشروط والأحكام',
+      registerButton: 'إنشاء حساب',
+      haveAccount: 'لديك حساب؟',
+      loginNow: 'سجل الدخول',
+      enterOtp: 'أدخل رمز التحقق',
+      otpSent: 'تم إرسال رمز التحقق إلى',
+      resendCode: 'إعادة إرسال الرمز',
+      continueToAccount: 'المتابعة إلى الحساب',
+      fullNameError: 'الاسم مطلوب',
+      emailError: 'بريد إلكتروني غير صحيح',
+      phoneError: 'رقم هاتف غير صحيح',
+      passwordError: '6 أحرف على الأقل',
+      confirmPasswordError: 'كلمات المرور غير متطابقة',
     },
     fr: {
-      title: 'Créez votre compte',
-      subtitle: 'Rejoignez notre communauté de donateurs et contribuez à des projets humanitaires.',
+      welcome: 'Créer un compte',
+      subtitle: 'Créez un compte pour continuer',
       fullNameLabel: 'Nom complet',
-      fullNamePlaceholder: 'Entrez votre nom complet',
+      fullNamePlaceholder: 'Jean Dupont',
       emailLabel: 'Adresse email',
       emailPlaceholder: 'exemple@mail.com',
+      phoneLabel: 'Numéro de téléphone',
+      phonePlaceholder: '6XXXXXXXX',
       passwordLabel: 'Mot de passe',
       passwordPlaceholder: '••••••••',
       confirmPasswordLabel: 'Confirmer le mot de passe',
-      confirmPasswordPlaceholder: '••••••••',
-      termsText: 'J\'accepte les ',
-      termsLink: 'Conditions d\'utilisation',
-      andText: ' et la ',
-      privacyLink: 'Politique de confidentialité',
-      termsSuffix: ' d\'Association Espoir.',
-      submitButton: 'Créer un compte',
-      haveAccount: 'Vous avez déjà un compte?',
-      loginLink: 'Connexion',
-      nameError: 'Veuillez entrer votre nom complet',
-      emailError: 'Veuillez entrer une adresse email valide',
-      passwordError: 'Le mot de passe doit contenir au moins 6 caractères',
-      confirmPasswordError: 'Les mots de passe ne correspondent pas',
-      termsError: 'Vous devez accepter les conditions d\'utilisation',
+      registerButton: 'Continuer',
+      haveAccount: 'Vous avez un compte?',
+      loginNow: 'Connectez-vous',
+      enterOtp: 'Entrez le code de vérification',
+      otpSent: 'Un code a été envoyé à',
+      resendCode: 'Renvoyer le code',
+      continueToAccount: 'Continuer vers le compte',
+      fullNameError: 'Nom requis',
+      emailError: 'Email invalide',
+      phoneError: 'Numéro invalide',
+      passwordError: '6 caractères minimum',
+      confirmPasswordError: 'Mots de passe différents',
     },
     en: {
-      title: 'Create your account',
-      subtitle: 'Join our donor community and contribute to humanitarian projects.',
+      welcome: 'Create Account',
+      subtitle: 'Create an account to continue',
       fullNameLabel: 'Full Name',
-      fullNamePlaceholder: 'Enter your full name',
+      fullNamePlaceholder: 'John Doe',
       emailLabel: 'Email Address',
       emailPlaceholder: 'example@mail.com',
+      phoneLabel: 'Phone Number',
+      phonePlaceholder: '6XXXXXXXX',
       passwordLabel: 'Password',
       passwordPlaceholder: '••••••••',
       confirmPasswordLabel: 'Confirm Password',
-      confirmPasswordPlaceholder: '••••••••',
-      termsText: 'I agree to the ',
-      termsLink: 'Terms & Conditions',
-      andText: ' and ',
-      privacyLink: 'Privacy Policy',
-      termsSuffix: ' of Association Espoir.',
-      submitButton: 'Create Account',
-      haveAccount: 'Already have an account?',
-      loginLink: 'Login',
-      nameError: 'Please enter your full name',
-      emailError: 'Please enter a valid email address',
-      passwordError: 'Password must be at least 6 characters',
+      registerButton: 'Continue',
+      haveAccount: 'Have an account?',
+      loginNow: 'Login',
+      enterOtp: 'Enter Verification Code',
+      otpSent: 'A code has been sent to',
+      resendCode: 'Resend Code',
+      continueToAccount: 'Continue to Account',
+      fullNameError: 'Name required',
+      emailError: 'Invalid email',
+      phoneError: 'Invalid phone',
+      passwordError: '6 characters minimum',
       confirmPasswordError: 'Passwords do not match',
-      termsError: 'You must agree to the terms and conditions',
     },
   };
   
   const tx = translations[currentLanguage.code] || translations.fr;
   
-  // Validation functions
+  // Validate email
   const validateEmail = (email) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
   
-  // Handle input changes
-  const handleChange = useCallback((e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
-  }, [errors]);
+  // Validate phone
+  const validatePhone = (phone) => {
+    return /^[56]\d{8}$/.test(phone);
+  };
   
-  // Validate form
-  const validateForm = () => {
-    const newErrors = {};
-    
-    if (!formData.fullName.trim() || formData.fullName.length < 2) {
-      newErrors.fullName = tx.nameError;
+  // Format phone for display
+  const formatPhoneDisplay = (phone) => {
+    if (phone.length <= 2) return phone;
+    if (phone.length <= 5) return `${phone.slice(0, 2)} ${phone.slice(2)}`;
+    if (phone.length <= 8) return `${phone.slice(0, 2)} ${phone.slice(2, 5)} ${phone.slice(5)}`;
+    return `${phone.slice(0, 2)} ${phone.slice(2, 5)} ${phone.slice(5, 8)} ${phone.slice(8)}`;
+  };
+  
+  // Handle phone input with cursor position fix
+  const handlePhoneChange = (e) => {
+    const input = e.target;
+    const cursorPosition = input.selectionStart;
+    const previousValue = input.value;
+    const rawValue = input.value.replace(/\D/g, '').slice(0, 10);
+    const diff = previousValue.length - rawValue.length;
+    cursorPositionRef.current = Math.max(0, cursorPosition - diff);
+    setPhone(rawValue);
+    if (errors.phone) setErrors(prev => ({ ...prev, phone: null }));
+  };
+  
+  // Restore cursor position
+  useEffect(() => {
+    if (phoneInputRef.current) {
+      phoneInputRef.current.setSelectionRange(cursorPositionRef.current, cursorPositionRef.current);
     }
+  }, [phone]);
+  
+  // OTP timer
+  useEffect(() => {
+    if (otpSent && otpTimer > 0) {
+      const timer = setTimeout(() => setOtpTimer(prev => prev - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [otpSent, otpTimer]);
+  
+  // Handle OTP input
+  const handleOtpChange = (index, value) => {
+    if (value.length > 1) value = value[0];
+    if (!/^\d*$/.test(value)) return;
     
-    if (!validateEmail(formData.email)) {
+    const newOtp = [...otpValues];
+    newOtp[index] = value;
+    setOtpValues(newOtp);
+    
+    if (value && index < 3) {
+      otpRefs[index + 1].current?.focus();
+    }
+  };
+  
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !otpValues[index] && index > 0) {
+      otpRefs[index - 1].current?.focus();
+    }
+  };
+  
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+  
+  // Handle initial registration submit
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    
+    const newErrors = {};
+    if (!fullName.trim()) {
+      newErrors.fullName = tx.fullNameError;
+    }
+    if (!validateEmail(email)) {
       newErrors.email = tx.emailError;
     }
-    
-    if (!formData.password || formData.password.length < 6) {
+    if (!validatePhone(phone)) {
+      newErrors.phone = tx.phoneError;
+    }
+    if (!password || password.length < 6) {
       newErrors.password = tx.passwordError;
     }
-    
-    if (formData.password !== formData.confirmPassword) {
+    if (password !== confirmPassword) {
       newErrors.confirmPassword = tx.confirmPasswordError;
     }
     
-    if (!acceptedTerms) {
-      newErrors.terms = tx.termsError;
-    }
-    
-    return newErrors;
-  };
-  
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    const validationErrors = validateForm();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
     
-    setIsLoading(true);
+    // Send OTP
+    setOtpSent(true);
+    setOtpTimer(120);
+    showToast(lang === 'ar' ? 'تم إرسال الرمز' : lang === 'fr' ? 'Code envoyé' : 'Code sent', 'success');
+  };
+  
+  // Handle OTP verification
+  const handleOtpVerify = async () => {
+    const isOtpComplete = otpValues.every(v => v.length === 1);
+    if (!isOtpComplete) return;
     
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const userData = {
-        id: 'user_' + Date.now(),
-        name: formData.fullName,
-        email: formData.email,
-        avatar: null,
-        createdAt: new Date().toISOString(),
-        donations: [],
-      };
-      
-      login(userData);
-      showToast(currentLanguage.code === 'ar' ? 'تم إنشاء الحساب بنجاح' : 
-                 currentLanguage.code === 'fr' ? 'Compte créé avec succès' : 
-                 'Account created successfully', 'success');
-      
-      navigate('/', { replace: true });
-      
-    } catch (error) {
-      showToast(currentLanguage.code === 'ar' ? 'حدث خطأ' : 
-                 currentLanguage.code === 'fr' ? 'Une erreur est survenue' : 
-                 'An error occurred', 'error');
-    } finally {
-      setIsLoading(false);
-    }
+    setIsLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Create user
+    const userData = {
+      id: 'user_' + Date.now(),
+      name: fullName,
+      phone: '+212 ' + formatPhoneDisplay(phone),
+      email: email,
+      avatar: null,
+    };
+    
+    login(userData);
+    setIsLoading(false);
+    showToast(lang === 'ar' ? 'تم إنشاء الحساب' : lang === 'fr' ? 'Compte créé' : 'Account created', 'success');
+    
+    // Redirect to return URL
+    navigate(returnUrl, { replace: true });
   };
   
-  // Handle back navigation
-  const handleBack = () => {
-    navigate(-1);
-  };
-  
-  return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark">
-      <div className="relative flex h-full min-h-screen w-full flex-col bg-background-light dark:bg-background-dark overflow-x-hidden max-w-[430px] mx-auto shadow-2xl">
-        
-        {/* Top Navigation */}
-        <div className="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between">
+  // OTP Screen
+  if (otpSent) {
+    const isOtpComplete = otpValues.every(v => v.length === 1);
+    
+    return (
+      <div className="min-h-screen bg-background-light dark:bg-background-dark flex flex-col">
+        {/* Header */}
+        <header className="px-6 pt-12 pb-4">
           <button 
-            onClick={handleBack}
-            className="text-primary flex size-12 shrink-0 items-center justify-center rounded-full hover:bg-primary/10 transition-colors"
+            onClick={() => setOtpSent(false)}
+            className="inline-flex items-center text-gray-500 hover:text-primary transition-colors"
           >
-            <span className="material-symbols-outlined" style={{ fontSize: 28 }}>
-              {isRTL ? 'arrow_forward' : 'arrow_back'}
-            </span>
+            <span className="material-symbols-outlined">arrow_back</span>
           </button>
-          <h2 className="text-primary font-bold text-lg leading-tight tracking-tight flex-1 text-center">
-            {isRTL ? 'جمعية الأمل' : 'Association Espoir'}
-          </h2>
-          <div className="size-12"></div>
-        </div>
+        </header>
         
-        {/* Header Section */}
-        <div className="px-6 pt-10 pb-4">
-          <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
-              <span className="material-symbols-outlined text-primary" style={{ fontSize: 40 }}>person_add</span>
-            </div>
+        {/* OTP Content */}
+        <div className="flex-1 flex flex-col items-center px-6 pt-6 pb-8">
+          <div className="mb-8 p-4 bg-primary/10 rounded-full">
+            <span className="material-symbols-outlined text-primary text-5xl">phonelink_ring</span>
           </div>
-          <h2 className="text-primary text-[28px] font-bold leading-tight text-center pb-3">
-            {tx.title}
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400 text-base font-normal leading-relaxed text-center px-4">
-            {tx.subtitle}
-          </p>
-        </div>
-        
-        {/* Registration Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5 px-6 py-6">
           
-          {/* Full Name Input */}
-          <div className="flex flex-col gap-2">
-            <label className="text-primary text-sm font-semibold leading-normal px-1">
+          <h1 className="text-gray-900 dark:text-white text-2xl font-bold text-center pb-3">
+            {tx.enterOtp}
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 text-base text-center max-w-xs">
+            {tx.otpSent} <span className="font-bold text-primary" dir="ltr">+212 {formatPhoneDisplay(phone)}</span>
+          </p>
+          
+          <div className="mt-10 w-full max-w-sm">
+            <fieldset className="flex justify-between gap-2 sm:gap-4" dir="ltr">
+              {[0, 1, 2, 3].map((index) => (
+                <input
+                  key={index}
+                  ref={otpRefs[index]}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={otpValues[index]}
+                  onChange={(e) => handleOtpChange(index, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                  className="flex h-14 w-12 sm:w-14 text-center text-xl font-bold bg-white dark:bg-gray-800 border-0 rounded-xl shadow-lg shadow-primary/5 focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
+                  placeholder="-"
+                />
+              ))}
+            </fieldset>
+          </div>
+          
+          <div className="mt-10 flex flex-col items-center gap-4 w-full max-w-sm">
+            {otpTimer > 0 ? (
+              <div className="flex items-center gap-3 py-2 px-6 bg-primary/5 dark:bg-primary/10 rounded-full border border-primary/10">
+                <span className="material-symbols-outlined text-primary text-sm">schedule</span>
+                <p className="text-primary text-sm font-bold tracking-widest" dir="ltr">
+                  {formatTime(otpTimer)}
+                </p>
+              </div>
+            ) : (
+              <button
+                onClick={() => setOtpTimer(120)}
+                className="text-primary font-bold hover:underline"
+              >
+                {tx.resendCode}
+              </button>
+            )}
+            
+            <Button
+              onClick={handleOtpVerify}
+              disabled={!isOtpComplete || isLoading}
+              fullWidth
+              size="xl"
+              loading={isLoading}
+              className="mt-6"
+            >
+              {tx.continueToAccount}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Registration Form
+  return (
+    <div className="min-h-screen bg-background-light dark:bg-background-dark flex flex-col">
+      {/* Header */}
+      <header className="px-6 pt-12 pb-4">
+        <Link to="/" className="inline-flex items-center text-gray-500 hover:text-primary transition-colors">
+          <span className="material-symbols-outlined">arrow_back</span>
+        </Link>
+      </header>
+      
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col px-6 pt-6 pb-8">
+        <h1 className="text-gray-900 dark:text-white text-2xl font-bold text-center mb-2">
+          {tx.welcome}
+        </h1>
+        <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
+          {tx.subtitle}
+        </p>
+        
+        <form onSubmit={handleRegister} className="space-y-4 flex-1">
+          {/* Full Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {tx.fullNameLabel}
             </label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-primary/60">
-                person
-              </span>
-              <input
-                type="text"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-                placeholder={tx.fullNamePlaceholder}
-                className={`
-                  flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl 
-                  text-gray-800 dark:text-white focus:outline-0 focus:ring-2 
-                  ${errors.fullName ? 'focus:ring-error/50 border-error' : 'focus:ring-primary/50 border-transparent'}
-                  border-none bg-white dark:bg-gray-800 shadow-sm h-14 placeholder:text-gray-400 pr-12 text-base font-normal leading-normal
-                `}
-              />
-            </div>
-            {errors.fullName && (
-              <p className="text-error text-xs px-1">{errors.fullName}</p>
-            )}
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => {
+                setFullName(e.target.value);
+                if (errors.fullName) setErrors(prev => ({ ...prev, fullName: null }));
+              }}
+              placeholder={tx.fullNamePlaceholder}
+              className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
+            />
+            {errors.fullName && <p className="text-error text-xs mt-1">{errors.fullName}</p>}
           </div>
           
-          {/* Email Input */}
-          <div className="flex flex-col gap-2">
-            <label className="text-primary text-sm font-semibold leading-normal px-1">
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {tx.emailLabel}
             </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (errors.email) setErrors(prev => ({ ...prev, email: null }));
+              }}
+              placeholder={tx.emailPlaceholder}
+              className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
+              dir="ltr"
+            />
+            {errors.email && <p className="text-error text-xs mt-1">{errors.email}</p>}
+          </div>
+          
+          {/* Phone Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {tx.phoneLabel}
+            </label>
             <div className="relative">
-              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-primary/60">
-                mail
-              </span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">+212</span>
               <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder={tx.emailPlaceholder}
+                ref={phoneInputRef}
+                type="tel"
+                value={phone}
+                onChange={handlePhoneChange}
+                placeholder={tx.phonePlaceholder}
+                maxLength={10}
+                className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-16 pr-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
                 dir="ltr"
-                className={`
-                  flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl 
-                  text-gray-800 dark:text-white focus:outline-0 focus:ring-2 
-                  ${errors.email ? 'focus:ring-error/50 border-error' : 'focus:ring-primary/50 border-transparent'}
-                  border-none bg-white dark:bg-gray-800 shadow-sm h-14 placeholder:text-gray-400 pr-12 text-base font-normal leading-normal text-right
-                `}
+                inputMode="numeric"
+                pattern="[0-9]*"
               />
             </div>
-            {errors.email && (
-              <p className="text-error text-xs px-1">{errors.email}</p>
-            )}
+            {errors.phone && <p className="text-error text-xs mt-1">{errors.phone}</p>}
           </div>
           
           {/* Password Input */}
-          <div className="flex flex-col gap-2">
-            <label className="text-primary text-sm font-semibold leading-normal px-1">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {tx.passwordLabel}
             </label>
             <div className="relative">
-              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-primary/60">
-                lock
-              </span>
               <input
                 type={showPassword ? 'text' : 'password'}
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errors.password) setErrors(prev => ({ ...prev, password: null }));
+                }}
                 placeholder={tx.passwordPlaceholder}
-                className={`
-                  flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl 
-                  text-gray-800 dark:text-white focus:outline-0 focus:ring-2 
-                  ${errors.password ? 'focus:ring-error/50 border-error' : 'focus:ring-primary/50 border-transparent'}
-                  border-none bg-white dark:bg-gray-800 shadow-sm h-14 placeholder:text-gray-400 pr-12 pl-12 text-base font-normal leading-normal
-                `}
+                className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 pr-12 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
-                <span className="material-symbols-outlined text-[20px]">
-                  {showPassword ? 'visibility_off' : 'visibility'}
-                </span>
+                <span className="material-symbols-outlined">{showPassword ? 'visibility_off' : 'visibility'}</span>
               </button>
             </div>
-            {errors.password && (
-              <p className="text-error text-xs px-1">{errors.password}</p>
-            )}
+            {errors.password && <p className="text-error text-xs mt-1">{errors.password}</p>}
           </div>
           
           {/* Confirm Password Input */}
-          <div className="flex flex-col gap-2">
-            <label className="text-primary text-sm font-semibold leading-normal px-1">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {tx.confirmPasswordLabel}
             </label>
             <div className="relative">
-              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-primary/60">
-                lock_reset
-              </span>
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder={tx.confirmPasswordPlaceholder}
-                className={`
-                  flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl 
-                  text-gray-800 dark:text-white focus:outline-0 focus:ring-2 
-                  ${errors.confirmPassword ? 'focus:ring-error/50 border-error' : 'focus:ring-primary/50 border-transparent'}
-                  border-none bg-white dark:bg-gray-800 shadow-sm h-14 placeholder:text-gray-400 pr-12 pl-12 text-base font-normal leading-normal
-                `}
+                value={confirmPassword}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: null }));
+                }}
+                placeholder={tx.passwordPlaceholder}
+                className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 pr-12 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
-                <span className="material-symbols-outlined text-[20px]">
-                  {showConfirmPassword ? 'visibility_off' : 'visibility'}
-                </span>
+                <span className="material-symbols-outlined">{showConfirmPassword ? 'visibility_off' : 'visibility'}</span>
               </button>
             </div>
-            {errors.confirmPassword && (
-              <p className="text-error text-xs px-1">{errors.confirmPassword}</p>
-            )}
-          </div>
-          
-          {/* Terms & Conditions */}
-          <div className="py-2">
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <div className="mt-1">
-                <input
-                  type="checkbox"
-                  checked={acceptedTerms}
-                  onChange={(e) => {
-                    setAcceptedTerms(e.target.checked);
-                    if (errors.terms) setErrors(prev => ({ ...prev, terms: null }));
-                  }}
-                  className="rounded text-primary focus:ring-primary border-gray-300 w-5 h-5 cursor-pointer"
-                />
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 leading-tight">
-                {tx.termsText}
-                <span className="text-primary font-bold cursor-pointer hover:underline">{tx.termsLink}</span>
-                {tx.andText}
-                <span className="text-primary font-bold cursor-pointer hover:underline">{tx.privacyLink}</span>
-                {tx.termsSuffix}
-              </p>
-            </label>
-            {errors.terms && (
-              <p className="text-error text-xs px-1 mt-2">{errors.terms}</p>
-            )}
+            {errors.confirmPassword && <p className="text-error text-xs mt-1">{errors.confirmPassword}</p>}
           </div>
           
           {/* Submit Button */}
-          <div className="mt-auto pt-4">
+          <div className="pt-4">
             <Button
               type="submit"
-              variant="primary"
-              size="xl"
               fullWidth
+              size="xl"
               loading={isLoading}
-              icon={!isLoading && 'how_to_reg'}
-              iconPosition={isRTL ? 'right' : 'left'}
-              className="shadow-lg shadow-primary/30"
             >
-              {tx.submitButton}
+              {tx.registerButton}
             </Button>
-            
-            <p className="text-center mt-6 text-gray-500 text-sm">
-              {tx.haveAccount}{' '}
-              <Link to="/login" className="text-primary font-bold cursor-pointer hover:underline">
-                {tx.loginLink}
-              </Link>
-            </p>
           </div>
         </form>
         
-        {/* Decorative Elements */}
-        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute top-20 -right-10 w-32 h-32 bg-primary/5 rounded-full blur-2xl pointer-events-none"></div>
+        {/* Login Link */}
+        <div className="mt-6 text-center">
+          <span className="text-gray-500 dark:text-gray-400 text-sm">{tx.haveAccount} </span>
+          <Link 
+            to="/login" 
+            state={{ returnUrl }}
+            className="text-primary text-sm font-bold hover:underline"
+          >
+            {tx.loginNow}
+          </Link>
+        </div>
       </div>
     </div>
   );

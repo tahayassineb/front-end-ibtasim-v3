@@ -1,11 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
-import Input from '../components/Input';
 
 // ============================================
-// LOGIN PAGE - User Authentication (Email + Password)
+// LOGIN PAGE - Phone + Password Authentication
+// Matching DonationFlow auth design
 // ============================================
 
 const Login = () => {
@@ -13,95 +13,118 @@ const Login = () => {
   const location = useLocation();
   const { t, currentLanguage, login, showToast } = useApp();
   
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   
+  const phoneInputRef = useRef(null);
+  const cursorPositionRef = useRef(0);
+  
   const isRTL = currentLanguage.dir === 'rtl';
+  const lang = currentLanguage.code;
+  
+  // Get return URL from location state or default to home
+  const returnUrl = location.state?.returnUrl || '/';
   
   // Translations
   const translations = {
     ar: {
-      title: 'تسجيل الدخول',
-      welcome: 'مرحباً بك مجدداً في جمعية الأمل',
-      emailLabel: 'البريد الإلكتروني',
-      emailPlaceholder: 'example@mail.com',
+      welcome: 'مرحباً بك',
+      subtitle: 'سجل الدخول للمتابعة',
+      phoneLabel: 'رقم الهاتف',
+      phonePlaceholder: '6XXXXXXXX',
       passwordLabel: 'كلمة المرور',
       passwordPlaceholder: '••••••••',
-      forgotPassword: 'هل نسيت كلمة المرور؟',
       loginButton: 'تسجيل الدخول',
       noAccount: 'ليس لديك حساب؟',
       registerNow: 'سجل الآن',
-      termsText: 'بالتسجيل، أنت توافق على شروط الخدمة وسياسة الخصوصية الخاصة بالجمعية',
-      emailError: 'يرجى إدخال بريد إلكتروني صحيح',
-      passwordError: 'يرجى إدخال كلمة المرور',
-      loginError: 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
+      forgotPassword: 'نسيت كلمة المرور؟',
+      phoneError: 'رقم هاتف غير صحيح',
+      passwordError: 'كلمة المرور مطلوبة',
+      loginError: 'رقم الهاتف أو كلمة المرور غير صحيحة',
     },
     fr: {
-      title: 'Connexion',
-      welcome: 'Bon retour à Association Espoir',
-      emailLabel: 'Adresse email',
-      emailPlaceholder: 'exemple@mail.com',
+      welcome: 'Bienvenue',
+      subtitle: 'Connectez-vous pour continuer',
+      phoneLabel: 'Numéro de téléphone',
+      phonePlaceholder: '6XXXXXXXX',
       passwordLabel: 'Mot de passe',
       passwordPlaceholder: '••••••••',
-      forgotPassword: 'Mot de passe oublié?',
-      loginButton: 'Se connecter',
+      loginButton: 'Connexion',
       noAccount: 'Vous n\'avez pas de compte?',
       registerNow: 'Inscrivez-vous',
-      termsText: 'En vous inscrivant, vous acceptez les conditions de service et la politique de confidentialité',
-      emailError: 'Veuillez entrer une adresse email valide',
-      passwordError: 'Veuillez entrer votre mot de passe',
-      loginError: 'Email ou mot de passe incorrect',
+      forgotPassword: 'Mot de passe oublié?',
+      phoneError: 'Numéro invalide',
+      passwordError: 'Mot de passe requis',
+      loginError: 'Numéro ou mot de passe incorrect',
     },
     en: {
-      title: 'Login',
-      welcome: 'Welcome back to Association Espoir',
-      emailLabel: 'Email Address',
-      emailPlaceholder: 'example@mail.com',
+      welcome: 'Welcome',
+      subtitle: 'Login to continue',
+      phoneLabel: 'Phone Number',
+      phonePlaceholder: '6XXXXXXXX',
       passwordLabel: 'Password',
       passwordPlaceholder: '••••••••',
-      forgotPassword: 'Forgot password?',
       loginButton: 'Login',
       noAccount: 'Don\'t have an account?',
       registerNow: 'Register now',
-      termsText: 'By registering, you agree to the terms of service and privacy policy',
-      emailError: 'Please enter a valid email address',
-      passwordError: 'Please enter your password',
-      loginError: 'Invalid email or password',
+      forgotPassword: 'Forgot password?',
+      phoneError: 'Invalid phone number',
+      passwordError: 'Password required',
+      loginError: 'Invalid phone or password',
     },
   };
   
   const tx = translations[currentLanguage.code] || translations.fr;
   
-  // Validate email format
-  const validateEmail = (email) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  // Validate phone number
+  const validatePhone = (phone) => {
+    return /^[56]\d{8}$/.test(phone);
   };
   
-  // Handle email input change
-  const handleEmailChange = useCallback((e) => {
-    setEmail(e.target.value);
-    if (errors.email) setErrors(prev => ({ ...prev, email: null }));
-  }, [errors.email]);
+  // Format phone for display
+  const formatPhoneDisplay = (phone) => {
+    if (phone.length <= 2) return phone;
+    if (phone.length <= 5) return `${phone.slice(0, 2)} ${phone.slice(2)}`;
+    if (phone.length <= 8) return `${phone.slice(0, 2)} ${phone.slice(2, 5)} ${phone.slice(5)}`;
+    return `${phone.slice(0, 2)} ${phone.slice(2, 5)} ${phone.slice(5, 8)} ${phone.slice(8)}`;
+  };
+  
+  // Handle phone input with cursor position fix
+  const handlePhoneChange = (e) => {
+    const input = e.target;
+    const cursorPosition = input.selectionStart;
+    const previousValue = input.value;
+    const rawValue = input.value.replace(/\D/g, '').slice(0, 10);
+    const diff = previousValue.length - rawValue.length;
+    cursorPositionRef.current = Math.max(0, cursorPosition - diff);
+    setPhone(rawValue);
+    if (errors.phone) setErrors(prev => ({ ...prev, phone: null }));
+  };
+  
+  // Restore cursor position
+  useEffect(() => {
+    if (phoneInputRef.current) {
+      phoneInputRef.current.setSelectionRange(cursorPositionRef.current, cursorPositionRef.current);
+    }
+  }, [phone]);
   
   // Handle password change
-  const handlePasswordChange = useCallback((e) => {
+  const handlePasswordChange = (e) => {
     setPassword(e.target.value);
     if (errors.password) setErrors(prev => ({ ...prev, password: null }));
-  }, [errors.password]);
+  };
   
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     const newErrors = {};
-    
-    if (!validateEmail(email)) {
-      newErrors.email = tx.emailError;
+    if (!validatePhone(phone)) {
+      newErrors.phone = tx.phoneError;
     }
-    
     if (!password || password.length < 6) {
       newErrors.password = tx.passwordError;
     }
@@ -113,202 +136,123 @@ const Login = () => {
     
     setIsLoading(true);
     
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Demo login - accept any valid format
-      const userData = {
-        id: 'user_' + Date.now(),
-        name: email.split('@')[0],
-        email: email,
-        phone: '+212 6XX XXX XXX',
-        avatar: null,
-        createdAt: new Date().toISOString(),
-        donations: [
-          {
-            id: 'DON-001',
-            amount: 500,
-            project: 'Atlas Mountain Education',
-            date: '2024-01-15',
-            status: 'verified',
-          },
-          {
-            id: 'DON-002',
-            amount: 200,
-            project: 'Clean Water Initiative',
-            date: '2024-02-01',
-            status: 'pending',
-          },
-        ],
-      };
-      
-      login(userData);
-      showToast(currentLanguage.code === 'ar' ? 'تم تسجيل الدخول بنجاح' :
-                 currentLanguage.code === 'fr' ? 'Connexion réussie' :
-                 'Login successful', 'success');
-      
-      // Redirect to intended page or home
-      const from = location.state?.from?.pathname || '/';
-      navigate(from, { replace: true });
-      
-    } catch (error) {
-      setErrors({ general: tx.loginError });
-      showToast(tx.loginError, 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  // Handle back navigation
-  const handleBack = () => {
-    navigate(-1);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Demo login
+    const userData = {
+      id: 'user_' + Date.now(),
+      name: 'Demo User',
+      phone: '+212 ' + formatPhoneDisplay(phone),
+      email: 'demo@example.com',
+      avatar: null,
+    };
+    
+    login(userData);
+    setIsLoading(false);
+    showToast(lang === 'ar' ? 'تم تسجيل الدخول' : lang === 'fr' ? 'Connecté' : 'Logged in', 'success');
+    
+    // Redirect to return URL
+    navigate(returnUrl, { replace: true });
   };
   
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark flex flex-col items-center">
-      <div className="relative flex h-full min-h-screen w-full max-w-[430px] flex-col bg-background-light dark:bg-background-dark overflow-x-hidden shadow-2xl">
+    <div className="min-h-screen bg-background-light dark:bg-background-dark flex flex-col">
+      {/* Header */}
+      <header className="px-6 pt-12 pb-4">
+        <Link to="/" className="inline-flex items-center text-gray-500 hover:text-primary transition-colors">
+          <span className="material-symbols-outlined">arrow_back</span>
+        </Link>
+      </header>
+      
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col px-6 pt-6 pb-8">
+        <h1 className="text-gray-900 dark:text-white text-2xl font-bold text-center mb-2">
+          {tx.welcome}
+        </h1>
+        <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
+          {tx.subtitle}
+        </p>
         
-        {/* Header */}
-        <div className="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between">
-          <button 
-            onClick={handleBack}
-            className="text-primary dark:text-white flex size-12 shrink-0 items-center justify-center rounded-full hover:bg-primary/10 transition-colors"
-          >
-            <span className="material-symbols-outlined text-[24px]">
-              {isRTL ? 'arrow_forward' : 'arrow_back'}
-            </span>
-          </button>
-          <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">
-            Association Espoir
-          </h2>
-          <div className="size-12"></div>
-        </div>
-        
-        {/* Logo & Title */}
-        <div className="flex flex-col items-center justify-center pt-10 pb-6">
-          <div className="w-20 h-20 bg-primary/10 rounded-xl flex items-center justify-center mb-6">
-            <span className="material-symbols-outlined text-primary text-4xl">volunteer_activism</span>
-          </div>
-          <h2 className="text-slate-900 dark:text-white tracking-tight text-[28px] font-bold leading-tight px-4 text-center">
-            {tx.title}
-          </h2>
-          <p className="text-slate-600 dark:text-slate-400 text-base font-normal leading-normal pb-3 pt-1 px-8 text-center">
-            {tx.welcome}
-          </p>
-        </div>
-        
-        {/* Login Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5 px-6 py-3">
-          
-          {/* Email Input */}
-          <div className="flex flex-col gap-2">
-            <label className="text-slate-700 dark:text-slate-200 text-sm font-medium px-1">
-              {tx.emailLabel}
+        <form onSubmit={handleSubmit} className="space-y-4 flex-1">
+          {/* Phone Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {tx.phoneLabel}
             </label>
             <div className="relative">
-              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">
-                email
-              </span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">+212</span>
               <input
-                type="email"
-                value={email}
-                onChange={handleEmailChange}
-                placeholder={tx.emailPlaceholder}
+                ref={phoneInputRef}
+                type="tel"
+                value={phone}
+                onChange={handlePhoneChange}
+                placeholder={tx.phonePlaceholder}
+                maxLength={10}
+                className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-16 pr-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
                 dir="ltr"
-                className={`
-                  w-full h-14 pr-12 pl-4 rounded-xl border
-                  ${errors.email ? 'border-error focus:border-error focus:ring-error/20' : 'border-slate-200 dark:border-slate-700 focus:border-primary focus:ring-primary/20'}
-                  bg-white dark:bg-slate-800 text-slate-900 dark:text-white
-                  focus:ring-2 transition-all text-base
-                `}
+                inputMode="numeric"
+                pattern="[0-9]*"
               />
             </div>
-            {errors.email && (
-              <p className="text-error text-xs px-1">{errors.email}</p>
-            )}
+            {errors.phone && <p className="text-error text-xs mt-1">{errors.phone}</p>}
           </div>
           
           {/* Password Input */}
-          <div className="flex flex-col gap-2">
-            <label className="text-slate-700 dark:text-slate-200 text-sm font-medium px-1">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {tx.passwordLabel}
             </label>
             <div className="relative">
-              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">
-                lock
-              </span>
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={handlePasswordChange}
                 placeholder={tx.passwordPlaceholder}
-                className={`
-                  w-full h-14 pr-12 pl-12 rounded-xl border 
-                  ${errors.password ? 'border-error focus:border-error focus:ring-error/20' : 'border-slate-200 dark:border-slate-700 focus:border-primary focus:ring-primary/20'}
-                  bg-white dark:bg-slate-800 text-slate-900 dark:text-white 
-                  focus:ring-2 transition-all text-base
-                `}
+                className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 pr-12 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
-                <span className="material-symbols-outlined text-[20px]">
-                  {showPassword ? 'visibility_off' : 'visibility'}
-                </span>
+                <span className="material-symbols-outlined">{showPassword ? 'visibility_off' : 'visibility'}</span>
               </button>
             </div>
-            {errors.password && (
-              <p className="text-error text-xs px-1">{errors.password}</p>
-            )}
+            {errors.password && <p className="text-error text-xs mt-1">{errors.password}</p>}
           </div>
           
           {/* Forgot Password */}
-          <div className={`flex ${isRTL ? 'justify-start' : 'justify-end'}`}>
-            <Link 
-              to="/forgot-password" 
-              className="text-primary text-sm font-medium hover:underline"
-            >
+          <div className="text-right">
+            <Link to="/forgot-password" className="text-primary text-sm font-medium hover:underline">
               {tx.forgotPassword}
             </Link>
           </div>
           
-          {/* General Error */}
-          {errors.general && (
-            <div className="p-3 bg-error/10 border border-error/20 rounded-xl">
-              <p className="text-error text-sm text-center">{errors.general}</p>
-            </div>
-          )}
-          
           {/* Submit Button */}
-          <Button
-            type="submit"
-            variant="primary"
-            size="xl"
-            fullWidth
-            loading={isLoading}
-            className="mt-4 shadow-lg shadow-primary/20"
-          >
-            {tx.loginButton}
-          </Button>
+          <div className="pt-4">
+            <Button
+              type="submit"
+              fullWidth
+              size="xl"
+              loading={isLoading}
+            >
+              {tx.loginButton}
+            </Button>
+          </div>
         </form>
         
-        {/* Footer */}
-        <div className="mt-auto p-8 flex flex-col items-center gap-6">
-          <p className="text-slate-600 dark:text-slate-400 text-sm">
-            {tx.noAccount}
-            <Link to="/register" className="text-primary font-bold hover:underline mx-1">
-              {tx.registerNow}
-            </Link>
-          </p>
-          <p className="text-slate-400 text-[11px] text-center px-4">
-            {tx.termsText}
-          </p>
+        {/* Register Link */}
+        <div className="mt-6 text-center">
+          <span className="text-gray-500 dark:text-gray-400 text-sm">{tx.noAccount} </span>
+          <Link 
+            to="/register" 
+            state={{ returnUrl }}
+            className="text-primary text-sm font-bold hover:underline"
+          >
+            {tx.registerNow}
+          </Link>
         </div>
-        
-        <div className="h-8 w-full"></div>
       </div>
     </div>
   );
