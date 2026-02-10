@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 
 // ============================================
 // RICH TEXT EDITOR - Word-like editing experience
@@ -8,6 +8,13 @@ import React, { useRef, useState } from 'react';
 const RichTextEditor = ({ value, onChange, placeholder = '', rows = 5 }) => {
   const editorRef = useRef(null);
   const [activeFormats, setActiveFormats] = useState({});
+  const [showPlaceholder, setShowPlaceholder] = useState(!value || value === '<p><br></p>' || value === '');
+
+  // Update placeholder visibility when value changes externally
+  useEffect(() => {
+    const isEmpty = !value || value === '<p><br></p>' || value === '';
+    setShowPlaceholder(isEmpty);
+  }, [value]);
 
   const execCommand = (command, value = null) => {
     document.execCommand(command, false, value);
@@ -29,7 +36,11 @@ const RichTextEditor = ({ value, onChange, placeholder = '', rows = 5 }) => {
 
   const handleInput = () => {
     if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
+      const content = editorRef.current.innerHTML;
+      onChange(content);
+      // Update placeholder visibility
+      const isEmpty = content === '<p><br></p>' || content === '';
+      setShowPlaceholder(isEmpty);
     }
   };
 
@@ -128,21 +139,34 @@ const RichTextEditor = ({ value, onChange, placeholder = '', rows = 5 }) => {
       </div>
       
       {/* Editor */}
-      <div
-        ref={editorRef}
-        contentEditable
-        onInput={handleInput}
-        onKeyUp={updateActiveFormats}
-        onMouseUp={updateActiveFormats}
-        className="w-full min-h-[120px] max-h-[300px] overflow-y-auto p-4 text-sm text-text-primary dark:text-white focus:outline-none prose dark:prose-invert max-w-none"
-        style={{ minHeight: `${rows * 24}px` }}
-        dangerouslySetInnerHTML={{ __html: value || `<p>${placeholder}</p>` }}
-        onBlur={() => {
-          if (editorRef.current && editorRef.current.innerHTML === '<p><br></p>') {
-            onChange('');
-          }
-        }}
-      />
+      <div className="relative">
+        <div
+          ref={editorRef}
+          contentEditable
+          onInput={handleInput}
+          onKeyUp={updateActiveFormats}
+          onMouseUp={updateActiveFormats}
+          className="w-full min-h-[120px] max-h-[300px] overflow-y-auto p-4 text-sm text-text-primary dark:text-white focus:outline-none prose dark:prose-invert max-w-none"
+          style={{ minHeight: `${rows * 24}px` }}
+          dangerouslySetInnerHTML={{ __html: value || '' }}
+          onFocus={() => setShowPlaceholder(false)}
+          onBlur={() => {
+            if (editorRef.current) {
+              const content = editorRef.current.innerHTML;
+              if (content === '<p><br></p>' || content === '') {
+                onChange('');
+                setShowPlaceholder(true);
+              }
+            }
+          }}
+        />
+        {/* Placeholder overlay */}
+        {showPlaceholder && (
+          <div className="absolute top-0 left-0 p-4 text-sm text-slate-400 pointer-events-none select-none">
+            {placeholder}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

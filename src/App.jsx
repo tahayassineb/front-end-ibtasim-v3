@@ -126,7 +126,6 @@ function AppContent() {
             
             {/* Verification */}
             <Route path="/admin/verification" element={<AdminDonations />} />
-            <Route path="/admin/verify/:id" element={<AdminDonations />} />
             
             {/* Settings */}
             <Route path="/admin/settings" element={<AdminSettings />} />

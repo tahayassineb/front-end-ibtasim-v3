@@ -184,7 +184,7 @@ export const AppProvider = ({ children }) => {
   // Language State
   const [language, setLanguage] = useState(() => {
     const saved = localStorage.getItem('app-language');
-    return saved || 'fr';
+    return saved || 'ar';
   });
 
   // User Authentication State

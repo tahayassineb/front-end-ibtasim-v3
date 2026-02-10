@@ -3,11 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Card from '../components/Card';
 import Button from '../components/Button';
-import RichTextEditor from '../components/RichTextEditor';
 
 // ============================================
 // ADMIN PROJECT FORM PAGE - Create/Edit Projects
-// With Rich Text Editor, Gallery Management, Featured Toggle
+// With Simple Text Inputs, Gallery Management, Featured Toggle
 // ============================================
 
 const AdminProjectForm = () => {
@@ -169,9 +168,9 @@ const AdminProjectForm = () => {
       ar: 'توفير حلول مياه نظيفة مستدامة للمجتمعات الريفية في منطقة جبال الأطلس.',
     },
     description: {
-      en: '<p>In the heart of the Atlas Mountains, access to clean water remains a critical challenge for many communities. This project aims to provide sustainable water solutions through modern infrastructure while respecting traditional practices.</p><p><strong>Our Approach:</strong></p><ul><li>Community-led planning and implementation</li><li>Sustainable technology adapted to local conditions</li><li>Long-term maintenance and training programs</li></ul>',
-      fr: '<p>Au cœur des montagnes de l\'Atlas, l\'accès à l\'eau potable reste un défi critique pour de nombreuses communautés. Ce projet vise à fournir des solutions durables grâce à une infrastructure moderne tout en respectant les pratiques traditionnelles.</p><p><strong>Notre Approche:</strong></p><ul><li>Planification et mise en œuvre dirigées par la communauté</li><li>Technologie durable adaptée aux conditions locales</li><li>Programmes de maintenance et de formation à long terme</li></ul>',
-      ar: '<p>في قلب جبال الأطلس، يظل الوصول إلى المياه النظيفة تحدياً حرجاً للعديد من المجتمعات. يهدف هذا المشروع إلى توفير حلول مياه مستدامة من خلال بنية تحتية حديثة مع احترام الممارسات التقليدية.</p><p><strong>نهجنا:</strong></p><ul><li>التخطيط والتنفيذ بقيادة المجتمع</li><li>تقنية مستدامة مكيفة مع الظروف المحلية</li><li>برامج الصيانة والتدريب على المدى الطويل</li></ul>',
+      en: 'In the heart of the Atlas Mountains, access to clean water remains a critical challenge for many communities. This project aims to provide sustainable water solutions through modern infrastructure while respecting traditional practices.\n\nOur Approach:\n• Community-led planning and implementation\n• Sustainable technology adapted to local conditions\n• Long-term maintenance and training programs',
+      fr: 'Au cœur des montagnes de l\'Atlas, l\'accès à l\'eau potable reste un défi critique pour de nombreuses communautés. Ce projet vise à fournir des solutions durables grâce à une infrastructure moderne tout en respectant les pratiques traditionnelles.\n\nNotre Approche:\n• Planification et mise en œuvre dirigées par la communauté\n• Technologie durable adaptée aux conditions locales\n• Programmes de maintenance et de formation à long terme',
+      ar: 'في قلب جبال الأطلس، يظل الوصول إلى المياه النظيفة تحدياً حرجاً للعديد من المجتمعات. يهدف هذا المشروع إلى توفير حلول مياه مستدامة من خلال بنية تحتية حديثة مع احترام الممارسات التقليدية.\n\nنهجنا:\n• التخطيط والتنفيذ بقيادة المجتمع\n• تقنية مستدامة مكيفة مع الظروف المحلية\n• برامج الصيانة والتدريب على المدى الطويل',
     },
     goal: 25000,
     currency: 'MAD',
@@ -184,9 +183,9 @@ const AdminProjectForm = () => {
       'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=400',
     ],
     impact: {
-      en: '<p>This project will provide sustainable clean water access to over 500 families in rural communities.</p>',
-      fr: '<p>Ce projet fournira un accès durable à l\'eau potable à plus de 500 familles dans les communautés rurales.</p>',
-      ar: '<p>سيوفر هذا المشروع وصولاً مستداماً إلى المياه النظيفة لأكثر من 500 عائلة في المجتمعات الريفية.</p>',
+      en: 'This project will provide sustainable clean water access to over 500 families in rural communities.',
+      fr: 'Ce projet fournira un accès durable à l\'eau potable à plus de 500 familles dans les communautés rurales.',
+      ar: 'سيوفر هذا المشروع وصولاً مستداماً إلى المياه النظيفة لأكثر من 500 عائلة في المجتمعات الريفية.',
     },
     impactMetrics: [
       { label: 'Families Served', value: '500' },
@@ -578,14 +577,15 @@ const AdminProjectForm = () => {
               />
             </div>
 
-            {/* Description - Rich Text Editor (Word-like) */}
+            {/* Description - Simple Textarea */}
             <div>
               <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.description}</label>
-              <RichTextEditor
+              <textarea
                 value={formData.description[activeTab]}
-                onChange={(value) => handleDescriptionChange(value)}
+                onChange={(e) => handleDescriptionChange(e.target.value)}
                 placeholder="Enter description here..."
                 rows={8}
+                className="w-full bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 resize-y"
               />
             </div>
           </div>
@@ -773,14 +773,15 @@ const AdminProjectForm = () => {
           </div>
 
           <div className="space-y-5">
-            {/* Impact Description - Rich Text Editor (Word-like) */}
+            {/* Impact Description - Simple Textarea */}
             <div>
               <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.impactDesc}</label>
-              <RichTextEditor
+              <textarea
                 value={formData.impact[activeTab]}
-                onChange={(value) => handleImpactChange(value)}
+                onChange={(e) => handleImpactChange(e.target.value)}
                 placeholder="Describe the impact..."
                 rows={5}
+                className="w-full bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 resize-y"
               />
             </div>
 
