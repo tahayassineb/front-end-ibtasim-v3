@@ -14,6 +14,7 @@ export { default as Badge, StatusBadge, CountBadge, AvatarBadge, ChipBadge } fro
 export { default as ProgressBar, CircularProgress, StepperProgress, SegmentedProgress, GoalProgress } from './ProgressBar';
 export { default as Input } from './Input';
 export { default as Select } from './Select';
+export { default as RichTextEditor } from './RichTextEditor';
 
 // Re-export UI components from ui folder
 export * from './ui';

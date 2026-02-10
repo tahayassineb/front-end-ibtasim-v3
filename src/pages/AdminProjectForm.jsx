@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Card from '../components/Card';
 import Button from '../components/Button';
-// Note: React-Quill removed - using textarea instead for React 19 compatibility
+import RichTextEditor from '../components/RichTextEditor';
 
 // ============================================
 // ADMIN PROJECT FORM PAGE - Create/Edit Projects
@@ -578,21 +578,15 @@ const AdminProjectForm = () => {
               />
             </div>
 
-            {/* Description - Rich Text Editor replaced with Textarea for React 19 compatibility */}
+            {/* Description - Rich Text Editor (Word-like) */}
             <div>
               <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.description}</label>
-              <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden p-3">
-                <div className="flex gap-2 mb-2 pb-2 border-b border-slate-200 dark:border-slate-700">
-                  <span className="text-xs text-slate-400">HTML tags supported: {'<p>'}, {'<strong>'}, {'<ul>'}, {'<li>'}, etc.</span>
-                </div>
-                <textarea
-                  value={formData.description[activeTab]}
-                  onChange={(e) => handleDescriptionChange(e.target.value)}
-                  rows={8}
-                  className="w-full bg-transparent text-sm py-2 px-1 text-text-primary dark:text-white focus:outline-none resize-none font-mono"
-                  placeholder="<p>Enter description here...</p>"
-                />
-              </div>
+              <RichTextEditor
+                value={formData.description[activeTab]}
+                onChange={(value) => handleDescriptionChange(value)}
+                placeholder="Enter description here..."
+                rows={8}
+              />
             </div>
           </div>
         </Card>
@@ -779,21 +773,15 @@ const AdminProjectForm = () => {
           </div>
 
           <div className="space-y-5">
-            {/* Impact Description - Rich Text Editor replaced with Textarea for React 19 compatibility */}
+            {/* Impact Description - Rich Text Editor (Word-like) */}
             <div>
               <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.impactDesc}</label>
-              <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden p-3">
-                <div className="flex gap-2 mb-2 pb-2 border-b border-slate-200 dark:border-slate-700">
-                  <span className="text-xs text-slate-400">HTML tags supported: {'<p>'}, {'<strong>'}, {'<ul>'}, {'<li>'}, etc.</span>
-                </div>
-                <textarea
-                  value={formData.impact[activeTab]}
-                  onChange={(e) => handleImpactChange(e.target.value)}
-                  rows={5}
-                  className="w-full bg-transparent text-sm py-2 px-1 text-text-primary dark:text-white focus:outline-none resize-none font-mono"
-                  placeholder="<p>Describe the impact...</p>"
-                />
-              </div>
+              <RichTextEditor
+                value={formData.impact[activeTab]}
+                onChange={(value) => handleImpactChange(value)}
+                placeholder="Describe the impact..."
+                rows={5}
+              />
             </div>
 
             {/* Impact Metrics */}
