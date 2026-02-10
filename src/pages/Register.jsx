@@ -9,6 +9,30 @@ import CountryCodeSelector, { validatePhoneByCountry, formatPhoneForDisplay } fr
 // Matching DonationFlow auth design
 // ============================================
 
+// Header Component - matching DonationFlow
+const Header = ({ navigate, isRTL, onBack, showBack = true }) => {
+  return (
+    <div className="flex items-center p-4 pb-2 justify-between sticky top-0 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md z-10">
+      {showBack ? (
+        <button
+          onClick={onBack || (() => navigate('/'))}
+          className="text-gray-900 dark:text-white flex size-10 shrink-0 items-center justify-center cursor-pointer active:scale-90 transition-transform"
+        >
+          <span className="material-symbols-outlined">
+            {isRTL ? 'chevron_right' : 'chevron_left'}
+          </span>
+        </button>
+      ) : (
+        <div className="size-10"></div>
+      )}
+      <h2 className="text-gray-900 dark:text-white text-lg font-bold leading-tight flex-1 text-center mr-[-40px]">
+        {/* Empty title or could add register title */}
+      </h2>
+      <div className="size-10"></div>
+    </div>
+  );
+};
+
 const Register = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -54,7 +78,7 @@ const Register = () => {
       passwordLabel: 'كلمة المرور',
       passwordPlaceholder: '••••••••',
       confirmPasswordLabel: 'تأكيد كلمة المرور',
-      registerButton: 'إنشاء حساب',
+      registerButton: 'متابعة',
       haveAccount: 'لديك حساب؟',
       loginNow: 'سجل الدخول',
       enterOtp: 'أدخل رمز التحقق',
@@ -193,9 +217,7 @@ const Register = () => {
   };
   
   // Handle initial registration submit
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    
+  const handleRegister = async () => {
     const newErrors = {};
     if (!fullName.trim()) {
       newErrors.fullName = tx.fullNameError;
@@ -249,250 +271,253 @@ const Register = () => {
     navigate(returnUrl, { replace: true });
   };
   
-  // OTP Screen
-  if (otpSent) {
-    const isOtpComplete = otpValues.every(v => v.length === 1);
-    
-    return (
-      <div className="min-h-screen bg-background-light dark:bg-background-dark flex flex-col">
-        {/* Header */}
-        <header className="px-6 pt-12 pb-4">
-          <button 
-            onClick={() => setOtpSent(false)}
-            className="inline-flex items-center text-gray-500 hover:text-primary transition-colors"
-          >
-            <span className="material-symbols-outlined">arrow_back</span>
-          </button>
-        </header>
-        
-        {/* OTP Content */}
-        <div className="flex-1 flex flex-col items-center px-6 pt-6 pb-8">
-          <div className="mb-8 p-4 bg-primary/10 rounded-full">
-            <span className="material-symbols-outlined text-primary text-5xl">phonelink_ring</span>
-          </div>
-          
-          <h1 className="text-gray-900 dark:text-white text-2xl font-bold text-center pb-3">
-            {tx.enterOtp}
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-base text-center max-w-xs">
-            {tx.otpSent} <span className="font-bold text-primary" dir="ltr">{countryCode} {formatPhoneDisplay(phone)}</span>
-          </p>
-          
-          <div className="mt-10 w-full max-w-sm">
-            <fieldset className="flex justify-between gap-2 sm:gap-4" dir="ltr">
-              {[0, 1, 2, 3].map((index) => (
-                <input
-                  key={index}
-                  ref={otpRefs[index]}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={otpValues[index]}
-                  onChange={(e) => handleOtpChange(index, e.target.value)}
-                  onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                  className="flex h-14 w-12 sm:w-14 text-center text-xl font-bold bg-white dark:bg-gray-800 border-0 rounded-xl shadow-lg shadow-primary/5 focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
-                  placeholder="-"
-                />
-              ))}
-            </fieldset>
-          </div>
-          
-          <div className="mt-10 flex flex-col items-center gap-4 w-full max-w-sm">
-            {otpTimer > 0 ? (
-              <div className="flex items-center gap-3 py-2 px-6 bg-primary/5 dark:bg-primary/10 rounded-full border border-primary/10">
-                <span className="material-symbols-outlined text-primary text-sm">schedule</span>
-                <p className="text-primary text-sm font-bold tracking-widest" dir="ltr">
-                  {formatTime(otpTimer)}
-                </p>
-              </div>
-            ) : (
-              <button
-                onClick={() => setOtpTimer(120)}
-                className="text-primary font-bold hover:underline"
-              >
-                {tx.resendCode}
-              </button>
-            )}
-            
-            <Button
-              onClick={handleOtpVerify}
-              disabled={!isOtpComplete || isLoading}
-              fullWidth
-              size="xl"
-              loading={isLoading}
-              className="mt-6"
-            >
-              {tx.continueToAccount}
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const canSubmit = fullName && email && phone && password && confirmPassword;
+  const isOtpComplete = otpValues.every(v => v.length === 1);
   
-  // Registration Form
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark flex flex-col">
-      {/* Header */}
-      <header className="px-6 pt-12 pb-4">
-        <Link to="/" className="inline-flex items-center text-gray-500 hover:text-primary transition-colors">
-          <span className="material-symbols-outlined">arrow_back</span>
-        </Link>
-      </header>
-      
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col px-6 pt-6 pb-8">
-        <h1 className="text-gray-900 dark:text-white text-2xl font-bold text-center mb-2">
-          {tx.welcome}
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
-          {tx.subtitle}
-        </p>
+    <div className="min-h-screen bg-background-light dark:bg-background-dark">
+      <div className="relative flex h-full min-h-screen w-full max-w-[430px] mx-auto flex-col bg-background-light dark:bg-background-dark shadow-2xl overflow-hidden">
+        {/* Header */}
+        <Header 
+          navigate={navigate} 
+          isRTL={isRTL} 
+          onBack={otpSent ? () => setOtpSent(false) : undefined}
+        />
         
-        <form onSubmit={handleRegister} className="space-y-4 flex-1">
-          {/* Full Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {tx.fullNameLabel}
-            </label>
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => {
-                setFullName(e.target.value);
-                if (errors.fullName) setErrors(prev => ({ ...prev, fullName: null }));
-              }}
-              placeholder={tx.fullNamePlaceholder}
-              className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
-            />
-            {errors.fullName && <p className="text-error text-xs mt-1">{errors.fullName}</p>}
-          </div>
-          
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {tx.emailLabel}
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (errors.email) setErrors(prev => ({ ...prev, email: null }));
-              }}
-              placeholder={tx.emailPlaceholder}
-              className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
-              dir="ltr"
-            />
-            {errors.email && <p className="text-error text-xs mt-1">{errors.email}</p>}
-          </div>
-          
-          {/* Phone Input with CountryCodeSelector */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {tx.phoneLabel}
-            </label>
-            <div className="flex gap-2">
-              <CountryCodeSelector
-                value={countryCode}
-                onChange={setCountryCode}
-                lang={lang}
-                disabled={isLoading}
-              />
-              <input
-                ref={phoneInputRef}
-                type="tel"
-                value={phone}
-                onChange={handlePhoneChange}
-                placeholder={countryCode === '+212' ? tx.phonePlaceholder : 'Phone number'}
-                maxLength={15}
-                className="flex-1 h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
-                dir="ltr"
-                inputMode="numeric"
-                pattern="[0-9]*"
-              />
+        {/* OTP Screen */}
+        {otpSent ? (
+          <>
+            <div className="flex-1 flex flex-col items-center px-6 pt-10 pb-8">
+              <div className="mb-8 p-4 bg-primary/10 rounded-full">
+                <span className="material-symbols-outlined text-primary text-5xl">phonelink_ring</span>
+              </div>
+              
+              <h1 className="text-gray-900 dark:text-white text-2xl font-bold text-center pb-3">
+                {tx.enterOtp}
+              </h1>
+              <p className="text-gray-500 dark:text-gray-400 text-base text-center max-w-xs">
+                {tx.otpSent} <span className="font-bold text-primary" dir="ltr">{countryCode} {formatPhoneDisplay(phone)}</span>
+              </p>
+              
+              <div className="mt-10 w-full max-w-sm">
+                <fieldset className="flex justify-between gap-2 sm:gap-4" dir="ltr">
+                  {[0, 1, 2, 3].map((index) => (
+                    <input
+                      key={index}
+                      ref={otpRefs[index]}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={otpValues[index]}
+                      onChange={(e) => handleOtpChange(index, e.target.value)}
+                      onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                      className="flex h-14 w-12 sm:w-14 text-center text-xl font-bold bg-white dark:bg-gray-800 border-0 rounded-xl shadow-lg shadow-primary/5 focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
+                      placeholder="-"
+                    />
+                  ))}
+                </fieldset>
+              </div>
+              
+              <div className="mt-10 flex flex-col items-center gap-4 w-full max-w-sm">
+                {otpTimer > 0 ? (
+                  <div className="flex items-center gap-3 py-2 px-6 bg-primary/5 dark:bg-primary/10 rounded-full border border-primary/10">
+                    <span className="material-symbols-outlined text-primary text-sm">schedule</span>
+                    <p className="text-primary text-sm font-bold tracking-widest" dir="ltr">
+                      {formatTime(otpTimer)}
+                    </p>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setOtpTimer(120)}
+                    className="text-primary font-bold hover:underline"
+                  >
+                    {tx.resendCode}
+                  </button>
+                )}
+              </div>
             </div>
-            {errors.phone && <p className="text-error text-xs mt-1">{errors.phone}</p>}
-          </div>
-          
-          {/* Password Input */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {tx.passwordLabel}
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (errors.password) setErrors(prev => ({ ...prev, password: null }));
-                }}
-                placeholder={tx.passwordPlaceholder}
-                className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 pr-12 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
-              />
+            
+            {/* Bottom Action for OTP */}
+            <div className="p-6 pb-10 bg-white/50 dark:bg-gray-800/50 backdrop-blur-md">
+              <Button
+                onClick={handleOtpVerify}
+                disabled={!isOtpComplete || isLoading}
+                fullWidth
+                size="xl"
+                loading={isLoading}
+              >
+                {tx.continueToAccount}
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Registration Form */}
+            <div className="flex-1 flex flex-col px-6 pt-6 pb-8">
+              <h1 className="text-gray-900 dark:text-white text-2xl font-bold text-center mb-2">
+                {tx.welcome}
+              </h1>
+              <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
+                {tx.subtitle}
+              </p>
+              
+              <form className="space-y-4 flex-1">
+                {/* Full Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {tx.fullNameLabel}
+                  </label>
+                  <input
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => {
+                      setFullName(e.target.value);
+                      if (errors.fullName) setErrors(prev => ({ ...prev, fullName: null }));
+                    }}
+                    placeholder={tx.fullNamePlaceholder}
+                    className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
+                  />
+                  {errors.fullName && <p className="text-error text-xs mt-1">{errors.fullName}</p>}
+                </div>
+                
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {tx.emailLabel}
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (errors.email) setErrors(prev => ({ ...prev, email: null }));
+                    }}
+                    placeholder={tx.emailPlaceholder}
+                    className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
+                    dir="ltr"
+                  />
+                  {errors.email && <p className="text-error text-xs mt-1">{errors.email}</p>}
+                </div>
+                
+                {/* Phone Input with CountryCodeSelector */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {tx.phoneLabel}
+                  </label>
+                  <div className="flex gap-2">
+                    <CountryCodeSelector
+                      value={countryCode}
+                      onChange={setCountryCode}
+                      lang={lang}
+                      disabled={isLoading}
+                    />
+                    <input
+                      ref={phoneInputRef}
+                      type="tel"
+                      value={phone}
+                      onChange={handlePhoneChange}
+                      placeholder={countryCode === '+212' ? tx.phonePlaceholder : 'Phone number'}
+                      maxLength={15}
+                      className="flex-1 h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
+                      dir="ltr"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                    />
+                  </div>
+                  {errors.phone && <p className="text-error text-xs mt-1">{errors.phone}</p>}
+                </div>
+                
+                {/* Password Input */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {tx.passwordLabel}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (errors.password) setErrors(prev => ({ ...prev, password: null }));
+                      }}
+                      placeholder={tx.passwordPlaceholder}
+                      className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 pr-12 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <span className="material-symbols-outlined">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                    </button>
+                  </div>
+                  {errors.password && <p className="text-error text-xs mt-1">{errors.password}</p>}
+                </div>
+                
+                {/* Confirm Password Input */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {tx.confirmPasswordLabel}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: null }));
+                      }}
+                      placeholder={tx.passwordPlaceholder}
+                      className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 pr-12 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <span className="material-symbols-outlined">{showConfirmPassword ? 'visibility_off' : 'visibility'}</span>
+                    </button>
+                  </div>
+                  {errors.confirmPassword && <p className="text-error text-xs mt-1">{errors.confirmPassword}</p>}
+                </div>
+              </form>
+            </div>
+            
+            {/* Bottom Action - Matching DonationFlow */}
+            <div className="p-6 pb-10 bg-white/50 dark:bg-gray-800/50 backdrop-blur-md">
+              <Button
+                onClick={handleRegister}
+                disabled={!canSubmit || isLoading}
+                fullWidth
+                size="xl"
+                loading={isLoading}
+              >
+                {tx.registerButton}
+              </Button>
+              
+              {/* Login Link */}
+              <div className="mt-4 text-center">
+                <span className="text-gray-500 dark:text-gray-400 text-sm">{tx.haveAccount} </span>
+                <Link 
+                  to="/login" 
+                  state={{ returnUrl }}
+                  className="text-primary text-sm font-bold hover:underline"
+                >
+                  {tx.loginNow}
+                </Link>
+              </div>
+              
+              {/* Continue as Guest */}
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                onClick={() => navigate('/', { replace: true })}
+                className="w-full mt-4 text-primary text-sm font-medium hover:underline"
               >
-                <span className="material-symbols-outlined">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                {tx.continueAsGuest}
               </button>
             </div>
-            {errors.password && <p className="text-error text-xs mt-1">{errors.password}</p>}
-          </div>
-          
-          {/* Confirm Password Input */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {tx.confirmPasswordLabel}
-            </label>
-            <div className="relative">
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={(e) => {
-                  setConfirmPassword(e.target.value);
-                  if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: null }));
-                }}
-                placeholder={tx.passwordPlaceholder}
-                className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 pr-12 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <span className="material-symbols-outlined">{showConfirmPassword ? 'visibility_off' : 'visibility'}</span>
-              </button>
-            </div>
-            {errors.confirmPassword && <p className="text-error text-xs mt-1">{errors.confirmPassword}</p>}
-          </div>
-          
-          {/* Submit Button */}
-          <div className="pt-4">
-            <Button
-              type="submit"
-              fullWidth
-              size="xl"
-              loading={isLoading}
-            >
-              {tx.registerButton}
-            </Button>
-          </div>
-        </form>
-        
-        {/* Login Link */}
-        <div className="mt-6 text-center">
-          <span className="text-gray-500 dark:text-gray-400 text-sm">{tx.haveAccount} </span>
-          <Link 
-            to="/login" 
-            state={{ returnUrl }}
-            className="text-primary text-sm font-bold hover:underline"
-          >
-            {tx.loginNow}
-          </Link>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );

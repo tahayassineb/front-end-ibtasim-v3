@@ -9,6 +9,26 @@ import CountryCodeSelector, { validatePhoneByCountry, formatPhoneForDisplay } fr
 // Matching DonationFlow auth design
 // ============================================
 
+// Header Component - matching DonationFlow
+const Header = ({ navigate, isRTL }) => {
+  return (
+    <div className="flex items-center p-4 pb-2 justify-between sticky top-0 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md z-10">
+      <button
+        onClick={() => navigate('/')}
+        className="text-gray-900 dark:text-white flex size-10 shrink-0 items-center justify-center cursor-pointer active:scale-90 transition-transform"
+      >
+        <span className="material-symbols-outlined">
+          {isRTL ? 'chevron_right' : 'chevron_left'}
+        </span>
+      </button>
+      <h2 className="text-gray-900 dark:text-white text-lg font-bold leading-tight flex-1 text-center mr-[-40px]">
+        {/* Empty title or could add login title */}
+      </h2>
+      <div className="size-10"></div>
+    </div>
+  );
+};
+
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -159,115 +179,114 @@ const Login = () => {
   };
   
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark flex flex-col">
-      {/* Header */}
-      <header className="px-6 pt-12 pb-4">
-        <Link to="/" className="inline-flex items-center text-gray-500 hover:text-primary transition-colors">
-          <span className="material-symbols-outlined">arrow_back</span>
-        </Link>
-      </header>
-      
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col px-6 pt-6 pb-8">
-        <h1 className="text-gray-900 dark:text-white text-2xl font-bold text-center mb-2">
-          {tx.welcome}
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
-          {tx.subtitle}
-        </p>
+    <div className="min-h-screen bg-background-light dark:bg-background-dark">
+      <div className="relative flex h-full min-h-screen w-full max-w-[430px] mx-auto flex-col bg-background-light dark:bg-background-dark shadow-2xl overflow-hidden">
+        {/* Header */}
+        <Header navigate={navigate} isRTL={isRTL} />
         
-        <form onSubmit={handleSubmit} className="space-y-4 flex-1">
-          {/* Phone Input with CountryCodeSelector */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {tx.phoneLabel}
-            </label>
-            <div className="flex gap-2">
-              <CountryCodeSelector
-                value={countryCode}
-                onChange={setCountryCode}
-                lang={lang}
-                disabled={isLoading}
-              />
-              <input
-                ref={phoneInputRef}
-                type="tel"
-                value={phone}
-                onChange={handlePhoneChange}
-                placeholder={countryCode === '+212' ? tx.phonePlaceholder : 'Phone number'}
-                maxLength={15}
-                className="flex-1 h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
-                dir="ltr"
-                inputMode="numeric"
-                pattern="[0-9]*"
-              />
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col px-6 pt-6 pb-8">
+          <h1 className="text-gray-900 dark:text-white text-2xl font-bold text-center mb-2">
+            {tx.welcome}
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
+            {tx.subtitle}
+          </p>
+          
+          <form className="space-y-4 flex-1">
+            {/* Phone Input with CountryCodeSelector */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {tx.phoneLabel}
+              </label>
+              <div className="flex gap-2">
+                <CountryCodeSelector
+                  value={countryCode}
+                  onChange={setCountryCode}
+                  lang={lang}
+                  disabled={isLoading}
+                />
+                <input
+                  ref={phoneInputRef}
+                  type="tel"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  placeholder={countryCode === '+212' ? tx.phonePlaceholder : 'Phone number'}
+                  maxLength={15}
+                  className="flex-1 h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
+                  dir="ltr"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                />
+              </div>
+              {errors.phone && <p className="text-error text-xs mt-1">{errors.phone}</p>}
             </div>
-            {errors.phone && <p className="text-error text-xs mt-1">{errors.phone}</p>}
-          </div>
-          
-          {/* Password Input */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {tx.passwordLabel}
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={handlePasswordChange}
-                placeholder={tx.passwordPlaceholder}
-                className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 pr-12 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <span className="material-symbols-outlined">{showPassword ? 'visibility_off' : 'visibility'}</span>
-              </button>
+            
+            {/* Password Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {tx.passwordLabel}
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={handlePasswordChange}
+                  placeholder={tx.passwordPlaceholder}
+                  className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 pr-12 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <span className="material-symbols-outlined">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                </button>
+              </div>
+              {errors.password && <p className="text-error text-xs mt-1">{errors.password}</p>}
             </div>
-            {errors.password && <p className="text-error text-xs mt-1">{errors.password}</p>}
-          </div>
+            
+            {/* Forgot Password */}
+            <div className="text-right">
+              <Link to="/forgot-password" className="text-primary text-sm font-medium hover:underline">
+                {tx.forgotPassword}
+              </Link>
+            </div>
+          </form>
+        </div>
+        
+        {/* Bottom Action - Matching DonationFlow */}
+        <div className="p-6 pb-10 bg-white/50 dark:bg-gray-800/50 backdrop-blur-md">
+          <Button
+            onClick={handleSubmit}
+            disabled={!phone || !password || isLoading}
+            fullWidth
+            size="xl"
+            loading={isLoading}
+          >
+            {tx.loginButton}
+          </Button>
           
-          {/* Forgot Password */}
-          <div className="text-right">
-            <Link to="/forgot-password" className="text-primary text-sm font-medium hover:underline">
-              {tx.forgotPassword}
-            </Link>
-          </div>
-          
-          {/* Submit Button */}
-          <div className="pt-4">
-            <Button
-              type="submit"
-              fullWidth
-              size="xl"
-              loading={isLoading}
+          {/* Register Link */}
+          <div className="mt-4 text-center">
+            <span className="text-gray-500 dark:text-gray-400 text-sm">{tx.noAccount} </span>
+            <Link 
+              to="/register" 
+              state={{ returnUrl }}
+              className="text-primary text-sm font-bold hover:underline"
             >
-              {tx.loginButton}
-            </Button>
+              {tx.registerNow}
+            </Link>
           </div>
           
           {/* Continue as Guest */}
           <button
             type="button"
             onClick={() => navigate('/', { replace: true })}
-            className="w-full text-primary text-sm font-medium hover:underline"
+            className="w-full mt-4 text-primary text-sm font-medium hover:underline"
           >
             {tx.continueAsGuest}
           </button>
-        </form>
-        
-        {/* Register Link */}
-        <div className="mt-6 text-center">
-          <span className="text-gray-500 dark:text-gray-400 text-sm">{tx.noAccount} </span>
-          <Link 
-            to="/register" 
-            state={{ returnUrl }}
-            className="text-primary text-sm font-bold hover:underline"
-          >
-            {tx.registerNow}
-          </Link>
         </div>
       </div>
     </div>
