@@ -410,16 +410,34 @@ const AdminProjectForm = () => {
     // Save to localStorage
     const savedProjects = JSON.parse(localStorage.getItem('admin_projects') || '[]');
     
-    // Prepare project data
+    // Get current language title for display
+    const currentLang = currentLanguage?.code || 'en';
+    const titleString = formData.title?.[currentLang] || formData.title?.en || 'Untitled Project';
+    const shortDescString = formData.shortDescription?.[currentLang] || formData.shortDescription?.en || '';
+    
+    // Prepare project data - flatten the structure for AdminProjects compatibility
     const projectData = {
-      ...formData,
       id: isEditMode ? parseInt(id, 10) : Date.now(),
-      status: formData.status || 'draft',
+      title: titleString,
+      title_i18n: formData.title,
       category: formData.category || 'General',
+      status: formData.status || 'draft',
+      featured: formData.featured || false,
+      goal: parseFloat(formData.goal) || 0,
+      currency: formData.currency || 'MAD',
       raised: isEditMode ? (savedProjects.find(p => String(p.id) === String(id))?.raised || 0) : 0,
       donors: isEditMode ? (savedProjects.find(p => String(p.id) === String(id))?.donors || 0) : 0,
       daysLeft: isEditMode ? (savedProjects.find(p => String(p.id) === String(id))?.daysLeft || 30) : 30,
       image: formData.mainImage,
+      shortDescription: shortDescString,
+      shortDescription_i18n: formData.shortDescription,
+      description: formData.description,
+      visibility: formData.visibility || 'public',
+      mainImage: formData.mainImage,
+      gallery: formData.gallery || [],
+      impact: formData.impact,
+      impactMetrics: formData.impactMetrics || [],
+      updates: formData.updates || [],
     };
     
     let updatedProjects;

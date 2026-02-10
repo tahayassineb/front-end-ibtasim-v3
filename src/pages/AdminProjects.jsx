@@ -9,6 +9,15 @@ import Badge from '../components/Badge';
 // With Featured Indicator and Working Buttons
 // ============================================
 
+// Helper function to safely get string value from potentially i18n object
+const getStringValue = (value, currentLang = 'en') => {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object' && value !== null) {
+    return value[currentLang] || value.en || value.fr || value.ar || '';
+  }
+  return String(value || '');
+};
+
 const AdminProjects = () => {
   const { currentLanguage, showToast, isDarkMode } = useApp();
   const navigate = useNavigate();
@@ -218,10 +227,12 @@ const AdminProjects = () => {
     localStorage.setItem('admin_projects', JSON.stringify(projects));
   }, [projects]);
 
-  // Filter projects
+  // Filter projects with safe string handling
   const filteredProjects = projects.filter(project => {
-    const matchesSearch = project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         project.category.toLowerCase().includes(searchQuery.toLowerCase());
+    const title = getStringValue(project.title, currentLanguage?.code).toLowerCase();
+    const category = getStringValue(project.category, currentLanguage?.code).toLowerCase();
+    const matchesSearch = title.includes(searchQuery.toLowerCase()) ||
+                         category.includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -366,8 +377,8 @@ const AdminProjects = () => {
               {/* Image */}
               <div className="relative h-48">
                 <img
-                  src={project.image}
-                  alt={project.title}
+                  src={project.image || project.mainImage || 'https://via.placeholder.com/400x200?text=No+Image'}
+                  alt={getStringValue(project.title, currentLanguage?.code)}
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute top-3 left-3">
@@ -383,29 +394,29 @@ const AdminProjects = () => {
                   </div>
                 )}
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
-                  <span className="text-white/80 text-sm">{project.category}</span>
+                  <span className="text-white/80 text-sm">{getStringValue(project.category, currentLanguage?.code)}</span>
                 </div>
               </div>
 
               {/* Content */}
               <div className="p-5">
-                <h3 className="font-bold text-text-primary dark:text-white text-lg mb-3">{project.title}</h3>
+                <h3 className="font-bold text-text-primary dark:text-white text-lg mb-3">{getStringValue(project.title, currentLanguage?.code)}</h3>
 
                 {/* Progress */}
                 <div className="mb-4">
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-slate-500 dark:text-slate-400">{t.raised}</span>
-                    <span className="font-bold text-primary">{project.raised.toLocaleString()} DH</span>
+                    <span className="font-bold text-primary">{(project.raised || 0).toLocaleString()} DH</span>
                   </div>
                   <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-primary rounded-full transition-all"
-                      style={{ width: `${Math.min((project.raised / project.goal) * 100, 100)}%` }}
+                      style={{ width: `${Math.min(((project.raised || 0) / (project.goal || 1)) * 100, 100)}%` }}
                     />
                   </div>
                   <div className="flex justify-between text-xs text-slate-400 mt-1">
-                    <span>{Math.round((project.raised / project.goal) * 100)}% {t.goal}</span>
-                    <span>{project.goal.toLocaleString()} DH</span>
+                    <span>{Math.round(((project.raised || 0) / (project.goal || 1)) * 100)}% {t.goal}</span>
+                    <span>{(project.goal || 0).toLocaleString()} DH</span>
                   </div>
                 </div>
 
@@ -413,9 +424,9 @@ const AdminProjects = () => {
                 <div className="flex items-center justify-between text-sm mb-4">
                   <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
                     <span className="material-symbols-outlined text-sm">people</span>
-                    <span>{project.donors} {t.donors}</span>
+                    <span>{project.donors || 0} {t.donors}</span>
                   </div>
-                  {project.daysLeft > 0 && (
+                  {(project.daysLeft || 0) > 0 && (
                     <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
                       <span className="material-symbols-outlined text-sm">schedule</span>
                       <span>{project.daysLeft} {t.daysLeft}</span>
@@ -490,8 +501,8 @@ const AdminProjects = () => {
                       <div className="flex items-center gap-3">
                         <div className="relative">
                           <img
-                            src={project.image}
-                            alt={project.title}
+                            src={project.image || project.mainImage || 'https://via.placeholder.com/48?text=No+Image'}
+                            alt={getStringValue(project.title, currentLanguage?.code)}
                             className="w-12 h-12 rounded-lg object-cover"
                           />
                           {project.featured && (
@@ -501,8 +512,8 @@ const AdminProjects = () => {
                           )}
                         </div>
                         <div>
-                          <p className="font-medium text-text-primary dark:text-white">{project.title}</p>
-                          <p className="text-sm text-slate-500 dark:text-slate-400">{project.category}</p>
+                          <p className="font-medium text-text-primary dark:text-white">{getStringValue(project.title, currentLanguage?.code)}</p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">{getStringValue(project.category, currentLanguage?.code)}</p>
                         </div>
                       </div>
                     </td>
@@ -514,17 +525,17 @@ const AdminProjects = () => {
                     <td className="px-6 py-4">
                       <div className="w-32">
                         <div className="flex justify-between text-sm mb-1">
-                          <span className="text-slate-500">{Math.round((project.raised / project.goal) * 100)}%</span>
+                          <span className="text-slate-500">{Math.round(((project.raised || 0) / (project.goal || 1)) * 100)}%</span>
                         </div>
                         <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                           <div
                             className="h-full bg-primary rounded-full"
-                            style={{ width: `${Math.min((project.raised / project.goal) * 100, 100)}%` }}
+                            style={{ width: `${Math.min(((project.raised || 0) / (project.goal || 1)) * 100, 100)}%` }}
                           />
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-text-primary dark:text-white">{project.donors}</td>
+                    <td className="px-6 py-4 text-sm text-text-primary dark:text-white">{project.donors || 0}</td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
                         <button

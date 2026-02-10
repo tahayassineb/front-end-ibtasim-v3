@@ -6,12 +6,179 @@ import Button from '../components/Button';
 import Badge from '../components/Badge';
 
 // ============================================
+// TEAM MEMBER MODAL COMPONENT
+// ============================================
+const TeamMemberModal = ({ isOpen, onClose, onSave, editingMember = null }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    role: 'Viewer',
+    phone: '',
+    ...editingMember
+  });
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave({
+      ...formData,
+      id: editingMember?.id || Date.now(),
+    });
+    onClose();
+  };
+
+  const roles = ['Super Admin', 'Admin', 'Manager', 'Editor', 'Viewer'];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-700">
+          <h3 className="text-lg font-bold text-text-primary dark:text-white">
+            {editingMember ? 'Edit Team Member' : 'Add Team Member'}
+          </h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            {editingMember ? 'Update team member details' : 'Add a new team member to your organization'}
+          </p>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Name */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+              Full Name *
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="John Doe"
+              className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-text-primary dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+            />
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+              Email Address *
+            </label>
+            <input
+              type="email"
+              required
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="john@espoir.org"
+              className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-text-primary dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+            />
+          </div>
+
+          {/* Role */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+              Role *
+            </label>
+            <select
+              required
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-text-primary dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+            >
+              {roles.map(role => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Phone */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+              Phone (Optional)
+            </label>
+            <input
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              placeholder="+212 5XX-XXXXXX"
+              className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-text-primary dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              fullWidth
+              onClick={onClose}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              fullWidth
+            >
+              {editingMember ? 'Save Changes' : 'Add Member'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ============================================
 // ADMIN SETTINGS PAGE - System Configuration
 // ============================================
 
 const AdminSettings = () => {
-  const { currentLanguage, isDarkMode, toggleDarkMode } = useApp();
+  const { currentLanguage, isDarkMode, toggleDarkMode, showToast } = useApp();
   const [activeTab, setActiveTab] = useState('bank');
+  
+  // Team members state
+  const [teamMembers, setTeamMembers] = useState([
+    { id: 1, name: 'Admin User', email: 'admin1@espoir.org', role: 'Super Admin', phone: '' },
+    { id: 2, name: 'Manager User', email: 'manager@espoir.org', role: 'Manager', phone: '' },
+    { id: 3, name: 'Viewer User', email: 'viewer@espoir.org', role: 'Viewer', phone: '' },
+  ]);
+  
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState(null);
+
+  const handleAddMember = (member) => {
+    if (editingMember) {
+      setTeamMembers(prev => prev.map(m => m.id === member.id ? member : m));
+      showToast('Team member updated successfully', 'success');
+    } else {
+      setTeamMembers(prev => [...prev, member]);
+      showToast('Team member added successfully', 'success');
+    }
+    setEditingMember(null);
+  };
+
+  const handleEditMember = (member) => {
+    setEditingMember(member);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteMember = (id) => {
+    setTeamMembers(prev => prev.filter(m => m.id !== id));
+    showToast('Team member removed', 'info');
+  };
+
+  const handleOpenAddModal = () => {
+    setEditingMember(null);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingMember(null);
+  };
 
   // Translations
   const translations = {
@@ -297,26 +464,59 @@ const AdminSettings = () => {
 
           {activeTab === 'access' && (
             <Card padding="lg">
-              <h3 className="text-text-primary dark:text-white text-xl font-bold mb-6">{t.adminAccess}</h3>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-text-primary dark:text-white text-xl font-bold">{t.adminAccess}</h3>
+                <span className="text-sm text-slate-500">{teamMembers.length} members</span>
+              </div>
               <div className="space-y-4">
-                {['Admin User', 'Manager User', 'Viewer User'].map((user, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                {teamMembers.map((member) => (
+                  <div key={member.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl group">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                         <span className="material-symbols-outlined text-primary">person</span>
                       </div>
                       <div>
-                        <p className="font-medium text-text-primary dark:text-white">{user}</p>
-                        <p className="text-sm text-slate-500">admin{index + 1}@espoir.org</p>
+                        <p className="font-medium text-text-primary dark:text-white">{member.name}</p>
+                        <p className="text-sm text-slate-500">{member.email}</p>
+                        {member.phone && (
+                          <p className="text-xs text-slate-400">{member.phone}</p>
+                        )}
                       </div>
                     </div>
-                    <Badge variant={index === 0 ? 'success' : 'neutral'} size="sm">
-                      {index === 0 ? 'Super Admin' : index === 1 ? 'Manager' : 'Viewer'}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={member.role === 'Super Admin' ? 'success' : member.role === 'Admin' ? 'primary' : 'neutral'}
+                        size="sm"
+                      >
+                        {member.role}
+                      </Badge>
+                      <div className="flex opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleEditMember(member)}
+                          className="p-2 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
+                          title="Edit"
+                        >
+                          <span className="material-symbols-outlined text-sm">edit</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteMember(member.id)}
+                          className="p-2 rounded-lg text-slate-400 hover:text-error hover:bg-error/10 transition-colors"
+                          title="Remove"
+                        >
+                          <span className="material-symbols-outlined text-sm">delete</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 ))}
-                <Button variant="outline" size="lg" fullWidth icon="add">
-                  Add New Admin
+                <Button
+                  variant="outline"
+                  size="lg"
+                  fullWidth
+                  icon="add"
+                  onClick={handleOpenAddModal}
+                >
+                  Add Team Member
                 </Button>
               </div>
             </Card>
@@ -366,6 +566,14 @@ const AdminSettings = () => {
           )}
         </div>
       </div>
+      
+      {/* Team Member Modal */}
+      <TeamMemberModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onSave={handleAddMember}
+        editingMember={editingMember}
+      />
     </div>
   );
 };
