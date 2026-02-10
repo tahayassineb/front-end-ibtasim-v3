@@ -1,16 +1,135 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Card, Button, Badge, ProgressBar } from '../components';
 
 // ============================================
 // PROJECTS LIST PAGE - Projects Gallery
+// Loads projects from localStorage (shared with admin)
 // ============================================
+
+// Default projects data (used when no projects in localStorage)
+const defaultProjects = [
+  {
+    id: 1,
+    title: {
+      en: 'Build a School in Atlas',
+      fr: 'Construire une École dans l\'Atlas',
+      ar: 'بناء مدرسة في الأطلس',
+    },
+    description: {
+      en: 'Providing quality modern education for 200 children in the Atlas Mountains region.',
+      fr: 'Fourniture d\'une éducation moderne de qualité pour 200 enfants dans la région des montagnes de l\'Atlas.',
+      ar: 'توفير تعليم حديث عالي الجودة لـ 200 طفل في منطقة جبال الأطلس.',
+    },
+    category: 'education',
+    raised: 45000,
+    goal: 70000,
+    progress: 65,
+    daysLeft: 25,
+    donors: 142,
+    image: 'https://images.unsplash.com/photo-1564429238984-b3cd3a5ba0b4?w=800&q=80',
+  },
+  {
+    id: 2,
+    title: {
+      en: 'Clean Water Initiative',
+      fr: 'Initiative Eau Propre',
+      ar: 'مبادرة المياه النظيفة',
+    },
+    description: {
+      en: 'Developing sustainable water filtration systems for remote villages in Southern Morocco.',
+      fr: 'Développement de systèmes de filtration d\'eau durables pour les villages reculés du Sud du Maroc.',
+      ar: 'تطوير أنظمة ترشيح مياه مستدامة للقرى النائية في جنوب المغرب.',
+    },
+    category: 'water',
+    raised: 18200,
+    goal: 22000,
+    progress: 82,
+    daysLeft: 12,
+    donors: 89,
+    image: 'https://images.unsplash.com/photo-1538300342682-cf57afb97285?w=800&q=80',
+  },
+  {
+    id: 3,
+    title: {
+      en: 'Rural Health Clinics',
+      fr: 'Cliniques de Santé Rurales',
+      ar: 'عيادات الصحة الريفية',
+    },
+    description: {
+      en: 'Support our mobile clinics providing essential medical care to high-altitude communities.',
+      fr: 'Soutenez nos cliniques mobiles fournissant des soins médicaux essentiels aux communautés en altitude.',
+      ar: 'ادعم عياداتنا المتنقلة التي تقدم الرعاية الطبية الأساسية للمجتمعات في المناطق المرتفعة.',
+    },
+    category: 'health',
+    raised: 105000,
+    goal: 350000,
+    progress: 30,
+    daysLeft: 45,
+    donors: 234,
+    image: 'https://images.unsplash.com/photo-1584982751601-97dcc096659c?w=800&q=80',
+  },
+];
+
+// Helper to normalize project data from localStorage
+const normalizeProject = (project) => {
+  // Handle both i18n and string formats
+  const title = typeof project.title === 'object' && project.title !== null
+    ? project.title
+    : { en: project.title || 'Untitled Project', fr: project.title || 'Projet sans titre', ar: project.title || 'مشروع بدون عنوان' };
+  
+  const description = project.description || project.shortDescription_i18n || project.shortDescription || {
+    en: 'No description available',
+    fr: 'Aucune description disponible',
+    ar: 'لا يوجد وصف متاح'
+  };
+  
+  // Convert string description to i18n if needed
+  const normalizedDescription = typeof description === 'object' && description !== null
+    ? description
+    : { en: description, fr: description, ar: description };
+  
+  const shortDesc = project.shortDescription_i18n || normalizedDescription;
+  
+  return {
+    ...project,
+    title,
+    description: shortDesc,
+    image: project.image || project.mainImage || 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&q=80',
+    category: project.category || 'General',
+    raised: project.raised || 0,
+    goal: project.goal || 0,
+    progress: project.progress || Math.round(((project.raised || 0) / (project.goal || 1)) * 100),
+    daysLeft: project.daysLeft || 30,
+    donors: project.donors || 0,
+  };
+};
 
 const ProjectsList = () => {
   const { t, currentLanguage } = useApp();
   const language = currentLanguage?.code || 'en';
   const [searchQuery, setSearchQuery] = useState('');
+  const [projects, setProjects] = useState(defaultProjects);
+
+  // Load projects from localStorage (shared with admin)
+  useEffect(() => {
+    const savedProjects = localStorage.getItem('admin_projects');
+    if (savedProjects) {
+      try {
+        const parsed = JSON.parse(savedProjects);
+        // Filter only public/active projects and normalize data
+        const publicProjects = parsed
+          .filter(p => p.visibility !== 'private' && p.status !== 'draft')
+          .map(normalizeProject);
+        if (publicProjects.length > 0) {
+          setProjects(publicProjects);
+        }
+      } catch (e) {
+        console.error('Failed to load projects from localStorage', e);
+      }
+    }
+  }, []);
 
   // Categories with translations (for reference only, no filter)
   const categories = [
@@ -18,70 +137,6 @@ const ProjectsList = () => {
     { id: 'education', label: { en: 'Education', fr: 'Éducation', ar: 'التعليم' }, icon: 'school' },
     { id: 'health', label: { en: 'Health', fr: 'Santé', ar: 'الصحة' }, icon: 'health_and_safety' },
     { id: 'water', label: { en: 'Water', fr: 'Eau', ar: 'الماء' }, icon: 'water_drop' },
-  ];
-
-  // Projects data
-  const projects = [
-    {
-      id: 1,
-      title: {
-        en: 'Build a School in Atlas',
-        fr: 'Construire une École dans l\'Atlas',
-        ar: 'بناء مدرسة في الأطلس',
-      },
-      description: {
-        en: 'Providing quality modern education for 200 children in the Atlas Mountains region.',
-        fr: 'Fourniture d\'une éducation moderne de qualité pour 200 enfants dans la région des montagnes de l\'Atlas.',
-        ar: 'توفير تعليم حديث عالي الجودة لـ 200 طفل في منطقة جبال الأطلس.',
-      },
-      category: 'education',
-      raised: 45000,
-      goal: 70000,
-      progress: 65,
-      daysLeft: 25,
-      donors: 142,
-      image: 'https://images.unsplash.com/photo-1564429238984-b3cd3a5ba0b4?w=800&q=80',
-    },
-    {
-      id: 2,
-      title: {
-        en: 'Clean Water Initiative',
-        fr: 'Initiative Eau Propre',
-        ar: 'مبادرة المياه النظيفة',
-      },
-      description: {
-        en: 'Developing sustainable water filtration systems for remote villages in Southern Morocco.',
-        fr: 'Développement de systèmes de filtration d\'eau durables pour les villages reculés du Sud du Maroc.',
-        ar: 'تطوير أنظمة ترشيح مياه مستدامة للقرى النائية في جنوب المغرب.',
-      },
-      category: 'water',
-      raised: 18200,
-      goal: 22000,
-      progress: 82,
-      daysLeft: 12,
-      donors: 89,
-      image: 'https://images.unsplash.com/photo-1538300342682-cf57afb97285?w=800&q=80',
-    },
-    {
-      id: 3,
-      title: {
-        en: 'Rural Health Clinics',
-        fr: 'Cliniques de Santé Rurales',
-        ar: 'عيادات الصحة الريفية',
-      },
-      description: {
-        en: 'Support our mobile clinics providing essential medical care to high-altitude communities.',
-        fr: 'Soutenez nos cliniques mobiles fournissant des soins médicaux essentiels aux communautés en altitude.',
-        ar: 'ادعم عياداتنا المتنقلة التي تقدم الرعاية الطبية الأساسية للمجتمعات في المناطق المرتفعة.',
-      },
-      category: 'health',
-      raised: 105000,
-      goal: 350000,
-      progress: 30,
-      daysLeft: 45,
-      donors: 234,
-      image: 'https://images.unsplash.com/photo-1584982751601-97dcc096659c?w=800&q=80',
-    },
   ];
 
   const getLocalizedText = (obj) => {

@@ -1,54 +1,106 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Card, Button, Badge, ProgressBar } from '../components';
 
 // ============================================
 // HOME PAGE - Premium Moroccan Style
+// Loads featured projects from localStorage (shared with admin)
 // ============================================
+
+// Default featured projects (used when no projects in localStorage)
+const defaultFeaturedProjects = [
+  {
+    id: 1,
+    title: {
+      en: 'Clean Water Initiative',
+      fr: 'Initiative Eau Propre',
+      ar: 'مبادرة المياه النظيفة',
+    },
+    description: {
+      en: 'Providing sustainable water sources to remote Atlas mountain communities.',
+      fr: 'Fourniture de sources d\'eau durables aux communautés reculées des montagnes de l\'Atlas.',
+      ar: 'توفير مصادر مياه مستدامة لمجتمعات جبال الأطلس النائية.',
+    },
+    status: 'active',
+    raised: 42500,
+    goal: 50000,
+    progress: 85,
+    image: 'https://images.unsplash.com/photo-1538300342682-cf57afb97285?w=800&q=80',
+  },
+  {
+    id: 2,
+    title: {
+      en: 'Rural Education Hubs',
+      fr: 'Centres d\'Éducation Rurale',
+      ar: 'مراكز التعليم الريفي',
+    },
+    description: {
+      en: 'Building classrooms and providing modern tools for children in overlooked regions.',
+      fr: 'Construction de salles de classe et fourniture d\'outils modernes aux enfants des régions négligées.',
+      ar: 'بناء الفصول الدراسية وتوفير الأدوات الحديثة للأطفال في المناطق المهمشة.',
+    },
+    status: 'urgent',
+    raised: 15200,
+    goal: 34000,
+    progress: 45,
+    image: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=800&q=80',
+  },
+];
+
+// Helper to normalize project data from localStorage
+const normalizeProject = (project) => {
+  // Handle both i18n and string formats
+  const title = typeof project.title === 'object' && project.title !== null
+    ? project.title
+    : { en: project.title || 'Untitled Project', fr: project.title || 'Projet sans titre', ar: project.title || 'مشروع بدون عنوان' };
+  
+  const shortDesc = project.shortDescription_i18n || project.shortDescription || project.description || {
+    en: 'No description available',
+    fr: 'Aucune description disponible',
+    ar: 'لا يوجد وصف متاح'
+  };
+  
+  // Convert string description to i18n if needed
+  const description = typeof shortDesc === 'object' && shortDesc !== null
+    ? shortDesc
+    : { en: shortDesc, fr: shortDesc, ar: shortDesc };
+  
+  return {
+    ...project,
+    title,
+    description,
+    image: project.image || project.mainImage || 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&q=80',
+    raised: project.raised || 0,
+    goal: project.goal || 0,
+    progress: project.progress || Math.round(((project.raised || 0) / (project.goal || 1)) * 100),
+    status: project.status || 'active',
+  };
+};
 
 const Home = () => {
   const { t, language } = useApp();
+  const [featuredProjects, setFeaturedProjects] = useState(defaultFeaturedProjects);
 
-  // Featured projects data
-  const featuredProjects = [
-    {
-      id: 1,
-      title: {
-        en: 'Clean Water Initiative',
-        fr: 'Initiative Eau Propre',
-        ar: 'مبادرة المياه النظيفة',
-      },
-      description: {
-        en: 'Providing sustainable water sources to remote Atlas mountain communities.',
-        fr: 'Fourniture de sources d\'eau durables aux communautés reculées des montagnes de l\'Atlas.',
-        ar: 'توفير مصادر مياه مستدامة لمجتمعات جبال الأطلس النائية.',
-      },
-      status: 'active',
-      raised: 42500,
-      goal: 50000,
-      progress: 85,
-      image: 'https://images.unsplash.com/photo-1538300342682-cf57afb97285?w=800&q=80',
-    },
-    {
-      id: 2,
-      title: {
-        en: 'Rural Education Hubs',
-        fr: 'Centres d\'Éducation Rurale',
-        ar: 'مراكز التعليم الريفي',
-      },
-      description: {
-        en: 'Building classrooms and providing modern tools for children in overlooked regions.',
-        fr: 'Construction de salles de classe et fourniture d\'outils modernes aux enfants des régions négligées.',
-        ar: 'بناء الفصول الدراسية وتوفير الأدوات الحديثة للأطفال في المناطق المهمشة.',
-      },
-      status: 'urgent',
-      raised: 15200,
-      goal: 34000,
-      progress: 45,
-      image: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=800&q=80',
-    },
-  ];
+  // Load featured projects from localStorage (shared with admin)
+  useEffect(() => {
+    const savedProjects = localStorage.getItem('admin_projects');
+    if (savedProjects) {
+      try {
+        const parsed = JSON.parse(savedProjects);
+        // Filter featured projects and normalize data
+        const featured = parsed
+          .filter(p => p.featured === true && p.visibility !== 'private' && p.status !== 'draft')
+          .slice(0, 3) // Limit to 3 featured projects
+          .map(normalizeProject);
+        if (featured.length > 0) {
+          setFeaturedProjects(featured);
+        }
+      } catch (e) {
+        console.error('Failed to load featured projects from localStorage', e);
+      }
+    }
+  }, []);
 
   // Impact stats data
   const impactStats = [
