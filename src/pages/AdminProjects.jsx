@@ -122,7 +122,7 @@ const AdminProjects = () => {
     },
   };
 
-  const t = translations[currentLanguage.code] || translations.en;
+  const t = translations[currentLanguage?.code] || translations.en;
 
   // Default projects data with featured flag
   const defaultProjects = [

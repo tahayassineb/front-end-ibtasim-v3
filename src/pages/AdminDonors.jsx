@@ -63,7 +63,7 @@ const AdminDonors = () => {
     },
   };
 
-  const t = translations[currentLanguage.code] || translations.en;
+  const t = translations[currentLanguage?.code] || translations.en;
 
   // Mock donors data
   const donors = [

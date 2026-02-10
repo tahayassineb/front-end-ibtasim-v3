@@ -72,7 +72,7 @@ const AdminLogin = () => {
     },
   };
 
-  const t = translations[currentLanguage.code] || translations.en;
+  const t = translations[currentLanguage?.code] || translations.en;
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;

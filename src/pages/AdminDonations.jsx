@@ -23,7 +23,9 @@ const AdminDonations = () => {
       trxId: 'TRX-9482',
       project: 'Education Fund',
       method: 'card',
-      status: 'pending',
+      status: 'confirmed',
+      receiptImage: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800&q=80',
+      date: '2024-01-15',
     },
     {
       id: 2,
@@ -34,6 +36,8 @@ const AdminDonations = () => {
       project: 'Clean Water Project',
       method: 'bank',
       status: 'confirmed',
+      receiptImage: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800&q=80',
+      date: '2024-01-14',
     },
     {
       id: 3,
@@ -44,6 +48,8 @@ const AdminDonations = () => {
       project: 'Food Program',
       method: 'cash',
       status: 'rejected',
+      receiptImage: null,
+      date: '2024-01-13',
     },
     {
       id: 4,
@@ -54,28 +60,12 @@ const AdminDonations = () => {
       project: 'Shelter Relief',
       method: 'swift',
       status: 'pending',
+      receiptImage: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=800&q=80',
+      date: '2024-01-12',
     },
   ]);
 
-  // Handle donation status update
-  const handleConfirmDonation = (id) => {
-    setDonations(prev => prev.map(d =>
-      d.id === id ? { ...d, status: 'confirmed' } : d
-    ));
-    showToast(currentLanguage.code === 'ar' ? 'تم تأكيد التبرع' :
-              currentLanguage.code === 'fr' ? 'Don confirmé' :
-              'Donation confirmed', 'success');
-  };
-
-  const handleRejectDonation = (id) => {
-    setDonations(prev => prev.map(d =>
-      d.id === id ? { ...d, status: 'rejected' } : d
-    ));
-    showToast(currentLanguage.code === 'ar' ? 'تم رفض التبرع' :
-              currentLanguage.code === 'fr' ? 'Don rejeté' :
-              'Donation rejected', 'error');
-  };
-
+  // Handle view donation details
   const handleViewDonation = (id) => {
     const donation = donations.find(d => d.id === id);
     if (donation) {
@@ -85,15 +75,6 @@ const AdminDonations = () => {
 
   const handleCloseModal = () => {
     setViewingDonation(null);
-  };
-
-  const handleRetryDonation = (id) => {
-    setDonations(prev => prev.map(d =>
-      d.id === id ? { ...d, status: 'pending' } : d
-    ));
-    showToast(currentLanguage.code === 'ar' ? 'تمت إعادة المعالجة' :
-              currentLanguage.code === 'fr' ? 'Reprise du traitement' :
-              'Retrying processing', 'info');
   };
 
   // Translations
@@ -116,11 +97,8 @@ const AdminDonations = () => {
       project: 'المشروع',
       recentDonations: 'أحدث التبرعات',
       bulkActions: 'إجراءات جماعية',
-      confirm: 'تأكيد',
-      reject: 'رفض',
       view: 'عرض',
       viewReceipt: 'عرض الإيصال',
-      retry: 'إعادة المعالجة',
       viewDetails: 'عرض التفاصيل',
       card: 'بطاقة',
       bankTransfer: 'تحويل بنكي',
@@ -154,11 +132,8 @@ const AdminDonations = () => {
       project: 'Projet',
       recentDonations: 'Dons Récents',
       bulkActions: 'Actions en Masse',
-      confirm: 'Confirmer',
-      reject: 'Rejeter',
       view: 'Voir',
       viewReceipt: 'Voir le Reçu',
-      retry: 'Réessayer',
       viewDetails: 'Voir Détails',
       card: 'Carte',
       bankTransfer: 'Virement Bancaire',
@@ -192,11 +167,8 @@ const AdminDonations = () => {
       project: 'Project',
       recentDonations: 'Recent Donations',
       bulkActions: 'Bulk Actions',
-      confirm: 'Confirm',
-      reject: 'Reject',
       view: 'View',
       viewReceipt: 'View Receipt',
-      retry: 'Retry Processing',
       viewDetails: 'View Details',
       card: 'Card',
       bankTransfer: 'Bank Transfer',
@@ -422,55 +394,15 @@ const AdminDonations = () => {
                 </div>
               </div>
 
-              {/* Actions */}
+              {/* Actions - View Details button for all donations */}
               <div className="flex gap-2 mt-1">
-                {donation.status === 'pending' && (
-                  <>
-                    <button
-                      onClick={() => handleConfirmDonation(donation.id)}
-                      className="flex-1 bg-primary text-white text-xs font-bold py-2 rounded-lg hover:bg-primary/90 transition-colors"
-                    >
-                      {t.confirm}
-                    </button>
-                    <button
-                      onClick={() => handleRejectDonation(donation.id)}
-                      className="flex-1 bg-white dark:bg-slate-800 border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 text-xs font-bold py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                    >
-                      {t.reject}
-                    </button>
-                    <button
-                      onClick={() => handleViewDonation(donation.id)}
-                      className="w-10 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-500 hover:text-primary transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-sm">visibility</span>
-                    </button>
-                  </>
-                )}
-                {donation.status === 'confirmed' && (
-                  <button
-                    onClick={() => handleViewDonation(donation.id)}
-                    className="flex-1 border border-primary/30 text-primary text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-primary/5 transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-sm">receipt</span>
-                    {t.viewReceipt}
-                  </button>
-                )}
-                {donation.status === 'rejected' && (
-                  <>
-                    <button
-                      onClick={() => handleViewDonation(donation.id)}
-                      className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-500 text-xs font-bold py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                    >
-                      {t.viewDetails}
-                    </button>
-                    <button
-                      onClick={() => handleRetryDonation(donation.id)}
-                      className="flex-1 border border-primary/20 text-primary text-xs font-bold py-2 rounded-lg hover:bg-primary/5 transition-colors"
-                    >
-                      {t.retry}
-                    </button>
-                  </>
-                )}
+                <button
+                  onClick={() => handleViewDonation(donation.id)}
+                  className="flex-1 border border-primary/30 text-primary text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-primary/5 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-sm">receipt</span>
+                  {t.viewReceipt}
+                </button>
               </div>
             </div>
           </Card>
@@ -495,23 +427,20 @@ const AdminDonations = () => {
 
       {/* View Donation Modal */}
       {viewingDonation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 sm:rounded-2xl shadow-xl overflow-hidden flex flex-col h-screen sm:h-auto sm:max-h-[92vh] border-0 sm:border border-slate-100 dark:border-slate-800">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
-              <h3 className="text-lg font-bold text-text-primary dark:text-white">{t.donationDetails}</h3>
+            <div className="flex items-center bg-white dark:bg-slate-900 p-4 border-b border-slate-100 dark:border-slate-800 justify-between sticky top-0 z-10">
               <button
                 onClick={handleCloseModal}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors"
+                className="text-slate-400 flex size-10 shrink-0 items-center justify-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 rounded-full transition-colors"
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-4 space-y-4">
-              {/* Status Badge */}
-              <div className="flex justify-center">
+              <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight flex-1 text-center">
+                {t.donationDetails}
+              </h2>
+              <div className="flex w-10 items-center justify-end">
                 <Badge
                   variant={
                     viewingDonation.status === 'confirmed'
@@ -520,80 +449,103 @@ const AdminDonations = () => {
                       ? 'warning'
                       : 'error'
                   }
-                  size="md"
-                  className="text-sm uppercase tracking-wider"
+                  size="sm"
                 >
                   {viewingDonation.status === 'confirmed' ? t.stats.confirmed : viewingDonation.status === 'pending' ? t.stats.pending : t.stats.rejected}
                 </Badge>
               </div>
+            </div>
 
-              {/* Details Grid */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
-                  <span className="text-sm text-slate-500">{t.donor}</span>
-                  <span className="text-sm font-medium text-text-primary dark:text-white">{viewingDonation.donor}</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
-                  <span className="text-sm text-slate-500">{t.phone}</span>
-                  <span className="text-sm font-medium text-text-primary dark:text-white">{viewingDonation.phone}</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
-                  <span className="text-sm text-slate-500">{t.amount}</span>
-                  <span className="text-lg font-bold text-primary">${viewingDonation.amount.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
-                  <span className="text-sm text-slate-500">{t.transactionId}</span>
-                  <span className="text-sm font-medium text-text-primary dark:text-white">#{viewingDonation.trxId}</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
-                  <span className="text-sm text-slate-500">{t.project}</span>
-                  <span className="text-sm font-medium text-text-primary dark:text-white">{viewingDonation.project}</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
-                  <span className="text-sm text-slate-500">{t.paymentMethod}</span>
-                  <div className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm text-slate-400">{getMethodIcon(viewingDonation.method)}</span>
-                    <span className="text-sm font-medium text-text-primary dark:text-white">{getMethodLabel(viewingDonation.method)}</span>
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto ios-scroller">
+              <div className="flex flex-col">
+                {/* Receipt Image */}
+                {viewingDonation.receiptImage && (
+                  <div className="relative w-full aspect-video bg-slate-100 dark:bg-slate-800">
+                    <img
+                      src={viewingDonation.receiptImage}
+                      alt="Donation Receipt"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <p className="text-white/80 text-xs font-medium uppercase tracking-wider">{t.transactionId}</p>
+                      <p className="text-white text-lg font-mono font-bold">#{viewingDonation.trxId}</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="p-6 space-y-6">
+                  {/* Amount Section */}
+                  <div className="text-center py-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                    <p className="text-[11px] font-bold text-text-secondary dark:text-slate-400 uppercase tracking-[0.2em] mb-2">
+                      {t.amount}
+                    </p>
+                    <p className="text-4xl font-black text-primary tracking-tighter">
+                      ${viewingDonation.amount.toFixed(2)}
+                    </p>
+                  </div>
+
+                  {/* Donor Card */}
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-12 w-12 border-2 border-white dark:border-slate-700 shadow-sm bg-primary/10 flex items-center justify-center text-primary font-bold text-xl">
+                        {viewingDonation.donor.charAt(0)}
+                      </div>
+                      <div className="flex flex-col justify-center">
+                        <p className="text-text-secondary dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider">
+                          {t.donor}
+                        </p>
+                        <p className="text-slate-900 dark:text-white text-base font-bold">{viewingDonation.donor}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 py-3 border-y border-slate-200/60 dark:border-slate-700">
+                      <div>
+                        <span className="text-[10px] text-text-secondary dark:text-slate-400 block font-bold uppercase mb-1">
+                          {t.phone}
+                        </span>
+                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{viewingDonation.phone}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-text-secondary dark:text-slate-400 block font-bold uppercase mb-1">
+                          {t.date}
+                        </span>
+                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{viewingDonation.date}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Project & Method */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                        {t.project}
+                      </span>
+                      <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{viewingDonation.project}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                        {t.paymentMethod}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-slate-400">{getMethodIcon(viewingDonation.method)}</span>
+                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{getMethodLabel(viewingDonation.method)}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-2 pt-2">
-                {viewingDonation.status === 'pending' && (
-                  <>
-                    <button
-                      onClick={() => {
-                        handleConfirmDonation(viewingDonation.id);
-                        handleCloseModal();
-                      }}
-                      className="flex-1 bg-primary text-white text-sm font-bold py-2.5 rounded-lg hover:bg-primary/90 transition-colors"
-                    >
-                      {t.confirm}
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleRejectDonation(viewingDonation.id);
-                        handleCloseModal();
-                      }}
-                      className="flex-1 bg-white dark:bg-slate-800 border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-bold py-2.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                    >
-                      {t.reject}
-                    </button>
-                  </>
-                )}
-                {viewingDonation.status === 'rejected' && (
-                  <button
-                    onClick={() => {
-                      handleRetryDonation(viewingDonation.id);
-                      handleCloseModal();
-                    }}
-                    className="flex-1 border border-primary/20 text-primary text-sm font-bold py-2.5 rounded-lg hover:bg-primary/5 transition-colors"
-                  >
-                    {t.retry}
-                  </button>
-                )}
-              </div>
+            {/* Modal Footer */}
+            <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+              <button
+                onClick={handleCloseModal}
+                className="w-full px-4 py-3.5 rounded-xl font-bold bg-primary text-white hover:opacity-95 active:scale-[0.99] transition-all shadow-lg shadow-[#0D737722]"
+              >
+                {t.close}
+              </button>
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Card from '../components/Card';
 import Button from '../components/Button';
+import Badge from '../components/Badge';
 
 // ============================================
 // ADMIN SETTINGS PAGE - System Configuration
@@ -82,7 +83,7 @@ const AdminSettings = () => {
     },
   };
 
-  const t = translations[currentLanguage.code] || translations.en;
+  const t = translations[currentLanguage?.code] || translations.en;
 
   // Form state
   const [formData, setFormData] = useState({

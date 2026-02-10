@@ -100,7 +100,7 @@ const AdminProjectDetail = () => {
     },
   };
 
-  const t = translations[currentLanguage.code] || translations.en;
+  const t = translations[currentLanguage?.code] || translations.en;
 
   // Mock project data with complete structure matching AdminProjectForm
   const project = {

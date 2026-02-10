@@ -153,7 +153,7 @@ const AdminProjectForm = () => {
     },
   };
 
-  const t = translations[currentLanguage.code] || translations.en;
+  const t = translations[currentLanguage?.code] || translations.en;
 
   // Form state - initialize with default data, will be overridden by localStorage in edit mode
   const [formData, setFormData] = useState({
@@ -405,7 +405,7 @@ const AdminProjectForm = () => {
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     
     // Save to localStorage
     const savedProjects = JSON.parse(localStorage.getItem('admin_projects') || '[]');
@@ -898,7 +898,8 @@ const AdminProjectForm = () => {
           {t.saveDraft}
         </button>
         <button
-          type="submit"
+          type="button"
+          onClick={handleSubmit}
           className="flex-[1.5] py-3.5 px-4 rounded-xl bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20 active:scale-95 transition-transform"
         >
           {t.publish}

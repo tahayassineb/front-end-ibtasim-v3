@@ -8,11 +8,11 @@ import { Card, Button, Badge, ProgressBar } from '../components';
 // ============================================
 
 const ProjectsList = () => {
-  const { t, language } = useApp();
+  const { t, currentLanguage } = useApp();
+  const language = currentLanguage?.code || 'en';
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
 
-  // Categories with translations
+  // Categories with translations (for reference only, no filter)
   const categories = [
     { id: 'all', label: { en: 'All', fr: 'Tous', ar: 'الكل' }, icon: 'apps' },
     { id: 'education', label: { en: 'Education', fr: 'Éducation', ar: 'التعليم' }, icon: 'school' },
@@ -89,14 +89,12 @@ const ProjectsList = () => {
     return obj[language] || obj.en;
   };
 
-  // Filter projects
+  // Filter projects by search only (no category filter)
   const filteredProjects = projects.filter((project) => {
     const matchesSearch = getLocalizedText(project.title)
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
-    const matchesCategory =
-      selectedCategory === 'all' || project.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    return matchesSearch;
   });
 
   return (
@@ -125,28 +123,6 @@ const ProjectsList = () => {
         </label>
       </div>
 
-      {/* Category Filter Chips */}
-      <div className="flex gap-3 px-4 pb-6 overflow-x-auto no-scrollbar max-w-desktop mx-auto">
-        {categories.map((category) => (
-          <button
-            key={category.id}
-            onClick={() => setSelectedCategory(category.id)}
-            className={`flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full px-5 transition-all ${
-              selectedCategory === category.id
-                ? 'bg-primary text-white shadow-md shadow-primary/20'
-                : 'bg-bg-sage-light dark:bg-primary/10 text-primary border border-primary/5 hover:bg-primary/10'
-            }`}
-          >
-            {category.id !== 'all' && (
-              <span className="material-symbols-outlined text-[18px]">{category.icon}</span>
-            )}
-            <p className={`text-sm ${selectedCategory === category.id ? 'font-semibold' : 'font-medium'}`}>
-              {getLocalizedText(category.label)}
-            </p>
-          </button>
-        ))}
-      </div>
-
       {/* Header with count */}
       <div className="px-4 flex items-center justify-between max-w-desktop mx-auto mb-4">
         <h3 className="text-text-primary dark:text-white text-xl font-bold leading-tight tracking-tight">
@@ -173,12 +149,6 @@ const ProjectsList = () => {
               style={{ backgroundImage: `url("${project.image}")` }}
             >
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-              {/* Category badge */}
-              <div className="absolute bottom-4 right-4 glass-effect px-4 py-2 rounded-full bg-white/15 backdrop-blur-md border border-white/20">
-                <p className="text-white text-xs font-bold uppercase tracking-widest">
-                  {getLocalizedText(categories.find((c) => c.id === project.category)?.label || project.category)}
-                </p>
-              </div>
             </div>
 
             {/* Content */}
