@@ -309,6 +309,8 @@ const Step0Auth = ({
   setStep,
   setShowPassword,
   setShowConfirmPassword,
+  handleOtpVerify,
+  isLoading,
   countryCode,
   setCountryCode,
 }) => {

@@ -46,6 +46,7 @@ const Login = () => {
       phoneError: 'رقم هاتف غير صحيح',
       passwordError: 'كلمة المرور مطلوبة',
       loginError: 'رقم الهاتف أو كلمة المرور غير صحيحة',
+      continueAsGuest: 'المتابعة كزائر',
     },
     fr: {
       welcome: 'Bienvenue',
@@ -61,6 +62,7 @@ const Login = () => {
       phoneError: 'Numéro invalide',
       passwordError: 'Mot de passe requis',
       loginError: 'Numéro ou mot de passe incorrect',
+      continueAsGuest: 'Continuer en invité',
     },
     en: {
       welcome: 'Welcome',
@@ -76,6 +78,7 @@ const Login = () => {
       phoneError: 'Invalid phone number',
       passwordError: 'Password required',
       loginError: 'Invalid phone or password',
+      continueAsGuest: 'Continue as Guest',
     },
   };
   
@@ -191,8 +194,8 @@ const Login = () => {
                 type="tel"
                 value={phone}
                 onChange={handlePhoneChange}
-                placeholder={tx.phonePlaceholder}
-                maxLength={10}
+                placeholder={countryCode === '+212' ? tx.phonePlaceholder : 'Phone number'}
+                maxLength={15}
                 className="flex-1 h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
                 dir="ltr"
                 inputMode="numeric"
@@ -244,6 +247,15 @@ const Login = () => {
               {tx.loginButton}
             </Button>
           </div>
+          
+          {/* Continue as Guest */}
+          <button
+            type="button"
+            onClick={() => navigate('/', { replace: true })}
+            className="w-full text-primary text-sm font-medium hover:underline"
+          >
+            {tx.continueAsGuest}
+          </button>
         </form>
         
         {/* Register Link */}

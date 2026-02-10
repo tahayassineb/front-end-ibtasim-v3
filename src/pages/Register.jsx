@@ -66,6 +66,7 @@ const Register = () => {
       phoneError: 'رقم هاتف غير صحيح',
       passwordError: '6 أحرف على الأقل',
       confirmPasswordError: 'كلمات المرور غير متطابقة',
+      continueAsGuest: 'المتابعة كزائر',
     },
     fr: {
       welcome: 'Créer un compte',
@@ -91,6 +92,7 @@ const Register = () => {
       phoneError: 'Numéro invalide',
       passwordError: '6 caractères minimum',
       confirmPasswordError: 'Mots de passe différents',
+      continueAsGuest: 'Continuer en invité',
     },
     en: {
       welcome: 'Create Account',
@@ -116,6 +118,7 @@ const Register = () => {
       phoneError: 'Invalid phone',
       passwordError: '6 characters minimum',
       confirmPasswordError: 'Passwords do not match',
+      continueAsGuest: 'Continue as Guest',
     },
   };
   
@@ -401,8 +404,8 @@ const Register = () => {
                 type="tel"
                 value={phone}
                 onChange={handlePhoneChange}
-                placeholder={tx.phonePlaceholder}
-                maxLength={10}
+                placeholder={countryCode === '+212' ? tx.phonePlaceholder : 'Phone number'}
+                maxLength={15}
                 className="flex-1 h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
                 dir="ltr"
                 inputMode="numeric"
