@@ -162,6 +162,15 @@ const ProjectDetail = ({ preview = false }) => {
             </div>
           </div>
 
+          {/* Top Donate Button - Prominent CTA at top of page */}
+          <button
+            onClick={handleDonateClick}
+            className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-primary text-white font-bold text-lg shadow-lg shadow-primary/25 hover:bg-primary-600 hover:shadow-xl hover:shadow-primary/30 active:scale-[0.98] transition-all duration-200"
+          >
+            <span className="material-symbols-outlined">favorite</span>
+            {language === 'ar' ? 'تبرع الآن' : language === 'fr' ? 'Faire un Don' : 'Donate Now'}
+          </button>
+
           {/* Donation Progress Card - NOT sticky on mobile, sticky container on desktop */}
           <div className="bg-white dark:bg-bg-dark-card rounded-2xl p-6 shadow-lg border border-border-light dark:border-white/10">
             <div className="flex flex-col gap-4">
