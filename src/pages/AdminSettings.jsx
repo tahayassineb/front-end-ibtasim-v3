@@ -1,264 +1,153 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
 
 // ============================================
-// TEAM MEMBER MODAL COMPONENT
-// ============================================
-const TeamMemberModal = ({ isOpen, onClose, onSave, editingMember = null }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    role: 'Viewer',
-    phone: '',
-    ...editingMember
-  });
-
-  if (!isOpen) return null;
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave({
-      ...formData,
-      id: editingMember?.id || Date.now(),
-    });
-    onClose();
-  };
-
-  const roles = ['Super Admin', 'Admin', 'Manager', 'Editor', 'Viewer'];
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="p-6 border-b border-slate-100 dark:border-slate-700">
-          <h3 className="text-lg font-bold text-text-primary dark:text-white">
-            {editingMember ? 'Edit Team Member' : 'Add Team Member'}
-          </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            {editingMember ? 'Update team member details' : 'Add a new team member to your organization'}
-          </p>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Name */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-              Full Name *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="John Doe"
-              className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-text-primary dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-            />
-          </div>
-
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-              Email Address *
-            </label>
-            <input
-              type="email"
-              required
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="john@espoir.org"
-              className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-text-primary dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-            />
-          </div>
-
-          {/* Role */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-              Role *
-            </label>
-            <select
-              required
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-              className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-text-primary dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-            >
-              {roles.map(role => (
-                <option key={role} value={role}>{role}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Phone */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-              Phone (Optional)
-            </label>
-            <input
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              placeholder="+212 5XX-XXXXXX"
-              className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-text-primary dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-            />
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              fullWidth
-              onClick={onClose}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              fullWidth
-            >
-              {editingMember ? 'Save Changes' : 'Add Member'}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// ============================================
-// ADMIN SETTINGS PAGE - System Configuration
+// ADMIN SETTINGS PAGE - System Configuration (Arabic)
 // ============================================
 
 const AdminSettings = () => {
   const { currentLanguage, isDarkMode, toggleDarkMode, showToast } = useApp();
   const [activeTab, setActiveTab] = useState('bank');
-  
-  // Team members state
-  const [teamMembers, setTeamMembers] = useState([
-    { id: 1, name: 'Admin User', email: 'admin1@espoir.org', role: 'Super Admin', phone: '' },
-    { id: 2, name: 'Manager User', email: 'manager@espoir.org', role: 'Manager', phone: '' },
-    { id: 3, name: 'Viewer User', email: 'viewer@espoir.org', role: 'Viewer', phone: '' },
-  ]);
-  
-  // Modal state
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingMember, setEditingMember] = useState(null);
 
-  const handleAddMember = (member) => {
-    if (editingMember) {
-      setTeamMembers(prev => prev.map(m => m.id === member.id ? member : m));
-      showToast('Team member updated successfully', 'success');
-    } else {
-      setTeamMembers(prev => [...prev, member]);
-      showToast('Team member added successfully', 'success');
+  // WhatsApp Session State
+  const [whatsappSession, setWhatsappSession] = useState({
+    isConnected: false,
+    phoneNumber: '+212 6XX-XXXXXX',
+    sessionId: null,
+    qrCode: null,
+    lastConnected: null,
+    messagesSent: 0,
+    messagesReceived: 0,
+    isLoading: false,
+  });
+
+  // Load WhatsApp session from localStorage
+  useEffect(() => {
+    const savedSession = localStorage.getItem('whatsapp-session');
+    if (savedSession) {
+      setWhatsappSession(prev => ({ ...prev, ...JSON.parse(savedSession) }));
     }
-    setEditingMember(null);
-  };
+  }, []);
 
-  const handleEditMember = (member) => {
-    setEditingMember(member);
-    setIsModalOpen(true);
+  // Arabic Translations Only
+  const t = {
+    // Header
+    title: 'إعدادات النظام',
+    
+    // Settings Navigation
+    settingsNav: 'التنقل في الإعدادات',
+    bankManagement: 'إدارة البنك',
+    associationProfile: 'ملف الجمعية',
+    adminAccess: 'وصول المشرف',
+    notificationRules: 'قواعد الإشعارات',
+    paymentMethods: 'طرق الدفع',
+    whatsappManagement: 'إدارة الواتساب',
+    teamMembers: 'فريق العمل',
+    
+    // General Settings
+    generalSettings: 'إعدادات عامة',
+    darkMode: 'الوضع الداكن',
+    language: 'اللغة',
+    notifications: 'الإشعارات',
+    emailNotifications: 'إشعارات البريد الإلكتروني',
+    smsNotifications: 'إشعارات الرسائل القصيرة',
+    
+    // Bank Management
+    bankDescription: 'تكوين تفاصيل RIB الآمنة لمعالجة التبرعات.',
+    accountHolder: 'اسم صاحب الحساب',
+    rib: 'RIB',
+    ribHint: 'رقم الحساب البنكي المغربي القياسي المكون من 24 رقماً',
+    bankName: 'اسم البنك',
+    securityNote: 'تتطلب التغييرات المصادقة متعددة العوامل. سيتم إرسال تنبيهات الإشعارات إلى دائرة المشرفين.',
+    saveChanges: 'حفظ التغييرات',
+    
+    // WhatsApp Management
+    whatsappDescription: 'إدارة جلسة الواتساب لإرسال الإشعارات والتواصل مع المتبرعين.',
+    sessionStatus: 'حالة الجلسة',
+    connected: 'متصل',
+    disconnected: 'غير متصل',
+    qrCode: 'رمز الاستجابة السريعة',
+    scanQrCode: 'امسح رمز QR باستخدام تطبيق الواتساب',
+    createSession: 'إنشاء جلسة',
+    disconnect: 'قطع الاتصال',
+    changePhoneNumber: 'تغيير رقم الهاتف',
+    newPhoneNumber: 'رقم الهاتف الجديد',
+    phoneNumberPlaceholder: '+212 6XX-XXXXXX',
+    updatePhone: 'تحديث الرقم',
+    sessionStats: 'إحصائيات الجلسة',
+    messagesSent: 'الرسائل المرسلة',
+    messagesReceived: 'الرسائل المستلمة',
+    lastConnected: 'آخر اتصال',
+    sessionActive: 'الجلسة نشطة',
+    sessionInactive: 'الجلسة غير نشطة',
+    createSessionSuccess: 'تم إنشاء الجلسة بنجاح',
+    disconnectSuccess: 'تم قطع الاتصال بنجاح',
+    phoneUpdated: 'تم تحديث رقم الهاتف بنجاح',
+    
+    // Team Members
+    addMember: 'إضافة عضو',
+    memberName: 'اسم العضو',
+    memberEmail: 'البريد الإلكتروني',
+    memberRole: 'الدور الوظيفي',
+    memberPhone: 'رقم الهاتف',
+    saveMember: 'حفظ العضو',
+    cancel: 'إلغاء',
+    superAdmin: 'مدير عام',
+    manager: 'مدير',
+    viewer: 'مشاهد',
+    actions: 'الإجراءات',
+    delete: 'حذف',
+    edit: 'تعديل',
+    
+    // Profile
+    organizationName: 'اسم المنظمة',
+    email: 'البريد الإلكتروني',
+    phone: 'الهاتف',
+    address: 'العنوان',
+    description: 'الوصف',
+    
+    // Notifications
+    donationAlerts: 'تنبيهات التبرعات',
+    newDonation: 'تبرع جديد',
+    donationVerified: 'تم التحقق من التبرع',
+    weeklyReports: 'التقارير الأسبوعية',
+    monthlyReports: 'التقارير الشهرية',
   };
-
-  const handleDeleteMember = (id) => {
-    setTeamMembers(prev => prev.filter(m => m.id !== id));
-    showToast('Team member removed', 'info');
-  };
-
-  const handleOpenAddModal = () => {
-    setEditingMember(null);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingMember(null);
-  };
-
-  // Translations
-  const translations = {
-    ar: {
-      title: 'إعدادات النظام',
-      bankManagement: 'إدارة البنك',
-      bankDescription: 'تكوين تفاصيل RIB الآمنة لمعالجة التبرعات.',
-      accountHolder: 'اسم صاحب الحساب',
-      rib: 'RIB',
-      ribHint: 'رقم الحساب البنكي المغربي القياسي المكون من 24 رقماً',
-      bankName: 'اسم البنك',
-      securityNote: 'تتطلب التغييرات المصادقة متعددة العوامل. سيتم إرسال تنبيهات الإشعارات إلى دائرة المشرفين.',
-      saveChanges: 'حفظ التغييرات',
-      settingsNav: 'التنقل في الإعدادات',
-      associationProfile: 'ملف الجمعية',
-      adminAccess: 'وصول المشرف',
-      notificationRules: 'قواعد الإشعارات',
-      paymentMethods: 'طرق الدفع',
-      generalSettings: 'إعدادات عامة',
-      darkMode: 'الوضع الداكن',
-      language: 'اللغة',
-      notifications: 'الإشعارات',
-      emailNotifications: 'إشعارات البريد الإلكتروني',
-      smsNotifications: 'إشعارات الرسائل القصيرة',
-    },
-    fr: {
-      title: 'Paramètres Système',
-      bankManagement: 'Gestion Bancaire',
-      bankDescription: 'Configurer les détails RIB sécurisés pour le traitement des dons.',
-      accountHolder: 'Nom du Titulaire',
-      rib: 'RIB',
-      ribHint: 'Relevé d\'Identité Bancaire marocain standard de 24 chiffres',
-      bankName: 'Nom de la Banque',
-      securityNote: 'Les modifications nécessitent une authentification multi-facteurs. Les alertes seront envoyées au cercle des administrateurs.',
-      saveChanges: 'Enregistrer les Modifications',
-      settingsNav: 'Navigation des Paramètres',
-      associationProfile: 'Profil de l\'Association',
-      adminAccess: 'Accès Admin',
-      notificationRules: 'Règles de Notification',
-      paymentMethods: 'Méthodes de Paiement',
-      generalSettings: 'Paramètres Généraux',
-      darkMode: 'Mode Sombre',
-      language: 'Langue',
-      notifications: 'Notifications',
-      emailNotifications: 'Notifications Email',
-      smsNotifications: 'Notifications SMS',
-    },
-    en: {
-      title: 'System Settings',
-      bankManagement: 'Bank Management',
-      bankDescription: 'Configure the secure RIB details for donation processing.',
-      accountHolder: 'Account Holder Name',
-      rib: 'RIB',
-      ribHint: 'Standard 24-digit Moroccan Relevé d\'Identité Bancaire',
-      bankName: 'Bank Name',
-      securityNote: 'Changes require MFA. Notification alerts will be sent to the admin circle.',
-      saveChanges: 'Save Changes',
-      settingsNav: 'Settings Navigation',
-      associationProfile: 'Association Profile',
-      adminAccess: 'Admin Access',
-      notificationRules: 'Notification Rules',
-      paymentMethods: 'Payment Methods',
-      generalSettings: 'General Settings',
-      darkMode: 'Dark Mode',
-      language: 'Language',
-      notifications: 'Notifications',
-      emailNotifications: 'Email Notifications',
-      smsNotifications: 'SMS Notifications',
-    },
-  };
-
-  const t = translations[currentLanguage?.code] || translations.en;
 
   // Form state
   const [formData, setFormData] = useState({
-    accountHolder: 'Association Espoir',
+    accountHolder: 'جمعية ابتسم',
     rib: '181 330 2111122223333444 55',
     bankName: 'Attijariwafa Bank',
     emailNotifications: true,
     smsNotifications: false,
+    organizationName: 'جمعية ابتسم',
+    email: 'contact@ibtasam.org',
+    phone: '+212 5XX-XXXXXX',
+    address: 'الدار البيضاء، المغرب',
+    description: 'جمعية خيرية تعمل على رعاية الأيتام',
+    newDonation: true,
+    donationVerified: true,
+    weeklyReports: false,
+    monthlyReports: true,
+  });
+
+  // Team members state
+  const [teamMembers, setTeamMembers] = useState([
+    { id: 1, name: 'مدير النظام', email: 'admin@ibtasam.org', role: 'superAdmin', phone: '+212 6XX-XXXXXX' },
+    { id: 2, name: 'مدير المشاريع', email: 'manager@ibtasam.org', role: 'manager', phone: '+212 6XX-XXXXXX' },
+    { id: 3, name: 'مساعد إداري', email: 'viewer@ibtasam.org', role: 'viewer', phone: '+212 6XX-XXXXXX' },
+  ]);
+
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [newMember, setNewMember] = useState({
+    name: '',
+    email: '',
+    role: 'viewer',
+    phone: '',
   });
 
   const handleInputChange = (field, value) => {
@@ -266,19 +155,100 @@ const AdminSettings = () => {
   };
 
   const handleSave = () => {
-    // Save logic here
-    alert('Settings saved successfully!');
+    localStorage.setItem('admin-settings', JSON.stringify(formData));
+    showToast('تم حفظ الإعدادات بنجاح', 'success');
+  };
+
+  // WhatsApp Session Management
+  const handleCreateSession = () => {
+    setWhatsappSession(prev => ({ ...prev, isLoading: true }));
+    
+    // Simulate QR code generation
+    setTimeout(() => {
+      const mockQrCode = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=whatsapp-session-123';
+      setWhatsappSession(prev => ({
+        ...prev,
+        isLoading: false,
+        qrCode: mockQrCode,
+      }));
+    }, 1500);
+  };
+
+  const handleConnectSession = () => {
+    setWhatsappSession(prev => ({ ...prev, isLoading: true }));
+    
+    // Simulate connection
+    setTimeout(() => {
+      const updatedSession = {
+        isConnected: true,
+        qrCode: null,
+        lastConnected: new Date().toISOString(),
+        messagesSent: 150,
+        messagesReceived: 89,
+        isLoading: false,
+      };
+      setWhatsappSession(prev => ({ ...prev, ...updatedSession }));
+      localStorage.setItem('whatsapp-session', JSON.stringify(updatedSession));
+      showToast(t.createSessionSuccess, 'success');
+    }, 2000);
+  };
+
+  const handleDisconnect = () => {
+    setWhatsappSession(prev => ({ ...prev, isLoading: true }));
+    
+    setTimeout(() => {
+      const updatedSession = {
+        isConnected: false,
+        qrCode: null,
+        lastConnected: whatsappSession.lastConnected,
+        messagesSent: 0,
+        messagesReceived: 0,
+        isLoading: false,
+      };
+      setWhatsappSession(prev => ({ ...prev, ...updatedSession }));
+      localStorage.setItem('whatsapp-session', JSON.stringify(updatedSession));
+      showToast(t.disconnectSuccess, 'success');
+    }, 1000);
+  };
+
+  const handlePhoneChange = () => {
+    showToast(t.phoneUpdated, 'success');
+  };
+
+  const handleAddMember = () => {
+    if (newMember.name && newMember.email) {
+      setTeamMembers(prev => [...prev, { ...newMember, id: Date.now() }]);
+      setNewMember({ name: '', email: '', role: 'viewer', phone: '' });
+      setShowAddMember(false);
+      showToast('تم إضافة العضو بنجاح', 'success');
+    }
+  };
+
+  const handleDeleteMember = (id) => {
+    setTeamMembers(prev => prev.filter(m => m.id !== id));
+    showToast('تم حذف العضو بنجاح', 'success');
+  };
+
+  const getRoleBadge = (role) => {
+    const roles = {
+      superAdmin: { variant: 'success', label: t.superAdmin },
+      manager: { variant: 'primary', label: t.manager },
+      viewer: { variant: 'neutral', label: t.viewer },
+    };
+    const config = roles[role] || roles.viewer;
+    return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
   const settingsTabs = [
     { id: 'bank', icon: 'account_balance', label: t.bankManagement },
+    { id: 'whatsapp', icon: 'chat', label: t.whatsappManagement },
+    { id: 'team', icon: 'groups', label: t.teamMembers },
     { id: 'profile', icon: 'corporate_fare', label: t.associationProfile },
-    { id: 'access', icon: 'admin_panel_settings', label: t.adminAccess },
     { id: 'notifications', icon: 'notifications_active', label: t.notificationRules },
   ];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6" dir="rtl">
       {/* Header */}
       <div className="flex items-center gap-3">
         <h1 className="text-2xl font-bold text-text-primary dark:text-white">{t.title}</h1>
@@ -304,9 +274,9 @@ const AdminSettings = () => {
                       {tab.icon}
                     </span>
                   </div>
-                  <span className="flex-1 font-semibold text-[15px] text-left">{tab.label}</span>
+                  <span className="flex-1 font-semibold text-[15px] text-right">{tab.label}</span>
                   <span className={`material-symbols-outlined text-[20px] ${activeTab === tab.id ? 'text-primary' : 'text-slate-300'}`}>
-                    chevron_right
+                    chevron_left
                   </span>
                 </button>
               ))}
@@ -327,21 +297,15 @@ const AdminSettings = () => {
                   }`}
                 >
                   <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all ${
-                    isDarkMode ? 'right-0.5' : 'left-0.5'
+                    isDarkMode ? 'left-0.5' : 'right-0.5'
                   }`} />
                 </button>
               </div>
               
-              {/* Language Selector */}
+              {/* Language Selector - Display only (Arabic default) */}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-600 dark:text-slate-400">{t.language}</span>
-                <select 
-                  className="text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-text-primary dark:text-white"
-                >
-                  <option value="en">English</option>
-                  <option value="fr">Français</option>
-                  <option value="ar">العربية</option>
-                </select>
+                <span className="text-sm font-medium text-primary">العربية</span>
               </div>
             </div>
           </Card>
@@ -359,7 +323,7 @@ const AdminSettings = () => {
               <div className="space-y-5">
                 {/* Account Holder */}
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider ml-1">
+                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mr-1">
                     {t.accountHolder}
                   </span>
                   <input
@@ -367,13 +331,13 @@ const AdminSettings = () => {
                     value={formData.accountHolder}
                     onChange={(e) => handleInputChange('accountHolder', e.target.value)}
                     className="w-full rounded-2xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-300 text-text-primary dark:text-white shadow-sm"
-                    placeholder="Association Espoir"
+                    placeholder="جمعية ابتسم"
                   />
                 </label>
 
                 {/* RIB */}
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider ml-1">
+                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mr-1">
                     {t.rib}
                   </span>
                   <div className="relative">
@@ -381,17 +345,17 @@ const AdminSettings = () => {
                       type="text"
                       value={formData.rib}
                       onChange={(e) => handleInputChange('rib', e.target.value)}
-                      className="w-full rounded-2xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-300 font-mono text-text-primary dark:text-white shadow-sm pr-12"
+                      className="w-full rounded-2xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-300 font-mono text-text-primary dark:text-white shadow-sm pl-12"
                       placeholder="000 000 0000000000000000 00"
                     />
-                    <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-primary/40 text-xl">lock</span>
+                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary/40 text-xl">lock</span>
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-1 ml-1">{t.ribHint}</p>
+                  <p className="text-[10px] text-slate-400 mt-1 mr-1">{t.ribHint}</p>
                 </label>
 
                 {/* Bank Name */}
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider ml-1">
+                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mr-1">
                     {t.bankName}
                   </span>
                   <input
@@ -399,7 +363,7 @@ const AdminSettings = () => {
                     value={formData.bankName}
                     onChange={(e) => handleInputChange('bankName', e.target.value)}
                     className="w-full rounded-2xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-300 text-text-primary dark:text-white shadow-sm"
-                    placeholder="Bank Name"
+                    placeholder="اسم البنك"
                   />
                 </label>
 
@@ -427,32 +391,270 @@ const AdminSettings = () => {
             </Card>
           )}
 
+          {activeTab === 'whatsapp' && (
+            <Card padding="lg">
+              <div className="flex flex-col gap-1 mb-6">
+                <h3 className="text-text-primary dark:text-white text-2xl font-bold font-serif">{t.whatsappManagement}</h3>
+                <p className="text-slate-500 text-sm font-medium">{t.whatsappDescription}</p>
+              </div>
+
+              <div className="space-y-6">
+                {/* Session Status */}
+                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${whatsappSession.isConnected ? 'bg-green-100 dark:bg-green-900/30' : 'bg-slate-200 dark:bg-slate-700'}`}>
+                      <span className={`material-symbols-outlined ${whatsappSession.isConnected ? 'text-green-600' : 'text-slate-500'}`}>
+                        {whatsappSession.isConnected ? 'check_circle' : 'chat_bubble'}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-text-primary dark:text-white">{t.sessionStatus}</p>
+                      <p className={`text-sm ${whatsappSession.isConnected ? 'text-green-600' : 'text-slate-500'}`}>
+                        {whatsappSession.isConnected ? t.connected : t.disconnected}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant={whatsappSession.isConnected ? 'success' : 'neutral'}>
+                    {whatsappSession.isConnected ? t.sessionActive : t.sessionInactive}
+                  </Badge>
+                </div>
+
+                {/* QR Code Display */}
+                {!whatsappSession.isConnected && whatsappSession.qrCode && (
+                  <div className="text-center p-6 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">{t.scanQrCode}</p>
+                    <img src={whatsappSession.qrCode} alt="QR Code" className="mx-auto w-48 h-48" />
+                    <Button
+                      variant="primary"
+                      size="md"
+                      className="mt-4"
+                      onClick={handleConnectSession}
+                      loading={whatsappSession.isLoading}
+                    >
+                      {t.createSession}
+                    </Button>
+                  </div>
+                )}
+
+                {/* Create Session Button */}
+                {!whatsappSession.isConnected && !whatsappSession.qrCode && (
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    fullWidth
+                    onClick={handleCreateSession}
+                    loading={whatsappSession.isLoading}
+                    className="shadow-lg shadow-primary/20"
+                  >
+                    <span className="material-symbols-outlined ml-2">qr_code</span>
+                    {t.createSession}
+                  </Button>
+                )}
+
+                {/* Disconnect Button */}
+                {whatsappSession.isConnected && (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    fullWidth
+                    onClick={handleDisconnect}
+                    loading={whatsappSession.isLoading}
+                    className="border-red-300 text-red-600 hover:bg-red-50"
+                  >
+                    <span className="material-symbols-outlined ml-2">logout</span>
+                    {t.disconnect}
+                  </Button>
+                )}
+
+                {/* Change Phone Number */}
+                <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
+                  <h4 className="font-semibold text-text-primary dark:text-white mb-4">{t.changePhoneNumber}</h4>
+                  <div className="flex gap-3">
+                    <input
+                      type="tel"
+                      value={whatsappSession.phoneNumber}
+                      onChange={(e) => setWhatsappSession(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                      className="flex-1 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-text-primary dark:text-white"
+                      placeholder={t.phoneNumberPlaceholder}
+                    />
+                    <Button variant="outline" onClick={handlePhoneChange}>
+                      {t.updatePhone}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Session Stats */}
+                {whatsappSession.isConnected && (
+                  <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
+                    <h4 className="font-semibold text-text-primary dark:text-white mb-4">{t.sessionStats}</h4>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                        <p className="text-2xl font-bold text-primary">{whatsappSession.messagesSent}</p>
+                        <p className="text-xs text-slate-500">{t.messagesSent}</p>
+                      </div>
+                      <div className="text-center p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                        <p className="text-2xl font-bold text-primary">{whatsappSession.messagesReceived}</p>
+                        <p className="text-xs text-slate-500">{t.messagesReceived}</p>
+                      </div>
+                      <div className="text-center p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                        <p className="text-lg font-bold text-primary">
+                          {whatsappSession.lastConnected ? new Date(whatsappSession.lastConnected).toLocaleDateString('ar-MA') : '-'}
+                        </p>
+                        <p className="text-xs text-slate-500">{t.lastConnected}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+
+          {activeTab === 'team' && (
+            <Card padding="lg">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-text-primary dark:text-white text-2xl font-bold font-serif">{t.teamMembers}</h3>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setShowAddMember(true)}
+                >
+                  <span className="material-symbols-outlined text-sm ml-1">add</span>
+                  {t.addMember}
+                </Button>
+              </div>
+
+              {/* Add Member Form */}
+              {showAddMember && (
+                <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                  <h4 className="font-semibold text-text-primary dark:text-white mb-4">{t.addMember}</h4>
+                  <div className="space-y-4">
+                    <input
+                      type="text"
+                      placeholder={t.memberName}
+                      value={newMember.name}
+                      onChange={(e) => setNewMember(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-text-primary dark:text-white"
+                    />
+                    <input
+                      type="email"
+                      placeholder={t.memberEmail}
+                      value={newMember.email}
+                      onChange={(e) => setNewMember(prev => ({ ...prev, email: e.target.value }))}
+                      className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-text-primary dark:text-white"
+                    />
+                    <input
+                      type="tel"
+                      placeholder={t.memberPhone}
+                      value={newMember.phone}
+                      onChange={(e) => setNewMember(prev => ({ ...prev, phone: e.target.value }))}
+                      className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-text-primary dark:text-white"
+                    />
+                    <select
+                      value={newMember.role}
+                      onChange={(e) => setNewMember(prev => ({ ...prev, role: e.target.value }))}
+                      className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-text-primary dark:text-white"
+                    >
+                      <option value="superAdmin">{t.superAdmin}</option>
+                      <option value="manager">{t.manager}</option>
+                      <option value="viewer">{t.viewer}</option>
+                    </select>
+                    <div className="flex gap-3">
+                      <Button variant="primary" onClick={handleAddMember}>
+                        {t.saveMember}
+                      </Button>
+                      <Button variant="outline" onClick={() => setShowAddMember(false)}>
+                        {t.cancel}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Team Members List */}
+              <div className="space-y-3">
+                {teamMembers.map((member) => (
+                  <div key={member.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-primary">person</span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-text-primary dark:text-white">{member.name}</p>
+                        <p className="text-sm text-slate-500">{member.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {getRoleBadge(member.role)}
+                      <button
+                        onClick={() => handleDeleteMember(member.id)}
+                        className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                      >
+                        <span className="material-symbols-outlined">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
           {activeTab === 'profile' && (
             <Card padding="lg">
-              <h3 className="text-text-primary dark:text-white text-xl font-bold mb-6">{t.associationProfile}</h3>
-              <div className="space-y-4">
+              <h3 className="text-text-primary dark:text-white text-2xl font-bold mb-6">{t.associationProfile}</h3>
+              <div className="space-y-5">
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Organization Name</span>
+                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mr-1">
+                    {t.organizationName}
+                  </span>
                   <input
                     type="text"
-                    defaultValue="Association Espoir"
-                    className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base text-text-primary dark:text-white"
+                    value={formData.organizationName}
+                    onChange={(e) => handleInputChange('organizationName', e.target.value)}
+                    className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base text-text-primary dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   />
                 </label>
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Email</span>
+                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mr-1">
+                    {t.email}
+                  </span>
                   <input
                     type="email"
-                    defaultValue="contact@espoir.org"
-                    className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base text-text-primary dark:text-white"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base text-text-primary dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   />
                 </label>
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Phone</span>
+                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mr-1">
+                    {t.phone}
+                  </span>
                   <input
                     type="tel"
-                    defaultValue="+212 5XX-XXXXXX"
-                    className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base text-text-primary dark:text-white"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base text-text-primary dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mr-1">
+                    {t.address}
+                  </span>
+                  <input
+                    type="text"
+                    value={formData.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base text-text-primary dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mr-1">
+                    {t.description}
+                  </span>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => handleInputChange('description', e.target.value)}
+                    rows={3}
+                    className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base text-text-primary dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none"
                   />
                 </label>
                 <Button variant="primary" size="lg" fullWidth onClick={handleSave}>
@@ -462,102 +664,85 @@ const AdminSettings = () => {
             </Card>
           )}
 
-          {activeTab === 'access' && (
-            <Card padding="lg">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-text-primary dark:text-white text-xl font-bold">{t.adminAccess}</h3>
-                <span className="text-sm text-slate-500">{teamMembers.length} members</span>
-              </div>
-              <div className="space-y-4">
-                {teamMembers.map((member) => (
-                  <div key={member.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl group">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="material-symbols-outlined text-primary">person</span>
-                      </div>
-                      <div>
-                        <p className="font-medium text-text-primary dark:text-white">{member.name}</p>
-                        <p className="text-sm text-slate-500">{member.email}</p>
-                        {member.phone && (
-                          <p className="text-xs text-slate-400">{member.phone}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant={member.role === 'Super Admin' ? 'success' : member.role === 'Admin' ? 'primary' : 'neutral'}
-                        size="sm"
-                      >
-                        {member.role}
-                      </Badge>
-                      <div className="flex opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleEditMember(member)}
-                          className="p-2 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
-                          title="Edit"
-                        >
-                          <span className="material-symbols-outlined text-sm">edit</span>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteMember(member.id)}
-                          className="p-2 rounded-lg text-slate-400 hover:text-error hover:bg-error/10 transition-colors"
-                          title="Remove"
-                        >
-                          <span className="material-symbols-outlined text-sm">delete</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <Button
-                  variant="outline"
-                  size="lg"
-                  fullWidth
-                  icon="add"
-                  onClick={handleOpenAddModal}
-                >
-                  Add Team Member
-                </Button>
-              </div>
-            </Card>
-          )}
-
           {activeTab === 'notifications' && (
             <Card padding="lg">
-              <h3 className="text-text-primary dark:text-white text-xl font-bold mb-6">{t.notificationRules}</h3>
+              <h3 className="text-text-primary dark:text-white text-2xl font-bold mb-6">{t.notificationRules}</h3>
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-slate-500">email</span>
-                    <span className="text-text-primary dark:text-white">{t.emailNotifications}</span>
+                <div className="border-b border-slate-200 dark:border-slate-700 pb-4">
+                  <h4 className="font-semibold text-text-primary dark:text-white mb-3">{t.donationAlerts}</h4>
+                  
+                  <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="material-symbols-outlined text-slate-500">notifications</span>
+                      <span className="text-text-primary dark:text-white">{t.newDonation}</span>
+                    </div>
+                    <button
+                      onClick={() => handleInputChange('newDonation', !formData.newDonation)}
+                      className={`w-11 h-6 rounded-full relative transition-colors ${
+                        formData.newDonation ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'
+                      }`}
+                    >
+                      <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all ${
+                        formData.newDonation ? 'left-0.5' : 'right-0.5'
+                      }`} />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => handleInputChange('emailNotifications', !formData.emailNotifications)}
-                    className={`w-11 h-6 rounded-full relative transition-colors ${
-                      formData.emailNotifications ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'
-                    }`}
-                  >
-                    <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all ${
-                      formData.emailNotifications ? 'right-0.5' : 'left-0.5'
-                    }`} />
-                  </button>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-slate-500">sms</span>
-                    <span className="text-text-primary dark:text-white">{t.smsNotifications}</span>
+
+                  <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <span className="material-symbols-outlined text-slate-500">verified</span>
+                      <span className="text-text-primary dark:text-white">{t.donationVerified}</span>
+                    </div>
+                    <button
+                      onClick={() => handleInputChange('donationVerified', !formData.donationVerified)}
+                      className={`w-11 h-6 rounded-full relative transition-colors ${
+                        formData.donationVerified ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'
+                      }`}
+                    >
+                      <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all ${
+                        formData.donationVerified ? 'left-0.5' : 'right-0.5'
+                      }`} />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => handleInputChange('smsNotifications', !formData.smsNotifications)}
-                    className={`w-11 h-6 rounded-full relative transition-colors ${
-                      formData.smsNotifications ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'
-                    }`}
-                  >
-                    <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all ${
-                      formData.smsNotifications ? 'right-0.5' : 'left-0.5'
-                    }`} />
-                  </button>
                 </div>
+
+                <div>
+                  <h4 className="font-semibold text-text-primary dark:text-white mb-3">{t.emailNotifications}</h4>
+                  <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="material-symbols-outlined text-slate-500">email</span>
+                      <span className="text-text-primary dark:text-white">{t.weeklyReports}</span>
+                    </div>
+                    <button
+                      onClick={() => handleInputChange('weeklyReports', !formData.weeklyReports)}
+                      className={`w-11 h-6 rounded-full relative transition-colors ${
+                        formData.weeklyReports ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'
+                      }`}
+                    >
+                      <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all ${
+                        formData.weeklyReports ? 'left-0.5' : 'right-0.5'
+                      }`} />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <span className="material-symbols-outlined text-slate-500">calendar_month</span>
+                      <span className="text-text-primary dark:text-white">{t.monthlyReports}</span>
+                    </div>
+                    <button
+                      onClick={() => handleInputChange('monthlyReports', !formData.monthlyReports)}
+                      className={`w-11 h-6 rounded-full relative transition-colors ${
+                        formData.monthlyReports ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'
+                      }`}
+                    >
+                      <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all ${
+                        formData.monthlyReports ? 'left-0.5' : 'right-0.5'
+                      }`} />
+                    </button>
+                  </div>
+                </div>
+
                 <Button variant="primary" size="lg" fullWidth onClick={handleSave}>
                   {t.saveChanges}
                 </Button>
@@ -566,14 +751,6 @@ const AdminSettings = () => {
           )}
         </div>
       </div>
-      
-      {/* Team Member Modal */}
-      <TeamMemberModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onSave={handleAddMember}
-        editingMember={editingMember}
-      />
     </div>
   );
 };

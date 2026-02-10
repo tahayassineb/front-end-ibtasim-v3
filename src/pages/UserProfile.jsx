@@ -10,7 +10,7 @@ import Badge from '../components/Badge';
 
 const UserProfile = () => {
   const navigate = useNavigate();
-  const { t, currentLanguage, user, logout, updateUser, showToast, formatCurrency, formatDate } = useApp();
+  const { currentLanguage, user, logout, updateUser, showToast, formatCurrency, formatDate, changeLanguage } = useApp();
   
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -47,6 +47,9 @@ const UserProfile = () => {
       donationProject: 'المشروع',
       editSuccess: 'تم تحديث الملف الشخصي بنجاح',
       editError: 'حدث خطأ أثناء التحديث',
+      languagePreference: 'اللغة المفضلة',
+      selectLanguage: 'اختر اللغة',
+      languageUpdated: 'تم تحديث اللغة بنجاح',
     },
     fr: {
       title: 'Profil',
@@ -71,6 +74,9 @@ const UserProfile = () => {
       donationProject: 'Projet',
       editSuccess: 'Profil mis à jour avec succès',
       editError: 'Erreur lors de la mise à jour',
+      languagePreference: 'Langue préférée',
+      selectLanguage: 'Choisir la langue',
+      languageUpdated: 'Langue mise à jour avec succès',
     },
     en: {
       title: 'Profile',
@@ -95,15 +101,19 @@ const UserProfile = () => {
       donationProject: 'Project',
       editSuccess: 'Profile updated successfully',
       editError: 'Error updating profile',
+      languagePreference: 'Language Preference',
+      selectLanguage: 'Select Language',
+      languageUpdated: 'Language updated successfully',
     },
   };
   
-  const tx = translations[currentLanguage.code] || translations.fr;
+  const tx = translations[currentLanguage.code] || translations.ar;
   
   // Calculate stats
   const donations = user?.donations || [];
   const totalDonated = donations.reduce((sum, d) => sum + (d.amount || 0), 0);
-  const verifiedDonations = donations.filter(d => d.status === 'verified');
+  // eslint-disable-next-line no-unused-vars
+  const _verifiedDonations = donations.filter(d => d.status === 'verified');
   
   // Handle edit mode toggle
   const handleEditToggle = () => {
@@ -123,6 +133,14 @@ const UserProfile = () => {
     const { name, value } = e.target;
     setEditData(prev => ({ ...prev, [name]: value }));
   }, []);
+
+  // Handle language change
+  const handleLanguageChange = (e) => {
+    const newLang = e.target.value;
+    changeLanguage(newLang);
+    localStorage.setItem('user-language-preference', newLang);
+    showToast(tx.languageUpdated, 'success');
+  };
   
   // Handle save
   const handleSave = async () => {
@@ -176,7 +194,7 @@ const UserProfile = () => {
   };
   
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark pb-24">
+    <div className="min-h-screen bg-background-light dark:bg-background-dark pb-24" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="max-w-lg mx-auto">
         
         {/* Header */}
@@ -276,7 +294,7 @@ const UserProfile = () => {
                     value={editData.email}
                     onChange={handleChange}
                     dir="ltr"
-                    className="w-full h-12 px-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary text-right"
+                    className={`w-full h-12 px-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary ${isRTL ? 'text-right' : 'text-left'}`}
                   />
                 ) : (
                   <p className="text-gray-900 dark:text-white font-medium" dir="ltr">{user?.email}</p>
@@ -292,7 +310,7 @@ const UserProfile = () => {
                     value={editData.phone}
                     onChange={handleChange}
                     dir="ltr"
-                    className="w-full h-12 px-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary text-right"
+                    className={`w-full h-12 px-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary ${isRTL ? 'text-right' : 'text-left'}`}
                   />
                 ) : (
                   <p className="text-gray-900 dark:text-white font-medium" dir="ltr">{user?.phone}</p>
@@ -309,6 +327,29 @@ const UserProfile = () => {
                   {tx.saveChanges}
                 </Button>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* Language Preference Section */}
+        <div className="px-4 mt-6">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="material-symbols-outlined text-primary">language</span>
+              <h3 className="font-bold text-gray-900 dark:text-white">{tx.languagePreference}</h3>
+            </div>
+            
+            <div>
+              <label className="text-xs text-gray-500 dark:text-gray-400 mb-2 block">{tx.selectLanguage}</label>
+              <select
+                value={currentLanguage.code}
+                onChange={handleLanguageChange}
+                className="w-full h-12 px-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              >
+                <option value="ar">العربية</option>
+                <option value="fr">Français</option>
+                <option value="en">English</option>
+              </select>
             </div>
           </div>
         </div>
@@ -354,7 +395,7 @@ const UserProfile = () => {
                           {formatDate(donation.date)}
                         </p>
                       </div>
-                      <div className="text-right">
+                      <div className={`${isRTL ? 'text-left' : 'text-right'}`}>
                         <p className="font-bold text-primary">{formatCurrency(donation.amount)}</p>
                         <div className="mt-1">
                           {getStatusBadge(donation.status)}

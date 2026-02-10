@@ -14,6 +14,9 @@ const MainLayout = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const prevPathnameRef = useRef(location.pathname);
 
+  // Logo URL
+  const logoUrl = 'https://nlfixnhoufntbbcccnwr.supabase.co/storage/v1/object/public/campaigns/Gemini_Generated_Image_7ce0up7ce0up7ce0-Photoroom%20(1).png';
+
   // Handle scroll for sticky header effect
   useEffect(() => {
     const handleScroll = () => {
@@ -64,15 +67,17 @@ const MainLayout = ({ children }) => {
           <div className="flex items-center justify-between h-16 md:h-20">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-primary flex items-center justify-center shadow-primary">
-                <span className="material-symbols-outlined text-white text-xl md:text-2xl">favorite</span>
-              </div>
+              <img 
+                src={logoUrl} 
+                alt="جمعية ابتسم" 
+                className="w-10 h-10 md:w-12 md:h-12 object-contain rounded-xl"
+              />
               <div className="hidden sm:block">
-                <h1 className="text-lg md:text-xl font-bold text-text-primary dark:text-white">
-                  {language === 'ar' ? 'جمعية الأمل' : 'Association Espoir'}
+                <h1 className="text-lg md:text-xl font-bold text-text-primary dark:text-white font-arabic">
+                  {language === 'ar' ? 'جمعية ابتسم' : language === 'fr' ? 'Association Ibtasam' : 'Ibtasam Association'}
                 </h1>
                 <p className="text-xs text-text-muted hidden md:block">
-                  {language === 'ar' ? 'العمل الخيري في المغرب' : 'Charity Morocco'}
+                  {language === 'ar' ? 'للأعمال الاجتماعية والخيرية' : language === 'fr' ? 'Œuvres Sociales et Caritatives' : 'Social & Charitable Works'}
                 </p>
               </div>
             </Link>
@@ -109,18 +114,18 @@ const MainLayout = ({ children }) => {
                 </button>
                 
                 {/* Language Dropdown */}
-                <div className="absolute right-0 top-full mt-2 w-24 py-2 bg-white dark:bg-bg-dark-card rounded-xl shadow-xl border border-border-light dark:border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className={`absolute ${currentLanguage.dir === 'rtl' ? 'left-0' : 'right-0'} top-full mt-2 w-32 py-2 bg-white dark:bg-bg-dark-card rounded-xl shadow-xl border border-border-light dark:border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50`}>
                   {['ar', 'fr', 'en'].map((langCode) => (
                     <button
                       key={langCode}
                       onClick={() => changeLanguage(langCode)}
-                      className={`w-full px-4 py-2 text-sm text-center font-bold uppercase transition-colors duration-200 ${
+                      className={`w-full px-4 py-2 text-sm text-center font-bold transition-colors duration-200 ${
                         language === langCode
                           ? 'text-primary bg-primary/10'
                           : 'text-text-secondary hover:text-primary hover:bg-primary/5'
                       }`}
                     >
-                      {langCode}
+                      {langCode === 'ar' ? 'العربية' : langCode === 'fr' ? 'Français' : 'English'}
                     </button>
                   ))}
                 </div>
@@ -154,7 +159,7 @@ const MainLayout = ({ children }) => {
                   </button>
                   
                   {/* User Dropdown */}
-                  <div className="absolute right-0 top-full mt-2 w-48 py-2 bg-white dark:bg-bg-dark-card rounded-xl shadow-xl border border-border-light dark:border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className={`absolute ${currentLanguage.dir === 'rtl' ? 'left-0' : 'right-0'} top-full mt-2 w-48 py-2 bg-white dark:bg-bg-dark-card rounded-xl shadow-xl border border-border-light dark:border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50`}>
                     <div className="px-4 py-2 border-b border-border-light dark:border-white/10">
                       <p className="font-semibold text-text-primary dark:text-white">{user?.name || t('profile')}</p>
                       <p className="text-xs text-text-muted">{user?.email}</p>
@@ -271,21 +276,23 @@ const MainLayout = ({ children }) => {
             {/* Brand */}
             <div className="md:col-span-1">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-primary">
-                  <span className="material-symbols-outlined text-white text-2xl">favorite</span>
-                </div>
+                <img 
+                  src={logoUrl} 
+                  alt="جمعية ابتسم" 
+                  className="w-12 h-12 object-contain rounded-xl"
+                />
                 <div>
-                  <h3 className="font-bold text-text-primary dark:text-white">
-                    {language === 'ar' ? 'جمعية الأمل' : 'Association Espoir'}
+                  <h3 className="font-bold text-text-primary dark:text-white font-arabic">
+                    {language === 'ar' ? 'جمعية ابتسم' : language === 'fr' ? 'Association Ibtasam' : 'Ibtasam Association'}
                   </h3>
                 </div>
               </div>
               <p className="text-sm text-text-secondary mb-4">
                 {language === 'ar'
-                  ? 'نحن ملتزمون بمساعدة المحتاجين وبناء مستقبل أفضل لمجتمعاتنا.'
+                  ? 'جمعية خيرية مرخصة تعمل على رعاية الأيتام وتقديم الدعم الشامل لهم في المغرب.'
                   : language === 'fr'
-                  ? 'Nous nous engageons à aider les nécessiteux et à construire un avenir meilleur pour nos communautés.'
-                  : 'We are committed to helping those in need and building a better future for our communities.'}
+                  ? 'Association caritative agréée travaillant pour la prise en charge des orphelins au Maroc.'
+                  : 'Licensed charity working to care for orphans in Morocco.'}
               </p>
               {/* Social Links */}
               <div className="flex items-center gap-3">
@@ -336,7 +343,7 @@ const MainLayout = ({ children }) => {
                 </li>
                 <li className="flex items-center gap-3 text-sm text-text-secondary">
                   <span className="material-symbols-outlined text-primary">email</span>
-                  <span>contact@association-espoir.ma</span>
+                  <span>contact@ibtasam.org</span>
                 </li>
               </ul>
             </div>
@@ -369,7 +376,7 @@ const MainLayout = ({ children }) => {
           {/* Bottom Bar */}
           <div className="mt-12 pt-8 border-t border-border-light dark:border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-text-muted">
-              © {new Date().getFullYear()} Association Espoir. {language === 'ar' ? 'جميع الحقوق محفوظة' : language === 'fr' ? 'Tous droits réservés' : 'All rights reserved'}.
+              © {new Date().getFullYear()} {language === 'ar' ? 'جمعية ابتسم' : language === 'fr' ? 'Association Ibtasam' : 'Ibtasam Association'}. {language === 'ar' ? 'جميع الحقوق محفوظة' : language === 'fr' ? 'Tous droits réservés' : 'All rights reserved'}.
             </p>
             <div className="flex items-center gap-6">
               <Link to="/privacy" className="text-sm text-text-muted hover:text-primary transition-colors">

@@ -181,7 +181,7 @@ const TRANSLATIONS = {
 // ============================================
 
 export const AppProvider = ({ children }) => {
-  // Language State
+  // Language State - Default to Arabic
   const [language, setLanguage] = useState(() => {
     const saved = localStorage.getItem('app-language');
     return saved || 'ar';
