@@ -898,8 +898,7 @@ const AdminProjectForm = () => {
           {t.saveDraft}
         </button>
         <button
-          type="button"
-          onClick={handleSubmit}
+          type="submit"
           className="flex-[1.5] py-3.5 px-4 rounded-xl bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20 active:scale-95 transition-transform"
         >
           {t.publish}
