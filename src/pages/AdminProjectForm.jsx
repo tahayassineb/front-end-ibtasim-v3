@@ -3,8 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Card from '../components/Card';
 import Button from '../components/Button';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+// Note: React-Quill removed - using textarea instead for React 19 compatibility
 
 // ============================================
 // ADMIN PROJECT FORM PAGE - Create/Edit Projects
@@ -157,30 +156,7 @@ const AdminProjectForm = () => {
 
   const t = translations[currentLanguage.code] || translations.en;
 
-  // Rich text editor modules and formats
-  const quillModules = {
-    toolbar: [
-      [{ 'header': [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'align': [] }],
-      ['link', 'image'],
-      ['clean']
-    ],
-    clipboard: {
-      matchVisual: false,
-    }
-  };
-
-  const quillFormats = [
-    'header',
-    'bold', 'italic', 'underline', 'strike',
-    'list', 'bullet',
-    'align',
-    'link', 'image'
-  ];
-
-  // Form state
+  // Form state - initialize with default data, will be overridden by localStorage in edit mode
   const [formData, setFormData] = useState({
     title: {
       en: 'Community Water Access Initiative',
@@ -220,6 +196,31 @@ const AdminProjectForm = () => {
   });
 
   const [draggedItem, setDraggedItem] = useState(null);
+
+  // Load project data from localStorage when in edit mode
+  useEffect(() => {
+    if (isEditMode && id) {
+      const savedProjects = JSON.parse(localStorage.getItem('admin_projects') || '[]');
+      const projectToEdit = savedProjects.find(p => String(p.id) === String(id));
+      if (projectToEdit) {
+        setFormData(prev => ({
+          ...prev,
+          title: projectToEdit.title || prev.title,
+          shortDescription: projectToEdit.shortDescription || prev.shortDescription,
+          description: projectToEdit.description || prev.description,
+          goal: projectToEdit.goal || prev.goal,
+          currency: projectToEdit.currency || prev.currency,
+          visibility: projectToEdit.visibility || prev.visibility,
+          featured: projectToEdit.featured ?? prev.featured,
+          mainImage: projectToEdit.mainImage || prev.mainImage,
+          gallery: projectToEdit.gallery || prev.gallery,
+          impact: projectToEdit.impact || prev.impact,
+          impactMetrics: projectToEdit.impactMetrics || prev.impactMetrics,
+          updates: projectToEdit.updates || prev.updates,
+        }));
+      }
+    }
+  }, [isEditMode, id]);
 
   const handleInputChange = (field, value, lang = null) => {
     if (lang) {
@@ -406,7 +407,38 @@ const AdminProjectForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Save logic here
+    
+    // Save to localStorage
+    const savedProjects = JSON.parse(localStorage.getItem('admin_projects') || '[]');
+    
+    // Prepare project data
+    const projectData = {
+      ...formData,
+      id: isEditMode ? parseInt(id, 10) : Date.now(),
+      status: formData.status || 'draft',
+      category: formData.category || 'General',
+      raised: isEditMode ? (savedProjects.find(p => String(p.id) === String(id))?.raised || 0) : 0,
+      donors: isEditMode ? (savedProjects.find(p => String(p.id) === String(id))?.donors || 0) : 0,
+      daysLeft: isEditMode ? (savedProjects.find(p => String(p.id) === String(id))?.daysLeft || 30) : 30,
+      image: formData.mainImage,
+    };
+    
+    let updatedProjects;
+    if (isEditMode) {
+      // Update existing project
+      updatedProjects = savedProjects.map(p =>
+        String(p.id) === String(id) ? projectData : p
+      );
+      // If not found in existing projects, add it
+      if (!savedProjects.find(p => String(p.id) === String(id))) {
+        updatedProjects.push(projectData);
+      }
+    } else {
+      // Add new project
+      updatedProjects = [...savedProjects, projectData];
+    }
+    
+    localStorage.setItem('admin_projects', JSON.stringify(updatedProjects));
     showToast(isEditMode ? 'Project updated' : 'Project created', 'success');
     navigate('/admin/projects');
   };
@@ -468,22 +500,36 @@ const AdminProjectForm = () => {
             <div>
               <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.mainImage}</label>
               <div className="relative group">
-                <div
-                  className="aspect-video w-full rounded-xl bg-cover bg-center border border-border-light dark:border-white/10 overflow-hidden"
-                  style={{ backgroundImage: `url('${formData.mainImage}')` }}
-                >
-                  <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity gap-3">
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploading}
-                      className="flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-lg font-medium hover:bg-gray-100 transition-colors"
-                    >
-                      <span className="material-symbols-outlined">upload</span>
-                      {isUploading ? t.loading : t.changeImage}
-                    </button>
+                {formData.mainImage ? (
+                  <div className="aspect-video w-full rounded-xl border border-border-light dark:border-white/10 overflow-hidden relative">
+                    <img
+                      src={formData.mainImage}
+                      alt="Main project"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity gap-3">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                        className="flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-lg font-medium hover:bg-gray-100 transition-colors"
+                      >
+                        <span className="material-symbols-outlined">upload</span>
+                        {isUploading ? t.loading : t.changeImage}
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="aspect-video w-full rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 flex flex-col items-center justify-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-4xl text-slate-400">add_photo_alternate</span>
+                    <span className="text-sm font-medium text-slate-500">{t.uploadImage}</span>
+                  </button>
+                )}
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -532,21 +578,19 @@ const AdminProjectForm = () => {
               />
             </div>
 
-            {/* Rich Text Description */}
+            {/* Description - Rich Text Editor replaced with Textarea for React 19 compatibility */}
             <div>
               <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.description}</label>
-              <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-                <ReactQuill
-                  theme="snow"
+              <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden p-3">
+                <div className="flex gap-2 mb-2 pb-2 border-b border-slate-200 dark:border-slate-700">
+                  <span className="text-xs text-slate-400">HTML tags supported: {'<p>'}, {'<strong>'}, {'<ul>'}, {'<li>'}, etc.</span>
+                </div>
+                <textarea
                   value={formData.description[activeTab]}
-                  onChange={handleDescriptionChange}
-                  modules={quillModules}
-                  formats={quillFormats}
-                  className={`${isDarkMode ? 'dark-quill' : ''}`}
-                  style={{ 
-                    minHeight: '200px',
-                    backgroundColor: isDarkMode ? '#1e293b' : 'white',
-                  }}
+                  onChange={(e) => handleDescriptionChange(e.target.value)}
+                  rows={8}
+                  className="w-full bg-transparent text-sm py-2 px-1 text-text-primary dark:text-white focus:outline-none resize-none font-mono"
+                  placeholder="<p>Enter description here...</p>"
                 />
               </div>
             </div>
@@ -571,15 +615,17 @@ const AdminProjectForm = () => {
                   </span>
                 </div>
                 <input
-                  type="number"
-                  min="1"
-                  step="1"
+                  type="text"
+                  inputMode="numeric"
                   value={formData.goal}
                   onChange={(e) => {
                     const value = e.target.value;
-                    handleInputChange('goal', value === '' ? 0 : parseInt(value, 10) || 0);
+                    // Only allow numeric input
+                    if (value === '' || /^\d*$/.test(value)) {
+                      handleInputChange('goal', value === '' ? '' : parseInt(value, 10) || 0);
+                    }
                   }}
-                  className="w-full pl-10 bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  className="w-full pl-10 bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
             </div>
@@ -690,13 +736,18 @@ const AdminProjectForm = () => {
                 onDragStart={() => handleDragStart(index)}
                 onDragOver={(e) => handleDragOver(e, index)}
                 onDragEnd={handleDragEnd}
-                className={`aspect-square rounded-xl bg-cover bg-center border-2 overflow-hidden relative group cursor-move transition-all ${
-                  draggedItem === index 
-                    ? 'border-primary opacity-50' 
+                className={`aspect-square rounded-xl border-2 overflow-hidden relative group cursor-move transition-all ${
+                  draggedItem === index
+                    ? 'border-primary opacity-50'
                     : 'border-transparent hover:border-primary/50'
                 }`}
-                style={{ backgroundImage: `url('${image}')` }}
               >
+                <img
+                  src={image}
+                  alt={`Gallery ${index + 1}`}
+                  className="w-full h-full object-cover"
+                  draggable={false}
+                />
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                   <button
                     type="button"
@@ -728,21 +779,19 @@ const AdminProjectForm = () => {
           </div>
 
           <div className="space-y-5">
-            {/* Impact Description */}
+            {/* Impact Description - Rich Text Editor replaced with Textarea for React 19 compatibility */}
             <div>
               <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.impactDesc}</label>
-              <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-                <ReactQuill
-                  theme="snow"
+              <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden p-3">
+                <div className="flex gap-2 mb-2 pb-2 border-b border-slate-200 dark:border-slate-700">
+                  <span className="text-xs text-slate-400">HTML tags supported: {'<p>'}, {'<strong>'}, {'<ul>'}, {'<li>'}, etc.</span>
+                </div>
+                <textarea
                   value={formData.impact[activeTab]}
-                  onChange={handleImpactChange}
-                  modules={quillModules}
-                  formats={quillFormats}
-                  className={`${isDarkMode ? 'dark-quill' : ''}`}
-                  style={{
-                    minHeight: '150px',
-                    backgroundColor: isDarkMode ? '#1e293b' : 'white',
-                  }}
+                  onChange={(e) => handleImpactChange(e.target.value)}
+                  rows={5}
+                  className="w-full bg-transparent text-sm py-2 px-1 text-text-primary dark:text-white focus:outline-none resize-none font-mono"
+                  placeholder="<p>Describe the impact...</p>"
                 />
               </div>
             </div>
@@ -868,42 +917,6 @@ const AdminProjectForm = () => {
         </button>
       </footer>
 
-      {/* Dark mode styles for Quill editor */}
-      <style>{`
-        .dark-quill .ql-toolbar {
-          background-color: #1e293b;
-          border-color: #334155;
-        }
-        .dark-quill .ql-container {
-          background-color: #1e293b;
-          border-color: #334155;
-        }
-        .dark-quill .ql-editor {
-          color: #f1f5f9;
-        }
-        .dark-quill .ql-editor.ql-blank::before {
-          color: #64748b;
-        }
-        .dark-quill .ql-stroke {
-          stroke: #94a3b8;
-        }
-        .dark-quill .ql-fill {
-          fill: #94a3b8;
-        }
-        .dark-quill .ql-picker {
-          color: #94a3b8;
-        }
-        .dark-quill .ql-picker-options {
-          background-color: #1e293b;
-          border-color: #334155;
-        }
-        .dark-quill .ql-active .ql-stroke {
-          stroke: #0d7477;
-        }
-        .dark-quill .ql-active .ql-fill {
-          fill: #0d7477;
-        }
-      `}</style>
     </div>
   );
 };

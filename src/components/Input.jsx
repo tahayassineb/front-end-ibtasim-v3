@@ -429,8 +429,25 @@ export const AmountInput = forwardRef(({
   max,
   fullWidth = true,
   className = '',
+  onChange,
+  value,
   ...props
 }, ref) => {
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    // Only allow numeric input
+    if (newValue === '' || /^\d*$/.test(newValue)) {
+      // Check min/max constraints if provided
+      if (newValue !== '' && min !== undefined && parseInt(newValue, 10) < min) {
+        return;
+      }
+      if (newValue !== '' && max !== undefined && parseInt(newValue, 10) > max) {
+        return;
+      }
+      onChange?.(e);
+    }
+  };
+
   return (
     <div className={`${fullWidth ? 'w-full' : ''}`}>
       {label && (
@@ -441,9 +458,10 @@ export const AmountInput = forwardRef(({
       <div className="relative">
         <input
           ref={ref}
-          type="number"
-          min={min}
-          max={max}
+          type="text"
+          inputMode="numeric"
+          value={value}
+          onChange={handleChange}
           className={`
             w-full h-14 px-4 pr-16
             bg-white dark:bg-bg-dark-card

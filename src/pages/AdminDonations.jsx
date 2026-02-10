@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
@@ -9,9 +9,84 @@ import Badge from '../components/Badge';
 // ============================================
 
 const AdminDonations = () => {
-  const { currentLanguage } = useApp();
+  const { currentLanguage, showToast } = useApp();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [donations, setDonations] = useState([
+    {
+      id: 1,
+      donor: 'Sarah Jenkins',
+      phone: '+1 234 567 890',
+      amount: 250,
+      trxId: 'TRX-9482',
+      project: 'Education Fund',
+      method: 'card',
+      status: 'pending',
+    },
+    {
+      id: 2,
+      donor: 'Michael Chen',
+      phone: '+1 987 654 321',
+      amount: 1200,
+      trxId: 'TRX-8821',
+      project: 'Clean Water Project',
+      method: 'bank',
+      status: 'confirmed',
+    },
+    {
+      id: 3,
+      donor: 'Alice Rivera',
+      phone: '+1 555 019 992',
+      amount: 45,
+      trxId: 'TRX-7712',
+      project: 'Food Program',
+      method: 'cash',
+      status: 'rejected',
+    },
+    {
+      id: 4,
+      donor: 'Robert Wilson',
+      phone: '+1 442 990 123',
+      amount: 3500,
+      trxId: 'TRX-9490',
+      project: 'Shelter Relief',
+      method: 'swift',
+      status: 'pending',
+    },
+  ]);
+
+  // Handle donation status update
+  const handleConfirmDonation = (id) => {
+    setDonations(prev => prev.map(d =>
+      d.id === id ? { ...d, status: 'confirmed' } : d
+    ));
+    showToast(currentLanguage.code === 'ar' ? 'تم تأكيد التبرع' :
+              currentLanguage.code === 'fr' ? 'Don confirmé' :
+              'Donation confirmed', 'success');
+  };
+
+  const handleRejectDonation = (id) => {
+    setDonations(prev => prev.map(d =>
+      d.id === id ? { ...d, status: 'rejected' } : d
+    ));
+    showToast(currentLanguage.code === 'ar' ? 'تم رفض التبرع' :
+              currentLanguage.code === 'fr' ? 'Don rejeté' :
+              'Donation rejected', 'error');
+  };
+
+  const handleViewDonation = (id) => {
+    navigate(`/admin/donations/${id}`);
+  };
+
+  const handleRetryDonation = (id) => {
+    setDonations(prev => prev.map(d =>
+      d.id === id ? { ...d, status: 'pending' } : d
+    ));
+    showToast(currentLanguage.code === 'ar' ? 'تمت إعادة المعالجة' :
+              currentLanguage.code === 'fr' ? 'Reprise du traitement' :
+              'Retrying processing', 'info');
+  };
 
   // Translations
   const translations = {
@@ -114,49 +189,6 @@ const AdminDonations = () => {
     { label: t.stats.total, value: '61.1k', trend: '+8%', trendUp: true, color: 'dark' },
   ];
 
-  // Mock donations data
-  const donations = [
-    {
-      id: 1,
-      donor: 'Sarah Jenkins',
-      phone: '+1 234 567 890',
-      amount: 250,
-      trxId: 'TRX-9482',
-      project: 'Education Fund',
-      method: 'card',
-      status: 'pending',
-    },
-    {
-      id: 2,
-      donor: 'Michael Chen',
-      phone: '+1 987 654 321',
-      amount: 1200,
-      trxId: 'TRX-8821',
-      project: 'Clean Water Project',
-      method: 'bank',
-      status: 'confirmed',
-    },
-    {
-      id: 3,
-      donor: 'Alice Rivera',
-      phone: '+1 555 019 992',
-      amount: 45,
-      trxId: 'TRX-7712',
-      project: 'Food Program',
-      method: 'cash',
-      status: 'rejected',
-    },
-    {
-      id: 4,
-      donor: 'Robert Wilson',
-      phone: '+1 442 990 123',
-      amount: 3500,
-      trxId: 'TRX-9490',
-      project: 'Shelter Relief',
-      method: 'swift',
-      status: 'pending',
-    },
-  ];
 
   const getStatusStyles = (status) => {
     switch (status) {
@@ -359,29 +391,47 @@ const AdminDonations = () => {
               <div className="flex gap-2 mt-1">
                 {donation.status === 'pending' && (
                   <>
-                    <button className="flex-1 bg-primary text-white text-xs font-bold py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                    <button
+                      onClick={() => handleConfirmDonation(donation.id)}
+                      className="flex-1 bg-primary text-white text-xs font-bold py-2 rounded-lg hover:bg-primary/90 transition-colors"
+                    >
                       {t.confirm}
                     </button>
-                    <button className="flex-1 bg-white dark:bg-slate-800 border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 text-xs font-bold py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                    <button
+                      onClick={() => handleRejectDonation(donation.id)}
+                      className="flex-1 bg-white dark:bg-slate-800 border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 text-xs font-bold py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    >
                       {t.reject}
                     </button>
-                    <button className="w-10 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-500 hover:text-primary transition-colors">
+                    <button
+                      onClick={() => handleViewDonation(donation.id)}
+                      className="w-10 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-500 hover:text-primary transition-colors"
+                    >
                       <span className="material-symbols-outlined text-sm">visibility</span>
                     </button>
                   </>
                 )}
                 {donation.status === 'confirmed' && (
-                  <button className="flex-1 border border-primary/30 text-primary text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-primary/5 transition-colors">
+                  <button
+                    onClick={() => handleViewDonation(donation.id)}
+                    className="flex-1 border border-primary/30 text-primary text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-primary/5 transition-colors"
+                  >
                     <span className="material-symbols-outlined text-sm">receipt</span>
                     {t.viewReceipt}
                   </button>
                 )}
                 {donation.status === 'rejected' && (
                   <>
-                    <button className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-500 text-xs font-bold py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                    <button
+                      onClick={() => handleViewDonation(donation.id)}
+                      className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-500 text-xs font-bold py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    >
                       {t.viewDetails}
                     </button>
-                    <button className="flex-1 border border-primary/20 text-primary text-xs font-bold py-2 rounded-lg hover:bg-primary/5 transition-colors">
+                    <button
+                      onClick={() => handleRetryDonation(donation.id)}
+                      className="flex-1 border border-primary/20 text-primary text-xs font-bold py-2 rounded-lg hover:bg-primary/5 transition-colors"
+                    >
                       {t.retry}
                     </button>
                   </>

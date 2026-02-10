@@ -367,13 +367,33 @@ const DonationFlow = () => {
     if (authErrors[name]) setAuthErrors(prev => ({ ...prev, [name]: null }));
   };
   
-  // Handle phone input
+  // Handle phone input with proper cursor position management
+  const phoneInputRef = useRef(null);
+  const cursorPositionRef = useRef(0);
+  
   const handlePhoneChange = (e) => {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value.length > 10) value = value.slice(0, 10);
-    setAuthFormData(prev => ({ ...prev, phone: value }));
+    const input = e.target;
+    const cursorPosition = input.selectionStart;
+    const previousValue = input.value;
+    
+    // Get only digits and limit to 10
+    const rawValue = input.value.replace(/\D/g, '').slice(0, 10);
+    
+    // Save cursor position before React updates
+    const diff = previousValue.length - rawValue.length;
+    cursorPositionRef.current = Math.max(0, cursorPosition - diff);
+    
+    // Update state
+    setAuthFormData(prev => ({ ...prev, phone: rawValue }));
     if (authErrors.phone) setAuthErrors(prev => ({ ...prev, phone: null }));
   };
+  
+  // Restore cursor position after render
+  useEffect(() => {
+    if (phoneInputRef.current) {
+      phoneInputRef.current.setSelectionRange(cursorPositionRef.current, cursorPositionRef.current);
+    }
+  }, [authFormData.phone]);
   
   // Format phone for display
   const formatPhoneDisplay = (phone) => {
@@ -629,13 +649,17 @@ const DonationFlow = () => {
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">+212</span>
               <input
+                ref={phoneInputRef}
                 type="tel"
                 name="phone"
-                value={formatPhoneDisplay(authFormData.phone)}
+                value={authFormData.phone}
                 onChange={handlePhoneChange}
-                placeholder="6XX XXX XXX"
+                placeholder="6XXXXXXXX"
+                maxLength={10}
                 className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-16 pr-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
                 dir="ltr"
+                inputMode="numeric"
+                pattern="[0-9]*"
               />
             </div>
             {authErrors.phone && <p className="text-error text-xs mt-1">{authErrors.phone}</p>}
@@ -780,21 +804,22 @@ const DonationFlow = () => {
         </div>
         <div className="relative">
           <input
-            type="number"
+            type="text"
             inputMode="numeric"
-            min="1"
-            step="1"
             value={donationData.customAmount}
             onChange={(e) => {
               const value = e.target.value;
-              setDonationData(prev => ({
-                ...prev,
-                customAmount: value,
-                amount: 0
-              }));
+              // Only allow numeric input
+              if (value === '' || /^\d*$/.test(value)) {
+                setDonationData(prev => ({
+                  ...prev,
+                  customAmount: value,
+                  amount: 0
+                }));
+              }
             }}
             placeholder={tx.customAmount}
-            className="w-full h-14 bg-white dark:bg-white/5 border-none rounded-xl px-4 text-base font-medium focus:ring-2 focus:ring-primary placeholder:text-gray-400 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="w-full h-14 bg-white dark:bg-white/5 border-none rounded-xl px-4 text-base font-medium focus:ring-2 focus:ring-primary placeholder:text-gray-400 dark:text-white [appearance:textfield]"
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">
             MAD

@@ -165,7 +165,6 @@ const Register = () => {
         id: 'user_' + Date.now(),
         name: formData.fullName,
         email: formData.email,
-        phone: '+212 ' + formatPhoneDisplay(formData.phone),
         avatar: null,
         createdAt: new Date().toISOString(),
         donations: [],
@@ -284,38 +283,6 @@ const Register = () => {
             </div>
             {errors.email && (
               <p className="text-error text-xs px-1">{errors.email}</p>
-            )}
-          </div>
-          
-          {/* Phone Input */}
-          <div className="flex flex-col gap-2">
-            <label className="text-primary text-sm font-semibold leading-normal px-1">
-              {tx.phoneLabel}
-            </label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-primary/60">
-                phone
-              </span>
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-gray-600 dark:text-gray-300 text-sm font-medium">
-                <span>+212</span>
-              </div>
-              <input
-                type="tel"
-                name="phone"
-                value={formatPhoneDisplay(formData.phone)}
-                onChange={handlePhoneChange}
-                placeholder={tx.phonePlaceholder}
-                dir="ltr"
-                className={`
-                  flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl 
-                  text-gray-800 dark:text-white focus:outline-0 focus:ring-2 
-                  ${errors.phone ? 'focus:ring-error/50 border-error' : 'focus:ring-primary/50 border-transparent'}
-                  border-none bg-white dark:bg-gray-800 shadow-sm h-14 placeholder:text-gray-400 pr-12 pl-20 text-base font-normal leading-normal
-                `}
-              />
-            </div>
-            {errors.phone && (
-              <p className="text-error text-xs px-1">{errors.phone}</p>
             )}
           </div>
           

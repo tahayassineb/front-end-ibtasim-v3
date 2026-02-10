@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Card from '../components/Card';
@@ -124,8 +124,8 @@ const AdminProjects = () => {
 
   const t = translations[currentLanguage.code] || translations.en;
 
-  // Mock projects data with featured flag
-  const [projects, setProjects] = useState([
+  // Default projects data with featured flag
+  const defaultProjects = [
     {
       id: 1,
       title: 'Clean Water Initiative',
@@ -198,7 +198,25 @@ const AdminProjects = () => {
       daysLeft: 90,
       image: 'https://images.unsplash.com/photo-1529390079861-591d3549b7f5?w=400',
     },
-  ]);
+  ];
+
+  // Load projects from localStorage or use defaults
+  const [projects, setProjects] = useState(() => {
+    const saved = localStorage.getItem('admin_projects');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse saved projects', e);
+      }
+    }
+    return defaultProjects;
+  });
+
+  // Persist projects to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('admin_projects', JSON.stringify(projects));
+  }, [projects]);
 
   // Filter projects
   const filteredProjects = projects.filter(project => {
