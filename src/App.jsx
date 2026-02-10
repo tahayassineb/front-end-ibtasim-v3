@@ -28,6 +28,7 @@ import AdminProjects from './pages/AdminProjects';
 import AdminProjectDetail from './pages/AdminProjectDetail';
 import AdminProjectForm from './pages/AdminProjectForm';
 import AdminDonations from './pages/AdminDonations';
+import AdminVerifications from './pages/AdminVerifications';
 import AdminDonors from './pages/AdminDonors';
 import AdminDonorDetail from './pages/AdminDonorDetail';
 import AdminSettings from './pages/AdminSettings';
@@ -125,7 +126,7 @@ function AppContent() {
             <Route path="/admin/donors/:id" element={<AdminDonorDetail />} />
             
             {/* Verification */}
-            <Route path="/admin/verification" element={<AdminDonations />} />
+            <Route path="/admin/verification" element={<AdminVerifications />} />
             
             {/* Settings */}
             <Route path="/admin/settings" element={<AdminSettings />} />
