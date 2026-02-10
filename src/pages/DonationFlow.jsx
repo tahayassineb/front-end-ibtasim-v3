@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
+import CountryCodeSelector, { validatePhoneByCountry, formatPhoneForDisplay } from '../components/CountryCodeSelector';
 
 // ============================================
 // DONATION FLOW - 6 Step Wizard with Auth
@@ -308,6 +309,8 @@ const Step0Auth = ({
   setStep,
   setShowPassword,
   setShowConfirmPassword,
+  countryCode,
+  setCountryCode,
 }) => {
   // Handle OTP input
   const handleOtpChange = (index, value) => {
@@ -355,7 +358,7 @@ const Step0Auth = ({
           {tx.enterOtp}
         </h1>
         <p className="text-gray-500 dark:text-gray-400 text-base text-center max-w-xs">
-          {tx.otpSent} <span className="font-bold text-primary" dir="ltr">+212 {formatPhoneDisplay(authFormData.phone)}</span>
+          {tx.otpSent} <span className="font-bold text-primary" dir="ltr">{countryCode} {formatPhoneDisplay(authFormData.phone)}</span>
         </p>
         
         <div className="mt-10 w-full max-w-sm">
@@ -476,17 +479,21 @@ const Step0Auth = ({
         
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{tx.phone}</label>
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">+212</span>
+          <div className="flex gap-2">
+            <CountryCodeSelector
+              value={countryCode}
+              onChange={setCountryCode}
+              lang={lang}
+            />
             <input
               ref={phoneInputRef}
               type="tel"
               name="phone"
               value={authFormData.phone}
               onChange={handlePhoneChange}
-              placeholder="6XXXXXXXX"
-              maxLength={10}
-              className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-16 pr-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
+              placeholder={countryCode === '+212' ? '6XXXXXXXX' : 'Phone number'}
+              maxLength={15}
+              className="flex-1 h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
               dir="ltr"
               inputMode="numeric"
               pattern="[0-9]*"
@@ -1112,6 +1119,9 @@ const DonationFlow = () => {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   
+  // Country code state (default to Morocco)
+  const [countryCode, setCountryCode] = useState('+212');
+  
   // Auth state
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
   const [authFormData, setAuthFormData] = useState({
@@ -1155,8 +1165,7 @@ const DonationFlow = () => {
   // Validation functions
   const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const validatePhone = (phone) => {
-    const cleaned = phone.replace(/\D/g, '');
-    return cleaned.length === 10 && (cleaned.startsWith('06') || cleaned.startsWith('07') || cleaned.startsWith('05'));
+    return validatePhoneByCountry(phone, countryCode);
   };
   
   // Handle auth form changes
@@ -1196,11 +1205,7 @@ const DonationFlow = () => {
   
   // Format phone for display
   const formatPhoneDisplay = (phone) => {
-    if (!phone) return '';
-    if (phone.length <= 2) return phone;
-    if (phone.length <= 5) return `${phone.slice(0, 2)} ${phone.slice(2)}`;
-    if (phone.length <= 8) return `${phone.slice(0, 2)} ${phone.slice(2, 5)} ${phone.slice(5)}`;
-    return `${phone.slice(0, 2)} ${phone.slice(2, 5)} ${phone.slice(5, 8)} ${phone.slice(8)}`;
+    return formatPhoneForDisplay(phone, countryCode);
   };
   
   // Handle auth mode switch - clears errors when switching
@@ -1237,7 +1242,7 @@ const DonationFlow = () => {
     const userData = {
       id: 'user_' + Date.now(),
       name: 'Demo User',
-      phone: '+212 ' + formatPhoneDisplay(authFormData.phone),
+      phone: `${countryCode} ${formatPhoneDisplay(authFormData.phone)}`,
       email: 'demo@example.com',
       avatar: null,
     };
@@ -1290,7 +1295,7 @@ const DonationFlow = () => {
     const userData = {
       id: 'user_' + Date.now(),
       name: authFormData.fullName,
-      phone: '+212 ' + formatPhoneDisplay(authFormData.phone),
+      phone: `${countryCode} ${formatPhoneDisplay(authFormData.phone)}`,
       email: authFormData.email,
       avatar: null,
     };
@@ -1409,6 +1414,10 @@ const DonationFlow = () => {
     setStep,
     setShowPassword,
     setShowConfirmPassword,
+    handleOtpVerify,
+    isLoading,
+    countryCode,
+    setCountryCode,
   };
   
   const step1Props = {

@@ -15,6 +15,7 @@ export { default as ProgressBar, CircularProgress, StepperProgress, SegmentedPro
 export { default as Input } from './Input';
 export { default as Select } from './Select';
 export { default as RichTextEditor } from './RichTextEditor';
+export { default as CountryCodeSelector } from './CountryCodeSelector';
 
 // Re-export UI components from ui folder
 export * from './ui';

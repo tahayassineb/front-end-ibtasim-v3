@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
+import CountryCodeSelector, { validatePhoneByCountry, formatPhoneForDisplay } from '../components/CountryCodeSelector';
 
 // ============================================
 // REGISTER PAGE - Phone + Password with OTP
@@ -16,6 +17,7 @@ const Register = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [countryCode, setCountryCode] = useState('+212');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -124,17 +126,14 @@ const Register = () => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
   
-  // Validate phone
+  // Validate phone using CountryCodeSelector validation
   const validatePhone = (phone) => {
-    return /^[56]\d{8}$/.test(phone);
+    return validatePhoneByCountry(phone, countryCode);
   };
   
-  // Format phone for display
+  // Format phone for display using CountryCodeSelector formatter
   const formatPhoneDisplay = (phone) => {
-    if (phone.length <= 2) return phone;
-    if (phone.length <= 5) return `${phone.slice(0, 2)} ${phone.slice(2)}`;
-    if (phone.length <= 8) return `${phone.slice(0, 2)} ${phone.slice(2, 5)} ${phone.slice(5)}`;
-    return `${phone.slice(0, 2)} ${phone.slice(2, 5)} ${phone.slice(5, 8)} ${phone.slice(8)}`;
+    return formatPhoneForDisplay(phone, countryCode);
   };
   
   // Handle phone input with cursor position fix
@@ -234,7 +233,7 @@ const Register = () => {
     const userData = {
       id: 'user_' + Date.now(),
       name: fullName,
-      phone: '+212 ' + formatPhoneDisplay(phone),
+      phone: countryCode + ' ' + formatPhoneDisplay(phone),
       email: email,
       avatar: null,
     };
@@ -273,7 +272,7 @@ const Register = () => {
             {tx.enterOtp}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 text-base text-center max-w-xs">
-            {tx.otpSent} <span className="font-bold text-primary" dir="ltr">+212 {formatPhoneDisplay(phone)}</span>
+            {tx.otpSent} <span className="font-bold text-primary" dir="ltr">{countryCode} {formatPhoneDisplay(phone)}</span>
           </p>
           
           <div className="mt-10 w-full max-w-sm">
@@ -385,13 +384,18 @@ const Register = () => {
             {errors.email && <p className="text-error text-xs mt-1">{errors.email}</p>}
           </div>
           
-          {/* Phone Input */}
+          {/* Phone Input with CountryCodeSelector */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {tx.phoneLabel}
             </label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">+212</span>
+            <div className="flex gap-2">
+              <CountryCodeSelector
+                value={countryCode}
+                onChange={setCountryCode}
+                lang={lang}
+                disabled={isLoading}
+              />
               <input
                 ref={phoneInputRef}
                 type="tel"
@@ -399,7 +403,7 @@ const Register = () => {
                 onChange={handlePhoneChange}
                 placeholder={tx.phonePlaceholder}
                 maxLength={10}
-                className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-16 pr-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
+                className="flex-1 h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
                 dir="ltr"
                 inputMode="numeric"
                 pattern="[0-9]*"
