@@ -213,7 +213,7 @@ const ProjectsList = () => {
                     {language === 'ar' ? 'من أصل' : language === 'fr' ? 'sur' : 'of'} MAD {project.goal.toLocaleString()}
                   </p>
                 </div>
-                <Link to={`/projects/${project.id}`}>
+                <Link to={`/projects/${project.id}`} onClick={() => window.scrollTo(0, 0)}>
                   <Button className="min-w-[120px] h-12">
                     {language === 'ar' ? 'تبرع الآن' : language === 'fr' ? 'Faire un Don' : 'Donate Now'}
                   </Button>

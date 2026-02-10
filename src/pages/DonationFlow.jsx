@@ -399,17 +399,6 @@ const Step0Auth = ({
             </button>
           )}
           
-          {/* VERIFY OTP BUTTON - This was missing! */}
-          <Button
-            onClick={handleOtpVerify}
-            disabled={!isOtpComplete || isLoading}
-            fullWidth
-            size="xl"
-            loading={isLoading}
-            className="mt-6"
-          >
-            {tx.continueToDonation}
-          </Button>
         </div>
       </div>
     );
@@ -581,40 +570,6 @@ const Step1Amount = ({ tx, lang, project, donationData, setDonationData, formatC
             {lang === 'ar' ? project.titleAr : project.title}
           </p>
         </div>
-      </div>
-    </div>
-    
-    {/* Frequency */}
-    <div className="px-4 pt-4">
-      <h3 className="text-gray-900 dark:text-white text-base font-bold leading-tight tracking-tight mb-3">
-        {tx.donationFrequency}
-      </h3>
-      <div className="flex h-12 items-center justify-center rounded-xl bg-gray-200/50 dark:bg-white/10 p-1">
-        {['once', 'monthly'].map((freq) => (
-          <label
-            key={freq}
-            className={`
-              flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-lg px-2
-              transition-all text-sm font-semibold
-              ${donationData.frequency === freq 
-                ? 'bg-white dark:bg-primary shadow-sm text-primary dark:text-white' 
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
-              }
-            `}
-          >
-            <span className="truncate">
-              {freq === 'once' ? tx.once : tx.monthly}
-            </span>
-            <input
-              type="radio"
-              name="frequency"
-              value={freq}
-              checked={donationData.frequency === freq}
-              onChange={() => setDonationData(prev => ({ ...prev, frequency: freq }))}
-              className="hidden"
-            />
-          </label>
-        ))}
       </div>
     </div>
     

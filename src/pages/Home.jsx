@@ -233,7 +233,7 @@ const Home = () => {
                 </div>
                 <ProgressBar value={project.progress} size="sm" />
               </div>
-              <Link to={`/projects/${project.id}`} className="mt-auto">
+              <Link to={`/projects/${project.id}`} className="mt-auto" onClick={() => window.scrollTo(0, 0)}>
                 <Button fullWidth>
                   {language === 'ar' ? 'تبرع الآن' : language === 'fr' ? 'Faire un Don' : 'Donate Now'}
                 </Button>
