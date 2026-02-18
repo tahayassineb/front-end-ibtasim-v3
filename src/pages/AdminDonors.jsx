@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
@@ -13,6 +15,21 @@ const AdminDonors = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [tierFilter, setTierFilter] = useState('all');
+  
+  // Convex hooks
+  const donorsData = useQuery(api.admin.getDonors, { search: searchQuery || undefined, limit: 50 });
+  
+  // Transform Convex data to match component structure
+  const donors = donorsData?.donors ? donorsData.donors.map(d => ({
+    id: d._id,
+    name: d.fullName,
+    email: d.email,
+    avatar: null, // Could be added to schema later
+    tier: d.totalDonated > 20000 ? 'gold' : d.totalDonated > 5000 ? 'silver' : 'bronze',
+    totalDonated: d.totalDonated,
+    donationsCount: d.donationCount,
+    lastActive: d.lastLoginAt ? new Date(d.lastLoginAt).toLocaleDateString() : 'Never',
+  })) : [];
 
   // Translations
   const translations = {
@@ -65,8 +82,8 @@ const AdminDonors = () => {
 
   const t = translations[currentLanguage?.code] || translations.en;
 
-  // Mock donors data
-  const donors = [
+  // Mock donors data as fallback
+  const mockDonors = [
     {
       id: 1,
       name: 'Ahmed Mansouri',

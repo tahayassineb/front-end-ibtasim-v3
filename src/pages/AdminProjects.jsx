@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
@@ -27,6 +29,11 @@ const AdminProjects = () => {
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
+  
+  // Convex hooks
+  const convexProjects = useQuery(api.projects.getProjects, {});
+  const deleteProjectMutation = useMutation(api.projects.deleteProject);
+  const updateProjectMutation = useMutation(api.projects.updateProject);
 
   // Translations
   const translations = {
@@ -209,23 +216,21 @@ const AdminProjects = () => {
     },
   ];
 
-  // Load projects from localStorage or use defaults
-  const [projects, setProjects] = useState(() => {
-    const saved = localStorage.getItem('admin_projects');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error('Failed to parse saved projects', e);
-      }
-    }
-    return defaultProjects;
-  });
-
-  // Persist projects to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('admin_projects', JSON.stringify(projects));
-  }, [projects]);
+  // Use Convex projects data
+  const projects = convexProjects ? convexProjects.map(p => ({
+    id: p._id,
+    title: p.title,
+    category: p.category,
+    status: p.status,
+    featured: p.isFeatured,
+    goal: p.goalAmount,
+    raised: p.raisedAmount,
+    donors: 0, // Will be calculated from donations
+    daysLeft: p.endDate ? Math.ceil((p.endDate - Date.now()) / (1000 * 60 * 60 * 24)) : 30,
+    image: p.mainImage,
+    location: p.location,
+    beneficiaries: p.beneficiaries,
+  })) : defaultProjects;
 
   // Filter projects with safe string handling
   const filteredProjects = projects.filter(project => {
@@ -255,11 +260,16 @@ const AdminProjects = () => {
   };
 
   // Handle delete project
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (deleteConfirmId === id) {
-      setProjects(prev => prev.filter(p => p.id !== id));
-      setDeleteConfirmId(null);
-      showToast(t.projectDeleted, 'success');
+      try {
+        await deleteProjectMutation({ projectId: id });
+        setDeleteConfirmId(null);
+        showToast(t.projectDeleted, 'success');
+      } catch (error) {
+        console.error('Delete error:', error);
+        showToast('Failed to delete project', 'error');
+      }
     } else {
       setDeleteConfirmId(id);
       setTimeout(() => setDeleteConfirmId(null), 3000);
@@ -267,29 +277,41 @@ const AdminProjects = () => {
   };
 
   // Handle toggle status
-  const handleToggleStatus = (id) => {
-    setProjects(prev => prev.map(p => {
-      if (p.id === id) {
-        const statuses = ['active', 'completed', 'draft'];
-        const currentIndex = statuses.indexOf(p.status);
-        const nextStatus = statuses[(currentIndex + 1) % statuses.length];
-        return { ...p, status: nextStatus };
-      }
-      return p;
-    }));
-    showToast(t.statusUpdated, 'success');
+  const handleToggleStatus = async (id) => {
+    const project = projects.find(p => p.id === id);
+    if (!project) return;
+    
+    const statuses = ['active', 'completed', 'draft'];
+    const currentIndex = statuses.indexOf(project.status);
+    const nextStatus = statuses[(currentIndex + 1) % statuses.length];
+    
+    try {
+      await updateProjectMutation({
+        projectId: id,
+        updates: { status: nextStatus }
+      });
+      showToast(t.statusUpdated, 'success');
+    } catch (error) {
+      console.error('Update error:', error);
+      showToast('Failed to update status', 'error');
+    }
   };
 
   // Handle toggle featured
-  const handleToggleFeatured = (id) => {
-    setProjects(prev => prev.map(p => {
-      if (p.id === id) {
-        const newFeatured = !p.featured;
-        showToast(newFeatured ? t.markAsFeatured : t.removeFeatured, 'success');
-        return { ...p, featured: newFeatured };
-      }
-      return p;
-    }));
+  const handleToggleFeatured = async (id) => {
+    const project = projects.find(p => p.id === id);
+    if (!project) return;
+    
+    try {
+      await updateProjectMutation({
+        projectId: id,
+        updates: { isFeatured: !project.featured }
+      });
+      showToast(!project.featured ? t.markAsFeatured : t.removeFeatured, 'success');
+    } catch (error) {
+      console.error('Update error:', error);
+      showToast('Failed to update featured status', 'error');
+    }
   };
 
   // Handle view project

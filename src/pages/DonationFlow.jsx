@@ -1,5 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
@@ -968,8 +970,8 @@ const Step3ReceiptUpload = ({
 };
 
 // Step 4: Success
-const Step4Success = ({ tx, lang, project }) => {
-  const donationRef = `REF-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+const Step4Success = ({ tx, lang, project, donationReference }) => {
+  const donationRef = donationReference || `REF-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
   
   const handleShare = (platform) => {
     const text = lang === 'ar' 
@@ -1122,20 +1124,31 @@ const Header = ({ step, tx, isRTL, isAuthenticated, navigate, setStep }) => {
 const DonationFlow = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
-  const { 
-    t, 
-    currentLanguage, 
-    user, 
+  const {
+    t,
+    currentLanguage,
+    user,
     isAuthenticated,
     login,
-    donationState, 
-    updateDonation, 
-    resetDonation, 
-    nextDonationStep, 
+    donationState,
+    updateDonation,
+    resetDonation,
+    nextDonationStep,
     prevDonationStep,
     showToast,
     formatCurrency,
   } = useApp();
+  
+  // Convex mutations
+  const loginWithPassword = useMutation(api.auth.loginWithPassword);
+  const registerUser = useMutation(api.auth.registerUser);
+  const requestOTP = useMutation(api.auth.requestOTP);
+  const verifyOTP = useMutation(api.auth.verifyOTP);
+  const createDonation = useMutation(api.donations.createDonation);
+  const setPassword = useMutation(api.auth.setPassword);
+  
+  // Fetch project from Convex
+  const convexProject = useQuery(api.projects.getProjectById, { projectId });
   
   // Determine initial step based on auth status
   const getInitialStep = () => {
@@ -1150,6 +1163,7 @@ const DonationFlow = () => {
   const otpRefs = [useRef(), useRef(), useRef(), useRef()];
   const [uploadedFile, setUploadedFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
+  const [donationReference, setDonationReference] = useState(null);
   
   // Country code state (default to Morocco)
   const [countryCode, setCountryCode] = useState('+212');
@@ -1171,8 +1185,19 @@ const DonationFlow = () => {
   const isRTL = currentLanguage.dir === 'rtl';
   const lang = currentLanguage.code;
   
-  // Get project data
-  const project = MOCK_PROJECTS[projectId] || MOCK_PROJECTS['1'];
+  // Get project data from Convex
+  const project = convexProject ? {
+    id: convexProject._id,
+    title: convexProject.title?.en || 'Project',
+    titleAr: convexProject.title?.ar || 'مشروع',
+    image: convexProject.mainImage,
+    category: convexProject.category,
+    impact: {
+      ar: `دعم ${convexProject.category} في ${convexProject.location || 'المغرب'}`,
+      fr: `Soutenir ${convexProject.category} à ${convexProject.location || 'Maroc'}`,
+      en: `Support ${convexProject.category} in ${convexProject.location || 'Morocco'}`,
+    },
+  } : MOCK_PROJECTS[projectId] || MOCK_PROJECTS['1'];
   
   // Donation state
   const [donationData, setDonationData] = useState({
@@ -1267,22 +1292,38 @@ const DonationFlow = () => {
     }
     
     setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Demo login
-    const userData = {
-      id: 'user_' + Date.now(),
-      name: 'Demo User',
-      phone: `${countryCode} ${formatPhoneDisplay(authFormData.phone)}`,
-      email: 'demo@example.com',
-      avatar: null,
-    };
-    
-    login(userData);
-    setIsLoading(false);
-    setStep(1); // Go to amount selection
-    showToast(lang === 'ar' ? 'تم تسجيل الدخول' : lang === 'fr' ? 'Connecté' : 'Logged in', 'success');
+    try {
+      const fullPhoneNumber = countryCode + authFormData.phone;
+      const result = await loginWithPassword({
+        phoneNumber: fullPhoneNumber,
+        password: authFormData.password
+      });
+      
+      if (result.success && result.user) {
+        const userData = {
+          id: result.user._id,
+          name: result.user.fullName,
+          phone: result.user.phoneNumber,
+          email: result.user.email,
+          preferredLanguage: result.user.preferredLanguage,
+          isVerified: result.user.isVerified,
+        };
+        
+        login(userData);
+        setStep(1); // Go to amount selection
+        showToast(lang === 'ar' ? 'تم تسجيل الدخول' : lang === 'fr' ? 'Connecté' : 'Logged in', 'success');
+      } else {
+        setAuthErrors({ password: result.message || (lang === 'ar' ? 'فشل تسجيل الدخول' : lang === 'fr' ? 'Échec de connexion' : 'Login failed') });
+        showToast(result.message || 'Login failed', 'error');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setAuthErrors({ password: lang === 'ar' ? 'خطأ في الاتصال' : lang === 'fr' ? 'Erreur de connexion' : 'Connection error' });
+      showToast('Connection error', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   // Handle register submission
@@ -1309,10 +1350,43 @@ const DonationFlow = () => {
       return;
     }
     
-    // Send OTP
-    setOtpSent(true);
-    setOtpTimer(120);
-    showToast(lang === 'ar' ? 'تم إرسال الرمز' : lang === 'fr' ? 'Code envoyé' : 'Code sent', 'success');
+    setIsLoading(true);
+    
+    try {
+      // Register user in Convex
+      const fullPhoneNumber = countryCode + authFormData.phone;
+      const result = await registerUser({
+        fullName: authFormData.fullName,
+        email: authFormData.email,
+        phoneNumber: fullPhoneNumber,
+        preferredLanguage: lang,
+      });
+      
+      if (result.success) {
+        // Set password for the user
+        if (result.userId) {
+          await setPassword({
+            userId: result.userId,
+            password: authFormData.password,
+          });
+        }
+        
+        // Send OTP for verification
+        await requestOTP({ phoneNumber: fullPhoneNumber });
+        
+        setOtpSent(true);
+        setOtpTimer(120);
+        showToast(lang === 'ar' ? 'تم إرسال الرمز' : lang === 'fr' ? 'Code envoyé' : 'Code sent', 'success');
+      } else {
+        setAuthErrors({ phone: result.message });
+        showToast(result.message, 'error');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      showToast(lang === 'ar' ? 'خطأ في التسجيل' : lang === 'fr' ? 'Erreur d\'inscription' : 'Registration error', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   // Handle OTP verification
@@ -1385,16 +1459,48 @@ const DonationFlow = () => {
     }
     
     if (step === 3) {
+      const handleSubmitDonation = async () => {
+        if (!user || !project) {
+          showToast(lang === 'ar' ? 'يرجى تسجيل الدخول أولاً' : lang === 'fr' ? 'Veuillez vous connecter d\'abord' : 'Please login first', 'error');
+          return;
+        }
+        
+        setIsLoading(true);
+        try {
+          const donationId = await createDonation({
+            userId: user.id,
+            projectId: projectId,
+            amount: calculateTotal(),
+            paymentMethod: donationData.paymentMethod === 'bank' ? 'bank_transfer' :
+                          donationData.paymentMethod === 'card' ? 'card_whop' : 'cash_agency',
+            coversFees: donationData.coverFees,
+            isAnonymous: false,
+            message: donationData.message || '',
+            bankName: donationData.bankName || '',
+          });
+          
+          setDonationReference(donationId);
+          setIsLoading(false);
+          setStep(4);
+          showToast(lang === 'ar' ? 'تم إرسال التبرع بنجاح' : lang === 'fr' ? 'Don envoyé avec succès' : 'Donation submitted successfully', 'success');
+        } catch (error) {
+          console.error('Donation error:', error);
+          setIsLoading(false);
+          showToast(lang === 'ar' ? 'فشل إرسال التبرع' : lang === 'fr' ? 'Échec de l\'envoi du don' : 'Failed to submit donation', 'error');
+        }
+      };
+      
       return (
         <footer className="p-6 mt-auto bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-t border-gray-100 dark:border-gray-700">
           <Button
-            onClick={() => setStep(4)}
-            disabled={!uploadedFile}
+            onClick={handleSubmitDonation}
+            disabled={!uploadedFile || isLoading}
             fullWidth
             size="xl"
             icon="verified"
             iconPosition={isRTL ? 'right' : 'left'}
             className="shadow-xl shadow-primary/30"
+            loading={isLoading}
           >
             {tx.submitDonation}
           </Button>
@@ -1483,6 +1589,7 @@ const DonationFlow = () => {
     tx,
     lang,
     project,
+    donationReference,
   };
   
   const headerProps = {

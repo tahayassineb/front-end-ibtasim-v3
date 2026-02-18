@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -19,6 +21,11 @@ const AdminProjectForm = () => {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
   const galleryInputRef = useRef(null);
+  
+  // Convex hooks
+  const existingProject = useQuery(api.projects.getProjectById, isEditMode ? { projectId: id } : 'skip');
+  const createProjectMutation = useMutation(api.projects.createProject);
+  const updateProjectMutation = useMutation(api.projects.updateProject);
 
   // Translations
   const translations = {
@@ -404,60 +411,54 @@ const AdminProjectForm = () => {
     window.open(`/projects/preview-${isEditMode ? id : 'new'}`, '_blank');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     
-    // Save to localStorage
-    const savedProjects = JSON.parse(localStorage.getItem('admin_projects') || '[]');
+    setIsLoading(true);
     
-    // Get current language title for display
-    const currentLang = currentLanguage?.code || 'en';
-    const titleString = formData.title?.[currentLang] || formData.title?.en || 'Untitled Project';
-    const shortDescString = formData.shortDescription?.[currentLang] || formData.shortDescription?.en || '';
-    
-    // Prepare project data - flatten the structure for AdminProjects compatibility
-    const projectData = {
-      id: isEditMode ? parseInt(id, 10) : Date.now(),
-      title: titleString,
-      title_i18n: formData.title,
-      category: formData.category || 'General',
-      status: formData.status || 'draft',
-      featured: formData.featured || false,
-      goal: parseFloat(formData.goal) || 0,
-      currency: formData.currency || 'MAD',
-      raised: isEditMode ? (savedProjects.find(p => String(p.id) === String(id))?.raised || 0) : 0,
-      donors: isEditMode ? (savedProjects.find(p => String(p.id) === String(id))?.donors || 0) : 0,
-      daysLeft: isEditMode ? (savedProjects.find(p => String(p.id) === String(id))?.daysLeft || 30) : 30,
-      image: formData.mainImage,
-      shortDescription: shortDescString,
-      shortDescription_i18n: formData.shortDescription,
-      description: formData.description,
-      visibility: formData.visibility || 'public',
-      mainImage: formData.mainImage,
-      gallery: formData.gallery || [],
-      impact: formData.impact,
-      impactMetrics: formData.impactMetrics || [],
-      updates: formData.updates || [],
-    };
-    
-    let updatedProjects;
-    if (isEditMode) {
-      // Update existing project
-      updatedProjects = savedProjects.map(p =>
-        String(p.id) === String(id) ? projectData : p
-      );
-      // If not found in existing projects, add it
-      if (!savedProjects.find(p => String(p.id) === String(id))) {
-        updatedProjects.push(projectData);
+    try {
+      if (isEditMode) {
+        // Update existing project
+        await updateProjectMutation({
+          projectId: id,
+          updates: {
+            title: formData.title,
+            description: formData.description,
+            category: formData.category,
+            goalAmount: parseFloat(formData.goal) || 0,
+            mainImage: formData.mainImage,
+            gallery: formData.gallery,
+            status: formData.status,
+            isFeatured: formData.featured,
+            location: formData.location,
+            beneficiaries: parseInt(formData.beneficiaries) || 0,
+          }
+        });
+        showToast('Project updated', 'success');
+      } else {
+        // Create new project - need admin ID from context/storage
+        const adminId = localStorage.getItem('admin_id') || 'admin_placeholder';
+        await createProjectMutation({
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
+          goalAmount: parseFloat(formData.goal) || 0,
+          mainImage: formData.mainImage,
+          gallery: formData.gallery || [],
+          location: formData.location,
+          beneficiaries: parseInt(formData.beneficiaries) || 0,
+          isFeatured: formData.featured,
+          createdBy: adminId,
+        });
+        showToast('Project created', 'success');
       }
-    } else {
-      // Add new project
-      updatedProjects = [...savedProjects, projectData];
+      navigate('/admin/projects');
+    } catch (error) {
+      console.error('Submit error:', error);
+      showToast(isEditMode ? 'Failed to update project' : 'Failed to create project', 'error');
+    } finally {
+      setIsLoading(false);
     }
-    
-    localStorage.setItem('admin_projects', JSON.stringify(updatedProjects));
-    showToast(isEditMode ? 'Project updated' : 'Project created', 'success');
-    navigate('/admin/projects');
   };
 
   return (

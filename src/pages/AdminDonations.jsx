@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
@@ -14,56 +16,26 @@ const AdminDonations = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewingDonation, setViewingDonation] = useState(null);
-  const [donations, setDonations] = useState([
-    {
-      id: 1,
-      donor: 'Sarah Jenkins',
-      phone: '+1 234 567 890',
-      amount: 250,
-      trxId: 'TRX-9482',
-      project: 'Education Fund',
-      method: 'card',
-      status: 'confirmed',
-      receiptImage: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800&q=80',
-      date: '2024-01-15',
-    },
-    {
-      id: 2,
-      donor: 'Michael Chen',
-      phone: '+1 987 654 321',
-      amount: 1200,
-      trxId: 'TRX-8821',
-      project: 'Clean Water Project',
-      method: 'bank',
-      status: 'confirmed',
-      receiptImage: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800&q=80',
-      date: '2024-01-14',
-    },
-    {
-      id: 3,
-      donor: 'Alice Rivera',
-      phone: '+1 555 019 992',
-      amount: 45,
-      trxId: 'TRX-7712',
-      project: 'Food Program',
-      method: 'cash',
-      status: 'rejected',
-      receiptImage: null,
-      date: '2024-01-13',
-    },
-    {
-      id: 4,
-      donor: 'Robert Wilson',
-      phone: '+1 442 990 123',
-      amount: 3500,
-      trxId: 'TRX-9490',
-      project: 'Shelter Relief',
-      method: 'swift',
-      status: 'pending',
-      receiptImage: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=800&q=80',
-      date: '2024-01-12',
-    },
-  ]);
+  
+  // Convex hooks
+  const pendingVerifications = useQuery(api.donations.getPendingVerifications, {});
+  const verifyDonationMutation = useMutation(api.donations.verifyDonation);
+  const rejectDonationMutation = useMutation(api.donations.rejectDonation);
+  
+  // Transform Convex data to match component structure
+  const donations = pendingVerifications ? pendingVerifications.map(d => ({
+    id: d._id,
+    donor: d.userId, // Will be populated with user data
+    phone: '',
+    amount: d.amount,
+    trxId: `TRX-${d._id.slice(-4)}`,
+    project: d.projectId, // Will be populated with project data
+    method: d.paymentMethod === 'bank_transfer' ? 'bank' :
+            d.paymentMethod === 'card_whop' ? 'card' : 'cash',
+    status: d.status === 'awaiting_verification' ? 'pending' : d.status,
+    receiptImage: d.receiptUrl,
+    date: new Date(d.createdAt).toISOString().split('T')[0],
+  })) : [];
 
   // Handle view donation details
   const handleViewDonation = (id) => {

@@ -1,5 +1,7 @@
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
@@ -12,6 +14,39 @@ import Button from '../components/Button';
 const AdminDonorDetail = () => {
   const { id } = useParams();
   const { currentLanguage } = useApp();
+  
+  // Convex hooks
+  const donorData = useQuery(api.admin.getDonorById, { userId: id });
+  
+  // Transform Convex data to match component structure
+  const donor = donorData ? {
+    id: donorData._id,
+    name: donorData.fullName,
+    avatar: null,
+    email: donorData.email,
+    phone: donorData.phoneNumber,
+    totalDonated: donorData.totalDonated,
+    donorSince: new Date(donorData.createdAt).toISOString().split('T')[0],
+    tier: donorData.totalDonated > 20000 ? 'gold' : donorData.totalDonated > 5000 ? 'silver' : 'bronze',
+  } : {
+    id: parseInt(id) || 1,
+    name: 'Loading...',
+    avatar: null,
+    email: '',
+    phone: '',
+    totalDonated: 0,
+    donorSince: '',
+    tier: 'bronze',
+  };
+  
+  // Transform donation history from Convex data
+  const donationHistory = donorData?.donations ? donorData.donations.map(d => ({
+    id: d._id,
+    amount: d.amount,
+    project: d.projectTitle,
+    date: new Date(d.createdAt).toISOString().split('T')[0],
+    status: d.status,
+  })) : [];
 
   // Translations
   const translations = {

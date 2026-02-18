@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import { Card, Button, ProgressBar } from '../components';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 // ============================================
-// PROJECT DETAIL PAGE - Two-Column Layout
+// PROJECT DETAIL PAGE - Connected to Convex
 // ============================================
 
 const ProjectDetail = ({ preview = false }) => {
@@ -13,6 +16,9 @@ const ProjectDetail = ({ preview = false }) => {
   const navigate = useNavigate();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [previewData, setPreviewData] = useState(null);
+
+  // Fetch project from Convex backend
+  const convexProject = useQuery(api.projects.getProjectById, { projectId: id });
 
   // Load preview data from sessionStorage if in preview mode
   useEffect(() => {
@@ -23,88 +29,6 @@ const ProjectDetail = ({ preview = false }) => {
       }
     }
   }, [preview]);
-
-  // Mock project data - in real app, fetch by id
-  const mockProject = {
-    id: id,
-    title: {
-      en: 'Sustainable Atlas Education Hub',
-      fr: 'Centre d\'Éducation Durable de l\'Atlas',
-      ar: 'مركز التعليم المستدام في الأطلس',
-    },
-    location: {
-      en: 'High Atlas Mountains, Morocco',
-      fr: 'Haut Atlas, Maroc',
-      ar: 'جبال الأطلس العالي، المغرب',
-    },
-    description: {
-      en: 'In the heart of the High Atlas, children travel hours to reach basic education. Our mission is to build a sustainable, eco-friendly school that serves as a beacon of hope for three surrounding villages.',
-      fr: 'Au cœur du Haut Atlas, les enfants parcourent des heures pour accéder à l\'éducation de base. Notre mission est de construire une école durable et écologique qui serve de phare d\'espoir pour trois villages environnants.',
-      ar: 'في قلب الأطلس العالي، يسافر الأطفال ساعات للوصول إلى التعليم الأساسي. مهمتنا هي بناء مدرسة مستدامة وصديقة للبيئة تكون منارة أمل لثلاث قرى مجاورة.',
-    },
-    description2: {
-      en: 'The architecture draws inspiration from traditional earth-building techniques, ensuring natural thermal regulation during harsh winters and hot summers, combined with modern solar energy and digital facilities.',
-      fr: 'L\'architecture s\'inspire des techniques traditionnelles de construction en terre, assurant une régulation thermique naturelle pendant les hivers rigoureux et les étés chauds, combinée avec l\'énergie solaire moderne et les installations numériques.',
-      ar: 'يستلهم العمارة التقنيات التقليدية للبناء بالطين، مما يضمن التنظيم الحراري الطبيعي خلال فصول الشتاء القاسية والصيف الحار، بالإضافة إلى الطاقة الشمسية الحديثة والمرافق الرقمية.',
-    },
-    impact: {
-      en: 'This project will directly impact 150 children across three villages, providing them with access to quality education, digital literacy, and a safe learning environment year-round.',
-      fr: 'Ce projet impactera directement 150 enfants dans trois villages, leur donnant accès à une éducation de qualité, à la littératie numérique et à un environnement d\'apprentissage sûr toute l\'année.',
-      ar: 'سيؤثر هذا المشروع بشكل مباشر على 150 طفلاً في ثلاث قرى، مما يوفر لهم الوصول إلى تعليم عالي الجودة والمعرفة الرقمية وبيئة تعليمية آمنة على مدار العام.',
-    },
-    raised: 52480,
-    goal: 75000,
-    progress: 70,
-    donors: 124,
-    daysLeft: 12,
-    category: 'education',
-    image: 'https://images.unsplash.com/photo-1564429238984-b3cd3a5ba0b4?w=1200&q=80',
-    gallery: [
-      'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&q=80',
-      'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?w=600&q=80',
-      'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&q=80',
-    ],
-    updates: [
-      {
-        id: 1,
-        date: 'Oct 24, 2023',
-        title: {
-          en: 'Foundation Completed',
-          fr: 'Fondation Terminée',
-          ar: 'اكتمل الأساس',
-        },
-        description: {
-          en: 'The main structure base is now secure and ready for wall assembly.',
-          fr: 'La base de la structure principale est maintenant sécurisée et prête pour l\'assemblage des murs.',
-          ar: 'قاعدة الهيكل الرئيسي آمنة الآن وجاهزة لتجميع الجدران.',
-        },
-        icon: 'foundation',
-      },
-      {
-        id: 2,
-        date: 'Nov 15, 2023',
-        title: {
-          en: 'Materials Delivered',
-          fr: 'Matériaux Livrés',
-          ar: 'تم تسليم المواد',
-        },
-        description: {
-          en: 'All sustainable building materials have arrived at the construction site.',
-          fr: 'Tous les matériaux de construction durables sont arrivés sur le chantier.',
-          ar: 'وصلت جميع مواد البناء المستدامة إلى موقع البناء.',
-        },
-        icon: 'local_shipping',
-      },
-    ],
-  };
-
-  // Use preview data if in preview mode
-  const project = previewData || mockProject;
-
-  const getLocalizedText = (obj) => {
-    if (typeof obj === 'string') return obj;
-    return obj[language] || obj.en;
-  };
 
   // Handle scroll to top visibility
   useEffect(() => {
@@ -119,9 +43,88 @@ const ProjectDetail = ({ preview = false }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDonateClick = () => {
-    navigate(`/donate/${project.id}`);
+  // Transform project data for display
+  const project = useMemo(() => {
+    if (previewData) return previewData;
+    if (!convexProject) return null;
+
+    const progress = Math.round((convexProject.raisedAmount / convexProject.goalAmount) * 100);
+
+    return {
+      id: convexProject._id,
+      title: convexProject.title,
+      location: { 
+        ar: convexProject.location || 'المغرب', 
+        fr: convexProject.location || 'Maroc', 
+        en: convexProject.location || 'Morocco' 
+      },
+      description: convexProject.description,
+      description2: { ar: '', fr: '', en: '' },
+      impact: { ar: '', fr: '', en: '' },
+      raised: convexProject.raisedAmount / 100,
+      goal: convexProject.goalAmount / 100,
+      progress: progress,
+      donors: 0,
+      daysLeft: convexProject.endDate 
+        ? Math.max(0, Math.ceil((convexProject.endDate - Date.now()) / (1000 * 60 * 60 * 24))) 
+        : 30,
+      category: convexProject.category,
+      image: convexProject.mainImage,
+      gallery: convexProject.gallery?.length > 0 ? convexProject.gallery : [
+        'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&q=80',
+        'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?w=600&q=80',
+        'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&q=80',
+      ],
+      updates: [],
+    };
+  }, [convexProject, previewData]);
+
+  const getLocalizedText = (obj) => {
+    if (typeof obj === 'string') return obj;
+    return obj[language] || obj.en;
   };
+
+  const handleDonateClick = () => {
+    if (project) {
+      navigate(`/donate/${project.id}`);
+    }
+  };
+
+  // Loading state
+  if (!preview && convexProject === undefined) {
+    return (
+      <div className="min-h-screen bg-bg-light dark:bg-bg-dark flex items-center justify-center">
+        <LoadingSpinner size="large" />
+      </div>
+    );
+  }
+
+  // Not found state
+  if (!preview && convexProject === null) {
+    return (
+      <div className="min-h-screen bg-bg-light dark:bg-bg-dark flex flex-col items-center justify-center p-4">
+        <span className="material-symbols-outlined text-6xl text-text-secondary mb-4">error_outline</span>
+        <h1 className="text-2xl font-bold text-text-primary dark:text-white mb-2">
+          {language === 'ar' ? 'المشروع غير موجود' : language === 'fr' ? 'Projet non trouvé' : 'Project Not Found'}
+        </h1>
+        <p className="text-text-secondary mb-6">
+          {language === 'ar' ? 'المشروع الذي تبحث عنه غير متوفر' : language === 'fr' ? 'Le projet que vous recherchez n\'est pas disponible' : 'The project you are looking for is not available'}
+        </p>
+        <Button onClick={() => navigate('/projects')}>
+          {language === 'ar' ? 'عرض جميع المشاريع' : language === 'fr' ? 'Voir tous les projets' : 'View All Projects'}
+        </Button>
+      </div>
+    );
+  }
+
+  // No project data yet
+  if (!project) {
+    return (
+      <div className="min-h-screen bg-bg-light dark:bg-bg-dark flex items-center justify-center">
+        <LoadingSpinner size="large" />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-bg-light dark:bg-bg-dark min-h-screen">
@@ -178,12 +181,12 @@ const ProjectDetail = ({ preview = false }) => {
                 <div>
                   <p className="text-sm text-text-secondary dark:text-text-white/60">
                     {language === 'ar'
-                      ? 'تم جمعه من أصل $75,000'
+                      ? `تم جمعه من أصل ${project.goal.toLocaleString()} MAD`
                       : language === 'fr'
-                      ? 'Collecté sur $75,000'
-                      : 'Raised of $75,000'}
+                      ? `Collecté sur ${project.goal.toLocaleString()} MAD`
+                      : `Raised of ${project.goal.toLocaleString()} MAD`}
                   </p>
-                  <h3 className="text-2xl font-bold text-primary">${project.raised.toLocaleString()}</h3>
+                  <h3 className="text-2xl font-bold text-primary">{project.raised.toLocaleString()} MAD</h3>
                 </div>
                 <p className="text-sm font-bold text-text-primary dark:text-white">{project.progress}%</p>
               </div>
@@ -226,83 +229,95 @@ const ProjectDetail = ({ preview = false }) => {
             </h3>
             <div className="space-y-4 text-text-secondary dark:text-text-white/80 text-base font-normal leading-relaxed">
               <p>{getLocalizedText(project.description)}</p>
-              <p>{getLocalizedText(project.description2)}</p>
+              {getLocalizedText(project.description2) && <p>{getLocalizedText(project.description2)}</p>}
             </div>
           </div>
 
           {/* Impact Section */}
-          <div className="bg-primary/5 dark:bg-primary/10 rounded-2xl p-6 border border-primary/20">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                <span className="material-symbols-outlined text-primary">volunteer_activism</span>
+          {getLocalizedText(project.impact) && (
+            <div className="bg-primary/5 dark:bg-primary/10 rounded-2xl p-6 border border-primary/20">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-primary">volunteer_activism</span>
+                </div>
+                <h3 className="text-text-primary dark:text-white text-lg font-bold">
+                  {language === 'ar' ? 'التأثير' : language === 'fr' ? 'Impact' : 'Impact'}
+                </h3>
               </div>
-              <h3 className="text-text-primary dark:text-white text-lg font-bold">
-                {language === 'ar' ? 'التأثير' : language === 'fr' ? 'Impact' : 'Impact'}
-              </h3>
+              <p className="text-text-secondary dark:text-text-white/80 leading-relaxed">
+                {getLocalizedText(project.impact)}
+              </p>
             </div>
-            <p className="text-text-secondary dark:text-text-white/80 leading-relaxed">
-              {getLocalizedText(project.impact)}
-            </p>
-          </div>
+          )}
 
           {/* Gallery Section */}
-          <div>
-            <h3 className="text-text-primary dark:text-white text-lg font-bold leading-tight mb-4">
-              {language === 'ar' ? 'المجتمع والتقدم' : language === 'fr' ? 'Communauté et Progrès' : 'Community & Progress'}
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="aspect-square rounded-xl overflow-hidden shadow-sm">
-                <img
-                  src={project.gallery[0]}
-                  alt="Community"
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                />
-              </div>
-              <div className="aspect-square rounded-xl overflow-hidden shadow-sm">
-                <img
-                  src={project.gallery[1]}
-                  alt="Construction"
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                />
-              </div>
-              <div className="col-span-2 h-48 rounded-xl overflow-hidden shadow-sm">
-                <img
-                  src={project.gallery[2]}
-                  alt="Landscape"
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                />
+          {project.gallery && project.gallery.length > 0 && (
+            <div>
+              <h3 className="text-text-primary dark:text-white text-lg font-bold leading-tight mb-4">
+                {language === 'ar' ? 'المجتمع والتقدم' : language === 'fr' ? 'Communauté et Progrès' : 'Community & Progress'}
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                {project.gallery[0] && (
+                  <div className="aspect-square rounded-xl overflow-hidden shadow-sm">
+                    <img
+                      src={project.gallery[0]}
+                      alt="Community"
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                )}
+                {project.gallery[1] && (
+                  <div className="aspect-square rounded-xl overflow-hidden shadow-sm">
+                    <img
+                      src={project.gallery[1]}
+                      alt="Construction"
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                )}
+                {project.gallery[2] && (
+                  <div className="col-span-2 h-48 rounded-xl overflow-hidden shadow-sm">
+                    <img
+                      src={project.gallery[2]}
+                      alt="Landscape"
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                )}
               </div>
             </div>
-          </div>
+          )}
 
           {/* Project Progress Updates */}
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-text-primary dark:text-white text-lg font-bold">
-                {language === 'ar' ? 'آخر التحديثات' : language === 'fr' ? 'Dernières Mises à Jour' : 'Latest Updates'}
-              </h3>
-              <span className="text-primary text-sm font-bold cursor-pointer hover:underline">
-                {language === 'ar' ? 'عرض الكل' : language === 'fr' ? 'Voir Tout' : 'View All'}
-              </span>
-            </div>
-            {project.updates.map((update) => (
-              <div
-                key={update.id}
-                className="flex gap-4 p-5 rounded-xl bg-white dark:bg-bg-dark-card border border-border-light dark:border-white/10 shadow-sm"
-              >
-                <div className="flex-shrink-0 size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                  <span className="material-symbols-outlined">{update.icon}</span>
-                </div>
-                <div>
-                  <p className="text-xs text-text-muted dark:text-text-white/50">{update.date}</p>
-                  <h4 className="font-bold text-text-primary dark:text-white">{getLocalizedText(update.title)}</h4>
-                  <p className="text-sm text-text-secondary dark:text-text-white/70">
-                    {getLocalizedText(update.description)}
-                  </p>
-                </div>
+          {project.updates && project.updates.length > 0 && (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-text-primary dark:text-white text-lg font-bold">
+                  {language === 'ar' ? 'آخر التحديثات' : language === 'fr' ? 'Dernières Mises à Jour' : 'Latest Updates'}
+                </h3>
+                <span className="text-primary text-sm font-bold cursor-pointer hover:underline">
+                  {language === 'ar' ? 'عرض الكل' : language === 'fr' ? 'Voir Tout' : 'View All'}
+                </span>
               </div>
-            ))}
-          </div>
+              {project.updates.map((update) => (
+                <div
+                  key={update.id}
+                  className="flex gap-4 p-5 rounded-xl bg-white dark:bg-bg-dark-card border border-border-light dark:border-white/10 shadow-sm"
+                >
+                  <div className="flex-shrink-0 size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                    <span className="material-symbols-outlined">{update.icon}</span>
+                  </div>
+                  <div>
+                    <p className="text-xs text-text-muted dark:text-text-white/50">{update.date}</p>
+                    <h4 className="font-bold text-text-primary dark:text-white">{getLocalizedText(update.title)}</h4>
+                    <p className="text-sm text-text-secondary dark:text-text-white/70">
+                      {getLocalizedText(update.description)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Footer Action - Transparency */}
           <div className="py-8 flex flex-col items-center gap-4 text-center bg-white dark:bg-bg-dark-card rounded-2xl p-6 border border-border-light dark:border-white/10">

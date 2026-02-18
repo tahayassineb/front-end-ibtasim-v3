@@ -1,137 +1,44 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import { Card, Button, Badge, ProgressBar } from '../components';
 
 // ============================================
-// PROJECTS LIST PAGE - Projects Gallery
-// Loads projects from localStorage (shared with admin)
+// PROJECTS LIST PAGE - Connected to Convex
 // ============================================
-
-// Default projects data (used when no projects in localStorage)
-const defaultProjects = [
-  {
-    id: 1,
-    title: {
-      en: 'Build a School in Atlas',
-      fr: 'Construire une École dans l\'Atlas',
-      ar: 'بناء مدرسة في الأطلس',
-    },
-    description: {
-      en: 'Providing quality modern education for 200 children in the Atlas Mountains region.',
-      fr: 'Fourniture d\'une éducation moderne de qualité pour 200 enfants dans la région des montagnes de l\'Atlas.',
-      ar: 'توفير تعليم حديث عالي الجودة لـ 200 طفل في منطقة جبال الأطلس.',
-    },
-    category: 'education',
-    raised: 45000,
-    goal: 70000,
-    progress: 65,
-    daysLeft: 25,
-    donors: 142,
-    image: 'https://images.unsplash.com/photo-1564429238984-b3cd3a5ba0b4?w=800&q=80',
-  },
-  {
-    id: 2,
-    title: {
-      en: 'Clean Water Initiative',
-      fr: 'Initiative Eau Propre',
-      ar: 'مبادرة المياه النظيفة',
-    },
-    description: {
-      en: 'Developing sustainable water filtration systems for remote villages in Southern Morocco.',
-      fr: 'Développement de systèmes de filtration d\'eau durables pour les villages reculés du Sud du Maroc.',
-      ar: 'تطوير أنظمة ترشيح مياه مستدامة للقرى النائية في جنوب المغرب.',
-    },
-    category: 'water',
-    raised: 18200,
-    goal: 22000,
-    progress: 82,
-    daysLeft: 12,
-    donors: 89,
-    image: 'https://images.unsplash.com/photo-1538300342682-cf57afb97285?w=800&q=80',
-  },
-  {
-    id: 3,
-    title: {
-      en: 'Rural Health Clinics',
-      fr: 'Cliniques de Santé Rurales',
-      ar: 'عيادات الصحة الريفية',
-    },
-    description: {
-      en: 'Support our mobile clinics providing essential medical care to high-altitude communities.',
-      fr: 'Soutenez nos cliniques mobiles fournissant des soins médicaux essentiels aux communautés en altitude.',
-      ar: 'ادعم عياداتنا المتنقلة التي تقدم الرعاية الطبية الأساسية للمجتمعات في المناطق المرتفعة.',
-    },
-    category: 'health',
-    raised: 105000,
-    goal: 350000,
-    progress: 30,
-    daysLeft: 45,
-    donors: 234,
-    image: 'https://images.unsplash.com/photo-1584982751601-97dcc096659c?w=800&q=80',
-  },
-];
-
-// Helper to normalize project data from localStorage
-const normalizeProject = (project) => {
-  // Handle both i18n and string formats
-  const title = typeof project.title === 'object' && project.title !== null
-    ? project.title
-    : { en: project.title || 'Untitled Project', fr: project.title || 'Projet sans titre', ar: project.title || 'مشروع بدون عنوان' };
-  
-  const description = project.description || project.shortDescription_i18n || project.shortDescription || {
-    en: 'No description available',
-    fr: 'Aucune description disponible',
-    ar: 'لا يوجد وصف متاح'
-  };
-  
-  // Convert string description to i18n if needed
-  const normalizedDescription = typeof description === 'object' && description !== null
-    ? description
-    : { en: description, fr: description, ar: description };
-  
-  const shortDesc = project.shortDescription_i18n || normalizedDescription;
-  
-  return {
-    ...project,
-    title,
-    description: shortDesc,
-    image: project.image || project.mainImage || 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&q=80',
-    category: project.category || 'General',
-    raised: project.raised || 0,
-    goal: project.goal || 0,
-    progress: project.progress || Math.round(((project.raised || 0) / (project.goal || 1)) * 100),
-    daysLeft: project.daysLeft || 30,
-    donors: project.donors || 0,
-  };
-};
 
 const ProjectsList = () => {
   const { t, currentLanguage } = useApp();
   const language = currentLanguage?.code || 'en';
   const [searchQuery, setSearchQuery] = useState('');
-  const [projects, setProjects] = useState(defaultProjects);
+  
+  // Fetch projects from Convex backend
+  const convexProjects = useQuery(api.projects.getProjects, { 
+    status: "active",
+    limit: 100 
+  });
 
-  // Load projects from localStorage (shared with admin)
-  useEffect(() => {
-    const savedProjects = localStorage.getItem('admin_projects');
-    if (savedProjects) {
-      try {
-        const parsed = JSON.parse(savedProjects);
-        // Filter only public/active projects and normalize data
-        const publicProjects = parsed
-          .filter(p => p.visibility !== 'private' && p.status !== 'draft')
-          .map(normalizeProject);
-        if (publicProjects.length > 0) {
-          setProjects(publicProjects);
-        }
-      } catch (e) {
-        console.error('Failed to load projects from localStorage', e);
-      }
-    }
-  }, []);
+  // Transform Convex data to match component format
+  const projects = useMemo(() => {
+    if (!convexProjects) return [];
+    
+    return convexProjects.map(project => ({
+      id: project._id,
+      title: project.title,
+      description: project.description,
+      category: project.category,
+      raised: project.raisedAmount,
+      goal: project.goalAmount,
+      progress: Math.round((project.raisedAmount / project.goalAmount) * 100),
+      image: project.mainImage,
+      location: project.location,
+      beneficiaries: project.beneficiaries,
+    }));
+  }, [convexProjects]);
 
-  // Categories with translations (for reference only, no filter)
+  // Categories with translations
   const categories = [
     { id: 'all', label: { en: 'All', fr: 'Tous', ar: 'الكل' }, icon: 'apps' },
     { id: 'education', label: { en: 'Education', fr: 'Éducation', ar: 'التعليم' }, icon: 'school' },
@@ -144,13 +51,27 @@ const ProjectsList = () => {
     return obj[language] || obj.en;
   };
 
-  // Filter projects by search only (no category filter)
+  // Filter projects by search
   const filteredProjects = projects.filter((project) => {
     const matchesSearch = getLocalizedText(project.title)
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
+
+  // Loading state
+  if (convexProjects === undefined) {
+    return (
+      <div className="bg-bg-light dark:bg-bg-dark min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-text-secondary">
+            {language === 'ar' ? 'جاري التحميل...' : language === 'fr' ? 'Chargement...' : 'Loading...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-bg-light dark:bg-bg-dark min-h-screen pb-24">
@@ -198,67 +119,80 @@ const ProjectsList = () => {
             hoverable
             className="overflow-hidden shadow-lg shadow-black/5 border border-border-light dark:border-white/10 h-full flex flex-col"
           >
-            {/* Image with overlay */}
-            <div
-              className="relative w-full aspect-[16/10] bg-center bg-no-repeat bg-cover overflow-hidden"
-              style={{ backgroundImage: `url("${project.image}")` }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+            {/* Image Container */}
+            <div className="relative aspect-[4/3] overflow-hidden">
+              <img
+                src={project.image}
+                alt={getLocalizedText(project.title)}
+                className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+              />
+              {/* Category Badge */}
+              <div className="absolute top-3 left-3">
+                <Badge 
+                  variant="primary" 
+                  className="bg-white/90 dark:bg-bg-dark-card/90 backdrop-blur-sm text-xs font-medium px-3 py-1 shadow-sm"
+                >
+                  {project.category}
+                </Badge>
+              </div>
             </div>
 
             {/* Content */}
-            <div className="flex w-full flex-col gap-4 p-5">
-              <div className="flex flex-col gap-1">
-                <p className="text-text-primary dark:text-white text-xl font-bold leading-tight">
-                  {getLocalizedText(project.title)}
-                </p>
-                <p className="text-primary/70 dark:text-primary/80 text-sm font-normal leading-relaxed">
-                  {getLocalizedText(project.description)}
-                </p>
-              </div>
+            <div className="p-5 flex flex-col flex-1">
+              <h4 className="text-text-primary dark:text-white text-lg font-bold leading-tight mb-2 line-clamp-2">
+                {getLocalizedText(project.title)}
+              </h4>
+              
+              <p className="text-text-secondary dark:text-text-secondary text-sm leading-relaxed mb-4 line-clamp-2 flex-1">
+                {getLocalizedText(project.description)}
+              </p>
 
               {/* Progress Bar */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center text-xs font-bold">
-                  <span className="text-primary">{project.progress}% {language === 'ar' ? 'ممول' : language === 'fr' ? 'Financé' : 'Funded'}</span>
-                  <span className="text-text-muted dark:text-text-white/50">
-                    {project.daysLeft} {language === 'ar' ? 'يوم متبقي' : language === 'fr' ? 'jours restants' : 'days left'}
+              <div className="mb-4">
+                <ProgressBar 
+                  progress={project.progress} 
+                  size="md"
+                  className="mb-2"
+                />
+                <div className="flex justify-between text-sm">
+                  <span className="text-primary font-semibold">
+                    {project.raised.toLocaleString()} MAD
+                  </span>
+                  <span className="text-text-secondary">
+                    {language === 'ar' ? 'هدف' : language === 'fr' ? 'objectif' : 'goal'}: {project.goal.toLocaleString()} MAD
                   </span>
                 </div>
-                <ProgressBar value={project.progress} size="sm" />
               </div>
 
-              {/* Footer with amount and button */}
-              <div className="flex items-center justify-between pt-2">
-                <div className="flex flex-col">
-                  <p className="text-text-primary dark:text-white text-lg font-bold">
-                    MAD {project.raised.toLocaleString()}
-                  </p>
-                  <p className="text-text-muted text-xs">
-                    {language === 'ar' ? 'من أصل' : language === 'fr' ? 'sur' : 'of'} MAD {project.goal.toLocaleString()}
-                  </p>
-                </div>
-                <Link to={`/projects/${project.id}`} onClick={() => window.scrollTo(0, 0)}>
-                  <Button className="min-w-[120px] h-12">
-                    {language === 'ar' ? 'تبرع الآن' : language === 'fr' ? 'Faire un Don' : 'Donate Now'}
-                  </Button>
-                </Link>
-              </div>
+              {/* Action Button */}
+              <Link to={`/projects/${project.id}`} className="w-full">
+                <Button 
+                  variant="primary" 
+                  fullWidth
+                  className="shadow-primary hover:shadow-lg transition-shadow"
+                >
+                  {language === 'ar' 
+                    ? 'تبرع الآن' 
+                    : language === 'fr' 
+                    ? 'Faire un don' 
+                    : 'Donate Now'}
+                </Button>
+              </Link>
             </div>
           </Card>
         ))}
       </div>
 
-      {/* Empty state */}
+      {/* Empty State */}
       {filteredProjects.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 px-4">
-          <span className="material-symbols-outlined text-6xl text-text-muted mb-4">search_off</span>
+        <div className="text-center py-12">
+          <span className="material-symbols-outlined text-6xl text-text-secondary mb-4">folder_open</span>
           <p className="text-text-secondary text-lg">
-            {language === 'ar'
-              ? 'لم يتم العثور على مشاريع'
-              : language === 'fr'
-              ? 'Aucun projet trouvé'
-              : 'No projects found'}
+            {language === 'ar' 
+              ? 'لا توجد مشاريع متاحة حالياً' 
+              : language === 'fr' 
+              ? 'Aucun projet disponible pour le moment' 
+              : 'No projects available at the moment'}
           </p>
         </div>
       )}

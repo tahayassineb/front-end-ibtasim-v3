@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import CountryCodeSelector, { validatePhoneByCountry, formatPhoneForDisplay } from '../components/CountryCodeSelector';
@@ -33,6 +35,9 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, currentLanguage, login, showToast } = useApp();
+  
+  // Convex mutation for login
+  const loginWithPassword = useMutation(api.auth.loginWithPassword);
   
   const [phone, setPhone] = useState('');
   const [countryCode, setCountryCode] = useState('+212');
@@ -158,24 +163,40 @@ const Login = () => {
     
     setIsLoading(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Demo login
-    const userData = {
-      id: 'user_' + Date.now(),
-      name: 'Demo User',
-      phone: countryCode + ' ' + formatPhoneDisplay(phone),
-      email: 'demo@example.com',
-      avatar: null,
-    };
-    
-    login(userData);
-    setIsLoading(false);
-    showToast(lang === 'ar' ? 'تم تسجيل الدخول' : lang === 'fr' ? 'Connecté' : 'Logged in', 'success');
-    
-    // Redirect to return URL
-    navigate(returnUrl, { replace: true });
+    try {
+      // Call Convex API for login
+      const fullPhoneNumber = countryCode + phone;
+      const result = await loginWithPassword({
+        phoneNumber: fullPhoneNumber,
+        password
+      });
+      
+      if (result.success && result.user) {
+        // Login successful
+        const userData = {
+          id: result.user._id,
+          name: result.user.fullName,
+          phone: result.user.phoneNumber,
+          email: result.user.email,
+          preferredLanguage: result.user.preferredLanguage,
+          isVerified: result.user.isVerified,
+        };
+        
+        login(userData);
+        showToast(lang === 'ar' ? 'تم تسجيل الدخول' : lang === 'fr' ? 'Connecté' : 'Logged in', 'success');
+        navigate(returnUrl, { replace: true });
+      } else {
+        // Login failed
+        setErrors({ password: result.message || tx.loginError });
+        showToast(result.message || tx.loginError, 'error');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setErrors({ password: tx.loginError });
+      showToast(tx.loginError, 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   return (
