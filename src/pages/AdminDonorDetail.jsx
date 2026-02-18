@@ -111,25 +111,6 @@ const AdminDonorDetail = () => {
 
   const t = translations[currentLanguage.code] || translations.en;
 
-  // Mock donor data
-  const donor = {
-    id: parseInt(id) || 1,
-    name: 'Jean Dupont',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
-    email: 'jean.dupont@email.com',
-    phone: '+33 6 12 34 56 78',
-    totalDonated: 5420,
-    donorSince: '2022-01-12',
-    tier: 'gold',
-  };
-
-  // Mock donation history
-  const donationHistory = [
-    { id: 1, amount: 500, project: 'Annual Gala 2023', date: '2023-10-24', status: 'success' },
-    { id: 2, amount: 1200, project: 'Winter Shelter Drive', date: '2023-01-05', status: 'success' },
-    { id: 3, amount: 150, project: 'Monthly Subscription', date: '2022-12-01', status: 'success' },
-  ];
-
   // Mock communication log
   const communications = [
     {

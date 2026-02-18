@@ -97,9 +97,6 @@ const translations = {
     agencyCash: 'نقدي',
     agenciesList: 'Wafacash، Cash Plus',
     
-    accountHolder: 'صاحب الحساب',
-    rib: 'رقم الحساب (RIB)',
-    
     // Step 4 - Receipt Upload
     receiptUpload: 'رفع الإيصال',
     step5of5: 'الخطوة 5 من 5',
