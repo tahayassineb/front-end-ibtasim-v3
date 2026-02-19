@@ -188,3 +188,45 @@ export const verifyUser = mutation({
     return true;
   },
 });
+
+// ============================================
+// NOTIFICATION QUERIES
+// ============================================
+
+/**
+ * Get all verified users with phone numbers for broadcasting notifications
+ * Used by notification actions to send WhatsApp messages to all verified users
+ *
+ * Returns:
+ *   - Array of users with _id, phoneNumber, fullName, preferredLanguage, notificationsEnabled
+ */
+export const getAllVerifiedUsersWithPhone = query({
+  args: {},
+  returns: v.array(v.object({
+    _id: v.id("users"),
+    phoneNumber: v.string(),
+    fullName: v.string(),
+    preferredLanguage: v.union(v.literal("ar"), v.literal("fr"), v.literal("en")),
+    notificationsEnabled: v.boolean(),
+  })),
+  handler: async (ctx) => {
+    const users = await ctx.db
+      .query("users")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("isVerified"), true),
+          q.neq(q.field("phoneNumber"), ""),
+          q.eq(q.field("notificationsEnabled"), true)
+        )
+      )
+      .take(1000);
+    
+    return users.map(user => ({
+      _id: user._id,
+      phoneNumber: user.phoneNumber,
+      fullName: user.fullName,
+      preferredLanguage: user.preferredLanguage,
+      notificationsEnabled: user.notificationsEnabled,
+    }));
+  },
+});

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useQuery } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
+import Button from '../components/Button';
 import {
   AreaChart,
   Area,
@@ -35,7 +36,22 @@ const AdminDashboard = () => {
   // Fetch featured projects
   const featuredProjectsData = useQuery(api.projects.getFeaturedProjects, { limit: 6 });
 
-  const [draggedFeatured, setDraggedFeatured] = useState(null);
+  // Local state for drag-and-drop (initialized from query data)
+  const [featuredProjects, setFeaturedProjects] = useState([]);
+  const [hasOrderChanged, setHasOrderChanged] = useState(false);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+  
+  // Update local state when query data changes
+  React.useEffect(() => {
+    if (featuredProjectsData) {
+      setFeaturedProjects(featuredProjectsData);
+    }
+  }, [featuredProjectsData]);
+
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  
+  // Mutation for updating featured order
+  const updateFeaturedOrder = useMutation(api.projects.updateFeaturedOrder);
 
   // Translations
   const translations = {
@@ -233,6 +249,53 @@ const AdminDashboard = () => {
     return obj?.[currentLanguage?.code] || obj?.en || '';
   };
 
+  // Drag and drop handlers for featured projects
+  const handleDragStart = (index) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    // Reorder the projects
+    const newProjects = [...featuredProjects];
+    const draggedProject = newProjects[draggedIndex];
+    newProjects.splice(draggedIndex, 1);
+    newProjects.splice(index, 0, draggedProject);
+    
+    setFeaturedProjects(newProjects);
+    setDraggedIndex(index);
+    setHasOrderChanged(true);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
+  // Save the new order to Convex
+  const handleSaveOrder = useCallback(async () => {
+    if (!hasOrderChanged) return;
+    
+    setIsSavingOrder(true);
+    try {
+      // Prepare the projects array with new order values
+      const projectsWithOrder = featuredProjects.map((project, index) => ({
+        projectId: project._id,
+        order: index + 1, // 1-based order
+      }));
+      
+      await updateFeaturedOrder({ projects: projectsWithOrder });
+      showToast(t.orderSaved, 'success');
+      setHasOrderChanged(false);
+    } catch (error) {
+      console.error('Failed to save order:', error);
+      showToast('Failed to save order', 'error');
+    } finally {
+      setIsSavingOrder(false);
+    }
+  }, [featuredProjects, hasOrderChanged, updateFeaturedOrder, showToast, t.orderSaved]);
+
   return (
     <div className="min-h-screen pb-24 md:pb-8">
       {/* Header */}
@@ -419,25 +482,44 @@ const AdminDashboard = () => {
                 {t.featuredProjects}
               </h3>
               <p className="text-sm text-text-secondary">{t.featuredDesc}</p>
+              <p className="text-xs text-text-secondary mt-1">{t.dragToReorder}</p>
             </div>
-            <Link 
-              to="/admin/projects"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl font-medium transition-colors"
-            >
-              <span className="material-symbols-outlined">settings</span>
-              {t.manageFeatured}
-            </Link>
+            <div className="flex items-center gap-3">
+              {hasOrderChanged && (
+                <Button
+                  onClick={handleSaveOrder}
+                  loading={isSavingOrder}
+                  size="sm"
+                >
+                  <span className="material-symbols-outlined text-sm mr-1">save</span>
+                  {t.saveOrder}
+                </Button>
+              )}
+              <Link
+                to="/admin/projects"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl font-medium transition-colors"
+              >
+                <span className="material-symbols-outlined">settings</span>
+                {t.manageFeatured}
+              </Link>
+            </div>
           </div>
 
-          {/* Featured Projects Grid */}
+          {/* Featured Projects Grid with Drag & Drop */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {featuredProjectsData?.map((project, index) => (
-              <div 
+            {featuredProjects.map((project, index) => (
+              <div
                 key={project._id}
-                className="relative group rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 aspect-video cursor-pointer hover:ring-2 ring-primary transition-all"
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragEnd={handleDragEnd}
+                className={`relative group rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 aspect-video cursor-move hover:ring-2 ring-primary transition-all ${
+                  draggedIndex === index ? 'opacity-50 ring-2 ring-primary' : ''
+                }`}
               >
-                <img 
-                  src={project.mainImage} 
+                <img
+                  src={project.mainImage}
                   alt={getLocalizedText(project.title)}
                   className="w-full h-full object-cover"
                 />
@@ -445,7 +527,7 @@ const AdminDashboard = () => {
                 <div className="absolute bottom-0 left-0 right-0 p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Badge variant="primary" size="sm">
-                      #{project.featuredOrder}
+                      #{index + 1}
                     </Badge>
                     <span className="text-white/80 text-xs uppercase tracking-wider">
                       {project.category}
@@ -455,12 +537,18 @@ const AdminDashboard = () => {
                     {getLocalizedText(project.title)}
                   </h4>
                 </div>
+                {/* Drag Handle Indicator */}
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white">
+                    <span className="material-symbols-outlined text-sm">drag_indicator</span>
+                  </div>
+                </div>
               </div>
             ))}
             
             {/* Add New Slot */}
-            {(!featuredProjectsData || featuredProjectsData.length < 6) && (
-              <button 
+            {(!featuredProjects || featuredProjects.length < 6) && (
+              <button
                 onClick={() => navigate('/admin/projects')}
                 className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-primary dark:hover:border-primary transition-colors aspect-video"
               >

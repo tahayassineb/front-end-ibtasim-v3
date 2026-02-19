@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
@@ -18,24 +18,30 @@ const AdminDonations = () => {
   const [viewingDonation, setViewingDonation] = useState(null);
   
   // Convex hooks
-  const pendingVerifications = useQuery(api.donations.getPendingVerifications, {});
+  const rawDonations = useQuery(api.donations.getAllDonations, {});
+  const dashboardStats = useQuery(api.admin.getDashboardStats);
   const verifyDonationMutation = useMutation(api.donations.verifyDonation);
   const rejectDonationMutation = useMutation(api.donations.rejectDonation);
-  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   // Transform Convex data to match component structure
-  const donations = pendingVerifications ? pendingVerifications.map(d => ({
-    id: d._id,
-    donor: d.userId, // Will be populated with user data
-    phone: '',
-    amount: d.amount,
-    trxId: `TRX-${d._id.slice(-4)}`,
-    project: d.projectId, // Will be populated with project data
-    method: d.paymentMethod === 'bank_transfer' ? 'bank' :
-            d.paymentMethod === 'card_whop' ? 'card' : 'cash',
-    status: d.status === 'awaiting_verification' ? 'pending' : d.status,
-    receiptImage: d.receiptUrl,
-    date: new Date(d.createdAt).toISOString().split('T')[0],
-  })) : [];
+  const donations = useMemo(() => {
+    if (!rawDonations) return [];
+    return rawDonations.map(d => ({
+      id: d._id,
+      _id: d._id,
+      donor: d.donorName,
+      phone: d.donorPhone,
+      amount: d.amount,
+      trxId: `TRX-${String(d._id).slice(-6).toUpperCase()}`,
+      project: d.projectTitle[currentLanguage?.code] || d.projectTitle.ar,
+      method: d.paymentMethod === 'bank_transfer' ? 'bank' :
+              d.paymentMethod === 'card_whop' ? 'card' : 'cash',
+      status: d.status,
+      receiptImage: d.receiptUrl || null,
+      date: new Date(d.createdAt).toISOString().split('T')[0],
+    }));
+  }, [rawDonations, currentLanguage]);
 
   // Handle view donation details
   const handleViewDonation = (id) => {
@@ -47,6 +53,40 @@ const AdminDonations = () => {
 
   const handleCloseModal = () => {
     setViewingDonation(null);
+  };
+
+  const handleVerify = async (donation) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await verifyDonationMutation({ donationId: donation._id, verified: true });
+      showToast(
+        currentLanguage?.code === 'ar' ? 'تم التحقق من التبرع' : 'Donation verified',
+        'success'
+      );
+      handleCloseModal();
+    } catch {
+      showToast(currentLanguage?.code === 'ar' ? 'حدث خطأ' : 'Error occurred', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleReject = async (donation) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await rejectDonationMutation({ donationId: donation._id });
+      showToast(
+        currentLanguage?.code === 'ar' ? 'تم رفض التبرع' : 'Donation rejected',
+        'error'
+      );
+      handleCloseModal();
+    } catch {
+      showToast(currentLanguage?.code === 'ar' ? 'حدث خطأ' : 'Error occurred', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Translations
@@ -160,12 +200,30 @@ const AdminDonations = () => {
 
   const t = translations[currentLanguage.code] || translations.en;
 
-  // Mock stats
+  // Real stats from Convex
   const stats = [
-    { label: t.stats.confirmed, value: '45.2k', trend: '+12%', trendUp: true, color: 'primary' },
-    { label: t.stats.pending, value: '12.8k', trend: '+5%', trendUp: true, color: 'gold' },
-    { label: t.stats.rejected, value: '3.1k', trend: '-2%', trendUp: false, color: 'red' },
-    { label: t.stats.total, value: '61.1k', trend: '+8%', trendUp: true, color: 'dark' },
+    {
+      label: t.stats.confirmed,
+      value: dashboardStats ? String(dashboardStats.totalDonations) : '—',
+      color: 'primary',
+    },
+    {
+      label: t.stats.pending,
+      value: dashboardStats ? String(dashboardStats.pendingVerifications) : '—',
+      color: 'gold',
+    },
+    {
+      label: t.stats.rejected,
+      value: dashboardStats ? String(dashboardStats.rejectedDonations) : '—',
+      color: 'red',
+    },
+    {
+      label: t.stats.total,
+      value: dashboardStats
+        ? `${(dashboardStats.totalRaised / 100).toLocaleString()} MAD`
+        : '—',
+      color: 'dark',
+    },
   ];
 
 
@@ -256,16 +314,8 @@ const AdminDonations = () => {
                   ? 'text-white'
                   : 'text-primary'
               }`}>
-                ${stat.value}
+                {stat.value}
               </p>
-              <div className={`flex items-center gap-1 text-[10px] font-bold ${
-                stat.trendUp ? 'text-green-600' : 'text-red-600'
-              }`}>
-                <span className="material-symbols-outlined text-sm">
-                  {stat.trendUp ? 'trending_up' : 'trending_down'}
-                </span>
-                {stat.trend}
-              </div>
             </div>
           </Card>
         ))}
@@ -348,7 +398,7 @@ const AdminDonations = () => {
                 </div>
                 <div className="text-right">
                   <p className={`text-sm font-bold ${donation.status === 'rejected' ? 'text-slate-400' : 'text-primary'}`}>
-                    ${donation.amount.toFixed(2)}
+                    {donation.amount.toFixed(2)} MAD
                   </p>
                   <p className="text-[10px] text-slate-400">#{donation.trxId}</p>
                 </div>
@@ -454,7 +504,7 @@ const AdminDonations = () => {
                       {t.amount}
                     </p>
                     <p className="text-4xl font-black text-primary tracking-tighter">
-                      ${viewingDonation.amount.toFixed(2)}
+                      {viewingDonation.amount.toFixed(2)} MAD
                     </p>
                   </div>
 
@@ -511,10 +561,29 @@ const AdminDonations = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+            <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2">
+              {viewingDonation?.status === 'pending' && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleReject(viewingDonation)}
+                    disabled={isSubmitting}
+                    className="flex-1 px-4 py-3 rounded-xl font-bold text-red-500 border border-red-100 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
+                  >
+                    {isSubmitting ? '...' : (currentLanguage?.code === 'ar' ? 'رفض' : 'Reject')}
+                  </button>
+                  <button
+                    onClick={() => handleVerify(viewingDonation)}
+                    disabled={isSubmitting}
+                    className="flex-[2] px-4 py-3 rounded-xl font-bold bg-primary text-white hover:opacity-95 transition-all shadow-lg shadow-[#0D737722] disabled:opacity-70"
+                  >
+                    {isSubmitting ? '...' : (currentLanguage?.code === 'ar' ? 'تأكيد التبرع' : 'Verify Donation')}
+                  </button>
+                </div>
+              )}
               <button
                 onClick={handleCloseModal}
-                className="w-full px-4 py-3.5 rounded-xl font-bold bg-primary text-white hover:opacity-95 active:scale-[0.99] transition-all shadow-lg shadow-[#0D737722]"
+                disabled={isSubmitting}
+                className="w-full px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
                 {t.close}
               </button>

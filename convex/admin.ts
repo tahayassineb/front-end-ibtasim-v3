@@ -13,6 +13,7 @@ export const getDashboardStats = query({
     activeProjects: v.number(),
     totalDonors: v.number(),
     pendingVerifications: v.number(),
+    rejectedDonations: v.number(),
     monthlyDonations: v.array(v.object({
       month: v.string(),
       amount: v.number(),
@@ -23,35 +24,36 @@ export const getDashboardStats = query({
     // Get all donations
     const donations = await ctx.db.query("donations").collect();
     const verifiedDonations = donations.filter(d => d.status === "verified" || d.status === "completed");
-    
+    const rejectedDonations = donations.filter(d => d.status === "rejected");
+
     // Calculate totals
     const totalRaised = verifiedDonations.reduce((sum, d) => sum + d.amount, 0);
-    
+
     // Get active projects
     const projects = await ctx.db
       .query("projects")
       .withIndex("by_status", (q) => q.eq("status", "active"))
       .collect();
-    
+
     // Get pending verifications
-    const pendingVerifications = await ctx.db
+    const pendingVerificationsData = await ctx.db
       .query("donations")
       .withIndex("by_status", (q) => q.eq("status", "awaiting_verification"))
       .collect();
-    
+
     // Get unique donors
     const uniqueDonorIds = new Set(verifiedDonations.map(d => d.userId));
-    
+
     // Calculate monthly stats (last 6 months)
     const monthlyStats: Record<string, { amount: number; count: number }> = {};
     const now = new Date();
-    
+
     for (let i = 5; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthKey = date.toLocaleString('en-US', { month: 'short', year: 'numeric' });
       monthlyStats[monthKey] = { amount: 0, count: 0 };
     }
-    
+
     verifiedDonations.forEach(donation => {
       const date = new Date(donation.createdAt);
       const monthKey = date.toLocaleString('en-US', { month: 'short', year: 'numeric' });
@@ -60,19 +62,20 @@ export const getDashboardStats = query({
         monthlyStats[monthKey].count += 1;
       }
     });
-    
+
     const monthlyDonations = Object.entries(monthlyStats).map(([month, stats]) => ({
       month,
       amount: stats.amount,
       count: stats.count,
     }));
-    
+
     return {
       totalDonations: verifiedDonations.length,
       totalRaised,
       activeProjects: projects.length,
       totalDonors: uniqueDonorIds.size,
-      pendingVerifications: pendingVerifications.length,
+      pendingVerifications: pendingVerificationsData.length,
+      rejectedDonations: rejectedDonations.length,
       monthlyDonations,
     };
   },

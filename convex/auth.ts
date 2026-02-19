@@ -1,5 +1,46 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, action } from "./_generated/server";
 import { v } from "convex/values";
+import { api } from "./_generated/api";
+
+// ============================================
+// PASSWORD HASHING (PBKDF2 via Web Crypto API)
+// Works in Convex's runtime without external deps
+// ============================================
+
+async function hashPassword(password: string): Promise<string> {
+  const salt = crypto.randomUUID().replace(/-/g, "");
+  const encoder = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt: encoder.encode(salt), iterations: 100000, hash: "SHA-256" },
+    keyMaterial,
+    256
+  );
+  const hash = btoa(String.fromCharCode(...new Uint8Array(bits)));
+  return `${salt}:${hash}`;
+}
+
+async function verifyPassword(password: string, stored: string): Promise<boolean> {
+  const parts = stored.split(":");
+  if (parts.length !== 2) {
+    // Legacy: plaintext comparison (for accounts before hashing was added)
+    return password === stored;
+  }
+  const [salt, storedHash] = parts;
+  const encoder = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt: encoder.encode(salt), iterations: 100000, hash: "SHA-256" },
+    keyMaterial,
+    256
+  );
+  const hash = btoa(String.fromCharCode(...new Uint8Array(bits)));
+  return hash === storedHash;
+}
 
 // ============================================
 // AUTHENTICATION FUNCTIONS
@@ -75,10 +116,18 @@ export const requestOTP = mutation({
       lastOtpRequestAt: now,
     });
     
-    // TODO: Send OTP via WhatsApp API
-    // await sendWhatsAppOTP(args.phoneNumber, otp, user.preferredLanguage);
-    
-    console.log(`OTP for ${args.phoneNumber}: ${otp}`); // For development
+    // Schedule OTP WhatsApp message
+    // (ctx.scheduler.runAfter is used here because mutations cannot call ctx.runAction)
+    try {
+      const message = `رمز التحقق الخاص بك هو: ${otp}`;
+      await ctx.scheduler.runAfter(0, api.notifications.sendWhatsApp, {
+        to: args.phoneNumber,
+        text: message,
+      });
+    } catch (error) {
+      console.error("Failed to schedule WhatsApp OTP:", error);
+      // Continue even if scheduling fails - user can request again
+    }
     
     return {
       success: true,
@@ -226,12 +275,10 @@ export const setPassword = mutation({
     message: v.string(),
   }),
   handler: async (ctx, args) => {
-    // TODO: Hash password properly in production using bcrypt
-    // For now, store as-is (NOT for production use)
+    const hashed = await hashPassword(args.password);
     await ctx.db.patch(args.userId, {
-      passwordHash: args.password,
+      passwordHash: hashed,
     });
-    
     return {
       success: true,
       message: "Password set successfully.",
@@ -277,8 +324,7 @@ export const loginWithPassword = mutation({
       };
     }
     
-    // Simple password comparison (use bcrypt in production)
-    const isValid = user.passwordHash === args.password;
+    const isValid = await verifyPassword(args.password, user.passwordHash);
     
     if (!isValid) {
       return {

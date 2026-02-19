@@ -10,9 +10,14 @@
 
 import type * as admin from "../admin.js";
 import type * as auth from "../auth.js";
+import type * as config from "../config.js";
+import type * as crons from "../crons.js";
 import type * as donations from "../donations.js";
 import type * as http from "../http.js";
+import type * as notifications from "../notifications.js";
+import type * as payments from "../payments.js";
 import type * as projects from "../projects.js";
+import type * as storage from "../storage.js";
 import type * as users from "../users.js";
 
 import type {
@@ -24,9 +29,14 @@ import type {
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   auth: typeof auth;
+  config: typeof config;
+  crons: typeof crons;
   donations: typeof donations;
   http: typeof http;
+  notifications: typeof notifications;
+  payments: typeof payments;
   projects: typeof projects;
+  storage: typeof storage;
   users: typeof users;
 }>;
 

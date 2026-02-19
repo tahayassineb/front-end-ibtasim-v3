@@ -1,4 +1,4 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, action } from "./_generated/server";
 import { v } from "convex/values";
 
 // ============================================
@@ -197,8 +197,8 @@ export const createProject = mutation({
       v.literal("orphan_care")
     ),
     goalAmount: v.number(),
-    mainImage: v.string(),
-    gallery: v.optional(v.array(v.string())),
+    mainImageStorageId: v.string(),
+    galleryStorageIds: v.optional(v.array(v.string())),
     location: v.optional(v.string()),
     beneficiaries: v.optional(v.number()),
     endDate: v.optional(v.number()),
@@ -217,8 +217,8 @@ export const createProject = mutation({
       goalAmount: args.goalAmount,
       raisedAmount: 0,
       currency: "MAD",
-      mainImage: args.mainImage,
-      gallery: args.gallery || [],
+      mainImage: args.mainImageStorageId,
+      gallery: args.galleryStorageIds || [],
       status: "draft",
       location: args.location,
       beneficiaries: args.beneficiaries,
@@ -251,8 +251,8 @@ export const updateProject = mutation({
         v.literal("orphan_care")
       )),
       goalAmount: v.optional(v.number()),
-      mainImage: v.optional(v.string()),
-      gallery: v.optional(v.array(v.string())),
+      mainImageStorageId: v.optional(v.string()),
+      galleryStorageIds: v.optional(v.array(v.string())),
       status: v.optional(v.union(
         v.literal("draft"),
         v.literal("active"),
@@ -272,8 +272,19 @@ export const updateProject = mutation({
     const project = await ctx.db.get(args.projectId);
     if (!project) return false;
     
+    // Map storage IDs to database field names
+    const updates: any = { ...args.updates };
+    if (updates.mainImageStorageId !== undefined) {
+      updates.mainImage = updates.mainImageStorageId;
+      delete updates.mainImageStorageId;
+    }
+    if (updates.galleryStorageIds !== undefined) {
+      updates.gallery = updates.galleryStorageIds;
+      delete updates.galleryStorageIds;
+    }
+    
     await ctx.db.patch(args.projectId, {
-      ...args.updates,
+      ...updates,
       updatedAt: Date.now(),
     });
     
@@ -289,6 +300,33 @@ export const deleteProject = mutation({
     if (!project) return false;
     
     await ctx.db.delete(args.projectId);
+    return true;
+  },
+});
+
+export const updateFeaturedOrder = mutation({
+  args: {
+    projects: v.array(v.object({
+      projectId: v.id("projects"),
+      order: v.number(),
+    })),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    // Update each project's featuredOrder
+    await Promise.all(
+      args.projects.map(async ({ projectId, order }) => {
+        const project = await ctx.db.get(projectId);
+        if (!project) return;
+        
+        await ctx.db.patch(projectId, {
+          featuredOrder: order,
+          isFeatured: true,
+          updatedAt: Date.now(),
+        });
+      })
+    );
+    
     return true;
   },
 });
@@ -312,5 +350,68 @@ export const updateProjectRaisedAmount = mutation({
     });
     
     return true;
+  },
+});
+
+// ============================================
+// PROJECT PUBLISH WITH NOTIFICATIONS
+// ============================================
+
+/**
+ * Publish a project and optionally notify subscribers via WhatsApp
+ * This mutation changes a project's status from "draft" to "active"
+ * and can broadcast notifications to all verified users
+ *
+ * Args:
+ *   - projectId: ID of the project to publish
+ *   - notifySubscribers: If true, sends WhatsApp notifications to all users
+ *
+ * Returns:
+ *   - success: boolean indicating if the operation succeeded
+ *   - error: optional error message
+ */
+export const publishProject = mutation({
+  args: {
+    projectId: v.id("projects"),
+    notifySubscribers: v.optional(v.boolean()),
+  },
+  returns: v.object({
+    success: v.boolean(),
+    error: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const project = await ctx.db.get(args.projectId);
+    if (!project) {
+      return { success: false, error: "Project not found" };
+    }
+    
+    if (project.status !== "draft") {
+      return { success: false, error: "Project is not in draft status" };
+    }
+    
+    // Update project status to active
+    await ctx.db.patch(args.projectId, {
+      status: "active",
+      updatedAt: Date.now(),
+    });
+    
+    // Send WhatsApp notification if requested
+    if (args.notifySubscribers) {
+      try {
+        // Import api inside handler to avoid circular dependency issues
+        const { api } = await import("./_generated/api");
+        
+        await ctx.runAction(api.notifications.sendProjectPublishedNotification, {
+          projectId: args.projectId,
+          projectTitle: project.title.ar, // Use Arabic title
+          notifyAll: true,
+        });
+      } catch (error) {
+        console.error("Failed to send project published notification:", error);
+        // Don't fail the publish if notification fails
+      }
+    }
+    
+    return { success: true };
   },
 });

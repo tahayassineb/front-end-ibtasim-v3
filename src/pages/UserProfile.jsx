@@ -1,5 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
@@ -21,6 +23,15 @@ const UserProfile = () => {
   });
   
   const isRTL = currentLanguage.dir === 'rtl';
+  
+  // Fetch real donation data from Convex
+  const userDonations = useQuery(
+    api.donations.getDonationsByUser,
+    user?._id ? { userId: user._id } : 'skip'
+  );
+  
+  // Fetch project details for donations
+  const projectIds = userDonations?.map(d => d.projectId) || [];
   
   // Translations
   const translations = {
@@ -109,11 +120,11 @@ const UserProfile = () => {
   
   const tx = translations[currentLanguage.code] || translations.ar;
   
-  // Calculate stats
-  const donations = user?.donations || [];
-  const totalDonated = donations.reduce((sum, d) => sum + (d.amount || 0), 0);
-  // eslint-disable-next-line no-unused-vars
-  const _verifiedDonations = donations.filter(d => d.status === 'verified');
+  // Calculate stats from real Convex data (amount is in cents)
+  const donations = userDonations || [];
+  const totalDonated = donations.reduce((sum, d) => sum + (d.amount || 0), 0) / 100;
+  const verifiedDonations = donations.filter(d => d.status === 'verified');
+  const isDonationsLoading = userDonations === undefined;
   
   // Handle edit mode toggle
   const handleEditToggle = () => {
@@ -362,7 +373,12 @@ const UserProfile = () => {
               {tx.donationHistory}
             </h3>
             
-            {donations.length === 0 ? (
+            {isDonationsLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-gray-500 dark:text-gray-400">{tx.loading || 'Loading...'}</p>
+              </div>
+            ) : donations.length === 0 ? (
               <div className="text-center py-8">
                 <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="material-symbols-outlined text-gray-400 text-3xl">volunteer_activism</span>
@@ -380,23 +396,25 @@ const UserProfile = () => {
               <div className="space-y-3">
                 {donations.map((donation, index) => (
                   <div
-                    key={donation.id || index}
+                    key={donation._id || index}
                     className="border border-gray-100 dark:border-gray-700 rounded-xl p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                   >
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="font-semibold text-gray-900 dark:text-white text-sm">
-                          {donation.project}
+                          {donation.projectTitle?.[currentLanguage.code] ||
+                           donation.projectTitle?.en ||
+                           'Project'}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {tx.donationRef}: {donation.id}
+                          {tx.donationRef}: {donation._id?.slice(-8) || 'N/A'}
                         </p>
                         <p className="text-xs text-gray-400">
-                          {formatDate(donation.date)}
+                          {formatDate(donation.createdAt)}
                         </p>
                       </div>
                       <div className={`${isRTL ? 'text-left' : 'text-right'}`}>
-                        <p className="font-bold text-primary">{formatCurrency(donation.amount)}</p>
+                        <p className="font-bold text-primary">{formatCurrency(donation.amount / 100)}</p>
                         <div className="mt-1">
                           {getStatusBadge(donation.status)}
                         </div>

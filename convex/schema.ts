@@ -235,7 +235,7 @@ export default defineSchema({
   // ============================================
   verificationLogs: defineTable({
     donationId: v.id("donations"),
-    adminId: v.id("admins"),
+    adminId: v.optional(v.id("admins")),
     action: v.union(v.literal("verify"), v.literal("reject")),
     notes: v.optional(v.string()),
     createdAt: v.number(),
@@ -275,6 +275,15 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_status", ["status"]),
+
+  // ============================================
+  // CONFIG TABLE (Site-wide settings)
+  // ============================================
+  config: defineTable({
+    key: v.string(),
+    value: v.string(),
+    updatedAt: v.number(),
+  }).index("by_key", ["key"]),
 
   // ============================================
   // ACTIVITY LOG TABLE (Audit Trail)

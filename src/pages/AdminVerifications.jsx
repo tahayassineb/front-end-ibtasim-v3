@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
@@ -21,97 +23,41 @@ const AdminVerifications = () => {
     accountCorrect: false,
   });
   const [imageExpanded, setImageExpanded] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Mock donations data - in production, this would come from API
-  const [donations, setDonations] = useState([
-    {
-      id: 1,
-      donor: 'Ahmed Al-Farsi',
-      phone: '+212 600-000000',
-      amount: 5000,
-      trxId: 'DON-88291',
-      project: 'Water Well',
-      method: 'bank',
-      status: 'pending',
-      receiptImage: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800&q=80',
-      date: '2024-01-15',
-    },
-    {
-      id: 2,
-      donor: 'Fatima Benali',
-      phone: '+212 612-345678',
-      amount: 2500,
-      trxId: 'DON-88292',
-      project: 'Education Fund',
-      method: 'agency',
-      status: 'pending',
-      receiptImage: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800&q=80',
-      date: '2024-01-14',
-    },
-    {
-      id: 3,
-      donor: 'Youssef Mansouri',
-      phone: '+212 623-456789',
-      amount: 10000,
-      trxId: 'DON-88293',
-      project: 'Medical Aid',
-      method: 'bank',
-      status: 'pending',
-      receiptImage: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=800&q=80',
-      date: '2024-01-13',
-    },
-    // Card payments - auto-verified, should NOT appear in this list
-    {
-      id: 4,
-      donor: 'Sarah Jenkins',
-      phone: '+1 234 567 890',
-      amount: 250,
-      trxId: 'TRX-9482',
-      project: 'Education Fund',
-      method: 'card',
-      status: 'confirmed', // Auto-verified
-    },
-    {
-      id: 5,
-      donor: 'Michael Chen',
-      phone: '+1 987 654 321',
-      amount: 1200,
-      trxId: 'TRX-8821',
-      project: 'Clean Water Project',
-      method: 'paypal',
-      status: 'confirmed', // Auto-verified
-    },
-  ]);
+  // Real Convex data
+  const rawDonations = useQuery(api.donations.getPendingVerifications, {});
+  const verifyDonationMutation = useMutation(api.donations.verifyDonation);
+  const rejectDonationMutation = useMutation(api.donations.rejectDonation);
 
-  // Auto-verify card and paypal payments on component mount
-  React.useEffect(() => {
-    setDonations(prev => prev.map(d => {
-      // Auto-verify card and paypal payments
-      if ((d.method === 'card' || d.method === 'paypal') && d.status === 'pending') {
-        return { ...d, status: 'confirmed' };
-      }
-      return d;
+  // Normalize data shape for the component
+  const donations = useMemo(() => {
+    if (!rawDonations) return [];
+    return rawDonations.map(d => ({
+      id: d._id,
+      _id: d._id,
+      donor: d.donorName,
+      phone: d.donorPhone,
+      amount: d.amount,
+      trxId: `TRX-${String(d._id).slice(-6).toUpperCase()}`,
+      project: d.projectTitle[currentLanguage?.code] || d.projectTitle.ar,
+      method: d.paymentMethod === 'bank_transfer' ? 'bank' :
+              d.paymentMethod === 'cash_agency' ? 'agency' : 'card',
+      status: 'pending',
+      receiptImage: d.receiptUrl || null,
+      date: new Date(d.createdAt).toISOString().split('T')[0],
     }));
-  }, []);
-
-  // Filter to show ONLY pending donations (excluding card/paypal which are auto-verified)
-  const pendingDonations = useMemo(() => {
-    return donations.filter(d => 
-      d.status === 'pending' && 
-      d.method !== 'card' && 
-      d.method !== 'paypal'
-    );
-  }, [donations]);
+  }, [rawDonations, currentLanguage]);
 
   // Filter by search query
   const filteredDonations = useMemo(() => {
-    if (!searchQuery) return pendingDonations;
-    return pendingDonations.filter(d => 
+    if (!searchQuery) return donations;
+    return donations.filter(d =>
       d.donor.toLowerCase().includes(searchQuery.toLowerCase()) ||
       d.trxId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       d.phone.includes(searchQuery)
     );
-  }, [pendingDonations, searchQuery]);
+  }, [donations, searchQuery]);
 
   // Translations
   const translations = {
@@ -267,45 +213,57 @@ const AdminVerifications = () => {
     setImageExpanded(false);
   };
 
-  const handleVerify = () => {
-    if (!selectedDonation) return;
-    
-    // Use the edited amount (admin may have corrected it)
-    const finalAmount = parseFloat(editedAmount) || selectedDonation.amount;
-    
-    setDonations(prev => prev.map(d => 
-      d.id === selectedDonation.id 
-        ? { ...d, status: 'confirmed', amount: finalAmount }
-        : d
-    ));
-    
-    showToast(
-      currentLanguage.code === 'ar' ? 'تم التحقق من التبرع بنجاح' :
-      currentLanguage.code === 'fr' ? 'Don vérifié avec succès' :
-      'Donation verified successfully', 
-      'success'
-    );
-    
-    handleCloseModal();
+  const handleVerify = async () => {
+    if (!selectedDonation || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await verifyDonationMutation({
+        donationId: selectedDonation._id,
+        verified: true,
+        notes: verificationChecks.amountMatches && verificationChecks.referenceVisible
+          ? 'All checks passed'
+          : undefined,
+      });
+      showToast(
+        currentLanguage.code === 'ar' ? 'تم التحقق من التبرع بنجاح' :
+        currentLanguage.code === 'fr' ? 'Don vérifié avec succès' :
+        'Donation verified successfully',
+        'success'
+      );
+      handleCloseModal();
+    } catch (err) {
+      showToast(
+        currentLanguage.code === 'ar' ? 'حدث خطأ أثناء التحقق' : 'Verification failed',
+        'error'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleReject = () => {
-    if (!selectedDonation) return;
-    
-    setDonations(prev => prev.map(d => 
-      d.id === selectedDonation.id 
-        ? { ...d, status: 'rejected', rejectionReason }
-        : d
-    ));
-    
-    showToast(
-      currentLanguage.code === 'ar' ? 'تم رفض التبرع' :
-      currentLanguage.code === 'fr' ? 'Don rejeté' :
-      'Donation rejected', 
-      'error'
-    );
-    
-    handleCloseModal();
+  const handleReject = async () => {
+    if (!selectedDonation || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await rejectDonationMutation({
+        donationId: selectedDonation._id,
+        reason: rejectionReason || undefined,
+      });
+      showToast(
+        currentLanguage.code === 'ar' ? 'تم رفض التبرع' :
+        currentLanguage.code === 'fr' ? 'Don rejeté' :
+        'Donation rejected',
+        'error'
+      );
+      handleCloseModal();
+    } catch (err) {
+      showToast(
+        currentLanguage.code === 'ar' ? 'حدث خطأ أثناء الرفض' : 'Rejection failed',
+        'error'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCheckChange = (checkName) => {
@@ -326,6 +284,20 @@ const AdminVerifications = () => {
       maximumFractionDigits: 2,
     }).format(amount);
   };
+
+  // Loading state while Convex fetches
+  if (rawDonations === undefined) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-slate-500">
+            {currentLanguage?.code === 'ar' ? 'جاري التحميل...' : 'Loading...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -619,25 +591,27 @@ const AdminVerifications = () => {
             {/* Modal Footer */}
             <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
               <div className="flex gap-3 flex-1">
-                <button 
+                <button
                   onClick={handleCloseModal}
-                  className="flex-1 px-4 py-3.5 rounded-xl font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border border-transparent"
+                  disabled={isSubmitting}
+                  className="flex-1 px-4 py-3.5 rounded-xl font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border border-transparent disabled:opacity-50"
                 >
                   {t.cancel}
                 </button>
-                <button 
+                <button
                   onClick={handleReject}
-                  disabled={!rejectionReason.trim()}
+                  disabled={!rejectionReason.trim() || isSubmitting}
                   className="flex-1 px-4 py-3.5 rounded-xl font-bold text-red-500 border border-red-100 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {t.reject}
+                  {isSubmitting ? '...' : t.reject}
                 </button>
               </div>
-              <button 
+              <button
                 onClick={handleVerify}
-                className="flex-[1.5] px-6 py-3.5 rounded-xl font-bold bg-primary text-white hover:opacity-95 active:scale-[0.99] transition-all shadow-lg shadow-[#0D737722]"
+                disabled={isSubmitting}
+                className="flex-[1.5] px-6 py-3.5 rounded-xl font-bold bg-primary text-white hover:opacity-95 active:scale-[0.99] transition-all shadow-lg shadow-[#0D737722] disabled:opacity-70"
               >
-                {t.approve}
+                {isSubmitting ? '...' : t.approve}
               </button>
             </div>
           </div>

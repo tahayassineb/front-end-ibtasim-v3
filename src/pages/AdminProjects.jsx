@@ -140,97 +140,22 @@ const AdminProjects = () => {
 
   const t = translations[currentLanguage?.code] || translations.en;
 
-  // Default projects data with featured flag
-  const defaultProjects = [
-    {
-      id: 1,
-      title: 'Clean Water Initiative',
-      category: 'Water',
-      status: 'active',
-      featured: true,
-      goal: 50000,
-      raised: 32500,
-      donors: 142,
-      daysLeft: 45,
-      image: 'https://images.unsplash.com/photo-1538300342682-cf57afb97285?w=400',
-    },
-    {
-      id: 2,
-      title: 'School Supplies Drive',
-      category: 'Education',
-      status: 'active',
-      featured: true,
-      goal: 15000,
-      raised: 8750,
-      donors: 89,
-      daysLeft: 30,
-      image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400',
-    },
-    {
-      id: 3,
-      title: 'Winter Relief Program',
-      category: 'Humanitarian',
-      status: 'completed',
-      featured: true,
-      goal: 30000,
-      raised: 31250,
-      donors: 203,
-      daysLeft: 0,
-      image: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=400',
-    },
-    {
-      id: 4,
-      title: 'Medical Aid Campaign',
-      category: 'Health',
-      status: 'draft',
-      featured: false,
-      goal: 75000,
-      raised: 0,
-      donors: 0,
-      daysLeft: 60,
-      image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=400',
-    },
-    {
-      id: 5,
-      title: 'Food Security Program',
-      category: 'Food',
-      status: 'active',
-      featured: false,
-      goal: 25000,
-      raised: 18750,
-      donors: 156,
-      daysLeft: 20,
-      image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400',
-    },
-    {
-      id: 6,
-      title: 'Youth Empowerment',
-      category: 'Education',
-      status: 'active',
-      featured: false,
-      goal: 20000,
-      raised: 5600,
-      donors: 47,
-      daysLeft: 90,
-      image: 'https://images.unsplash.com/photo-1529390079861-591d3549b7f5?w=400',
-    },
-  ];
-
-  // Use Convex projects data
-  const projects = convexProjects ? convexProjects.map(p => ({
+  // Map Convex projects to component shape (no mock fallback)
+  const projects = (convexProjects ?? []).map(p => ({
     id: p._id,
+    _id: p._id,
     title: p.title,
     category: p.category,
     status: p.status,
     featured: p.isFeatured,
     goal: p.goalAmount,
     raised: p.raisedAmount,
-    donors: 0, // Will be calculated from donations
-    daysLeft: p.endDate ? Math.ceil((p.endDate - Date.now()) / (1000 * 60 * 60 * 24)) : 30,
+    donors: 0,
+    daysLeft: p.endDate ? Math.ceil((p.endDate - Date.now()) / (1000 * 60 * 60 * 24)) : null,
     image: p.mainImage,
     location: p.location,
     beneficiaries: p.beneficiaries,
-  })) : defaultProjects;
+  }));
 
   // Filter projects with safe string handling
   const filteredProjects = projects.filter(project => {
@@ -323,6 +248,20 @@ const AdminProjects = () => {
   const handleEdit = (id) => {
     navigate(`/admin/projects/${id}/edit`);
   };
+
+  // Show loading while Convex fetches
+  if (convexProjects === undefined) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-slate-500">
+            {currentLanguage?.code === 'ar' ? 'جاري التحميل...' : 'Loading...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -1,5 +1,6 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, action } from "./_generated/server";
 import { v } from "convex/values";
+import { api } from "./_generated/api";
 
 // ============================================
 // DONATION QUERIES
@@ -143,6 +144,9 @@ export const getPendingVerifications = query({
     _creationTime: v.number(),
     userId: v.id("users"),
     projectId: v.id("projects"),
+    donorName: v.string(),
+    donorPhone: v.string(),
+    projectTitle: v.object({ ar: v.string(), fr: v.string(), en: v.string() }),
     amount: v.number(),
     paymentMethod: v.string(),
     status: v.string(),
@@ -156,18 +160,71 @@ export const getPendingVerifications = query({
       .withIndex("by_status", (q) => q.eq("status", "awaiting_verification"))
       .order("asc")
       .take(args.limit || 50);
-    
-    return donations.map(d => ({
-      _id: d._id,
-      _creationTime: d._creationTime,
-      userId: d.userId,
-      projectId: d.projectId,
-      amount: d.amount,
-      paymentMethod: d.paymentMethod,
-      status: d.status,
-      receiptUrl: d.receiptUrl,
-      bankName: d.bankName,
-      createdAt: d.createdAt,
+
+    const results = await Promise.all(donations.map(async (d) => {
+      const user = await ctx.db.get(d.userId);
+      const project = await ctx.db.get(d.projectId);
+      return {
+        _id: d._id,
+        _creationTime: d._creationTime,
+        userId: d.userId,
+        projectId: d.projectId,
+        donorName: user?.fullName ?? "Unknown",
+        donorPhone: user?.phoneNumber ?? "",
+        projectTitle: project?.title ?? { ar: "غير محدد", fr: "Inconnu", en: "Unknown" },
+        amount: d.amount,
+        paymentMethod: d.paymentMethod,
+        status: d.status,
+        receiptUrl: d.receiptUrl,
+        bankName: d.bankName,
+        createdAt: d.createdAt,
+      };
+    }));
+
+    return results;
+  },
+});
+
+export const getAllDonations = query({
+  args: { limit: v.optional(v.number()) },
+  returns: v.array(v.object({
+    _id: v.id("donations"),
+    _creationTime: v.number(),
+    userId: v.id("users"),
+    projectId: v.id("projects"),
+    donorName: v.string(),
+    donorPhone: v.string(),
+    projectTitle: v.object({ ar: v.string(), fr: v.string(), en: v.string() }),
+    amount: v.number(),
+    paymentMethod: v.string(),
+    status: v.string(),
+    receiptUrl: v.optional(v.string()),
+    bankName: v.optional(v.string()),
+    createdAt: v.number(),
+  })),
+  handler: async (ctx, args) => {
+    const donations = await ctx.db
+      .query("donations")
+      .order("desc")
+      .take(args.limit ?? 100);
+    return await Promise.all(donations.map(async (d) => {
+      const user = await ctx.db.get(d.userId);
+      const project = await ctx.db.get(d.projectId);
+      return {
+        _id: d._id,
+        _creationTime: d._creationTime,
+        userId: d.userId,
+        projectId: d.projectId,
+        donorName: user?.fullName ?? "Unknown",
+        donorPhone: user?.phoneNumber ?? "",
+        projectTitle: project?.title ?? { ar: "غير محدد", fr: "Inconnu", en: "Unknown" },
+        amount: d.amount,
+        paymentMethod: d.paymentMethod,
+        status: d.status,
+        receiptUrl: d.receiptUrl,
+        bankName: d.bankName,
+        createdAt: d.createdAt ?? d._creationTime,
+      };
     }));
   },
 });
@@ -245,7 +302,7 @@ export const uploadReceipt = mutation({
 export const verifyDonation = mutation({
   args: {
     donationId: v.id("donations"),
-    adminId: v.id("admins"),
+    adminId: v.optional(v.id("admins")),
     verified: v.boolean(),
     notes: v.optional(v.string()),
   },
@@ -254,10 +311,10 @@ export const verifyDonation = mutation({
     const donation = await ctx.db.get(args.donationId);
     if (!donation) return false;
     if (donation.status !== "awaiting_verification") return false;
-    
+
     const now = Date.now();
     const newStatus = args.verified ? "verified" : "rejected";
-    
+
     await ctx.db.patch(args.donationId, {
       status: newStatus,
       verifiedBy: args.adminId,
@@ -265,7 +322,7 @@ export const verifyDonation = mutation({
       verificationNotes: args.notes,
       updatedAt: now,
     });
-    
+
     // Log the verification action
     await ctx.db.insert("verificationLogs", {
       donationId: args.donationId,
@@ -274,8 +331,8 @@ export const verifyDonation = mutation({
       notes: args.notes,
       createdAt: now,
     });
-    
-    // If verified, update project raised amount
+
+    // If verified, update project raised amount and user totals
     if (args.verified) {
       const project = await ctx.db.get(donation.projectId);
       if (project) {
@@ -284,8 +341,7 @@ export const verifyDonation = mutation({
           updatedAt: now,
         });
       }
-      
-      // Update user's total donated
+
       const user = await ctx.db.get(donation.userId);
       if (user) {
         await ctx.db.patch(donation.userId, {
@@ -293,8 +349,58 @@ export const verifyDonation = mutation({
           donationCount: user.donationCount + 1,
         });
       }
+
+      // Schedule WhatsApp notification for verified donation
+      // (ctx.scheduler.runAfter is used here because mutations cannot call ctx.runAction)
+      try {
+        const projectForNotification = await ctx.db.get(donation.projectId);
+        if (projectForNotification) {
+          await ctx.scheduler.runAfter(0, api.notifications.sendDonationVerificationNotification, {
+            userId: donation.userId,
+            donationId: args.donationId,
+            amount: donation.amount,
+            projectTitle: projectForNotification.title.ar,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to schedule verification notification:", error);
+      }
     }
-    
+
+    return true;
+  },
+});
+
+export const rejectDonation = mutation({
+  args: {
+    donationId: v.id("donations"),
+    adminId: v.optional(v.id("admins")),
+    reason: v.optional(v.string()),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const donation = await ctx.db.get(args.donationId);
+    if (!donation) return false;
+    if (donation.status !== "awaiting_verification") return false;
+
+    const now = Date.now();
+
+    await ctx.db.patch(args.donationId, {
+      status: "rejected",
+      verifiedBy: args.adminId,
+      verifiedAt: now,
+      verificationNotes: args.reason,
+      updatedAt: now,
+    });
+
+    await ctx.db.insert("verificationLogs", {
+      donationId: args.donationId,
+      adminId: args.adminId,
+      action: "reject",
+      notes: args.reason,
+      createdAt: now,
+    });
+
     return true;
   },
 });

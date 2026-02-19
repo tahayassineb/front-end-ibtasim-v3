@@ -7,6 +7,73 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 
 // ============================================
+// CONVEX STORAGE UTILITIES
+// ============================================
+
+/**
+ * Upload a file to Convex storage and return the storageId.
+ * @param {File} file - The file to upload
+ * @param {Function} getUploadUrlMutation - The mutation function from useMutation(api.storage.generateProjectImageUploadUrl)
+ * @returns {Promise<string>} - The storageId of the uploaded file
+ */
+const uploadFileToConvex = async (file, getUploadUrlMutation) => {
+  // 1. Get a signed upload URL from Convex
+  const uploadUrl = await getUploadUrlMutation();
+
+  // 2. Upload the file to the signed URL
+  const response = await fetch(uploadUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': file.type },
+    body: file,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Upload failed: ${response.statusText}`);
+  }
+
+  // 3. Parse the response to get the storageId
+  const result = await response.json();
+  
+  // Convex returns the storageId in the response
+  return result.storageId;
+};
+
+/**
+ * Get the URL for displaying a Convex stored image.
+ * Uses Convex's HTTP API to serve the file.
+ * @param {string} storageId - The Convex storageId
+ * @returns {string} - The URL to display the image
+ */
+const convexFileUrl = (storageId) => {
+  if (!storageId) return null;
+  
+  // Check if it's already a URL (backward compatibility)
+  if (storageId.startsWith('http://') || storageId.startsWith('https://') || storageId.startsWith('data:')) {
+    return storageId;
+  }
+  
+  // Get the Convex URL from environment
+  const convexUrl = import.meta.env.VITE_CONVEX_URL;
+  if (!convexUrl) {
+    console.error('VITE_CONVEX_URL not set');
+    return null;
+  }
+  
+  // Extract the deployment name from the Convex URL
+  // URL format: https://<deployment-name>.convex.cloud
+  const urlMatch = convexUrl.match(/https:\/\/([^.]+)\.convex\.cloud/);
+  if (!urlMatch) {
+    console.error('Invalid Convex URL format');
+    return null;
+  }
+  
+  const deploymentName = urlMatch[1];
+  return `https://${deploymentName}.convex.site/api/storage/${storageId}`;
+};
+
+// ============================================
+
+// ============================================
 // ADMIN PROJECT FORM PAGE - Create/Edit Projects
 // With Simple Text Inputs, Gallery Management, Featured Toggle
 // ============================================
@@ -26,6 +93,11 @@ const AdminProjectForm = () => {
   const existingProject = useQuery(api.projects.getProjectById, isEditMode ? { projectId: id } : 'skip');
   const createProjectMutation = useMutation(api.projects.createProject);
   const updateProjectMutation = useMutation(api.projects.updateProject);
+  const getUploadUrlMutation = useMutation(api.storage.generateProjectImageUploadUrl);
+  const deleteImageMutation = useMutation(api.storage.deleteProjectImage);
+
+  // Upload progress tracking
+  const [uploadProgress, setUploadProgress] = useState({ mainImage: 0, gallery: {} });
 
   // Translations
   const translations = {
@@ -183,6 +255,10 @@ const AdminProjectForm = () => {
     currency: 'MAD',
     visibility: 'public',
     featured: false,
+    // Storage IDs for Convex file storage (separate from preview URLs)
+    mainImageStorageId: null,
+    galleryStorageIds: [],
+    // Preview URLs for display (can be blob URLs or Convex URLs)
     mainImage: 'https://images.unsplash.com/photo-1538300342682-cf57afb97285?w=800',
     gallery: [
       'https://images.unsplash.com/photo-1541544537156-21c5299228d8?w=400',
@@ -247,8 +323,8 @@ const AdminProjectForm = () => {
     }));
   };
 
-  // Handle main image upload
-  const handleMainImageUpload = (e) => {
+  // Handle main image upload to Convex storage
+  const handleMainImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -258,21 +334,41 @@ const AdminProjectForm = () => {
     }
 
     setIsUploading(true);
-    
-    // Simulate upload - in real app, upload to server
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setTimeout(() => {
-        setFormData(prev => ({ ...prev, mainImage: event.target.result }));
-        setIsUploading(false);
-        showToast(t.imageUploaded, 'success');
-      }, 1000);
-    };
-    reader.readAsDataURL(file);
+    setUploadProgress(prev => ({ ...prev, mainImage: 0 }));
+
+    try {
+      // Create a preview URL for immediate display
+      const previewUrl = URL.createObjectURL(file);
+      setFormData(prev => ({ ...prev, mainImage: previewUrl }));
+
+      // Upload to Convex storage
+      const storageId = await uploadFileToConvex(file, getUploadUrlMutation);
+
+      // Update form data with storageId
+      setFormData(prev => ({
+        ...prev,
+        mainImage: previewUrl,
+        mainImageStorageId: storageId
+      }));
+
+      setUploadProgress(prev => ({ ...prev, mainImage: 100 }));
+      showToast(t.imageUploaded, 'success');
+    } catch (error) {
+      console.error('Main image upload error:', error);
+      showToast(t.errorUpload, 'error');
+      // Revert to default if upload fails
+      setFormData(prev => ({
+        ...prev,
+        mainImage: 'https://images.unsplash.com/photo-1538300342682-cf57afb97285?w=800',
+        mainImageStorageId: null
+      }));
+    } finally {
+      setIsUploading(false);
+    }
   };
 
-  // Handle gallery image upload
-  const handleGalleryUpload = (e) => {
+  // Handle gallery image upload to Convex storage
+  const handleGalleryUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
@@ -285,32 +381,73 @@ const AdminProjectForm = () => {
 
     setIsUploading(true);
 
-    // Simulate uploads
-    const uploadPromises = validFiles.map(file => {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (event) => resolve(event.target.result);
-        reader.readAsDataURL(file);
-      });
-    });
+    try {
+      // Create preview URLs for immediate display
+      const previewUrls = validFiles.map(file => URL.createObjectURL(file));
+      
+      // Add preview URLs to gallery immediately
+      setFormData(prev => ({
+        ...prev,
+        gallery: [...prev.gallery, ...previewUrls],
+        galleryStorageIds: [...(prev.galleryStorageIds || []), ...Array(validFiles.length).fill(null)],
+      }));
 
-    Promise.all(uploadPromises).then(newImages => {
-      setTimeout(() => {
-        setFormData(prev => ({
-          ...prev,
-          gallery: [...prev.gallery, ...newImages],
-        }));
-        setIsUploading(false);
-        showToast(t.imageUploaded, 'success');
-      }, 1000);
-    });
+      // Upload each file to Convex storage
+      const uploadPromises = validFiles.map(async (file, index) => {
+        try {
+          const storageId = await uploadFileToConvex(file, getUploadUrlMutation);
+          return { index, storageId, success: true };
+        } catch (error) {
+          console.error(`Gallery upload error for file ${index}:`, error);
+          return { index, storageId: null, success: false };
+        }
+      });
+
+      const results = await Promise.all(uploadPromises);
+
+      // Update storage IDs
+      setFormData(prev => {
+        const newStorageIds = [...(prev.galleryStorageIds || [])];
+        results.forEach(({ index, storageId }) => {
+          const actualIndex = prev.gallery.length - validFiles.length + index;
+          newStorageIds[actualIndex] = storageId;
+        });
+        return { ...prev, galleryStorageIds: newStorageIds };
+      });
+
+      const successCount = results.filter(r => r.success).length;
+      if (successCount > 0) {
+        showToast(`${successCount} ${t.imageUploaded}`, 'success');
+      }
+      if (successCount < validFiles.length) {
+        showToast(`${validFiles.length - successCount} uploads failed`, 'error');
+      }
+    } catch (error) {
+      console.error('Gallery upload error:', error);
+      showToast(t.errorUpload, 'error');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   // Handle gallery image removal
-  const removeGalleryImage = (index) => {
+  const removeGalleryImage = async (index) => {
+    const storageId = formData.galleryStorageIds?.[index];
+    
+    // Try to delete from Convex storage if it exists
+    if (storageId) {
+      try {
+        await deleteImageMutation({ storageId });
+      } catch (error) {
+        console.error('Failed to delete image from storage:', error);
+        // Continue with removal from UI even if deletion fails
+      }
+    }
+    
     setFormData(prev => ({
       ...prev,
       gallery: prev.gallery.filter((_, i) => i !== index),
+      galleryStorageIds: prev.galleryStorageIds?.filter((_, i) => i !== index) || [],
     }));
   };
 
@@ -417,6 +554,16 @@ const AdminProjectForm = () => {
     setIsLoading(true);
     
     try {
+      // Validate that we have a main image storage ID
+      if (!formData.mainImageStorageId) {
+        showToast('Please upload a main image', 'error');
+        setIsLoading(false);
+        return;
+      }
+
+      // Filter out null storage IDs from gallery
+      const validGalleryStorageIds = (formData.galleryStorageIds || []).filter(id => id !== null);
+
       if (isEditMode) {
         // Update existing project
         await updateProjectMutation({
@@ -426,8 +573,8 @@ const AdminProjectForm = () => {
             description: formData.description,
             category: formData.category,
             goalAmount: parseFloat(formData.goal) || 0,
-            mainImage: formData.mainImage,
-            gallery: formData.gallery,
+            mainImageStorageId: formData.mainImageStorageId,
+            galleryStorageIds: validGalleryStorageIds,
             status: formData.status,
             isFeatured: formData.featured,
             location: formData.location,
@@ -443,8 +590,8 @@ const AdminProjectForm = () => {
           description: formData.description,
           category: formData.category,
           goalAmount: parseFloat(formData.goal) || 0,
-          mainImage: formData.mainImage,
-          gallery: formData.gallery || [],
+          mainImageStorageId: formData.mainImageStorageId,
+          galleryStorageIds: validGalleryStorageIds,
           location: formData.location,
           beneficiaries: parseInt(formData.beneficiaries) || 0,
           isFeatured: formData.featured,
@@ -521,10 +668,15 @@ const AdminProjectForm = () => {
                 {formData.mainImage ? (
                   <div className="aspect-video w-full rounded-xl border border-border-light dark:border-white/10 overflow-hidden relative">
                     <img
-                      src={formData.mainImage}
+                      src={convexFileUrl(formData.mainImageStorageId) || formData.mainImage}
                       alt="Main project"
                       className="w-full h-full object-cover"
                     />
+                    {isUploading && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity gap-3">
                       <button
                         type="button"
@@ -756,11 +908,16 @@ const AdminProjectForm = () => {
                 }`}
               >
                 <img
-                  src={image}
+                  src={convexFileUrl(formData.galleryStorageIds?.[index]) || image}
                   alt={`Gallery ${index + 1}`}
                   className="w-full h-full object-cover"
                   draggable={false}
                 />
+                {!formData.galleryStorageIds?.[index] && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                   <button
                     type="button"

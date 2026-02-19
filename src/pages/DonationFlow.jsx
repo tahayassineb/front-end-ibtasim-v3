@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useMutation, useQuery } from 'convex/react';
+import { useMutation, useQuery, useAction } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
@@ -13,37 +13,11 @@ import CountryCodeSelector, { validatePhoneByCountry, formatPhoneForDisplay } fr
 
 const DONATION_AMOUNTS = [200, 500, 1000];
 
-const MOCK_PROJECTS = {
-  '1': {
-    id: '1',
-    title: 'Atlas Mountain Education',
-    titleAr: 'تعليم جبال الأطلس',
-    image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800',
-    category: 'Education',
-    impact: {
-      ar: 'توفير حقيبة مدرسية كاملة لطفل واحد في منطقة الأطلس العالي لمدة فصل دراسي كامل',
-      fr: 'Fournir un kit scolaire complet pour un enfant dans la région du Haut Atlas pour un semestre entier',
-      en: 'Provide a complete school kit for one child in the High Atlas region for an entire semester',
-    },
-  },
-  '2': {
-    id: '2',
-    title: 'Clean Water Initiative',
-    titleAr: 'مبادرة المياه النظيفة',
-    image: 'https://images.unsplash.com/photo-1538300342682-cf57afb97285?w=800',
-    category: 'Water',
-    impact: {
-      ar: 'توفير مياه نظيفة لأسرة لمدة شهر',
-      fr: 'Fournir de l\'eau potable à une famille pendant un mois',
-      en: 'Provide clean water to a family for a month',
-    },
-  },
-};
-
-const BANK_INFO = {
-  name: 'جمعية الأمل المغربية (Association Espoir)',
-  rib: '007 780 001234567890 12',
-  bank: 'Attijariwafa Bank',
+// Default bank info shown while config loads
+const DEFAULT_BANK_INFO = {
+  name: '—',
+  rib: '—',
+  bank: '—',
 };
 
 // Translations
@@ -659,7 +633,7 @@ const Step1Amount = ({ tx, lang, project, donationData, setDonationData, formatC
 );
 
 // Step 2: Payment Methods
-const Step2PaymentMethods = ({ tx, isRTL, donationData, setDonationData }) => {
+const Step2PaymentMethods = ({ tx, isRTL, donationData, setDonationData, bankInfo }) => {
   const paymentSections = [
     {
       id: 'bank',
@@ -667,9 +641,9 @@ const Step2PaymentMethods = ({ tx, isRTL, donationData, setDonationData }) => {
       title: tx.bankTransfer,
       desc: tx.bankTransferDesc,
       details: [
-        { label: tx.bankName, value: 'Attijariwafa Bank' },
-        { label: tx.accountHolder, value: BANK_INFO.name },
-        { label: tx.rib, value: BANK_INFO.rib },
+        { label: tx.bankName, value: bankInfo.bank },
+        { label: tx.accountHolder, value: bankInfo.name },
+        { label: tx.rib, value: bankInfo.rib },
       ],
     },
     {
@@ -796,6 +770,7 @@ const Step3ReceiptUpload = ({
   dragActive,
   setDragActive,
   showToast,
+  bankInfo,
 }) => {
   const handleDrag = (e) => {
     e.preventDefault();
@@ -849,11 +824,11 @@ const Step3ReceiptUpload = ({
               {tx.accountHolder}
             </label>
             <button
-              onClick={() => copyToClipboard(BANK_INFO.name)}
+              onClick={() => copyToClipboard(bankInfo.name)}
               className="flex items-center justify-between bg-primary/5 dark:bg-primary/10 p-3 rounded-xl border border-primary/5 transition-all active:scale-[0.98] text-right w-full"
             >
               <span className="text-gray-800 dark:text-white font-bold text-[15px] leading-tight flex-1">
-                {BANK_INFO.name}
+                {bankInfo.name}
               </span>
               <span className="material-symbols-outlined text-primary/60 text-[18px] mr-2">content_copy</span>
             </button>
@@ -865,10 +840,10 @@ const Step3ReceiptUpload = ({
             </label>
             <div className="flex items-center justify-between bg-primary/10 dark:bg-primary/20 p-3 rounded-xl border border-primary/10">
               <span className="text-primary font-mono font-bold text-lg tracking-wider" dir="ltr">
-                {BANK_INFO.rib}
+                {bankInfo.rib}
               </span>
               <button
-                onClick={() => copyToClipboard(BANK_INFO.rib.replace(/\s/g, ''))}
+                onClick={() => copyToClipboard(bankInfo.rib.replace(/\s/g, ''))}
                 className="flex items-center justify-center w-9 h-9 bg-primary text-white rounded-lg transition-all active:scale-95 shadow-md"
               >
                 <span className="material-symbols-outlined text-[20px]">content_copy</span>
@@ -1142,10 +1117,20 @@ const DonationFlow = () => {
   const requestOTP = useMutation(api.auth.requestOTP);
   const verifyOTP = useMutation(api.auth.verifyOTP);
   const createDonation = useMutation(api.donations.createDonation);
+  const createWhopCheckout = useAction(api.payments.createWhopCheckout);
   const setPassword = useMutation(api.auth.setPassword);
   
-  // Fetch project from Convex
-  const convexProject = useQuery(api.projects.getProjectById, { projectId });
+  // Fetch project from Convex (skip query if no projectId)
+  const convexProject = useQuery(
+    api.projects.getProjectById,
+    projectId ? { projectId } : "skip"
+  );
+
+  // Fetch bank info from Convex config
+  const bankConfigRaw = useQuery(api.config.getConfig, { key: "bank_info" });
+  const bankInfo = bankConfigRaw
+    ? (() => { try { return JSON.parse(bankConfigRaw); } catch { return DEFAULT_BANK_INFO; } })()
+    : DEFAULT_BANK_INFO;
   
   // Determine initial step based on auth status
   const getInitialStep = () => {
@@ -1182,19 +1167,21 @@ const DonationFlow = () => {
   const isRTL = currentLanguage.dir === 'rtl';
   const lang = currentLanguage.code;
   
-  // Get project data from Convex
-  const project = convexProject ? {
-    id: convexProject._id,
-    title: convexProject.title?.en || 'Project',
-    titleAr: convexProject.title?.ar || 'مشروع',
-    image: convexProject.mainImage,
-    category: convexProject.category,
-    impact: {
-      ar: `دعم ${convexProject.category} في ${convexProject.location || 'المغرب'}`,
-      fr: `Soutenir ${convexProject.category} à ${convexProject.location || 'Maroc'}`,
-      en: `Support ${convexProject.category} in ${convexProject.location || 'Morocco'}`,
-    },
-  } : MOCK_PROJECTS[projectId] || MOCK_PROJECTS['1'];
+  // Get project data from Convex (null if general donation or not found)
+  const project = convexProject
+    ? {
+        id: convexProject._id,
+        title: convexProject.title?.[lang] || convexProject.title?.en || '',
+        titleAr: convexProject.title?.ar || '',
+        image: convexProject.mainImage,
+        category: convexProject.category,
+        impact: {
+          ar: convexProject.description?.ar || `دعم مشروع ${convexProject.category}`,
+          fr: convexProject.description?.fr || `Soutenir le projet ${convexProject.category}`,
+          en: convexProject.description?.en || `Support ${convexProject.category} project`,
+        },
+      }
+    : null;
   
   // Donation state
   const [donationData, setDonationData] = useState({
@@ -1204,6 +1191,7 @@ const DonationFlow = () => {
     phoneNumber: user?.phone?.replace('+212 ', '') || '',
     paymentMethod: donationState.paymentMethod || null,
     receipt: null,
+    coverFees: false,
   });
   
   const tx = translations[lang] || translations.en;
@@ -1390,23 +1378,31 @@ const DonationFlow = () => {
   const handleOtpVerify = async () => {
     const isOtpComplete = otpValues.every(v => v.length === 1);
     if (!isOtpComplete) return;
-    
+
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Demo register and login
-    const userData = {
-      id: 'user_' + Date.now(),
-      name: authFormData.fullName,
-      phone: `${countryCode} ${formatPhoneDisplay(authFormData.phone)}`,
-      email: authFormData.email,
-      avatar: null,
-    };
-    
-    login(userData);
-    setIsLoading(false);
-    setStep(1); // Go to amount selection
-    showToast(lang === 'ar' ? 'تم إنشاء الحساب' : lang === 'fr' ? 'Compte créé' : 'Account created', 'success');
+    try {
+      const phoneNumber = `${countryCode}${authFormData.phone}`;
+      const code = otpValues.join('');
+      const result = await verifyOTP({ phoneNumber, code });
+      if (!result.success) {
+        showToast(result.message, 'error');
+        return;
+      }
+      const userData = {
+        id: result.userId,
+        name: authFormData.fullName || '',
+        phone: phoneNumber,
+        email: authFormData.email || '',
+        avatar: null,
+      };
+      login(userData);
+      setStep(1);
+      showToast(lang === 'ar' ? 'تم إنشاء الحساب' : lang === 'fr' ? 'Compte créé' : 'Account created', 'success');
+    } catch (error) {
+      showToast(lang === 'ar' ? 'خطأ في التحقق' : lang === 'fr' ? 'Erreur de vérification' : 'Verification error', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   // Bottom Action
@@ -1509,10 +1505,52 @@ const DonationFlow = () => {
       <div className="fixed bottom-0 left-0 right-0 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-lg border-t border-gray-100 dark:border-white/5 p-4 z-50">
         <div className="max-w-lg mx-auto">
           <Button
-            onClick={() => setStep(step + 1)}
+            onClick={async () => {
+              // Handle Whop redirect for card payments
+              if (step === 2 && donationData.paymentMethod === 'card') {
+                if (!user || !project) {
+                  showToast(lang === 'ar' ? 'يرجى تسجيل الدخول أولاً' : lang === 'fr' ? 'Veuillez vous connecter d\'abord' : 'Please login first', 'error');
+                  return;
+                }
+                
+                setIsLoading(true);
+                try {
+                  // Create donation first
+                  const donationId = await createDonation({
+                    userId: user.id,
+                    projectId: projectId,
+                    amount: calculateTotal(),
+                    paymentMethod: 'card_whop',
+                    coversFees: donationData.coverFees,
+                    isAnonymous: false,
+                    message: donationData.message || '',
+                    bankName: '',
+                  });
+                  
+                  // Create Whop checkout session
+                  const { purchaseUrl } = await createWhopCheckout({
+                    donationId,
+                    amountMAD: calculateTotal(),
+                  });
+                  
+                  // Redirect to Whop checkout
+                  window.location.href = purchaseUrl;
+                } catch (error) {
+                  console.error('Whop checkout error:', error);
+                  setIsLoading(false);
+                  showToast(lang === 'ar' ? 'فشل إنشاء جلسة الدفع' : lang === 'fr' ? 'Échec de la création de la session' : 'Failed to create checkout session', 'error');
+                }
+                return;
+              }
+              
+              // Normal step progression
+              setStep(step + 1);
+            }}
             fullWidth
             size="xl"
             className="shadow-lg shadow-primary/20"
+            loading={isLoading}
+            disabled={isLoading}
           >
             {step === 0 ? tx.continue : step === 2 ? tx.continue : tx.next}
           </Button>
@@ -1570,6 +1608,7 @@ const DonationFlow = () => {
     isRTL,
     donationData,
     setDonationData,
+    bankInfo,
   };
   
   const step3Props = {
@@ -1580,6 +1619,7 @@ const DonationFlow = () => {
     dragActive,
     setDragActive,
     showToast,
+    bankInfo,
   };
   
   const step4Props = {
