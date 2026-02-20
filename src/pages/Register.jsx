@@ -43,7 +43,7 @@ const Register = () => {
   const registerUser = useMutation(api.auth.registerUser);
   const requestOTP = useMutation(api.auth.requestOTP);
   const verifyOTP = useMutation(api.auth.verifyOTP);
-  const setPassword = useMutation(api.auth.setPassword);
+  const setUserPassword = useMutation(api.auth.setPassword);
 
   // Store userId returned after registerUser
   const [registeredUserId, setRegisteredUserId] = useState(null);
@@ -302,7 +302,7 @@ const Register = () => {
 
       // Step 4: Set password
       if (userId && password) {
-        await setPassword({ userId, password });
+        await setUserPassword({ userId, password });
       }
 
       const userData = {
