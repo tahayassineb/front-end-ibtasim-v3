@@ -1,5 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { api } from "./_generated/api";
+import { hashPassword } from "./auth";
 
 // ============================================
 // ADMIN DASHBOARD QUERIES
@@ -342,5 +344,201 @@ export const updateAdminLastLogin = mutation({
       lastLoginAt: Date.now(),
     });
     return true;
+  },
+});
+
+// ============================================
+// SUPER ADMIN SEED (idempotent)
+// ============================================
+
+export const createSuperAdmin = mutation({
+  args: {
+    email: v.string(),
+    password: v.string(),
+    fullName: v.string(),
+    phoneNumber: v.string(),
+  },
+  returns: v.union(
+    v.object({ success: v.literal(true), adminId: v.id("admins") }),
+    v.object({ success: v.literal(false), message: v.string() })
+  ),
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    // Idempotent: check if admin already exists
+    const existing = await ctx.db
+      .query("admins")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+    if (existing) {
+      return { success: false, message: "Admin already exists." } as const;
+    }
+
+    // Create the user record
+    const userId = await ctx.db.insert("users", {
+      fullName: args.fullName,
+      email: args.email,
+      phoneNumber: args.phoneNumber,
+      isVerified: true,
+      preferredLanguage: "ar",
+      notificationsEnabled: true,
+      totalDonated: 0,
+      donationCount: 0,
+      dataRetentionConsent: true,
+      consentGivenAt: now,
+      createdAt: now,
+      lastLoginAt: now,
+    });
+
+    const passwordHash = await hashPassword(args.password);
+
+    const adminId = await ctx.db.insert("admins", {
+      userId,
+      email: args.email,
+      passwordHash,
+      isActive: true,
+      lastLoginAt: now,
+      createdAt: now,
+    });
+
+    return { success: true, adminId } as const;
+  },
+});
+
+// ============================================
+// ADMIN INVITATIONS
+// ============================================
+
+export const createAdminInvitation = mutation({
+  args: {
+    email: v.string(),
+    phone: v.string(),
+    invitedBy: v.id("admins"),
+    siteUrl: v.string(),
+  },
+  returns: v.object({ token: v.string() }),
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    // Generate a UUID token using Web Crypto
+    const token = crypto.randomUUID();
+    const expiresAt = now + 7 * 24 * 60 * 60 * 1000; // 7 days
+
+    await ctx.db.insert("adminInvitations", {
+      email: args.email,
+      phone: args.phone,
+      token,
+      invitedBy: args.invitedBy,
+      status: "pending",
+      expiresAt,
+      createdAt: now,
+    });
+
+    const inviteUrl = `${args.siteUrl}/admin/register/${token}`;
+    const message = `مرحباً! تمت دعوتك للانضمام إلى فريق الإدارة في منصة جمعية الأمل.\n\nاضغط على الرابط التالي لإنشاء حسابك:\n${inviteUrl}\n\nالرابط صالح لمدة 7 أيام.`;
+
+    try {
+      await ctx.scheduler.runAfter(0, api.notifications.sendWhatsApp, {
+        to: args.phone,
+        text: message,
+      });
+    } catch (e) {
+      console.error("Failed to schedule invitation WhatsApp:", e);
+    }
+
+    return { token };
+  },
+});
+
+export const validateInvitationToken = query({
+  args: { token: v.string() },
+  returns: v.union(
+    v.object({ valid: v.literal(true), email: v.string() }),
+    v.object({ valid: v.literal(false), reason: v.string() })
+  ),
+  handler: async (ctx, args) => {
+    const inv = await ctx.db
+      .query("adminInvitations")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .first();
+
+    if (!inv) {
+      return { valid: false, reason: "Invitation not found." } as const;
+    }
+    if (inv.status !== "pending") {
+      return { valid: false, reason: "Invitation already used." } as const;
+    }
+    if (Date.now() > inv.expiresAt) {
+      return { valid: false, reason: "Invitation has expired." } as const;
+    }
+    return { valid: true, email: inv.email } as const;
+  },
+});
+
+export const acceptAdminInvitation = mutation({
+  args: {
+    token: v.string(),
+    fullName: v.string(),
+    password: v.string(),
+    phoneNumber: v.optional(v.string()),
+  },
+  returns: v.union(
+    v.object({ success: v.literal(true), adminId: v.id("admins") }),
+    v.object({ success: v.literal(false), message: v.string() })
+  ),
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    const inv = await ctx.db
+      .query("adminInvitations")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .first();
+
+    if (!inv) return { success: false, message: "Invalid invitation." } as const;
+    if (inv.status !== "pending") return { success: false, message: "Invitation already used." } as const;
+    if (now > inv.expiresAt) return { success: false, message: "Invitation has expired." } as const;
+
+    // Check if email already used as admin
+    const existing = await ctx.db
+      .query("admins")
+      .withIndex("by_email", (q) => q.eq("email", inv.email))
+      .first();
+    if (existing) return { success: false, message: "Email already registered as admin." } as const;
+
+    // Create user record
+    const userId = await ctx.db.insert("users", {
+      fullName: args.fullName,
+      email: inv.email,
+      phoneNumber: args.phoneNumber || inv.phone,
+      isVerified: true,
+      preferredLanguage: "ar",
+      notificationsEnabled: true,
+      totalDonated: 0,
+      donationCount: 0,
+      dataRetentionConsent: true,
+      consentGivenAt: now,
+      createdAt: now,
+      lastLoginAt: now,
+    });
+
+    const passwordHash = await hashPassword(args.password);
+
+    const adminId = await ctx.db.insert("admins", {
+      userId,
+      email: inv.email,
+      passwordHash,
+      isActive: true,
+      lastLoginAt: now,
+      createdAt: now,
+      createdBy: inv.invitedBy,
+    });
+
+    // Mark invitation accepted
+    await ctx.db.patch(inv._id, {
+      status: "accepted",
+      acceptedAt: now,
+    });
+
+    return { success: true, adminId } as const;
   },
 });

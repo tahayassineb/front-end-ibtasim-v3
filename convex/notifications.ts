@@ -1,5 +1,6 @@
 import { action, query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { api } from "./_generated/api";
 
 // ============================================
 // WA SENDER API CONFIGURATION
@@ -62,10 +63,11 @@ function getApiToken(): string {
 async function sendWhatsAppMessage(
   to: string,
   text: string,
-  retryCount: number = 0
+  retryCount: number = 0,
+  tokenOverride?: string
 ): Promise<{ success: boolean; error?: string; response?: any }> {
-  const token = getApiToken();
-  
+  const token = tokenOverride || getApiToken();
+
   if (!token) {
     return {
       success: false,
@@ -94,7 +96,7 @@ async function sendWhatsAppMessage(
         // Exponential backoff: wait longer for each retry
         const delay = RETRY_DELAY_MS * Math.pow(2, retryCount);
         await sleep(delay);
-        return sendWhatsAppMessage(to, text, retryCount + 1);
+        return sendWhatsAppMessage(to, text, retryCount + 1, tokenOverride);
       }
       return {
         success: false,
@@ -148,8 +150,20 @@ export const sendWhatsApp = action({
     success: v.boolean(),
     error: v.optional(v.string()),
   }),
-  handler: async (_ctx, args) => {
-    const result = await sendWhatsAppMessage(args.to, args.text);
+  handler: async (ctx, args) => {
+    // Try to get api_key from stored whatsapp_settings config (session api_key)
+    let apiKey: string | undefined;
+    try {
+      const rawSettings = await ctx.runQuery(api.config.getConfig, { key: "whatsapp_settings" });
+      if (rawSettings) {
+        const settings = JSON.parse(rawSettings);
+        if (settings.apiKey) apiKey = settings.apiKey;
+      }
+    } catch (e) {
+      console.error("Could not read whatsapp_settings config:", e);
+    }
+
+    const result = await sendWhatsAppMessage(args.to, args.text, 0, apiKey);
     return {
       success: result.success,
       error: result.error,

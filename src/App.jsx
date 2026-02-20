@@ -32,6 +32,7 @@ import AdminVerifications from './pages/AdminVerifications';
 import AdminDonors from './pages/AdminDonors';
 import AdminDonorDetail from './pages/AdminDonorDetail';
 import AdminSettings from './pages/AdminSettings';
+import AdminRegister from './pages/AdminRegister';
 
 // ============================================
 // PROTECTED ROUTE COMPONENTS
@@ -46,9 +47,8 @@ const ProtectedRoute = ({ children }) => {
 // Protected route for admin
 const AdminRoute = ({ children }) => {
   const { isAuthenticated, user } = useApp();
-  // For demo, allow all authenticated users to access admin
-  // In production: check user.role === 'admin'
-  return isAuthenticated ? children : <Navigate to="/admin/login" />;
+  if (!isAuthenticated || user?.role !== 'admin') return <Navigate to="/admin/login" />;
+  return children;
 };
 
 // ============================================
@@ -105,6 +105,9 @@ function AppContent() {
           
           {/* Admin Login */}
           <Route path="/admin/login" element={<AdminLogin />} />
+
+          {/* Admin Invitation Registration (public) */}
+          <Route path="/admin/register/:token" element={<AdminRegister />} />
           
           {/* Protected Admin Routes */}
           <Route element={<AdminRoute><AdminLayout /></AdminRoute>}>

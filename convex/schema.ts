@@ -277,6 +277,22 @@ export default defineSchema({
     .index("by_status", ["status"]),
 
   // ============================================
+  // ADMIN INVITATIONS TABLE
+  // ============================================
+  adminInvitations: defineTable({
+    email: v.string(),
+    phone: v.string(),           // WhatsApp number of invitee
+    token: v.string(),           // UUID token
+    invitedBy: v.id("admins"),
+    status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("expired")),
+    expiresAt: v.number(),       // Date.now() + 7 days
+    acceptedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_token", ["token"])
+    .index("by_email", ["email"]),
+
+  // ============================================
   // CONFIG TABLE (Site-wide settings)
   // ============================================
   config: defineTable({

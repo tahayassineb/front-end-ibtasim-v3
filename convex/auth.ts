@@ -7,7 +7,7 @@ import { api } from "./_generated/api";
 // Works in Convex's runtime without external deps
 // ============================================
 
-async function hashPassword(password: string): Promise<string> {
+export async function hashPassword(password: string): Promise<string> {
   const salt = crypto.randomUUID().replace(/-/g, "");
   const encoder = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey(
@@ -283,6 +283,49 @@ export const setPassword = mutation({
       success: true,
       message: "Password set successfully.",
     };
+  },
+});
+
+export const loginAdmin = mutation({
+  args: {
+    email: v.string(),
+    password: v.string(),
+  },
+  returns: v.union(
+    v.object({
+      success: v.literal(true),
+      adminId: v.id("admins"),
+      userId: v.id("users"),
+      email: v.string(),
+    }),
+    v.object({
+      success: v.literal(false),
+      message: v.string(),
+    })
+  ),
+  handler: async (ctx, args) => {
+    const admin = await ctx.db
+      .query("admins")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+
+    if (!admin || !admin.isActive) {
+      return { success: false, message: "Invalid credentials." } as const;
+    }
+
+    const valid = await verifyPassword(args.password, admin.passwordHash);
+    if (!valid) {
+      return { success: false, message: "Invalid credentials." } as const;
+    }
+
+    await ctx.db.patch(admin._id, { lastLoginAt: Date.now() });
+
+    return {
+      success: true,
+      adminId: admin._id,
+      userId: admin.userId,
+      email: admin.email,
+    } as const;
   },
 });
 

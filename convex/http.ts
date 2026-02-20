@@ -113,5 +113,42 @@ http.route({
   }),
 });
 
+// WaSender Session Status Webhook Handler
+http.route({
+  path: "/whatsapp-webhook",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    let body: any;
+    try {
+      body = await request.json();
+    } catch {
+      return new Response("Invalid JSON", { status: 400 });
+    }
+
+    // WaSender fires session.status when QR is scanned and session connects
+    if (body?.event === "session.status" && body?.data?.status === "connected") {
+      try {
+        const currentSettings = await ctx.runQuery(api.config.getConfig, { key: "whatsapp_settings" });
+        if (currentSettings) {
+          const parsed = JSON.parse(currentSettings);
+          await ctx.runMutation(api.config.setConfig, {
+            key: "whatsapp_settings",
+            value: JSON.stringify({
+              ...parsed,
+              isConnected: true,
+              qrCode: null,
+              lastConnected: new Date().toISOString(),
+            }),
+          });
+        }
+      } catch (e) {
+        console.error("Error updating whatsapp_settings on connect:", e);
+      }
+    }
+
+    return new Response("OK", { status: 200 });
+  }),
+});
+
 // Default export is required
 export default http;

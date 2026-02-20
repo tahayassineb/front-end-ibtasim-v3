@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
@@ -11,6 +13,7 @@ import Input from '../components/Input';
 const AdminLogin = () => {
   const { login, currentLanguage, isDarkMode } = useApp();
   const navigate = useNavigate();
+  const loginAdmin = useMutation(api.auth.loginAdmin);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -92,23 +95,26 @@ const AdminLogin = () => {
     }
 
     setLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      // Mock authentication - in production this would be a real API call
-      if (formData.email.includes('@') && formData.password.length >= 6) {
+
+    try {
+      const result = await loginAdmin({ email: formData.email, password: formData.password });
+      if (result.success) {
         login({
-          id: 1,
-          name: 'Admin User',
-          email: formData.email,
+          id: result.adminId,
+          userId: result.userId,
+          email: result.email,
+          name: 'Admin',
           role: 'admin',
         });
         navigate('/admin');
       } else {
-        setError(t.errorInvalid);
+        setError(result.message || t.errorInvalid);
       }
+    } catch (err) {
+      setError(t.errorInvalid);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (

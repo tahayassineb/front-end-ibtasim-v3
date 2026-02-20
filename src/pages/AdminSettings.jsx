@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 
 // ============================================
@@ -11,7 +11,7 @@ import { api } from '../../convex/_generated/api';
 // ============================================
 
 const AdminSettings = () => {
-  const { currentLanguage, isDarkMode, toggleDarkMode, showToast } = useApp();
+  const { currentLanguage, isDarkMode, toggleDarkMode, showToast, user } = useApp();
   const [activeTab, setActiveTab] = useState('bank');
 
   // Convex queries for loading settings
@@ -23,6 +23,13 @@ const AdminSettings = () => {
 
   // Convex mutation for saving settings
   const setConfig = useMutation(api.config.setConfig);
+
+  // WhatsApp session actions
+  const createAndConnectSession = useAction(api.whatsapp.createAndConnectSession);
+  const disconnectSessionAction = useAction(api.whatsapp.disconnectSession);
+
+  // Admin invitation mutation
+  const createAdminInvitation = useMutation(api.admin.createAdminInvitation);
 
   // Loading states for save operations
   const [isSavingBank, setIsSavingBank] = useState(false);
@@ -260,6 +267,12 @@ const AdminSettings = () => {
     phone: '',
   });
 
+  // Invitation state
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [invitePhone, setInvitePhone] = useState('');
+  const [isSendingInvite, setIsSendingInvite] = useState(false);
+  const [inviteLink, setInviteLink] = useState('');
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -325,83 +338,52 @@ const AdminSettings = () => {
   };
 
   // WhatsApp Session Management
-  const handleCreateSession = () => {
+  const handleCreateSession = async () => {
+    const phoneNumber = whatsappSession.phoneNumber?.replace(/\s/g, '');
+    if (!phoneNumber || phoneNumber.length < 8) {
+      showToast('يرجى إدخال رقم هاتف صحيح أولاً', 'error');
+      return;
+    }
     setWhatsappSession(prev => ({ ...prev, isLoading: true }));
-    
-    // Simulate QR code generation
-    setTimeout(() => {
-      const mockQrCode = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=whatsapp-session-123';
-      setWhatsappSession(prev => ({
-        ...prev,
-        isLoading: false,
-        qrCode: mockQrCode,
-      }));
-    }, 1500);
-  };
-
-  const handleConnectSession = async () => {
-    setWhatsappSession(prev => ({ ...prev, isLoading: true }));
-    
-    // Simulate connection
-    setTimeout(async () => {
-      const updatedSession = {
-        isConnected: true,
-        qrCode: null,
-        lastConnected: new Date().toISOString(),
-        messagesSent: 150,
-        messagesReceived: 89,
-        isLoading: false,
-      };
-      setWhatsappSession(prev => ({ ...prev, ...updatedSession }));
-      
-      // Save to Convex
-      try {
-        await setConfig({ 
-          key: 'whatsapp_settings', 
-          value: JSON.stringify({
-            ...whatsappSession,
-            ...updatedSession,
-            isLoading: false,
-          }) 
-        });
+    try {
+      const result = await createAndConnectSession({ phoneNumber });
+      if (result.success) {
+        setWhatsappSession(prev => ({
+          ...prev,
+          isLoading: false,
+          qrCode: result.qrCode || null,
+        }));
         showToast(t.createSessionSuccess, 'success');
-      } catch (error) {
-        console.error('Failed to save WhatsApp settings:', error);
-        showToast('فشل حفظ إعدادات الواتساب', 'error');
+      } else {
+        setWhatsappSession(prev => ({ ...prev, isLoading: false }));
+        showToast(result.error || 'فشل إنشاء الجلسة', 'error');
       }
-    }, 2000);
+    } catch (error) {
+      setWhatsappSession(prev => ({ ...prev, isLoading: false }));
+      showToast(error.message || 'فشل إنشاء الجلسة', 'error');
+    }
   };
 
   const handleDisconnect = async () => {
     setWhatsappSession(prev => ({ ...prev, isLoading: true }));
-    
-    setTimeout(async () => {
-      const updatedSession = {
-        isConnected: false,
-        qrCode: null,
-        lastConnected: whatsappSession.lastConnected,
-        messagesSent: 0,
-        messagesReceived: 0,
-        isLoading: false,
-      };
-      setWhatsappSession(prev => ({ ...prev, ...updatedSession }));
-      
-      // Save to Convex
-      try {
-        await setConfig({ 
-          key: 'whatsapp_settings', 
-          value: JSON.stringify({
-            ...whatsappSession,
-            ...updatedSession,
-            isLoading: false,
-          }) 
-        });
+    try {
+      const result = await disconnectSessionAction({});
+      if (result.success) {
+        setWhatsappSession(prev => ({
+          ...prev,
+          isConnected: false,
+          qrCode: null,
+          isLoading: false,
+        }));
         showToast(t.disconnectSuccess, 'success');
-      } catch (error) {
-        console.error('Failed to save WhatsApp settings:', error);
-        showToast('فشل حفظ إعدادات الواتساب', 'error');
+      } else {
+        setWhatsappSession(prev => ({ ...prev, isLoading: false }));
+        showToast(result.error || 'فشل قطع الاتصال', 'error');
       }
-    }, 1000);
+    } catch (error) {
+      setWhatsappSession(prev => ({ ...prev, isLoading: false }));
+      showToast(error.message || 'فشل قطع الاتصال', 'error');
+    }
   };
 
   const handlePhoneChange = async () => {
@@ -664,15 +646,7 @@ const AdminSettings = () => {
                       <div className="text-center p-6 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
                         <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">{t.scanQrCode}</p>
                         <img src={whatsappSession.qrCode} alt="QR Code" className="mx-auto w-48 h-48" />
-                        <Button
-                          variant="primary"
-                          size="md"
-                          className="mt-4"
-                          onClick={handleConnectSession}
-                          loading={whatsappSession.isLoading}
-                        >
-                          {t.createSession}
-                        </Button>
+                        <p className="text-xs text-slate-400 mt-3">سيتصل تلقائياً بعد مسح الرمز</p>
                       </div>
                     )}
 
@@ -751,65 +725,94 @@ const AdminSettings = () => {
 
               {activeTab === 'team' && (
                 <Card padding="lg">
-                  <div className="flex items-center justify-between mb-6">
+                  <div className="flex flex-col gap-1 mb-6">
                     <h3 className="text-text-primary dark:text-white text-2xl font-bold font-serif">{t.teamMembers}</h3>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => setShowAddMember(true)}
-                      loading={isSavingTeam}
-                    >
-                      <span className="material-symbols-outlined text-sm ml-1">add</span>
-                      {t.addMember}
-                    </Button>
+                    <p className="text-slate-500 text-sm">أرسل دعوة عبر الواتساب لإضافة عضو جديد للفريق</p>
                   </div>
 
-                  {/* Add Member Form */}
-                  {showAddMember && (
-                    <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                      <h4 className="font-semibold text-text-primary dark:text-white mb-4">{t.addMember}</h4>
-                      <div className="space-y-4">
-                        <input
-                          type="text"
-                          placeholder={t.memberName}
-                          value={newMember.name}
-                          onChange={(e) => setNewMember(prev => ({ ...prev, name: e.target.value }))}
-                          className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-text-primary dark:text-white"
-                        />
-                        <input
-                          type="email"
-                          placeholder={t.memberEmail}
-                          value={newMember.email}
-                          onChange={(e) => setNewMember(prev => ({ ...prev, email: e.target.value }))}
-                          className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-text-primary dark:text-white"
-                        />
-                        <input
-                          type="tel"
-                          placeholder={t.memberPhone}
-                          value={newMember.phone}
-                          onChange={(e) => setNewMember(prev => ({ ...prev, phone: e.target.value }))}
-                          className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-text-primary dark:text-white"
-                        />
-                        <select
-                          value={newMember.role}
-                          onChange={(e) => setNewMember(prev => ({ ...prev, role: e.target.value }))}
-                          className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-text-primary dark:text-white"
-                        >
-                          <option value="superAdmin">{t.superAdmin}</option>
-                          <option value="manager">{t.manager}</option>
-                          <option value="viewer">{t.viewer}</option>
-                        </select>
-                        <div className="flex gap-3">
-                          <Button variant="primary" onClick={handleAddMember} loading={isSavingTeam}>
-                            {t.saveMember}
-                          </Button>
-                          <Button variant="outline" onClick={() => setShowAddMember(false)} disabled={isSavingTeam}>
-                            {t.cancel}
-                          </Button>
+                  {/* Invitation Form */}
+                  <div className="mb-6 p-5 bg-slate-50 dark:bg-slate-800 rounded-xl space-y-4">
+                    <h4 className="font-semibold text-text-primary dark:text-white">إرسال دعوة تسجيل</h4>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">{t.memberEmail}</label>
+                      <input
+                        type="email"
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        placeholder="name@example.com"
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-text-primary dark:text-white"
+                        dir="ltr"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">{t.memberPhone} (واتساب)</label>
+                      <input
+                        type="tel"
+                        value={invitePhone}
+                        onChange={(e) => setInvitePhone(e.target.value)}
+                        placeholder="+212 6XXXXXXXX"
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-text-primary dark:text-white"
+                        dir="ltr"
+                      />
+                    </div>
+                    <Button
+                      variant="primary"
+                      fullWidth
+                      loading={isSendingInvite}
+                      onClick={async () => {
+                        if (!inviteEmail || !invitePhone) {
+                          showToast('يرجى إدخال البريد الإلكتروني ورقم الواتساب', 'error');
+                          return;
+                        }
+                        if (!user?.id) {
+                          showToast('يرجى تسجيل الدخول أولاً', 'error');
+                          return;
+                        }
+                        setIsSendingInvite(true);
+                        try {
+                          const result = await createAdminInvitation({
+                            email: inviteEmail.trim(),
+                            phone: invitePhone.trim(),
+                            invitedBy: user.id,
+                            siteUrl: window.location.origin,
+                          });
+                          const link = `${window.location.origin}/admin/register/${result.token}`;
+                          setInviteLink(link);
+                          setInviteEmail('');
+                          setInvitePhone('');
+                          showToast('تم إرسال الدعوة بنجاح عبر الواتساب', 'success');
+                        } catch (err) {
+                          showToast(err.message || 'فشل إرسال الدعوة', 'error');
+                        } finally {
+                          setIsSendingInvite(false);
+                        }
+                      }}
+                    >
+                      <span className="material-symbols-outlined ml-2">send</span>
+                      إرسال الدعوة عبر الواتساب
+                    </Button>
+
+                    {/* Invite link fallback */}
+                    {inviteLink && (
+                      <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-xl">
+                        <p className="text-xs text-green-700 dark:text-green-300 font-medium mb-2">رابط التسجيل (احتياطي):</p>
+                        <div className="flex items-center gap-2">
+                          <input
+                            readOnly
+                            value={inviteLink}
+                            className="flex-1 text-xs bg-transparent border-none outline-none text-green-800 dark:text-green-200 font-mono"
+                            dir="ltr"
+                          />
+                          <button
+                            onClick={() => { navigator.clipboard.writeText(inviteLink); showToast('تم النسخ', 'success'); }}
+                            className="p-1 text-green-600 hover:text-green-800"
+                          >
+                            <span className="material-symbols-outlined text-base">content_copy</span>
+                          </button>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
                   {/* Team Members List */}
                   <div className="space-y-3">

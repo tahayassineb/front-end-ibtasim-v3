@@ -19,6 +19,7 @@ import type * as payments from "../payments.js";
 import type * as projects from "../projects.js";
 import type * as storage from "../storage.js";
 import type * as users from "../users.js";
+import type * as whatsapp from "../whatsapp.js";
 
 import type {
   ApiFromModules,
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   projects: typeof projects;
   storage: typeof storage;
   users: typeof users;
+  whatsapp: typeof whatsapp;
 }>;
 
 /**

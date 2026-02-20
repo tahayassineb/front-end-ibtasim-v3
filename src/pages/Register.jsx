@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import CountryCodeSelector, { validatePhoneByCountry, formatPhoneForDisplay } from '../components/CountryCodeSelector';
@@ -37,6 +39,14 @@ const Register = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, currentLanguage, login, showToast } = useApp();
+
+  const registerUser = useMutation(api.auth.registerUser);
+  const requestOTP = useMutation(api.auth.requestOTP);
+  const verifyOTP = useMutation(api.auth.verifyOTP);
+  const setPassword = useMutation(api.auth.setPassword);
+
+  // Store userId returned after registerUser
+  const [registeredUserId, setRegisteredUserId] = useState(null);
   
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -219,56 +229,99 @@ const Register = () => {
   // Handle initial registration submit
   const handleRegister = async () => {
     const newErrors = {};
-    if (!fullName.trim()) {
-      newErrors.fullName = tx.fullNameError;
-    }
-    if (!validateEmail(email)) {
-      newErrors.email = tx.emailError;
-    }
-    if (!validatePhone(phone)) {
-      newErrors.phone = tx.phoneError;
-    }
-    if (!password || password.length < 6) {
-      newErrors.password = tx.passwordError;
-    }
-    if (password !== confirmPassword) {
-      newErrors.confirmPassword = tx.confirmPasswordError;
-    }
-    
+    if (!fullName.trim()) newErrors.fullName = tx.fullNameError;
+    if (!validateEmail(email)) newErrors.email = tx.emailError;
+    if (!validatePhone(phone)) newErrors.phone = tx.phoneError;
+    if (!password || password.length < 6) newErrors.password = tx.passwordError;
+    if (password !== confirmPassword) newErrors.confirmPassword = tx.confirmPasswordError;
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    
-    // Send OTP
-    setOtpSent(true);
-    setOtpTimer(120);
-    showToast(lang === 'ar' ? 'تم إرسال الرمز' : lang === 'fr' ? 'Code envoyé' : 'Code sent', 'success');
+
+    setIsLoading(true);
+    const fullPhone = countryCode + phone;
+
+    try {
+      // Step 1: Create user account
+      const regResult = await registerUser({
+        fullName: fullName.trim(),
+        email: email.trim(),
+        phoneNumber: fullPhone,
+        preferredLanguage: lang === 'ar' ? 'ar' : lang === 'fr' ? 'fr' : 'en',
+      });
+
+      if (!regResult.success) {
+        showToast(regResult.message, 'error');
+        setIsLoading(false);
+        return;
+      }
+
+      setRegisteredUserId(regResult.userId);
+
+      // Step 2: Request OTP
+      const otpResult = await requestOTP({ phoneNumber: fullPhone });
+
+      if (!otpResult.success) {
+        showToast(otpResult.message, 'error');
+        setIsLoading(false);
+        return;
+      }
+
+      setOtpSent(true);
+      setOtpTimer(120);
+      showToast(lang === 'ar' ? 'تم إرسال الرمز' : lang === 'fr' ? 'Code envoyé' : 'Code sent', 'success');
+    } catch (err) {
+      showToast(err.message || 'Registration failed', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
-  
+
   // Handle OTP verification
   const handleOtpVerify = async () => {
     const isOtpComplete = otpValues.every(v => v.length === 1);
     if (!isOtpComplete) return;
-    
+
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Create user
-    const userData = {
-      id: 'user_' + Date.now(),
-      name: fullName,
-      phone: countryCode + ' ' + formatPhoneDisplay(phone),
-      email: email,
-      avatar: null,
-    };
-    
-    login(userData);
-    setIsLoading(false);
-    showToast(lang === 'ar' ? 'تم إنشاء الحساب' : lang === 'fr' ? 'Compte créé' : 'Account created', 'success');
-    
-    // Redirect to return URL
-    navigate(returnUrl, { replace: true });
+    const code = otpValues.join('');
+    const fullPhone = countryCode + phone;
+
+    try {
+      // Step 3: Verify OTP
+      const verifyResult = await verifyOTP({ phoneNumber: fullPhone, code });
+
+      if (!verifyResult.success) {
+        showToast(verifyResult.message, 'error');
+        setIsLoading(false);
+        return;
+      }
+
+      const userId = verifyResult.userId || registeredUserId;
+
+      // Step 4: Set password
+      if (userId && password) {
+        await setPassword({ userId, password });
+      }
+
+      const userData = {
+        id: userId,
+        name: fullName,
+        phone: fullPhone,
+        email: email,
+        avatar: null,
+        role: 'user',
+      };
+
+      login(userData);
+      showToast(lang === 'ar' ? 'تم إنشاء الحساب' : lang === 'fr' ? 'Compte créé' : 'Account created', 'success');
+      navigate(returnUrl, { replace: true });
+    } catch (err) {
+      showToast(err.message || 'Verification failed', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   const canSubmit = fullName && email && phone && password && confirmPassword;
@@ -328,7 +381,15 @@ const Register = () => {
                   </div>
                 ) : (
                   <button
-                    onClick={() => setOtpTimer(120)}
+                    onClick={async () => {
+                      try {
+                        await requestOTP({ phoneNumber: countryCode + phone });
+                        setOtpTimer(120);
+                        showToast(lang === 'ar' ? 'تم إرسال الرمز' : lang === 'fr' ? 'Code renvoyé' : 'Code resent', 'success');
+                      } catch (e) {
+                        showToast('Failed to resend code', 'error');
+                      }
+                    }}
                     className="text-primary font-bold hover:underline"
                   >
                     {tx.resendCode}

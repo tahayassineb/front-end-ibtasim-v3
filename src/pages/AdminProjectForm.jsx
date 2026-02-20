@@ -81,7 +81,7 @@ const convexFileUrl = (storageId) => {
 const AdminProjectForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentLanguage, isDarkMode, showToast } = useApp();
+  const { currentLanguage, isDarkMode, showToast, user } = useApp();
   const isEditMode = Boolean(id);
   const [activeTab, setActiveTab] = useState('en');
   const [progress, setProgress] = useState(65);
@@ -583,8 +583,13 @@ const AdminProjectForm = () => {
         });
         showToast('Project updated', 'success');
       } else {
-        // Create new project - need admin ID from context/storage
-        const adminId = localStorage.getItem('admin_id') || 'admin_placeholder';
+        // Create new project - get admin ID from auth context
+        const adminId = user?.id;
+        if (!adminId) {
+          showToast('Session expired. Please log in again.', 'error');
+          setIsLoading(false);
+          return;
+        }
         await createProjectMutation({
           title: formData.title,
           description: formData.description,
