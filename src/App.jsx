@@ -35,6 +35,35 @@ import AdminSettings from './pages/AdminSettings';
 import AdminRegister from './pages/AdminRegister';
 
 // ============================================
+// GLOBAL TOAST RENDERER
+// Reads toast state from AppContext and renders it visually.
+// Without this, showToast() sets state but nothing is ever displayed.
+// ============================================
+
+function ToastRenderer() {
+  const { toast } = useApp();
+  if (!toast) return null;
+
+  const styles = {
+    success: 'bg-emerald-500',
+    error: 'bg-red-500',
+    warning: 'bg-amber-500',
+    info: 'bg-blue-500',
+  };
+
+  const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+
+  return (
+    <div
+      className={`fixed top-5 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 px-5 py-3 rounded-xl text-white font-semibold shadow-2xl ${styles[toast.type] || 'bg-gray-800'} min-w-[260px] max-w-[90vw]`}
+    >
+      <span className="text-base leading-none shrink-0">{icons[toast.type]}</span>
+      <span className="text-sm leading-snug">{toast.message}</span>
+    </div>
+  );
+}
+
+// ============================================
 // PROTECTED ROUTE COMPONENTS
 // ============================================
 
@@ -61,6 +90,7 @@ function AppContent() {
   return (
     <Router>
       <div dir={currentLanguage.dir}>
+        <ToastRenderer />
         <Routes>
           {/* ============================================
               PUBLIC ROUTES

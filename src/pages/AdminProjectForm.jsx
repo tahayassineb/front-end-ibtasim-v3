@@ -235,25 +235,25 @@ const AdminProjectForm = () => {
 
   const t = translations[currentLanguage?.code] || translations.en;
 
-  // Form state - initialize with default data, will be overridden by localStorage in edit mode
+  // Form state - start blank for new projects (edit mode loads from Convex below)
   const [formData, setFormData] = useState({
     title: {
-      en: 'Community Water Access Initiative',
-      fr: 'Initiative d\'Accès à l\'Eau Communautaire',
-      ar: 'مبادرة الوصول إلى المياه المجتمعية',
+      en: '',
+      fr: '',
+      ar: '',
     },
     shortDescription: {
-      en: 'Providing sustainable clean water solutions for rural communities in the Atlas Mountains region.',
-      fr: 'Fournir des solutions d\'eau potable durables pour les communautés rurales de la région de l\'Atlas.',
-      ar: 'توفير حلول مياه نظيفة مستدامة للمجتمعات الريفية في منطقة جبال الأطلس.',
+      en: '',
+      fr: '',
+      ar: '',
     },
     description: {
-      en: 'In the heart of the Atlas Mountains, access to clean water remains a critical challenge for many communities. This project aims to provide sustainable water solutions through modern infrastructure while respecting traditional practices.\n\nOur Approach:\n• Community-led planning and implementation\n• Sustainable technology adapted to local conditions\n• Long-term maintenance and training programs',
-      fr: 'Au cœur des montagnes de l\'Atlas, l\'accès à l\'eau potable reste un défi critique pour de nombreuses communautés. Ce projet vise à fournir des solutions durables grâce à une infrastructure moderne tout en respectant les pratiques traditionnelles.\n\nNotre Approche:\n• Planification et mise en œuvre dirigées par la communauté\n• Technologie durable adaptée aux conditions locales\n• Programmes de maintenance et de formation à long terme',
-      ar: 'في قلب جبال الأطلس، يظل الوصول إلى المياه النظيفة تحدياً حرجاً للعديد من المجتمعات. يهدف هذا المشروع إلى توفير حلول مياه مستدامة من خلال بنية تحتية حديثة مع احترام الممارسات التقليدية.\n\nنهجنا:\n• التخطيط والتنفيذ بقيادة المجتمع\n• تقنية مستدامة مكيفة مع الظروف المحلية\n• برامج الصيانة والتدريب على المدى الطويل',
+      en: '',
+      fr: '',
+      ar: '',
     },
-    goal: 25000,
-    category: 'water',
+    goal: '',
+    category: 'orphan_care',
     status: 'draft',
     location: '',
     beneficiaries: '',
@@ -267,14 +267,11 @@ const AdminProjectForm = () => {
     mainImage: '',
     gallery: [],
     impact: {
-      en: 'This project will provide sustainable clean water access to over 500 families in rural communities.',
-      fr: 'Ce projet fournira un accès durable à l\'eau potable à plus de 500 familles dans les communautés rurales.',
-      ar: 'سيوفر هذا المشروع وصولاً مستداماً إلى المياه النظيفة لأكثر من 500 عائلة في المجتمعات الريفية.',
+      en: '',
+      fr: '',
+      ar: '',
     },
-    impactMetrics: [
-      { label: 'Families Served', value: '500' },
-      { label: 'Water Points', value: '12' },
-    ],
+    impactMetrics: [],
     updates: [],
   });
 
@@ -550,9 +547,14 @@ const AdminProjectForm = () => {
     setIsLoading(true);
 
     try {
-      // Validate that we have a main image storage ID
+      // Validate required fields
+      if (!formData.title?.ar && !formData.title?.fr && !formData.title?.en) {
+        showToast('يرجى إدخال عنوان المشروع / Please enter a project title', 'error');
+        setIsLoading(false);
+        return;
+      }
       if (!formData.mainImageStorageId) {
-        showToast('Please upload a main image / يرجى رفع صورة رئيسية', 'error');
+        showToast('يرجى رفع الصورة الرئيسية / Please upload a main image', 'error');
         setIsLoading(false);
         return;
       }

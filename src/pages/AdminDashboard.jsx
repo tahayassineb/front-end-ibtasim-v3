@@ -182,8 +182,8 @@ const AdminDashboard = () => {
     return new Intl.NumberFormat('en-US').format(amount / 100); // Convert cents to MAD
   };
 
-  // Loading state
-  if (stats === undefined) {
+  // Loading state — wait for ALL queries before rendering (prevents .map() on undefined crash)
+  if (stats === undefined || pendingVerifications === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

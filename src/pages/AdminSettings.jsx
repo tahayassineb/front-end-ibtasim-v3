@@ -49,7 +49,7 @@ const AdminSettings = () => {
   // WhatsApp Session State
   const [whatsappSession, setWhatsappSession] = useState({
     isConnected: false,
-    phoneNumber: '+212 6XX-XXXXXX',
+    phoneNumber: '',
     sessionId: null,
     qrCode: null,
     lastConnected: null,
@@ -57,6 +57,9 @@ const AdminSettings = () => {
     messagesReceived: 0,
     isLoading: false,
   });
+
+  // True when session was created but QR not yet returned — waiting for webhook
+  const [qrPending, setQrPending] = useState(false);
 
   // Load WhatsApp settings from Convex
   useEffect(() => {
@@ -337,6 +340,13 @@ const AdminSettings = () => {
     }
   };
 
+  // Auto-update qrPending when QR code arrives via Convex webhook (reactive query)
+  useEffect(() => {
+    if (qrPending && whatsappSession.qrCode) {
+      setQrPending(false);
+    }
+  }, [whatsappSession.qrCode, qrPending]);
+
   // WhatsApp Session Management
   const handleCreateSession = async () => {
     // Normalize phone: remove spaces, dashes, parens, dots
@@ -348,20 +358,29 @@ const AdminSettings = () => {
     } else if (/^\d+$/.test(phoneNumber)) {
       phoneNumber = '+' + phoneNumber;
     }
-    if (!phoneNumber || phoneNumber.length < 10) {
-      showToast('يرجى إدخال رقم هاتف صحيح (مثال: 212632730020 أو 0632730020)', 'error');
+    if (!phoneNumber || phoneNumber.length < 12) {
+      showToast('يرجى إدخال رقم هاتف صحيح بالتنسيق الدولي (مثال: 212632730020 أو 0632730020)', 'error');
       return;
     }
+    setQrPending(false);
     setWhatsappSession(prev => ({ ...prev, isLoading: true }));
     try {
       const result = await createAndConnectSession({ phoneNumber });
       if (result.success) {
-        setWhatsappSession(prev => ({
-          ...prev,
-          isLoading: false,
-          qrCode: result.qrCode || null,
-        }));
-        showToast(t.createSessionSuccess, 'success');
+        if (result.qrCode) {
+          // QR code returned immediately
+          setWhatsappSession(prev => ({
+            ...prev,
+            isLoading: false,
+            qrCode: result.qrCode,
+          }));
+          showToast(t.createSessionSuccess, 'success');
+        } else {
+          // Session created — QR code will arrive via webhook and update Convex config reactively
+          setWhatsappSession(prev => ({ ...prev, isLoading: false }));
+          setQrPending(true);
+          showToast('تم إنشاء الجلسة. في انتظار رمز QR...', 'success');
+        }
       } else {
         setWhatsappSession(prev => ({ ...prev, isLoading: false }));
         showToast(result.error || 'فشل إنشاء الجلسة', 'error');
@@ -668,8 +687,21 @@ const AdminSettings = () => {
                       </div>
                     )}
 
+                    {/* Pending QR state: session created but QR not yet received */}
+                    {!whatsappSession.isConnected && !whatsappSession.qrCode && qrPending && (
+                      <div className="text-center p-6 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-700">
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-3"></div>
+                        <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                          تم إنشاء الجلسة. في انتظار رمز QR من واتساب...
+                        </p>
+                        <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">
+                          سيظهر رمز QR تلقائياً خلال ثوانٍ
+                        </p>
+                      </div>
+                    )}
+
                     {/* Create Session Button */}
-                    {!whatsappSession.isConnected && !whatsappSession.qrCode && (
+                    {!whatsappSession.isConnected && !whatsappSession.qrCode && !qrPending && (
                       <Button
                         variant="primary"
                         size="lg"
