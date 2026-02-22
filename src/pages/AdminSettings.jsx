@@ -163,7 +163,7 @@ const AdminSettings = () => {
   // Default form state
   const defaultFormData = {
     accountHolder: 'جمعية ابتسم',
-    rib: '181 330 2111122223333444 55',
+    rib: '',
     bankName: 'Attijariwafa Bank',
     emailNotifications: true,
     smsNotifications: false,
@@ -540,6 +540,16 @@ const AdminSettings = () => {
                     <h3 className="text-text-primary dark:text-white text-2xl font-bold font-serif">{t.bankManagement}</h3>
                     <p className="text-slate-500 text-sm font-medium">{t.bankDescription}</p>
                   </div>
+
+                  {/* Warning when RIB is empty */}
+                  {!formData.rib && (
+                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-2xl flex gap-3 items-start mb-4">
+                      <span className="material-symbols-outlined text-amber-500 text-xl shrink-0 mt-0.5">warning</span>
+                      <p className="text-sm text-amber-700 dark:text-amber-300 font-medium leading-snug">
+                        ⚠️ Bank RIB is empty. Please enter your real bank RIB before accepting donations — donors will see this information on payment pages.
+                      </p>
+                    </div>
+                  )}
 
                   <div className="space-y-5">
                     {/* Account Holder */}

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
+import { convexFileUrl } from '../lib/convex';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
@@ -519,9 +520,10 @@ const AdminDashboard = () => {
                 }`}
               >
                 <img
-                  src={project.mainImage}
+                  src={convexFileUrl(project.mainImage) || project.mainImage || ''}
                   alt={getLocalizedText(project.title)}
                   className="w-full h-full object-cover"
+                  onError={(e) => { e.target.style.display = 'none'; }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-4">

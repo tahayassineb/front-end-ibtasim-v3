@@ -62,51 +62,53 @@ http.route({
       return new Response("Invalid signature", { status: 401 });
     }
 
-    // Parse the payload
-    const payload = JSON.parse(rawBody);
-    const event = payload.event;
-    const data = payload.data;
+    // Parse the payload and process event — wrapped in try-catch to prevent Whop retries
+    try {
+      const payload = JSON.parse(rawBody);
+      const event = payload.event;
+      const data = payload.data;
 
-    // Get donationId from metadata
-    const donationId = data?.metadata?.donationId;
-    if (!donationId) {
-      console.error("Missing donationId in webhook metadata");
-      return new Response("Missing donationId", { status: 400 });
-    }
-
-    switch (event) {
-      case "payment.succeeded": {
-        // Verify the donation using the verifyDonation mutation
-        await ctx.runMutation(api.donations.verifyDonation, {
-          donationId: donationId,
-          verified: true,
-          notes: `Whop payment completed. Payment ID: ${data.id}`,
-        });
-        break;
+      // Get donationId from metadata
+      const donationId = data?.metadata?.donationId;
+      if (!donationId) {
+        console.error("Missing donationId in webhook metadata");
+        return new Response("OK", { status: 200 }); // Return 200 to stop Whop retries
       }
 
-      case "payment.failed": {
-        // Mark donation as rejected due to payment failure
-        await ctx.runMutation(api.donations.verifyDonation, {
-          donationId: donationId,
-          verified: false,
-          notes: `Whop payment failed. Payment ID: ${data.id}`,
-        });
-        break;
-      }
+      switch (event) {
+        case "payment.succeeded": {
+          await ctx.runMutation(api.donations.verifyDonation, {
+            donationId: donationId,
+            verified: true,
+            notes: `Whop payment completed. Payment ID: ${data.id}`,
+          });
+          break;
+        }
 
-      case "payment.refunded": {
-        // Mark donation as rejected due to refund
-        await ctx.runMutation(api.donations.verifyDonation, {
-          donationId: donationId,
-          verified: false,
-          notes: `Whop payment refunded. Payment ID: ${data.id}`,
-        });
-        break;
-      }
+        case "payment.failed": {
+          await ctx.runMutation(api.donations.verifyDonation, {
+            donationId: donationId,
+            verified: false,
+            notes: `Whop payment failed. Payment ID: ${data.id}`,
+          });
+          break;
+        }
 
-      default:
-        console.log(`Unhandled Whop event: ${event}`);
+        case "payment.refunded": {
+          await ctx.runMutation(api.donations.verifyDonation, {
+            donationId: donationId,
+            verified: false,
+            notes: `Whop payment refunded. Payment ID: ${data.id}`,
+          });
+          break;
+        }
+
+        default:
+          console.log(`Unhandled Whop event: ${event}`);
+      }
+    } catch (err) {
+      console.error("Whop webhook processing error:", err);
+      // Return 200 to prevent Whop from retrying indefinitely
     }
 
     return new Response("OK", { status: 200 });
@@ -118,6 +120,18 @@ http.route({
   path: "/whatsapp-webhook",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
+    // Verify webhook secret token if configured
+    const webhookSecret = process.env.WASENDER_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      const tokenHeader =
+        request.headers.get("X-Webhook-Secret") ||
+        request.headers.get("x-webhook-secret");
+      if (tokenHeader !== webhookSecret) {
+        console.error("WaSender webhook: invalid or missing secret token");
+        return new Response("Unauthorized", { status: 401 });
+      }
+    }
+
     let body: any;
     try {
       body = await request.json();

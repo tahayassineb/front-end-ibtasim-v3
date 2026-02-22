@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
+import { convexFileUrl } from '../lib/convex';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
 
@@ -152,7 +153,7 @@ const AdminProjects = () => {
     raised: p.raisedAmount,
     donors: 0,
     daysLeft: p.endDate ? Math.ceil((p.endDate - Date.now()) / (1000 * 60 * 60 * 24)) : null,
-    image: p.mainImage,
+    image: convexFileUrl(p.mainImage) || p.mainImage,
     location: p.location,
     beneficiaries: p.beneficiaries,
   }));

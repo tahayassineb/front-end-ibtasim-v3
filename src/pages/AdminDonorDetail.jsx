@@ -13,7 +13,7 @@ import Button from '../components/Button';
 
 const AdminDonorDetail = () => {
   const { id } = useParams();
-  const { currentLanguage } = useApp();
+  const { currentLanguage, formatCurrency } = useApp();
   
   // Convex hooks
   const donorData = useQuery(api.admin.getDonorById, { userId: id });
@@ -165,7 +165,7 @@ const AdminDonorDetail = () => {
         <div className="text-center">
           <h1 className="text-text-primary dark:text-white text-2xl font-bold leading-tight">{donor.name}</h1>
           <p className="text-primary font-bold text-xl leading-normal mt-1">
-            €{donor.totalDonated.toLocaleString()}.00 {t.totalDonated}
+            {formatCurrency(donor.totalDonated / 100)} {t.totalDonated}
           </p>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
             {t.donorSince} {formatDate(donor.donorSince)}
@@ -225,7 +225,7 @@ const AdminDonorDetail = () => {
                   <span className="material-symbols-outlined">{getProjectIcon(donation.project)}</span>
                 </div>
                 <div className="flex flex-col justify-center">
-                  <p className="text-text-primary dark:text-white text-base font-bold">€{donation.amount.toFixed(2)}</p>
+                  <p className="text-text-primary dark:text-white text-base font-bold">{formatCurrency(donation.amount / 100)}</p>
                   <p className="text-slate-500 dark:text-slate-400 text-xs">{donation.project}</p>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
@@ -24,6 +24,9 @@ const UserProfile = () => {
   
   const isRTL = currentLanguage.dir === 'rtl';
   
+  // Convex mutations
+  const updateUserConvex = useMutation(api.users.updateUser);
+
   // Fetch real donation data from Convex
   const userDonations = useQuery(
     api.donations.getDonationsByUser,
@@ -155,18 +158,28 @@ const UserProfile = () => {
   
   // Handle save
   const handleSave = async () => {
+    if (!user?.id) {
+      showToast(tx.editError, 'error');
+      return;
+    }
     setIsLoading(true);
-    
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await updateUserConvex({
+        userId: user.id,
+        updates: {
+          fullName: editData.name,
+          email: editData.email,
+        },
+      });
+
+      // Also update local context so UI reflects change immediately
       updateUser({
         name: editData.name,
         email: editData.email,
         phone: editData.phone,
       });
-      
+
       showToast(tx.editSuccess, 'success');
       setIsEditing(false);
     } catch (error) {

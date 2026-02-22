@@ -86,6 +86,7 @@ const AdminProjectForm = () => {
   const [activeTab, setActiveTab] = useState('en');
   const [progress, setProgress] = useState(65);
   const [isUploading, setIsUploading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef(null);
   const galleryInputRef = useRef(null);
   
@@ -252,6 +253,10 @@ const AdminProjectForm = () => {
       ar: 'في قلب جبال الأطلس، يظل الوصول إلى المياه النظيفة تحدياً حرجاً للعديد من المجتمعات. يهدف هذا المشروع إلى توفير حلول مياه مستدامة من خلال بنية تحتية حديثة مع احترام الممارسات التقليدية.\n\nنهجنا:\n• التخطيط والتنفيذ بقيادة المجتمع\n• تقنية مستدامة مكيفة مع الظروف المحلية\n• برامج الصيانة والتدريب على المدى الطويل',
     },
     goal: 25000,
+    category: 'water',
+    status: 'draft',
+    location: '',
+    beneficiaries: '',
     currency: 'MAD',
     visibility: 'public',
     featured: false,
@@ -279,30 +284,24 @@ const AdminProjectForm = () => {
 
   const [draggedItem, setDraggedItem] = useState(null);
 
-  // Load project data from localStorage when in edit mode
+  // Load project data from Convex when in edit mode
   useEffect(() => {
-    if (isEditMode && id) {
-      const savedProjects = JSON.parse(localStorage.getItem('admin_projects') || '[]');
-      const projectToEdit = savedProjects.find(p => String(p.id) === String(id));
-      if (projectToEdit) {
-        setFormData(prev => ({
-          ...prev,
-          title: projectToEdit.title || prev.title,
-          shortDescription: projectToEdit.shortDescription || prev.shortDescription,
-          description: projectToEdit.description || prev.description,
-          goal: projectToEdit.goal || prev.goal,
-          currency: projectToEdit.currency || prev.currency,
-          visibility: projectToEdit.visibility || prev.visibility,
-          featured: projectToEdit.featured ?? prev.featured,
-          mainImage: projectToEdit.mainImage || prev.mainImage,
-          gallery: projectToEdit.gallery || prev.gallery,
-          impact: projectToEdit.impact || prev.impact,
-          impactMetrics: projectToEdit.impactMetrics || prev.impactMetrics,
-          updates: projectToEdit.updates || prev.updates,
-        }));
-      }
+    if (isEditMode && existingProject) {
+      setFormData(prev => ({
+        ...prev,
+        title: existingProject.title || prev.title,
+        description: existingProject.description || prev.description,
+        category: existingProject.category || prev.category,
+        goal: existingProject.goalAmount ? Math.round(existingProject.goalAmount / 100) : prev.goal,
+        featured: existingProject.isFeatured ?? prev.featured,
+        mainImage: existingProject.mainImage || prev.mainImage,
+        mainImageStorageId: existingProject.mainImage || null,
+        location: existingProject.location || '',
+        beneficiaries: existingProject.beneficiaries?.toString() || '',
+        status: existingProject.status || 'draft',
+      }));
     }
-  }, [isEditMode, id]);
+  }, [isEditMode, existingProject]);
 
   const handleInputChange = (field, value, lang = null) => {
     if (lang) {
@@ -572,7 +571,7 @@ const AdminProjectForm = () => {
             title: formData.title,
             description: formData.description,
             category: formData.category,
-            goalAmount: parseFloat(formData.goal) || 0,
+            goalAmount: Math.round((parseFloat(formData.goal) || 0) * 100),
             mainImageStorageId: formData.mainImageStorageId,
             galleryStorageIds: validGalleryStorageIds,
             status: formData.status,
@@ -594,7 +593,7 @@ const AdminProjectForm = () => {
           title: formData.title,
           description: formData.description,
           category: formData.category,
-          goalAmount: parseFloat(formData.goal) || 0,
+          goalAmount: Math.round((parseFloat(formData.goal) || 0) * 100),
           mainImageStorageId: formData.mainImageStorageId,
           galleryStorageIds: validGalleryStorageIds,
           location: formData.location,
@@ -798,6 +797,24 @@ const AdminProjectForm = () => {
                   className="w-full pl-10 bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
+            </div>
+
+            {/* Category */}
+            <div>
+              <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">Category / التصنيف</label>
+              <select
+                value={formData.category}
+                onChange={(e) => handleInputChange('category', e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="education">Education / التعليم</option>
+                <option value="health">Health / الصحة</option>
+                <option value="housing">Housing / السكن</option>
+                <option value="emergency">Emergency / الطوارئ</option>
+                <option value="food">Food / الغذاء</option>
+                <option value="water">Water / المياه</option>
+                <option value="orphan_care">Orphan Care / رعاية الأيتام</option>
+              </select>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -1073,17 +1090,19 @@ const AdminProjectForm = () => {
       <footer className="fixed bottom-0 left-0 right-0 lg:left-64 p-4 pb-8 bg-white/95 dark:bg-bg-dark-card/95 backdrop-blur-lg border-t border-border-light dark:border-white/10 flex gap-4 z-30">
         <button
           type="button"
-          onClick={() => navigate('/admin/projects')}
-          className="flex-1 py-3.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold text-sm text-slate-600 dark:text-slate-300 active:scale-95 transition-transform"
+          onClick={handleSubmit}
+          disabled={isLoading}
+          className="flex-1 py-3.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold text-sm text-slate-600 dark:text-slate-300 active:scale-95 transition-transform disabled:opacity-50"
         >
-          {t.saveDraft}
+          {isLoading ? '...' : t.saveDraft}
         </button>
         <button
           type="button"
           onClick={handleSubmit}
-          className="flex-[1.5] py-3.5 px-4 rounded-xl bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20 active:scale-95 transition-transform"
+          disabled={isLoading}
+          className="flex-[1.5] py-3.5 px-4 rounded-xl bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20 active:scale-95 transition-transform disabled:opacity-50"
         >
-          {t.publish}
+          {isLoading ? 'Saving...' : t.publish}
         </button>
       </footer>
 
