@@ -202,6 +202,13 @@ export const createProject = mutation({
     location: v.optional(v.string()),
     beneficiaries: v.optional(v.number()),
     endDate: v.optional(v.number()),
+    status: v.optional(v.union(
+      v.literal("draft"),
+      v.literal("active"),
+      v.literal("funded"),
+      v.literal("completed"),
+      v.literal("cancelled")
+    )),
     isFeatured: v.optional(v.boolean()),
     featuredOrder: v.optional(v.number()),
     createdBy: v.id("admins"),
@@ -209,7 +216,17 @@ export const createProject = mutation({
   returns: v.id("projects"),
   handler: async (ctx, args) => {
     const now = Date.now();
-    
+
+    // Auto-assign featuredOrder when isFeatured=true and no order is given
+    let featuredOrder = args.featuredOrder;
+    if (args.isFeatured && !featuredOrder) {
+      const existingFeatured = await ctx.db
+        .query("projects")
+        .withIndex("by_featured", (q) => q.eq("isFeatured", true))
+        .collect();
+      featuredOrder = existingFeatured.length + 1;
+    }
+
     const projectId = await ctx.db.insert("projects", {
       title: args.title,
       description: args.description,
@@ -219,7 +236,7 @@ export const createProject = mutation({
       currency: "MAD",
       mainImage: args.mainImageStorageId,
       gallery: args.galleryStorageIds || [],
-      status: "draft",
+      status: args.status || "draft",
       location: args.location,
       beneficiaries: args.beneficiaries,
       startDate: now,
@@ -228,7 +245,7 @@ export const createProject = mutation({
       createdAt: now,
       updatedAt: now,
       isFeatured: args.isFeatured || false,
-      featuredOrder: args.featuredOrder,
+      featuredOrder: featuredOrder,
     });
     
     return projectId;

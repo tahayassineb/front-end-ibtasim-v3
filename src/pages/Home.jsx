@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
+import { convexFileUrl } from '../lib/convex';
 import { Button, Badge } from '../components';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 
@@ -171,14 +172,14 @@ const Home = () => {
   const navigate = useNavigate();
   const [activeStoryIndex, setActiveStoryIndex] = useState(1);
 
-  // Fetch featured projects from Convex
-  const featuredProjectsData = useQuery(api.projects.getFeaturedProjects, { limit: 6 });
+  // Fetch all active projects from Convex (shows any published project, not just featured)
+  const activeProjectsData = useQuery(api.projects.getProjects, { status: 'active', limit: 12 });
 
   // Transform Convex data to match component format
   const activeProjects = useMemo(() => {
-    if (!featuredProjectsData) return [];
-    
-    return featuredProjectsData.map(project => ({
+    if (!activeProjectsData) return [];
+
+    return activeProjectsData.map(project => ({
       id: project._id,
       title: project.title,
       shortDescription: project.description,
@@ -186,13 +187,13 @@ const Home = () => {
       category: project.category,
       raised: project.raisedAmount,
       goal: project.goalAmount,
-      progress: Math.round((project.raisedAmount / project.goalAmount) * 100),
+      progress: Math.round((project.raisedAmount / (project.goalAmount || 1)) * 100),
       mainImage: project.mainImage,
-      image: project.mainImage,
+      image: convexFileUrl(project.mainImage) || project.mainImage,
       location: project.location,
       status: 'active',
     }));
-  }, [featuredProjectsData]);
+  }, [activeProjectsData]);
 
   // Navigation handlers
   const handleDonateClick = useCallback(() => {
@@ -686,8 +687,8 @@ const Home = () => {
                             />
                           </div>
                           <div className="flex justify-between text-xs mt-1 text-slate-500">
-                            <span>{project.raised.toLocaleString('en-US')} ر.س</span>
-                            <span>{project.goal.toLocaleString('en-US')} ر.س</span>
+                            <span>{Math.round(project.raised / 100).toLocaleString('en-US')} DH</span>
+                            <span>{Math.round(project.goal / 100).toLocaleString('en-US')} DH</span>
                           </div>
                         </div>
                       )}

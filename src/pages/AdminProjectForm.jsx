@@ -263,13 +263,9 @@ const AdminProjectForm = () => {
     // Storage IDs for Convex file storage (separate from preview URLs)
     mainImageStorageId: null,
     galleryStorageIds: [],
-    // Preview URLs for display (can be blob URLs or Convex URLs)
-    mainImage: 'https://images.unsplash.com/photo-1538300342682-cf57afb97285?w=800',
-    gallery: [
-      'https://images.unsplash.com/photo-1541544537156-21c5299228d8?w=400',
-      'https://images.unsplash.com/photo-1593113598332-cd288d649433?w=400',
-      'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=400',
-    ],
+    // Preview URLs for display (set only after actual upload)
+    mainImage: '',
+    gallery: [],
     impact: {
       en: 'This project will provide sustainable clean water access to over 500 families in rural communities.',
       fr: 'Ce projet fournira un accès durable à l\'eau potable à plus de 500 familles dans les communautés rurales.',
@@ -547,18 +543,22 @@ const AdminProjectForm = () => {
     window.open(`/projects/preview-${isEditMode ? id : 'new'}`, '_blank');
   };
 
-  const handleSubmit = async (e) => {
-    if (e) e.preventDefault();
-    
+  // statusOverride: 'draft' for Save Draft button, 'active' for Publish button
+  const handleSubmit = async (e, statusOverride) => {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+
     setIsLoading(true);
-    
+
     try {
       // Validate that we have a main image storage ID
       if (!formData.mainImageStorageId) {
-        showToast('Please upload a main image', 'error');
+        showToast('Please upload a main image / يرجى رفع صورة رئيسية', 'error');
         setIsLoading(false);
         return;
       }
+
+      const submitStatus = statusOverride || formData.status || 'draft';
+      const submitIsFeatured = formData.featured;
 
       // Filter out null storage IDs from gallery
       const validGalleryStorageIds = (formData.galleryStorageIds || []).filter(id => id !== null);
@@ -574,13 +574,13 @@ const AdminProjectForm = () => {
             goalAmount: Math.round((parseFloat(formData.goal) || 0) * 100),
             mainImageStorageId: formData.mainImageStorageId,
             galleryStorageIds: validGalleryStorageIds,
-            status: formData.status,
-            isFeatured: formData.featured,
+            status: submitStatus,
+            isFeatured: submitIsFeatured,
             location: formData.location,
             beneficiaries: parseInt(formData.beneficiaries) || 0,
           }
         });
-        showToast('Project updated', 'success');
+        showToast(submitStatus === 'active' ? 'Project published!' : 'Draft saved', 'success');
       } else {
         // Create new project - get admin ID from auth context
         const adminId = user?.id;
@@ -596,12 +596,13 @@ const AdminProjectForm = () => {
           goalAmount: Math.round((parseFloat(formData.goal) || 0) * 100),
           mainImageStorageId: formData.mainImageStorageId,
           galleryStorageIds: validGalleryStorageIds,
+          status: submitStatus,
           location: formData.location,
           beneficiaries: parseInt(formData.beneficiaries) || 0,
-          isFeatured: formData.featured,
+          isFeatured: submitIsFeatured,
           createdBy: adminId,
         });
-        showToast('Project created', 'success');
+        showToast(submitStatus === 'active' ? 'Project published!' : 'Draft saved', 'success');
       }
       navigate('/admin/projects');
     } catch (error) {
@@ -1090,7 +1091,7 @@ const AdminProjectForm = () => {
       <footer className="fixed bottom-0 left-0 right-0 lg:left-64 p-4 pb-8 bg-white/95 dark:bg-bg-dark-card/95 backdrop-blur-lg border-t border-border-light dark:border-white/10 flex gap-4 z-30">
         <button
           type="button"
-          onClick={handleSubmit}
+          onClick={(e) => handleSubmit(e, 'draft')}
           disabled={isLoading}
           className="flex-1 py-3.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold text-sm text-slate-600 dark:text-slate-300 active:scale-95 transition-transform disabled:opacity-50"
         >
@@ -1098,11 +1099,11 @@ const AdminProjectForm = () => {
         </button>
         <button
           type="button"
-          onClick={handleSubmit}
+          onClick={(e) => handleSubmit(e, 'active')}
           disabled={isLoading}
           className="flex-[1.5] py-3.5 px-4 rounded-xl bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20 active:scale-95 transition-transform disabled:opacity-50"
         >
-          {isLoading ? 'Saving...' : t.publish}
+          {isLoading ? 'Publishing...' : t.publish}
         </button>
       </footer>
 

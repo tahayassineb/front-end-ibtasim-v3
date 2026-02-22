@@ -339,9 +339,17 @@ const AdminSettings = () => {
 
   // WhatsApp Session Management
   const handleCreateSession = async () => {
-    const phoneNumber = whatsappSession.phoneNumber?.replace(/\s/g, '');
-    if (!phoneNumber || phoneNumber.length < 8) {
-      showToast('يرجى إدخال رقم هاتف صحيح أولاً', 'error');
+    // Normalize phone: remove spaces, dashes, parens, dots
+    let phoneNumber = (whatsappSession.phoneNumber || '').replace(/[\s\-\(\)\.]/g, '');
+    // Moroccan local format: 06... or 07... → +2126... / +2127...
+    if (/^0[67]\d{8}$/.test(phoneNumber)) {
+      phoneNumber = '+212' + phoneNumber.slice(1);
+    // Raw digits without + prefix → add +
+    } else if (/^\d+$/.test(phoneNumber)) {
+      phoneNumber = '+' + phoneNumber;
+    }
+    if (!phoneNumber || phoneNumber.length < 10) {
+      showToast('يرجى إدخال رقم هاتف صحيح (مثال: 212632730020 أو 0632730020)', 'error');
       return;
     }
     setWhatsappSession(prev => ({ ...prev, isLoading: true }));
