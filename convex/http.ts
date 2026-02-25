@@ -139,8 +139,13 @@ http.route({
       return new Response("Invalid JSON", { status: 400 });
     }
 
-    // WaSender fires session.status when QR is scanned and session connects
-    if (body?.event === "session.status" && body?.data?.status === "connected") {
+    // WaSender fires connection.update when QR is scanned and session connects
+    // data.status can be "connected", "open", or similar depending on Wasender version
+    const isConnectedEvent =
+      (body?.event === "connection.update" || body?.event === "session.status") &&
+      (body?.data?.status === "connected" || body?.data?.status === "open" ||
+       body?.data?.connection === "open");
+    if (isConnectedEvent) {
       try {
         const currentSettings = await ctx.runQuery(api.config.getConfig, { key: "whatsapp_settings" });
         if (currentSettings) {

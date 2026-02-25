@@ -183,7 +183,7 @@ const AdminDashboard = () => {
   };
 
   // Loading state — wait for ALL queries before rendering (prevents .map() on undefined crash)
-  if (stats === undefined || pendingVerifications === undefined) {
+  if (stats === undefined || pendingVerifications === undefined || featuredProjectsData === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

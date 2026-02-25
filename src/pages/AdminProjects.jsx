@@ -240,6 +240,20 @@ const AdminProjects = () => {
     }
   };
 
+  // Handle publish draft project
+  const handlePublishProject = async (id) => {
+    try {
+      await updateProjectMutation({
+        projectId: id,
+        updates: { status: 'active' }
+      });
+      showToast(currentLanguage?.code === 'ar' ? 'تم نشر المشروع بنجاح' : 'Project published successfully', 'success');
+    } catch (error) {
+      console.error('Publish error:', error);
+      showToast('Failed to publish project', 'error');
+    }
+  };
+
   // Handle view project
   const handleView = (id) => {
     navigate(`/admin/projects/${id}`);
@@ -398,6 +412,16 @@ const AdminProjects = () => {
 
                 {/* Actions */}
                 <div className="flex flex-wrap gap-2">
+                  {/* Publish button for draft projects */}
+                  {project.status === 'draft' && (
+                    <button
+                      onClick={() => handlePublishProject(project.id)}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition-colors mb-1"
+                    >
+                      <span className="material-symbols-outlined text-sm">publish</span>
+                      {currentLanguage?.code === 'ar' ? 'نشر المشروع' : 'Publish Project'}
+                    </button>
+                  )}
                   <button
                     onClick={() => handleEdit(project.id)}
                     className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
@@ -500,6 +524,15 @@ const AdminProjects = () => {
                     <td className="px-6 py-4 text-sm text-text-primary dark:text-white">{project.donors || 0}</td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
+                        {project.status === 'draft' && (
+                          <button
+                            onClick={() => handlePublishProject(project.id)}
+                            className="p-2 rounded-lg text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 transition-colors"
+                            title={currentLanguage?.code === 'ar' ? 'نشر المشروع' : 'Publish Project'}
+                          >
+                            <span className="material-symbols-outlined">publish</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => handleEdit(project.id)}
                           className="p-2 rounded-lg text-slate-500 hover:text-primary hover:bg-primary/10 transition-colors"

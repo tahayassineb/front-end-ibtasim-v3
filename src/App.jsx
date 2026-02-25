@@ -21,6 +21,9 @@ import Contact from './pages/Contact';
 // Donation Flow
 import DonationFlow from './pages/DonationFlow';
 
+// Error Boundary
+import ErrorBoundary from './components/ErrorBoundary';
+
 // Admin Pages
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
@@ -140,7 +143,7 @@ function AppContent() {
           <Route path="/admin/register/:token" element={<AdminRegister />} />
           
           {/* Protected Admin Routes */}
-          <Route element={<AdminRoute><AdminLayout /></AdminRoute>}>
+          <Route element={<AdminRoute><ErrorBoundary><AdminLayout /></ErrorBoundary></AdminRoute>}>
             {/* Dashboard */}
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/dashboard" element={<Navigate to="/admin" />} />

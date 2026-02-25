@@ -51,9 +51,11 @@ export const createAndConnectSession = action({
         body: JSON.stringify({
           name: "ibtasim-platform",
           phone_number: args.phoneNumber,
+          account_protection: false,
+          log_messages: false,
           webhook_enabled: webhookUrl ? true : false,
           webhook_url: webhookUrl || undefined,
-          webhook_events: ["session.status"],
+          webhook_events: webhookUrl ? ["connection.update"] : undefined,
           auto_reject_calls: true,
         }),
       });
@@ -91,10 +93,32 @@ export const createAndConnectSession = action({
       } else {
         const errText = await connectRes.text();
         console.error("Connect session error:", errText);
-        // Not fatal — continue storing the session
+        // Not fatal — continue to try fetching QR directly
       }
     } catch (e) {
       console.error("Network error connecting session:", e);
+    }
+
+    // Step 2b: If QR not in connect response, fetch it explicitly from the QR endpoint
+    if (!qrCode) {
+      try {
+        // Wait briefly for the session to initialize before fetching QR
+        await new Promise((r) => setTimeout(r, 2000));
+        const qrRes = await fetch(`${WASENDER_API_URL}/whatsapp-sessions/${sessionId}/qrcode`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${masterToken}`,
+          },
+        });
+        if (qrRes.ok) {
+          const qrData = await qrRes.json();
+          qrCode = qrData?.data?.qrCode || qrData?.data?.qr_code || qrData?.data?.qr;
+        } else {
+          console.error("QR fetch error:", await qrRes.text());
+        }
+      } catch (e) {
+        console.error("Network error fetching QR code:", e);
+      }
     }
 
     // Step 3: Store session data in Convex config

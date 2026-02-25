@@ -383,7 +383,11 @@ const AdminSettings = () => {
         }
       } else {
         setWhatsappSession(prev => ({ ...prev, isLoading: false }));
-        showToast(result.error || 'فشل إنشاء الجلسة', 'error');
+        // Show a clear message when the API token is not configured in Convex
+        const errMsg = result.error?.includes('not configured')
+          ? 'مفتاح Wasender غير مضبوط. يرجى إضافة WASENDER_MASTER_TOKEN في لوحة Convex Dashboard.'
+          : result.error || 'فشل إنشاء الجلسة';
+        showToast(errMsg, 'error', 6000);
       }
     } catch (error) {
       setWhatsappSession(prev => ({ ...prev, isLoading: false }));
