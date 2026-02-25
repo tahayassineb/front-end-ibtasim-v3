@@ -55,7 +55,6 @@ export const createAndConnectSession = action({
           log_messages: false,
           webhook_enabled: webhookUrl ? true : false,
           webhook_url: webhookUrl || undefined,
-          webhook_events: webhookUrl ? ["connection.update"] : undefined,
           auto_reject_calls: true,
         }),
       });
