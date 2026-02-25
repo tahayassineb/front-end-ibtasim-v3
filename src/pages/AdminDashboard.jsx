@@ -182,6 +182,29 @@ const AdminDashboard = () => {
     return new Intl.NumberFormat('en-US').format(amount / 100); // Convert cents to MAD
   };
 
+  // Save the new order to Convex
+  // MUST be declared before the loading guard — hooks cannot be called after a conditional return
+  const handleSaveOrder = useCallback(async () => {
+    if (!hasOrderChanged) return;
+
+    setIsSavingOrder(true);
+    try {
+      const projectsWithOrder = featuredProjects.map((project, index) => ({
+        projectId: project._id,
+        order: index + 1,
+      }));
+
+      await updateFeaturedOrder({ projects: projectsWithOrder });
+      showToast(t.orderSaved, 'success');
+      setHasOrderChanged(false);
+    } catch (error) {
+      console.error('Failed to save order:', error);
+      showToast('Failed to save order', 'error');
+    } finally {
+      setIsSavingOrder(false);
+    }
+  }, [featuredProjects, hasOrderChanged, updateFeaturedOrder, showToast, t.orderSaved]);
+
   // Loading state — wait for ALL queries before rendering (prevents .map() on undefined crash)
   if (stats === undefined || pendingVerifications === undefined || featuredProjectsData === undefined) {
     return (
@@ -273,29 +296,6 @@ const AdminDashboard = () => {
   const handleDragEnd = () => {
     setDraggedIndex(null);
   };
-
-  // Save the new order to Convex
-  const handleSaveOrder = useCallback(async () => {
-    if (!hasOrderChanged) return;
-    
-    setIsSavingOrder(true);
-    try {
-      // Prepare the projects array with new order values
-      const projectsWithOrder = featuredProjects.map((project, index) => ({
-        projectId: project._id,
-        order: index + 1, // 1-based order
-      }));
-      
-      await updateFeaturedOrder({ projects: projectsWithOrder });
-      showToast(t.orderSaved, 'success');
-      setHasOrderChanged(false);
-    } catch (error) {
-      console.error('Failed to save order:', error);
-      showToast('Failed to save order', 'error');
-    } finally {
-      setIsSavingOrder(false);
-    }
-  }, [featuredProjects, hasOrderChanged, updateFeaturedOrder, showToast, t.orderSaved]);
 
   return (
     <div className="min-h-screen pb-24 md:pb-8">
