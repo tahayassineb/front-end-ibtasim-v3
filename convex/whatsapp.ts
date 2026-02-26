@@ -138,6 +138,90 @@ export const createAndConnectSession = action({
 });
 
 /**
+ * Refresh the QR code for the current session.
+ * Calls /connect again (returns new QR) or falls back to /qrcode endpoint.
+ * Stores updated QR in Convex config.
+ */
+export const refreshQrCode = action({
+  args: {},
+  returns: v.object({
+    success: v.boolean(),
+    qrCode: v.optional(v.string()),
+    error: v.optional(v.string()),
+  }),
+  handler: async (ctx) => {
+    const masterToken = process.env.WASENDER_MASTER_TOKEN;
+    if (!masterToken) {
+      return { success: false, error: "WASENDER_MASTER_TOKEN not configured." };
+    }
+
+    const rawSettings = await ctx.runQuery(api.config.getConfig, { key: "whatsapp_settings" });
+    if (!rawSettings) {
+      return { success: false, error: "No active WhatsApp session." };
+    }
+
+    let settings: { instanceId?: string; apiKey?: string; phoneNumber?: string; isConnected?: boolean; qrCode?: string };
+    try {
+      settings = JSON.parse(rawSettings);
+    } catch {
+      return { success: false, error: "Invalid session data." };
+    }
+
+    const { instanceId } = settings;
+    if (!instanceId) {
+      return { success: false, error: "No session ID found." };
+    }
+
+    let qrCode: string | undefined;
+
+    // Try /connect first (Wasender re-generates QR on each connect call)
+    try {
+      const connectRes = await fetch(`${WASENDER_API_URL}/whatsapp-sessions/${instanceId}/connect`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${masterToken}`,
+        },
+      });
+      if (connectRes.ok) {
+        const connectData = await connectRes.json();
+        qrCode = connectData?.data?.qr_code || connectData?.data?.qrCode || connectData?.data?.qr;
+      }
+    } catch (e) {
+      console.error("Connect error during QR refresh:", e);
+    }
+
+    // Fallback: fetch from dedicated /qrcode endpoint
+    if (!qrCode) {
+      try {
+        const qrRes = await fetch(`${WASENDER_API_URL}/whatsapp-sessions/${instanceId}/qrcode`, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${masterToken}` },
+        });
+        if (qrRes.ok) {
+          const qrData = await qrRes.json();
+          qrCode = qrData?.data?.qrCode || qrData?.data?.qr_code || qrData?.data?.qr || qrData?.data?.base64;
+        } else {
+          const errText = await qrRes.text();
+          console.error("QR refresh error:", errText);
+        }
+      } catch (e) {
+        console.error("Network error fetching QR:", e);
+      }
+    }
+
+    if (qrCode) {
+      await ctx.runMutation(api.config.setConfig, {
+        key: "whatsapp_settings",
+        value: JSON.stringify({ ...settings, qrCode, isConnected: false }),
+      });
+    }
+
+    return { success: true, qrCode };
+  },
+});
+
+/**
  * Disconnect the active WaSender session.
  */
 export const disconnectSession = action({

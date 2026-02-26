@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -27,6 +27,7 @@ const AdminSettings = () => {
   // WhatsApp session actions
   const createAndConnectSession = useAction(api.whatsapp.createAndConnectSession);
   const disconnectSessionAction = useAction(api.whatsapp.disconnectSession);
+  const refreshQrCodeAction = useAction(api.whatsapp.refreshQrCode);
 
   // Admin invitation mutation
   const createAdminInvitation = useMutation(api.admin.createAdminInvitation);
@@ -58,8 +59,16 @@ const AdminSettings = () => {
     isLoading: false,
   });
 
-  // True when session was created but QR not yet returned — waiting for webhook
+  // True when session was created but QR not yet returned — polling for it
   const [qrPending, setQrPending] = useState(false);
+  // 50s countdown timer while QR is displayed
+  const [qrTimer, setQrTimer] = useState(0);
+  // Whether the QR has expired (timer hit 0)
+  const [qrExpired, setQrExpired] = useState(false);
+  // Whether we are currently regenerating the QR
+  const [isRefreshingQr, setIsRefreshingQr] = useState(false);
+  // Ref to stop polling
+  const pollingRef = useRef(null);
 
   // Load WhatsApp settings from Convex
   useEffect(() => {
@@ -340,12 +349,87 @@ const AdminSettings = () => {
     }
   };
 
-  // Auto-update qrPending when QR code arrives via Convex webhook (reactive query)
+  // Stop polling once QR arrives
   useEffect(() => {
     if (qrPending && whatsappSession.qrCode) {
       setQrPending(false);
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
     }
   }, [whatsappSession.qrCode, qrPending]);
+
+  // Auto-poll for QR code every 4s when pending (up to 12 attempts = 48s)
+  const pollAttemptsRef = useRef(0);
+  useEffect(() => {
+    if (!qrPending) return;
+    pollAttemptsRef.current = 0;
+    pollingRef.current = setInterval(async () => {
+      pollAttemptsRef.current += 1;
+      try {
+        const result = await refreshQrCodeAction({});
+        if (result.qrCode) {
+          setWhatsappSession(prev => ({ ...prev, qrCode: result.qrCode }));
+          setQrPending(false);
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
+      } catch (e) {
+        console.error('QR poll error:', e);
+      }
+      if (pollAttemptsRef.current >= 12) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+        setQrPending(false);
+      }
+    }, 4000);
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
+  }, [qrPending]);
+
+  // Start 50s countdown when QR appears
+  useEffect(() => {
+    if (whatsappSession.qrCode && !whatsappSession.isConnected) {
+      setQrTimer(50);
+      setQrExpired(false);
+    }
+  }, [whatsappSession.qrCode, whatsappSession.isConnected]);
+
+  // Tick the countdown every second
+  useEffect(() => {
+    if (qrTimer <= 0) {
+      if (whatsappSession.qrCode && !whatsappSession.isConnected) {
+        setQrExpired(true);
+      }
+      return;
+    }
+    const tick = setTimeout(() => setQrTimer(t => t - 1), 1000);
+    return () => clearTimeout(tick);
+  }, [qrTimer, whatsappSession.qrCode, whatsappSession.isConnected]);
+
+  // Handle QR regeneration
+  const handleRegenerateQr = useCallback(async () => {
+    setIsRefreshingQr(true);
+    setQrExpired(false);
+    try {
+      const result = await refreshQrCodeAction({});
+      if (result.success && result.qrCode) {
+        setWhatsappSession(prev => ({ ...prev, qrCode: result.qrCode }));
+        showToast('تم تجديد رمز QR', 'success');
+      } else {
+        showToast(result.error || 'فشل تجديد رمز QR', 'error');
+      }
+    } catch (e) {
+      showToast('فشل تجديد رمز QR', 'error');
+    } finally {
+      setIsRefreshingQr(false);
+    }
+  }, [refreshQrCodeAction, showToast]);
 
   // WhatsApp Session Management
   const handleCreateSession = async () => {
@@ -363,7 +447,9 @@ const AdminSettings = () => {
       return;
     }
     setQrPending(false);
-    setWhatsappSession(prev => ({ ...prev, isLoading: true }));
+    setQrTimer(0);
+    setQrExpired(false);
+    setWhatsappSession(prev => ({ ...prev, isLoading: true, qrCode: null }));
     try {
       const result = await createAndConnectSession({ phoneNumber });
       if (result.success) {
@@ -686,12 +772,65 @@ const AdminSettings = () => {
                     {!whatsappSession.isConnected && whatsappSession.qrCode && (
                       <div className="text-center p-6 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
                         <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">{t.scanQrCode}</p>
-                        <img src={whatsappSession.qrCode} alt="QR Code" className="mx-auto w-48 h-48" />
+
+                        {/* QR Image — handle both base64/URL and raw text */}
+                        <div className="relative inline-block mx-auto">
+                          <img
+                            src={
+                              whatsappSession.qrCode.startsWith('data:') || whatsappSession.qrCode.startsWith('http')
+                                ? whatsappSession.qrCode
+                                : `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(whatsappSession.qrCode)}`
+                            }
+                            alt="QR Code"
+                            className={`mx-auto w-48 h-48 rounded-lg transition-opacity ${qrExpired ? 'opacity-20 blur-sm' : 'opacity-100'}`}
+                          />
+                          {qrExpired && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <span className="material-symbols-outlined text-5xl text-slate-500">lock_clock</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Countdown Timer */}
+                        {!qrExpired && qrTimer > 0 && (
+                          <div className="flex items-center justify-center gap-2 mt-4">
+                            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${qrTimer <= 10 ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'}`}>
+                              <span className="material-symbols-outlined text-[14px]">timer</span>
+                              {qrTimer}s
+                            </div>
+                            <p className="text-xs text-slate-400">صالح لـ {qrTimer} ثانية</p>
+                          </div>
+                        )}
+
+                        {/* Expired state */}
+                        {qrExpired && (
+                          <p className="text-sm text-red-500 dark:text-red-400 font-medium mt-4 mb-3">
+                            انتهت صلاحية رمز QR — يرجى تجديده
+                          </p>
+                        )}
+
+                        {/* Regenerate Button */}
+                        <button
+                          onClick={handleRegenerateQr}
+                          disabled={isRefreshingQr}
+                          className={`mt-4 flex items-center gap-2 mx-auto px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                            qrExpired
+                              ? 'bg-primary text-white shadow-lg shadow-primary/30 hover:brightness-105 active:scale-95'
+                              : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                          } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        >
+                          {isRefreshingQr
+                            ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            : <span className="material-symbols-outlined text-[18px]">refresh</span>
+                          }
+                          Régénérer le code
+                        </button>
+
                         <p className="text-xs text-slate-400 mt-3">سيتصل تلقائياً بعد مسح الرمز</p>
                       </div>
                     )}
 
-                    {/* Pending QR state: session created but QR not yet received */}
+                    {/* Pending QR state: polling for QR */}
                     {!whatsappSession.isConnected && !whatsappSession.qrCode && qrPending && (
                       <div className="text-center p-6 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-700">
                         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-3"></div>
@@ -699,7 +838,7 @@ const AdminSettings = () => {
                           تم إنشاء الجلسة. في انتظار رمز QR من واتساب...
                         </p>
                         <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">
-                          سيظهر رمز QR تلقائياً خلال ثوانٍ
+                          يتم الجلب تلقائياً — قد يستغرق بضع ثوانٍ
                         </p>
                       </div>
                     )}
