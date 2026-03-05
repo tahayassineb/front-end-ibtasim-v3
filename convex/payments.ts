@@ -12,7 +12,7 @@ declare const process: {
   };
 };
 
-const WHOP_API_URL = "https://api.whop.com/api/v1/checkout_configurations";
+const WHOP_API_URL = "https://api.whop.com/v2/checkout_configurations";
 
 // ============================================
 // WHOP PAYMENT INTEGRATION

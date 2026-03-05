@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -61,16 +61,8 @@ const AdminSettings = () => {
     isLoading: false,
   });
 
-  // True when session was created but QR not yet returned — polling for it
-  const [qrPending, setQrPending] = useState(false);
-  // 50s countdown timer while QR is displayed
-  const [qrTimer, setQrTimer] = useState(0);
-  // Whether the QR has expired (timer hit 0)
-  const [qrExpired, setQrExpired] = useState(false);
-  // Whether we are currently regenerating the QR
+  // Whether the QR is being manually refreshed
   const [isRefreshingQr, setIsRefreshingQr] = useState(false);
-  // Ref to stop polling
-  const pollingRef = useRef(null);
 
   // Load WhatsApp settings from Convex
   useEffect(() => {
@@ -351,82 +343,13 @@ const AdminSettings = () => {
     }
   };
 
-  // Stop polling once QR arrives (from the initial creation flow)
-  useEffect(() => {
-    if (qrPending && whatsappSession.qrCode) {
-      setQrPending(false);
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-    }
-  }, [whatsappSession.qrCode, qrPending]);
-
-  // Auto-poll for QR code every 4s when pending (up to 12 attempts = 48s)
-  const pollAttemptsRef = useRef(0);
-  useEffect(() => {
-    if (!qrPending) return;
-    pollAttemptsRef.current = 0;
-    pollingRef.current = setInterval(async () => {
-      pollAttemptsRef.current += 1;
-      try {
-        const result = await refreshQrCodeAction({});
-        if (result.qrCode) {
-          setWhatsappSession(prev => ({ ...prev, qrCode: result.qrCode }));
-          setQrPending(false);
-          clearInterval(pollingRef.current);
-          pollingRef.current = null;
-        }
-      } catch (e) {
-        console.error('QR poll error:', e);
-      }
-      if (pollAttemptsRef.current >= 12) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-        setQrPending(false);
-      }
-    }, 4000);
-    return () => {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-    };
-  }, [qrPending]);
-
-  // Start 45s countdown when QR appears (or refreshes)
-  useEffect(() => {
-    if (whatsappSession.qrCode && !whatsappSession.isConnected) {
-      setQrTimer(45);
-      setQrExpired(false);
-    }
-  }, [whatsappSession.qrCode, whatsappSession.isConnected]);
-
-  // Tick the countdown every second; at 0 auto-refresh the QR in the background
-  useEffect(() => {
-    if (qrTimer <= 0) {
-      if (whatsappSession.qrCode && !whatsappSession.isConnected) {
-        setQrExpired(true);
-        // Auto-refresh: call the action silently — Convex real-time will push the new QR
-        setIsRefreshingQr(true);
-        refreshQrCodeAction({})
-          .catch((e) => console.error('Auto QR refresh error:', e))
-          .finally(() => setIsRefreshingQr(false));
-      }
-      return;
-    }
-    const tick = setTimeout(() => setQrTimer(t => t - 1), 1000);
-    return () => clearTimeout(tick);
-  }, [qrTimer, whatsappSession.qrCode, whatsappSession.isConnected]);
-
   // WhatsApp Session Management
-  const handleCreateSession = async () => {
-    // Normalize phone: remove spaces, dashes, parens, dots
+
+  // Connect (no existing session) — requires phone number
+  const handleConnect = async () => {
     let phoneNumber = (whatsappSession.phoneNumber || '').replace(/[\s\-\(\)\.]/g, '');
-    // Moroccan local format: 06... or 07... → +2126... / +2127...
     if (/^0[67]\d{8}$/.test(phoneNumber)) {
       phoneNumber = '+212' + phoneNumber.slice(1);
-    // Raw digits without + prefix → add +
     } else if (/^\d+$/.test(phoneNumber)) {
       phoneNumber = '+' + phoneNumber;
     }
@@ -434,30 +357,18 @@ const AdminSettings = () => {
       showToast('يرجى إدخال رقم هاتف صحيح بالتنسيق الدولي (مثال: 212632730020 أو 0632730020)', 'error');
       return;
     }
-    setQrPending(false);
-    setQrTimer(0);
-    setQrExpired(false);
     setWhatsappSession(prev => ({ ...prev, isLoading: true, qrCode: null }));
     try {
       const result = await createAndConnectSession({ phoneNumber });
       if (result.success) {
+        setWhatsappSession(prev => ({ ...prev, isLoading: false, qrCode: result.qrCode || null }));
         if (result.qrCode) {
-          // QR code returned immediately
-          setWhatsappSession(prev => ({
-            ...prev,
-            isLoading: false,
-            qrCode: result.qrCode,
-          }));
           showToast(t.createSessionSuccess, 'success');
         } else {
-          // Session created — QR code will arrive via webhook and update Convex config reactively
-          setWhatsappSession(prev => ({ ...prev, isLoading: false }));
-          setQrPending(true);
-          showToast('تم إنشاء الجلسة. في انتظار رمز QR...', 'success');
+          showToast('تم إنشاء الجلسة. لم يُعد رمز QR — يرجى المحاولة مرة أخرى.', 'warning');
         }
       } else {
         setWhatsappSession(prev => ({ ...prev, isLoading: false }));
-        // Show a clear message when the API token is not configured in Convex
         const errMsg = result.error?.includes('not configured')
           ? 'مفتاح Wasender غير مضبوط. يرجى إضافة WASENDER_MASTER_TOKEN في لوحة Convex Dashboard.'
           : result.error || 'فشل إنشاء الجلسة';
@@ -466,6 +377,46 @@ const AdminSettings = () => {
     } catch (error) {
       setWhatsappSession(prev => ({ ...prev, isLoading: false }));
       showToast(error.message || 'فشل إنشاء الجلسة', 'error');
+    }
+  };
+
+  // Reconnect (existing session) — fetches a fresh QR without creating a new session
+  const handleReconnect = async () => {
+    setWhatsappSession(prev => ({ ...prev, isLoading: true, qrCode: null }));
+    try {
+      const result = await refreshQrCodeAction({});
+      if (result.success) {
+        setWhatsappSession(prev => ({ ...prev, isLoading: false, qrCode: result.qrCode || null }));
+        if (result.qrCode) {
+          showToast('تم تجديد رمز QR بنجاح', 'success');
+        } else {
+          showToast('لم يُعد رمز QR — يرجى المحاولة مرة أخرى.', 'warning');
+        }
+      } else {
+        setWhatsappSession(prev => ({ ...prev, isLoading: false }));
+        showToast(result.error || 'فشل إعادة الاتصال', 'error');
+      }
+    } catch (error) {
+      setWhatsappSession(prev => ({ ...prev, isLoading: false }));
+      showToast(error.message || 'فشل إعادة الاتصال', 'error');
+    }
+  };
+
+  // Manual QR refresh (user-initiated)
+  const handleRefreshQr = async () => {
+    setIsRefreshingQr(true);
+    try {
+      const result = await refreshQrCodeAction({});
+      if (result.qrCode) {
+        setWhatsappSession(prev => ({ ...prev, qrCode: result.qrCode }));
+        showToast('تم تجديد رمز QR', 'success');
+      } else {
+        showToast('لم يُعد رمز QR — يرجى المحاولة مرة أخرى.', 'warning');
+      }
+    } catch (error) {
+      showToast(error.message || 'فشل تجديد رمز QR', 'error');
+    } finally {
+      setIsRefreshingQr(false);
     }
   };
 
@@ -807,98 +758,85 @@ const AdminSettings = () => {
                       </Badge>
                     </div>
 
-                    {/* QR Code Display */}
+                    {/* QR Code Display — shown only when disconnected and QR is available */}
                     {!whatsappSession.isConnected && whatsappSession.qrCode && (
                       <div className="text-center p-6 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
                         <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">{t.scanQrCode}</p>
 
-                        {/* QR Image — handle both base64/URL and raw text */}
-                        <div className="relative inline-block mx-auto">
-                          <img
-                            src={
-                              whatsappSession.qrCode.startsWith('data:') || whatsappSession.qrCode.startsWith('http')
-                                ? whatsappSession.qrCode
-                                : `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(whatsappSession.qrCode)}`
-                            }
-                            alt="QR Code"
-                            className={`mx-auto w-48 h-48 rounded-lg transition-opacity ${qrExpired ? 'opacity-20 blur-sm' : 'opacity-100'}`}
-                          />
-                          {qrExpired && (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="material-symbols-outlined text-5xl text-slate-500">lock_clock</span>
-                            </div>
-                          )}
-                        </div>
+                        {/* QR Image — raw pairing string → api.qrserver.com; base64/URL → direct */}
+                        <img
+                          src={
+                            whatsappSession.qrCode.startsWith('data:') || whatsappSession.qrCode.startsWith('http')
+                              ? whatsappSession.qrCode
+                              : `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(whatsappSession.qrCode)}`
+                          }
+                          alt="QR Code"
+                          className="mx-auto w-48 h-48 rounded-lg"
+                        />
 
-                        {/* Countdown Timer */}
-                        {!qrExpired && qrTimer > 0 && (
-                          <div className="flex items-center justify-center gap-2 mt-4">
-                            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${qrTimer <= 10 ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'}`}>
-                              <span className="material-symbols-outlined text-[14px]">timer</span>
-                              {qrTimer}s
-                            </div>
-                            <p className="text-xs text-slate-400">صالح لـ {qrTimer} ثانية</p>
-                          </div>
-                        )}
+                        {/* Manual Refresh QR button */}
+                        <button
+                          onClick={handleRefreshQr}
+                          disabled={isRefreshingQr}
+                          className="mt-4 flex items-center gap-1.5 mx-auto text-xs text-slate-500 hover:text-primary transition-colors disabled:opacity-50"
+                        >
+                          {isRefreshingQr
+                            ? <><div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" /> جارٍ التجديد...</>
+                            : <><span className="material-symbols-outlined text-[14px]">refresh</span> تجديد رمز QR</>
+                          }
+                        </button>
 
-                        {/* Expired / refreshing state */}
-                        {qrExpired && (
-                          <p className="text-sm text-amber-600 dark:text-amber-400 font-medium mt-4 flex items-center justify-center gap-1.5">
-                            {isRefreshingQr
-                              ? <><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> جارٍ تجديد الرمز تلقائياً...</>
-                              : 'انتهت صلاحية الرمز — جارٍ التجديد...'
-                            }
-                          </p>
-                        )}
-
-                        <p className="text-xs text-slate-400 mt-3">سيتصل تلقائياً بعد مسح الرمز • يتجدد تلقائياً كل 45 ثانية</p>
+                        <p className="text-xs text-slate-400 mt-2">سيتصل تلقائياً بعد مسح الرمز</p>
                       </div>
                     )}
 
-                    {/* Pending QR state: polling for QR */}
-                    {!whatsappSession.isConnected && !whatsappSession.qrCode && qrPending && (
-                      <div className="text-center p-6 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-700">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-3"></div>
-                        <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
-                          تم إنشاء الجلسة. في انتظار رمز QR من واتساب...
-                        </p>
-                        <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">
-                          يتم الجلب تلقائياً — قد يستغرق بضع ثوانٍ
-                        </p>
+                    {/* Phone number input — only when no session exists */}
+                    {!whatsappSession.instanceId && !whatsappSession.isConnected && (
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
+                          {t.newPhoneNumber}
+                        </label>
+                        <input
+                          type="tel"
+                          value={whatsappSession.phoneNumber || ''}
+                          onChange={(e) => setWhatsappSession(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                          placeholder={t.phoneNumberPlaceholder}
+                          className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-text-primary dark:text-white"
+                        />
                       </div>
                     )}
 
-                    {/* Create Session Button */}
-                    {!whatsappSession.isConnected && !whatsappSession.qrCode && !qrPending && (
+                    {/* Connect button — no session exists */}
+                    {!whatsappSession.instanceId && !whatsappSession.isConnected && (
                       <Button
                         variant="primary"
                         size="lg"
                         fullWidth
-                        onClick={handleCreateSession}
+                        onClick={handleConnect}
                         loading={whatsappSession.isLoading}
                         className="shadow-lg shadow-primary/20"
                       >
                         <span className="material-symbols-outlined ml-2">qr_code</span>
-                        {t.createSession}
+                        اتصال
                       </Button>
                     )}
 
-                    {/* Sync Status Button — visible whenever a session exists */}
-                    {(whatsappSession.instanceId || whatsappSession.isConnected) && (
+                    {/* Reconnect button — session exists but not connected */}
+                    {whatsappSession.instanceId && !whatsappSession.isConnected && (
                       <Button
-                        variant="outline"
+                        variant="primary"
                         size="lg"
                         fullWidth
-                        onClick={handleSyncStatus}
+                        onClick={handleReconnect}
                         loading={whatsappSession.isLoading}
-                        className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                        className="shadow-lg shadow-primary/20"
                       >
-                        <span className="material-symbols-outlined ml-2">sync</span>
-                        مزامنة الحالة
+                        <span className="material-symbols-outlined ml-2">qr_code</span>
+                        إعادة الاتصال
                       </Button>
                     )}
 
-                    {/* Disconnect Button */}
+                    {/* Disconnect button — connected state */}
                     {whatsappSession.isConnected && (
                       <Button
                         variant="outline"
@@ -913,7 +851,22 @@ const AdminSettings = () => {
                       </Button>
                     )}
 
-                    {/* Delete Session Button — visible whenever a session record exists */}
+                    {/* Sync Status button — visible whenever a session exists */}
+                    {(whatsappSession.instanceId || whatsappSession.isConnected) && (
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        fullWidth
+                        onClick={handleSyncStatus}
+                        loading={whatsappSession.isLoading}
+                        className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                      >
+                        <span className="material-symbols-outlined ml-2">sync</span>
+                        مزامنة الحالة
+                      </Button>
+                    )}
+
+                    {/* Delete Session button — visible whenever a session record exists */}
                     {(whatsappSession.instanceId || whatsappSession.isConnected) && (
                       <Button
                         variant="outline"

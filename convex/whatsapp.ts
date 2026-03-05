@@ -26,10 +26,14 @@ declare const process: {
 function normalizeQrCode(raw: string | undefined): string | undefined {
   if (!raw) return undefined;
   if (raw.startsWith("data:") || raw.startsWith("http")) return raw;
+  // WhatsApp pairing strings always start with digit@ (e.g. "2@DfzdT...")
+  // Return as-is so the frontend can render them via api.qrserver.com
+  if (/^\d@/.test(raw)) return raw;
+  // Pure base64 blob (rendered QR PNG from some APIs) → add image data URI prefix
   if (/^[A-Za-z0-9+/]+=*$/.test(raw) && raw.length > 100) {
     return `data:image/png;base64,${raw}`;
   }
-  return raw; // raw WhatsApp pairing string — frontend will use api.qrserver.com
+  return raw;
 }
 
 // ============================================
@@ -109,7 +113,7 @@ export const createAndConnectSession = action({
       if (connectRes.ok) {
         const connectData = await connectRes.json();
         qrCode = normalizeQrCode(
-          connectData?.data?.qr_code || connectData?.data?.qrCode || connectData?.data?.qr
+          connectData?.data?.qr || connectData?.data?.qr_code || connectData?.data?.qrCode
         );
       } else {
         const errText = await connectRes.text();
@@ -134,7 +138,7 @@ export const createAndConnectSession = action({
         if (qrRes.ok) {
           const qrData = await qrRes.json();
           qrCode = normalizeQrCode(
-            qrData?.data?.qrCode || qrData?.data?.qr_code || qrData?.data?.qr || qrData?.data?.base64
+            qrData?.data?.qr || qrData?.data?.qr_code || qrData?.data?.qrCode || qrData?.data?.base64
           );
         } else {
           console.error("QR fetch error:", await qrRes.text());
@@ -210,7 +214,7 @@ export const refreshQrCode = action({
       if (connectRes.ok) {
         const connectData = await connectRes.json();
         qrCode = normalizeQrCode(
-          connectData?.data?.qr_code || connectData?.data?.qrCode || connectData?.data?.qr
+          connectData?.data?.qr || connectData?.data?.qr_code || connectData?.data?.qrCode
         );
       }
     } catch (e) {
@@ -227,7 +231,7 @@ export const refreshQrCode = action({
         if (qrRes.ok) {
           const qrData = await qrRes.json();
           qrCode = normalizeQrCode(
-            qrData?.data?.qrCode || qrData?.data?.qr_code || qrData?.data?.qr || qrData?.data?.base64
+            qrData?.data?.qr || qrData?.data?.qr_code || qrData?.data?.qrCode || qrData?.data?.base64
           );
         } else {
           const errText = await qrRes.text();
@@ -460,7 +464,7 @@ export const autoRefreshQrIfNeeded = action({
       if (connectRes.ok) {
         const connectData = await connectRes.json();
         qrCode = normalizeQrCode(
-          connectData?.data?.qr_code || connectData?.data?.qrCode || connectData?.data?.qr
+          connectData?.data?.qr || connectData?.data?.qr_code || connectData?.data?.qrCode
         );
       }
     } catch (e) {
@@ -477,7 +481,7 @@ export const autoRefreshQrIfNeeded = action({
         if (qrRes.ok) {
           const qrData = await qrRes.json();
           qrCode = normalizeQrCode(
-            qrData?.data?.qrCode || qrData?.data?.qr_code || qrData?.data?.qr || qrData?.data?.base64
+            qrData?.data?.qr || qrData?.data?.qr_code || qrData?.data?.qrCode || qrData?.data?.base64
           );
         }
       } catch (e) {
