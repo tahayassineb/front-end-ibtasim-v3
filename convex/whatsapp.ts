@@ -222,6 +222,120 @@ export const refreshQrCode = action({
 });
 
 /**
+ * Check the real-time session status from WaSender API and sync it into Convex config.
+ * Useful when the webhook did not fire (e.g. after QR scan or external reconnection).
+ */
+export const syncSessionStatus = action({
+  args: {},
+  returns: v.object({
+    success: v.boolean(),
+    isConnected: v.boolean(),
+    error: v.optional(v.string()),
+  }),
+  handler: async (ctx) => {
+    const masterToken = process.env.WASENDER_MASTER_TOKEN;
+    if (!masterToken) {
+      return { success: false, isConnected: false, error: "WASENDER_MASTER_TOKEN not configured." };
+    }
+
+    const rawSettings = await ctx.runQuery(api.config.getConfig, { key: "whatsapp_settings" });
+    if (!rawSettings) {
+      return { success: false, isConnected: false, error: "No active WhatsApp session." };
+    }
+
+    let settings: { instanceId?: string; apiKey?: string; phoneNumber?: string; isConnected?: boolean; qrCode?: string; [key: string]: unknown };
+    try {
+      settings = JSON.parse(rawSettings);
+    } catch {
+      return { success: false, isConnected: false, error: "Invalid session data." };
+    }
+
+    const { instanceId } = settings;
+    if (!instanceId) {
+      return { success: false, isConnected: false, error: "No session ID found." };
+    }
+
+    try {
+      const res = await fetch(`${WASENDER_API_URL}/whatsapp-sessions/${instanceId}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${masterToken}` },
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        return { success: false, isConnected: false, error: `WaSender API error: ${errText}` };
+      }
+
+      const data = await res.json();
+      // WaSender returns status in data.data.status or data.data.connection
+      const status = data?.data?.status || data?.data?.connection || "";
+      const isConnected = status === "connected" || status === "open";
+
+      await ctx.runMutation(api.config.setConfig, {
+        key: "whatsapp_settings",
+        value: JSON.stringify({
+          ...settings,
+          isConnected,
+          qrCode: isConnected ? null : settings.qrCode,
+          lastSynced: new Date().toISOString(),
+          ...(isConnected ? { lastConnected: new Date().toISOString() } : {}),
+        }),
+      });
+
+      return { success: true, isConnected };
+    } catch (e) {
+      return { success: false, isConnected: false, error: `Network error: ${e instanceof Error ? e.message : String(e)}` };
+    }
+  },
+});
+
+/**
+ * Fully delete the WaSender session (removes from WaSender + clears Convex config).
+ * After this, the admin panel will show the "Create New Session" form.
+ */
+export const deleteSession = action({
+  args: {},
+  returns: v.object({
+    success: v.boolean(),
+    error: v.optional(v.string()),
+  }),
+  handler: async (ctx) => {
+    const masterToken = process.env.WASENDER_MASTER_TOKEN;
+    if (!masterToken) {
+      return { success: false, error: "WASENDER_MASTER_TOKEN not configured." };
+    }
+
+    const rawSettings = await ctx.runQuery(api.config.getConfig, { key: "whatsapp_settings" });
+    if (rawSettings) {
+      let instanceId: string | undefined;
+      try {
+        const parsed = JSON.parse(rawSettings);
+        instanceId = parsed?.instanceId;
+      } catch {
+        // Ignore parse error — still proceed to clear config
+      }
+
+      if (instanceId) {
+        try {
+          await fetch(`${WASENDER_API_URL}/whatsapp-sessions/${instanceId}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${masterToken}` },
+          });
+        } catch (e) {
+          // Log but don't fail — the goal is to clear local state regardless
+          console.error("WaSender delete session error:", e);
+        }
+      }
+    }
+
+    // Always clear the local config
+    await ctx.runMutation(api.config.deleteConfig, { key: "whatsapp_settings" });
+
+    return { success: true };
+  },
+});
+
+/**
  * Disconnect the active WaSender session.
  */
 export const disconnectSession = action({

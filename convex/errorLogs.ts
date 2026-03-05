@@ -100,6 +100,29 @@ export const getErrorLogs = query({
   },
 });
 
+/**
+ * Log a client-side error (e.g. uncaught promise rejections, Convex validation errors).
+ * Called from the frontend global error handler.
+ */
+export const logClientError = mutation({
+  args: {
+    message: v.string(),
+    source: v.optional(v.string()),
+    details: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await ctx.db.insert("errorLogs", {
+      source: args.source ?? "client",
+      level: "error",
+      message: args.message,
+      details: args.details,
+      createdAt: Date.now(),
+    });
+    return null;
+  },
+});
+
 export const getErrorLogCount = query({
   args: {},
   returns: v.number(),

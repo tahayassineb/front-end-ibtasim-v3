@@ -28,6 +28,8 @@ const AdminSettings = () => {
   const createAndConnectSession = useAction(api.whatsapp.createAndConnectSession);
   const disconnectSessionAction = useAction(api.whatsapp.disconnectSession);
   const refreshQrCodeAction = useAction(api.whatsapp.refreshQrCode);
+  const syncSessionStatusAction = useAction(api.whatsapp.syncSessionStatus);
+  const deleteSessionAction = useAction(api.whatsapp.deleteSession);
 
   // Admin invitation mutation
   const createAdminInvitation = useMutation(api.admin.createAdminInvitation);
@@ -503,14 +505,65 @@ const AdminSettings = () => {
     }
   };
 
+  const handleSyncStatus = async () => {
+    setWhatsappSession(prev => ({ ...prev, isLoading: true }));
+    try {
+      const result = await syncSessionStatusAction({});
+      if (result.success) {
+        setWhatsappSession(prev => ({
+          ...prev,
+          isConnected: result.isConnected,
+          qrCode: result.isConnected ? null : prev.qrCode,
+          isLoading: false,
+        }));
+        showToast(result.isConnected ? 'الجلسة متصلة ✓' : 'الجلسة غير متصلة', result.isConnected ? 'success' : 'warning');
+      } else {
+        setWhatsappSession(prev => ({ ...prev, isLoading: false }));
+        showToast(result.error || 'فشل مزامنة الحالة', 'error');
+      }
+    } catch (error) {
+      setWhatsappSession(prev => ({ ...prev, isLoading: false }));
+      showToast(error.message || 'فشل مزامنة الحالة', 'error');
+    }
+  };
+
+  const handleDeleteSession = async () => {
+    if (!window.confirm('هل أنت متأكد من حذف جلسة الواتساب؟ سيتم حذفها نهائياً من WaSender.')) return;
+    setWhatsappSession(prev => ({ ...prev, isLoading: true }));
+    try {
+      const result = await deleteSessionAction({});
+      if (result.success) {
+        setWhatsappSession({
+          isConnected: false,
+          phoneNumber: '',
+          sessionId: null,
+          instanceId: null,
+          apiKey: null,
+          qrCode: null,
+          isLoading: false,
+          messagesSent: 0,
+          messagesReceived: 0,
+          lastConnected: null,
+        });
+        showToast('تم حذف الجلسة بنجاح', 'success');
+      } else {
+        setWhatsappSession(prev => ({ ...prev, isLoading: false }));
+        showToast(result.error || 'فشل حذف الجلسة', 'error');
+      }
+    } catch (error) {
+      setWhatsappSession(prev => ({ ...prev, isLoading: false }));
+      showToast(error.message || 'فشل حذف الجلسة', 'error');
+    }
+  };
+
   const handlePhoneChange = async () => {
     try {
-      await setConfig({ 
-        key: 'whatsapp_settings', 
+      await setConfig({
+        key: 'whatsapp_settings',
         value: JSON.stringify({
           ...whatsappSession,
           phoneNumber: whatsappSession.phoneNumber,
-        }) 
+        })
       });
       showToast(t.phoneUpdated, 'success');
     } catch (error) {
@@ -858,6 +911,21 @@ const AdminSettings = () => {
                       </Button>
                     )}
 
+                    {/* Sync Status Button — visible whenever a session exists */}
+                    {(whatsappSession.instanceId || whatsappSession.isConnected) && (
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        fullWidth
+                        onClick={handleSyncStatus}
+                        loading={whatsappSession.isLoading}
+                        className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                      >
+                        <span className="material-symbols-outlined ml-2">sync</span>
+                        مزامنة الحالة
+                      </Button>
+                    )}
+
                     {/* Disconnect Button */}
                     {whatsappSession.isConnected && (
                       <Button
@@ -870,6 +938,21 @@ const AdminSettings = () => {
                       >
                         <span className="material-symbols-outlined ml-2">logout</span>
                         {t.disconnect}
+                      </Button>
+                    )}
+
+                    {/* Delete Session Button — visible whenever a session record exists */}
+                    {(whatsappSession.instanceId || whatsappSession.isConnected) && (
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        fullWidth
+                        onClick={handleDeleteSession}
+                        loading={whatsappSession.isLoading}
+                        className="border-red-400 text-red-700 hover:bg-red-50"
+                      >
+                        <span className="material-symbols-outlined ml-2">delete_forever</span>
+                        حذف الجلسة نهائياً
                       </Button>
                     )}
 

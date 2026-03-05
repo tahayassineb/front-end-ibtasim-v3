@@ -71,11 +71,13 @@ const ProjectDetail = ({ preview = false }) => {
         : 30,
       category: convexProject.category,
       image: convexFileUrl(convexProject.mainImage) || convexProject.mainImage,
-      gallery: convexProject.gallery?.length > 0 ? convexProject.gallery : [
-        'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&q=80',
-        'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?w=600&q=80',
-        'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&q=80',
-      ],
+      gallery: convexProject.gallery?.length > 0
+        ? convexProject.gallery.map(id => convexFileUrl(id) || id)
+        : [
+          'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&q=80',
+          'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?w=600&q=80',
+          'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&q=80',
+        ],
       updates: [],
     };
   }, [convexProject, previewData]);

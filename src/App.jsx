@@ -24,6 +24,10 @@ import DonationFlow from './pages/DonationFlow';
 // Error Boundary
 import ErrorBoundary from './components/ErrorBoundary';
 
+// Convex error logging
+import { useMutation } from 'convex/react';
+import { api } from '../convex/_generated/api';
+
 // Admin Pages
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
@@ -68,6 +72,33 @@ function ToastRenderer() {
 }
 
 // ============================================
+// GLOBAL ERROR LOGGER
+// Catches all unhandled promise rejections (including Convex validation errors)
+// and persists them to the errorLogs table so they appear in the admin panel.
+// ============================================
+
+function GlobalErrorLogger() {
+  const logClientError = useMutation(api.errorLogs.logClientError);
+
+  React.useEffect(() => {
+    const handler = (event) => {
+      try {
+        const reason = event.reason;
+        const message = reason?.message || String(reason) || 'Unknown error';
+        const details = reason?.stack ? reason.stack.slice(0, 2000) : undefined;
+        logClientError({ message, source: 'client', details }).catch(() => {});
+      } catch {
+        // Never let the error handler itself crash
+      }
+    };
+    window.addEventListener('unhandledrejection', handler);
+    return () => window.removeEventListener('unhandledrejection', handler);
+  }, [logClientError]);
+
+  return null;
+}
+
+// ============================================
 // PROTECTED ROUTE COMPONENTS
 // ============================================
 
@@ -95,6 +126,7 @@ function AppContent() {
     <Router>
       <div dir={currentLanguage.dir}>
         <ToastRenderer />
+        <GlobalErrorLogger />
         <Routes>
           {/* ============================================
               PUBLIC ROUTES

@@ -30,6 +30,19 @@ export const getAllConfig = query({
 // CONFIG MUTATIONS
 // ============================================
 
+export const deleteConfig = mutation({
+  args: { key: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { key }) => {
+    const existing = await ctx.db
+      .query("config")
+      .withIndex("by_key", (q) => q.eq("key", key))
+      .first();
+    if (existing) await ctx.db.delete(existing._id);
+    return null;
+  },
+});
+
 export const setConfig = mutation({
   args: { key: v.string(), value: v.string() },
   returns: v.null(),
