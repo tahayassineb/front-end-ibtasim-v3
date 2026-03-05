@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useAction } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
+import { convexFileUrl } from '../lib/convex';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
 import CountryCodeSelector, { validatePhoneByCountry, formatPhoneForDisplay } from '../components/CountryCodeSelector';
@@ -1173,7 +1174,7 @@ const DonationFlow = () => {
         id: convexProject._id,
         title: convexProject.title?.[lang] || convexProject.title?.en || '',
         titleAr: convexProject.title?.ar || '',
-        image: convexProject.mainImage,
+        image: convexFileUrl(convexProject.mainImage) || convexProject.mainImage,
         category: convexProject.category,
         impact: {
           ar: convexProject.description?.ar || `دعم مشروع ${convexProject.category}`,

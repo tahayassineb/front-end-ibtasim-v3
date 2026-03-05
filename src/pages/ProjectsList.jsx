@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
+import { convexFileUrl } from '../lib/convex';
 import { Card, Button, Badge, ProgressBar } from '../components';
 
 // ============================================
@@ -32,7 +33,7 @@ const ProjectsList = () => {
       raised: project.raisedAmount,
       goal: project.goalAmount,
       progress: Math.round((project.raisedAmount / project.goalAmount) * 100),
-      image: project.mainImage,
+      image: convexFileUrl(project.mainImage) || project.mainImage,
       location: project.location,
       beneficiaries: project.beneficiaries,
     }));

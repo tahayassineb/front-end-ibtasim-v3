@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
+import { convexFileUrl } from '../lib/convex';
 import { Card, Button, ProgressBar } from '../components';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 
@@ -69,7 +70,7 @@ const ProjectDetail = ({ preview = false }) => {
         ? Math.max(0, Math.ceil((convexProject.endDate - Date.now()) / (1000 * 60 * 60 * 24))) 
         : 30,
       category: convexProject.category,
-      image: convexProject.mainImage,
+      image: convexFileUrl(convexProject.mainImage) || convexProject.mainImage,
       gallery: convexProject.gallery?.length > 0 ? convexProject.gallery : [
         'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&q=80',
         'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?w=600&q=80',

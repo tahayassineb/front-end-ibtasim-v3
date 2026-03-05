@@ -101,37 +101,37 @@ function AppContent() {
               ============================================ */}
           
           {/* Home Page */}
-          <Route path="/" element={<MainLayout><Home /></MainLayout>} />
-          
+          <Route path="/" element={<ErrorBoundary><MainLayout><Home /></MainLayout></ErrorBoundary>} />
+
           {/* Projects */}
-          <Route path="/projects" element={<MainLayout><ProjectsList /></MainLayout>} />
-          <Route path="/projects/:id" element={<MainLayout><ProjectDetail /></MainLayout>} />
-          <Route path="/projects/preview-:id" element={<MainLayout><ProjectDetail preview /></MainLayout>} />
-          
+          <Route path="/projects" element={<ErrorBoundary><MainLayout><ProjectsList /></MainLayout></ErrorBoundary>} />
+          <Route path="/projects/:id" element={<ErrorBoundary><MainLayout><ProjectDetail /></MainLayout></ErrorBoundary>} />
+          <Route path="/projects/preview-:id" element={<ErrorBoundary><MainLayout><ProjectDetail preview /></MainLayout></ErrorBoundary>} />
+
           {/* About & Contact */}
-          <Route path="/about" element={<MainLayout><About /></MainLayout>} />
-          <Route path="/contact" element={<MainLayout><Contact /></MainLayout>} />
-          
+          <Route path="/about" element={<ErrorBoundary><MainLayout><About /></MainLayout></ErrorBoundary>} />
+          <Route path="/contact" element={<ErrorBoundary><MainLayout><Contact /></MainLayout></ErrorBoundary>} />
+
           {/* Impact Stories */}
-          <Route path="/impact" element={<MainLayout><ImpactStories /></MainLayout>} />
-          
+          <Route path="/impact" element={<ErrorBoundary><MainLayout><ImpactStories /></MainLayout></ErrorBoundary>} />
+
           {/* Auth Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          
+          <Route path="/login" element={<ErrorBoundary><Login /></ErrorBoundary>} />
+          <Route path="/register" element={<ErrorBoundary><Register /></ErrorBoundary>} />
+
           {/* Protected User Routes */}
           <Route
             path="/profile"
             element={
               <ProtectedRoute>
-                <MainLayout><UserProfile /></MainLayout>
+                <ErrorBoundary><MainLayout><UserProfile /></MainLayout></ErrorBoundary>
               </ProtectedRoute>
             }
           />
-          
+
           {/* Donation Flow */}
-          <Route path="/donate/:projectId" element={<DonationFlow />} />
-          <Route path="/donate" element={<DonationFlow />} />
+          <Route path="/donate/:projectId" element={<ErrorBoundary><DonationFlow /></ErrorBoundary>} />
+          <Route path="/donate" element={<ErrorBoundary><DonationFlow /></ErrorBoundary>} />
           
           {/* ============================================
               ADMIN ROUTES

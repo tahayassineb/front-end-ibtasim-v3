@@ -299,10 +299,16 @@ const Home = () => {
 
   const getProjectDescription = (project) => {
     if (typeof project.shortDescription === 'string') return project.shortDescription;
-    if (typeof project.shortDescription === 'object') {
-      return project.shortDescription[language] || project.shortDescription.ar || project.shortDescription.en || project.description || '';
+    if (project.shortDescription && typeof project.shortDescription === 'object') {
+      // Never fall back to project.description here — it's the same i18n object
+      // and returning an object as a React child causes a crash
+      return project.shortDescription[language] || project.shortDescription.ar || project.shortDescription.fr || project.shortDescription.en || '';
     }
-    return project.description || project.summary || '';
+    if (typeof project.description === 'string') return project.description;
+    if (project.description && typeof project.description === 'object') {
+      return project.description[language] || project.description.ar || project.description.fr || project.description.en || '';
+    }
+    return '';
   };
 
   return (
