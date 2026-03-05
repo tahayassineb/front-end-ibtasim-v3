@@ -302,6 +302,25 @@ export default defineSchema({
   }).index("by_key", ["key"]),
 
   // ============================================
+  // ERROR LOGS TABLE (Centralized Error Tracking)
+  // ============================================
+  errorLogs: defineTable({
+    source: v.string(), // e.g. "payments", "storage", "projects", "webhooks"
+    level: v.union(v.literal("error"), v.literal("warning"), v.literal("info")),
+    message: v.string(),
+    details: v.optional(v.string()), // JSON string of additional context
+    apiUrl: v.optional(v.string()), // The API URL that was called
+    apiStatus: v.optional(v.number()), // HTTP status code
+    apiResponse: v.optional(v.string()), // Full API response body (JSON string)
+    userId: v.optional(v.id("users")),
+    donationId: v.optional(v.id("donations")),
+    createdAt: v.number(),
+  })
+    .index("by_source", ["source", "createdAt"])
+    .index("by_level", ["level", "createdAt"])
+    .index("by_created", ["createdAt"]),
+
+  // ============================================
   // ACTIVITY LOG TABLE (Audit Trail)
   // ============================================
   activities: defineTable({

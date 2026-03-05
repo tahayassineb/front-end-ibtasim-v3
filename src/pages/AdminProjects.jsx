@@ -227,13 +227,12 @@ const AdminProjects = () => {
   const handleToggleFeatured = async (id) => {
     const project = projects.find(p => p.id === id);
     if (!project) return;
-    
+
+    const markingFeatured = !project.featured;
     try {
-      await updateProjectMutation({
-        projectId: id,
-        updates: { isFeatured: !project.featured }
-      });
-      showToast(!project.featured ? t.markAsFeatured : t.removeFeatured, 'success');
+      // The mutation auto-assigns featuredOrder when isFeatured becomes true
+      await updateProjectMutation({ projectId: id, updates: { isFeatured: markingFeatured } });
+      showToast(markingFeatured ? t.markAsFeatured : t.removeFeatured, 'success');
     } catch (error) {
       console.error('Update error:', error);
       showToast('Failed to update featured status', 'error');

@@ -62,13 +62,14 @@ export const getProjects = query({
         .withIndex("by_category", (q) => q.eq("category", category))
         .take(args.limit || 100);
     } else if (featured) {
-      projects = await ctx.db
+      const featuredRaw = await ctx.db
         .query("projects")
-        .withIndex("by_featured", (q) => 
-          q.eq("isFeatured", true).gt("featuredOrder", 0)
-        )
-        .order("asc")
+        .withIndex("by_featured", (q) => q.eq("isFeatured", true))
         .take(args.limit || 100);
+      // Sort by featuredOrder (undefined treated as last)
+      projects = [...featuredRaw].sort(
+        (a, b) => (a.featuredOrder ?? 9999) - (b.featuredOrder ?? 9999)
+      );
     } else {
       projects = await ctx.db
         .query("projects")
@@ -158,15 +159,18 @@ export const getFeaturedProjects = query({
     featuredOrder: v.number(),
   })),
   handler: async (ctx, args) => {
+    // Query all featured projects (isFeatured=true) regardless of featuredOrder value
     const projects = await ctx.db
       .query("projects")
-      .withIndex("by_featured", (q) => 
-        q.eq("isFeatured", true).gt("featuredOrder", 0)
-      )
-      .order("asc")
+      .withIndex("by_featured", (q) => q.eq("isFeatured", true))
       .take(args.limit || 6);
-    
-    return projects.map(p => ({
+
+    // Sort by featuredOrder client-side so undefined/null orders go last
+    const sorted = [...projects].sort(
+      (a, b) => (a.featuredOrder ?? 9999) - (b.featuredOrder ?? 9999)
+    );
+
+    return sorted.map((p, index) => ({
       _id: p._id,
       title: p.title,
       description: p.description,
@@ -174,7 +178,7 @@ export const getFeaturedProjects = query({
       goalAmount: p.goalAmount,
       raisedAmount: p.raisedAmount,
       mainImage: p.mainImage,
-      featuredOrder: p.featuredOrder || 0,
+      featuredOrder: p.featuredOrder ?? index + 1,
     }));
   },
 });
@@ -288,7 +292,7 @@ export const updateProject = mutation({
   handler: async (ctx, args) => {
     const project = await ctx.db.get(args.projectId);
     if (!project) return false;
-    
+
     // Map storage IDs to database field names
     const updates: any = { ...args.updates };
     if (updates.mainImageStorageId !== undefined) {
@@ -299,12 +303,21 @@ export const updateProject = mutation({
       updates.gallery = updates.galleryStorageIds;
       delete updates.galleryStorageIds;
     }
-    
+
+    // Auto-assign featuredOrder when marking a project as featured without an explicit order
+    if (updates.isFeatured === true && !project.isFeatured && !updates.featuredOrder) {
+      const existingFeatured = await ctx.db
+        .query("projects")
+        .withIndex("by_featured", (q) => q.eq("isFeatured", true))
+        .collect();
+      updates.featuredOrder = existingFeatured.length + 1;
+    }
+
     await ctx.db.patch(args.projectId, {
       ...updates,
       updatedAt: Date.now(),
     });
-    
+
     return true;
   },
 });

@@ -47,6 +47,7 @@ const AdminLayout = () => {
     { path: '/admin/donors', label: 'Donors', icon: 'people' },
     { path: '/admin/verification', label: 'Verification', icon: 'verified' },
     { path: '/admin/settings', label: 'Settings', icon: 'settings' },
+    { path: '/admin/error-logs', label: 'Error Logs', icon: 'bug_report' },
   ];
 
   // Bottom navigation items (mobile)

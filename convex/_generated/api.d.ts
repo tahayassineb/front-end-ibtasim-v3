@@ -13,6 +13,7 @@ import type * as auth from "../auth.js";
 import type * as config from "../config.js";
 import type * as crons from "../crons.js";
 import type * as donations from "../donations.js";
+import type * as errorLogs from "../errorLogs.js";
 import type * as http from "../http.js";
 import type * as notifications from "../notifications.js";
 import type * as payments from "../payments.js";
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   config: typeof config;
   crons: typeof crons;
   donations: typeof donations;
+  errorLogs: typeof errorLogs;
   http: typeof http;
   notifications: typeof notifications;
   payments: typeof payments;

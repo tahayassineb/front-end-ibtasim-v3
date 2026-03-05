@@ -1,4 +1,4 @@
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
 // ============================================
@@ -44,7 +44,7 @@ export const deleteProjectImage = mutation({
  * Note: This is typically done via the Convex HTTP API, not a mutation.
  * The client should use `convexFileUrl(storageId)` helper instead.
  */
-export const getImageUrl = mutation({
+export const getImageUrl = query({
   args: {
     storageId: v.string(),
   },

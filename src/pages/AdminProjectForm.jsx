@@ -40,35 +40,29 @@ const uploadFileToConvex = async (file, getUploadUrlMutation) => {
 
 /**
  * Get the URL for displaying a Convex stored image.
- * Uses Convex's HTTP API to serve the file.
+ * Supports both standard and regional Convex deployments.
+ * The HTTP route in convex/http.ts serves files at /storage/<storageId>.
  * @param {string} storageId - The Convex storageId
- * @returns {string} - The URL to display the image
+ * @returns {string|null} - The URL to display the image
  */
 const convexFileUrl = (storageId) => {
   if (!storageId) return null;
-  
-  // Check if it's already a URL (backward compatibility)
   if (storageId.startsWith('http://') || storageId.startsWith('https://') || storageId.startsWith('data:')) {
     return storageId;
   }
-  
-  // Get the Convex URL from environment
+
+  // Prefer the explicit site URL env var (VITE_CONVEX_SITE_URL)
+  const convexSiteUrl = import.meta.env.VITE_CONVEX_SITE_URL;
+  if (convexSiteUrl) {
+    return `${convexSiteUrl.replace(/\/$/, '')}/storage/${storageId}`;
+  }
+
+  // Fallback: derive site URL from cloud URL
   const convexUrl = import.meta.env.VITE_CONVEX_URL;
-  if (!convexUrl) {
-    console.error('VITE_CONVEX_URL not set');
-    return null;
-  }
-  
-  // Extract the deployment name from the Convex URL
-  // URL format: https://<deployment-name>.convex.cloud
-  const urlMatch = convexUrl.match(/https:\/\/([^.]+)\.convex\.cloud/);
-  if (!urlMatch) {
-    console.error('Invalid Convex URL format');
-    return null;
-  }
-  
-  const deploymentName = urlMatch[1];
-  return `https://${deploymentName}.convex.site/api/storage/${storageId}`;
+  if (!convexUrl) return null;
+  const siteUrl = convexUrl.replace('.convex.cloud', '.convex.site');
+  if (!siteUrl.includes('.convex.site')) return null;
+  return `${siteUrl.replace(/\/$/, '')}/storage/${storageId}`;
 };
 
 // ============================================

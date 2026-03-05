@@ -169,5 +169,27 @@ http.route({
   }),
 });
 
+// Public file serving endpoint
+// Usage: https://bold-lemming-266.eu-west-1.convex.site/storage/<storageId>
+http.route({
+  pathPrefix: "/storage/",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const storageId = url.pathname.replace("/storage/", "");
+
+    if (!storageId) {
+      return new Response("Missing storage ID", { status: 400 });
+    }
+
+    const fileUrl = await ctx.storage.getUrl(storageId as any);
+    if (!fileUrl) {
+      return new Response("File not found", { status: 404 });
+    }
+
+    return Response.redirect(fileUrl, 302);
+  }),
+});
+
 // Default export is required
 export default http;

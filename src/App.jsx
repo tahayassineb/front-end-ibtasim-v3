@@ -36,6 +36,7 @@ import AdminDonors from './pages/AdminDonors';
 import AdminDonorDetail from './pages/AdminDonorDetail';
 import AdminSettings from './pages/AdminSettings';
 import AdminRegister from './pages/AdminRegister';
+import AdminErrorLogs from './pages/AdminErrorLogs';
 
 // ============================================
 // GLOBAL TOAST RENDERER
@@ -167,6 +168,9 @@ function AppContent() {
             {/* Settings */}
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/settings/config" element={<AdminSettings />} />
+
+            {/* Error Logs */}
+            <Route path="/admin/error-logs" element={<AdminErrorLogs />} />
           </Route>
 
           {/* ============================================
