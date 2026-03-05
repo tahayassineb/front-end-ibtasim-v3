@@ -12,6 +12,26 @@ declare const process: {
   };
 };
 
+/**
+ * Normalize the QR code value returned by WaSender.
+ *
+ * WaSender sometimes returns a raw base64 PNG image WITHOUT the
+ * "data:image/png;base64," prefix. If we pass that string to
+ * api.qrserver.com it creates a QR that encodes the base64 text
+ * itself — not the WhatsApp pairing data — so scanning fails.
+ *
+ * Detection: pure base64 chars only + length > 100 → it's an image.
+ * In that case, prefix it so <img src=...> renders it correctly.
+ */
+function normalizeQrCode(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  if (raw.startsWith("data:") || raw.startsWith("http")) return raw;
+  if (/^[A-Za-z0-9+/]+=*$/.test(raw) && raw.length > 100) {
+    return `data:image/png;base64,${raw}`;
+  }
+  return raw; // raw WhatsApp pairing string — frontend will use api.qrserver.com
+}
+
 // ============================================
 // SESSION MANAGEMENT ACTIONS
 // ============================================
@@ -88,7 +108,9 @@ export const createAndConnectSession = action({
 
       if (connectRes.ok) {
         const connectData = await connectRes.json();
-        qrCode = connectData?.data?.qr_code || connectData?.data?.qrCode || connectData?.data?.qr;
+        qrCode = normalizeQrCode(
+          connectData?.data?.qr_code || connectData?.data?.qrCode || connectData?.data?.qr
+        );
       } else {
         const errText = await connectRes.text();
         console.error("Connect session error:", errText);
@@ -111,7 +133,9 @@ export const createAndConnectSession = action({
         });
         if (qrRes.ok) {
           const qrData = await qrRes.json();
-          qrCode = qrData?.data?.qrCode || qrData?.data?.qr_code || qrData?.data?.qr;
+          qrCode = normalizeQrCode(
+            qrData?.data?.qrCode || qrData?.data?.qr_code || qrData?.data?.qr || qrData?.data?.base64
+          );
         } else {
           console.error("QR fetch error:", await qrRes.text());
         }
@@ -185,7 +209,9 @@ export const refreshQrCode = action({
       });
       if (connectRes.ok) {
         const connectData = await connectRes.json();
-        qrCode = connectData?.data?.qr_code || connectData?.data?.qrCode || connectData?.data?.qr;
+        qrCode = normalizeQrCode(
+          connectData?.data?.qr_code || connectData?.data?.qrCode || connectData?.data?.qr
+        );
       }
     } catch (e) {
       console.error("Connect error during QR refresh:", e);
@@ -200,7 +226,9 @@ export const refreshQrCode = action({
         });
         if (qrRes.ok) {
           const qrData = await qrRes.json();
-          qrCode = qrData?.data?.qrCode || qrData?.data?.qr_code || qrData?.data?.qr || qrData?.data?.base64;
+          qrCode = normalizeQrCode(
+            qrData?.data?.qrCode || qrData?.data?.qr_code || qrData?.data?.qr || qrData?.data?.base64
+          );
         } else {
           const errText = await qrRes.text();
           console.error("QR refresh error:", errText);
@@ -392,5 +420,78 @@ export const disconnectSession = action({
     });
 
     return { success: true };
+  },
+});
+
+/**
+ * Called by the Convex cron every minute.
+ * If a session exists but is not connected, refresh the QR code automatically.
+ * The frontend will receive the new QR via Convex's real-time reactive queries.
+ */
+export const autoRefreshQrIfNeeded = action({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    const masterToken = process.env.WASENDER_MASTER_TOKEN;
+    if (!masterToken) return null;
+
+    const rawSettings = await ctx.runQuery(api.config.getConfig, { key: "whatsapp_settings" });
+    if (!rawSettings) return null;
+
+    let settings: { instanceId?: string; isConnected?: boolean; [key: string]: unknown };
+    try {
+      settings = JSON.parse(rawSettings);
+    } catch {
+      return null;
+    }
+
+    // Only refresh when a session exists but is NOT yet connected
+    if (!settings.instanceId || settings.isConnected) return null;
+
+    const instanceId = settings.instanceId;
+    let qrCode: string | undefined;
+
+    // Try /connect first
+    try {
+      const connectRes = await fetch(`${WASENDER_API_URL}/whatsapp-sessions/${instanceId}/connect`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${masterToken}` },
+      });
+      if (connectRes.ok) {
+        const connectData = await connectRes.json();
+        qrCode = normalizeQrCode(
+          connectData?.data?.qr_code || connectData?.data?.qrCode || connectData?.data?.qr
+        );
+      }
+    } catch (e) {
+      console.error("autoRefreshQr /connect error:", e);
+    }
+
+    // Fallback: /qrcode endpoint
+    if (!qrCode) {
+      try {
+        const qrRes = await fetch(`${WASENDER_API_URL}/whatsapp-sessions/${instanceId}/qrcode`, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${masterToken}` },
+        });
+        if (qrRes.ok) {
+          const qrData = await qrRes.json();
+          qrCode = normalizeQrCode(
+            qrData?.data?.qrCode || qrData?.data?.qr_code || qrData?.data?.qr || qrData?.data?.base64
+          );
+        }
+      } catch (e) {
+        console.error("autoRefreshQr /qrcode error:", e);
+      }
+    }
+
+    if (qrCode) {
+      await ctx.runMutation(api.config.setConfig, {
+        key: "whatsapp_settings",
+        value: JSON.stringify({ ...settings, qrCode, isConnected: false }),
+      });
+    }
+
+    return null;
   },
 });

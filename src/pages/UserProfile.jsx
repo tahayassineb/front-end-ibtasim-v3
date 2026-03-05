@@ -166,7 +166,7 @@ const UserProfile = () => {
 
     try {
       await updateUserConvex({
-        userId: user.id,
+        userId: user.userId || user.id,
         updates: {
           fullName: editData.name,
           email: editData.email,

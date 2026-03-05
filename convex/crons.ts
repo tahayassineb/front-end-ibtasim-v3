@@ -15,4 +15,13 @@ crons.daily(
   {}
 );
 
+// Every minute — refresh WhatsApp QR code if a session exists but is not yet connected.
+// The new QR is stored in Convex DB; the frontend picks it up automatically via real-time queries.
+crons.interval(
+  "autoRefreshWhatsAppQr",
+  { minutes: 1 },
+  api.whatsapp.autoRefreshQrIfNeeded,
+  {}
+);
+
 export default crons;

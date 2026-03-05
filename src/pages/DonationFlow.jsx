@@ -1462,7 +1462,7 @@ const DonationFlow = () => {
         setIsLoading(true);
         try {
           const donationId = await createDonation({
-            userId: user.id,
+            userId: user.userId || user.id,
             projectId: projectId,
             amount: calculateTotal(),
             paymentMethod: donationData.paymentMethod === 'bank' ? 'bank_transfer' :
@@ -1518,7 +1518,7 @@ const DonationFlow = () => {
                 try {
                   // Create donation first
                   const donationId = await createDonation({
-                    userId: user.id,
+                    userId: user.userId || user.id,
                     projectId: projectId,
                     amount: calculateTotal(),
                     paymentMethod: 'card_whop',

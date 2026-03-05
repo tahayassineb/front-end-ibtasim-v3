@@ -351,7 +351,7 @@ const AdminSettings = () => {
     }
   };
 
-  // Stop polling once QR arrives
+  // Stop polling once QR arrives (from the initial creation flow)
   useEffect(() => {
     if (qrPending && whatsappSession.qrCode) {
       setQrPending(false);
@@ -394,44 +394,30 @@ const AdminSettings = () => {
     };
   }, [qrPending]);
 
-  // Start 50s countdown when QR appears
+  // Start 45s countdown when QR appears (or refreshes)
   useEffect(() => {
     if (whatsappSession.qrCode && !whatsappSession.isConnected) {
-      setQrTimer(50);
+      setQrTimer(45);
       setQrExpired(false);
     }
   }, [whatsappSession.qrCode, whatsappSession.isConnected]);
 
-  // Tick the countdown every second
+  // Tick the countdown every second; at 0 auto-refresh the QR in the background
   useEffect(() => {
     if (qrTimer <= 0) {
       if (whatsappSession.qrCode && !whatsappSession.isConnected) {
         setQrExpired(true);
+        // Auto-refresh: call the action silently — Convex real-time will push the new QR
+        setIsRefreshingQr(true);
+        refreshQrCodeAction({})
+          .catch((e) => console.error('Auto QR refresh error:', e))
+          .finally(() => setIsRefreshingQr(false));
       }
       return;
     }
     const tick = setTimeout(() => setQrTimer(t => t - 1), 1000);
     return () => clearTimeout(tick);
   }, [qrTimer, whatsappSession.qrCode, whatsappSession.isConnected]);
-
-  // Handle QR regeneration
-  const handleRegenerateQr = useCallback(async () => {
-    setIsRefreshingQr(true);
-    setQrExpired(false);
-    try {
-      const result = await refreshQrCodeAction({});
-      if (result.success && result.qrCode) {
-        setWhatsappSession(prev => ({ ...prev, qrCode: result.qrCode }));
-        showToast('تم تجديد رمز QR', 'success');
-      } else {
-        showToast(result.error || 'فشل تجديد رمز QR', 'error');
-      }
-    } catch (e) {
-      showToast('فشل تجديد رمز QR', 'error');
-    } finally {
-      setIsRefreshingQr(false);
-    }
-  }, [refreshQrCodeAction, showToast]);
 
   // WhatsApp Session Management
   const handleCreateSession = async () => {
@@ -855,31 +841,17 @@ const AdminSettings = () => {
                           </div>
                         )}
 
-                        {/* Expired state */}
+                        {/* Expired / refreshing state */}
                         {qrExpired && (
-                          <p className="text-sm text-red-500 dark:text-red-400 font-medium mt-4 mb-3">
-                            انتهت صلاحية رمز QR — يرجى تجديده
+                          <p className="text-sm text-amber-600 dark:text-amber-400 font-medium mt-4 flex items-center justify-center gap-1.5">
+                            {isRefreshingQr
+                              ? <><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> جارٍ تجديد الرمز تلقائياً...</>
+                              : 'انتهت صلاحية الرمز — جارٍ التجديد...'
+                            }
                           </p>
                         )}
 
-                        {/* Regenerate Button */}
-                        <button
-                          onClick={handleRegenerateQr}
-                          disabled={isRefreshingQr}
-                          className={`mt-4 flex items-center gap-2 mx-auto px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                            qrExpired
-                              ? 'bg-primary text-white shadow-lg shadow-primary/30 hover:brightness-105 active:scale-95'
-                              : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                          } disabled:opacity-50 disabled:cursor-not-allowed`}
-                        >
-                          {isRefreshingQr
-                            ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                            : <span className="material-symbols-outlined text-[18px]">refresh</span>
-                          }
-                          Régénérer le code
-                        </button>
-
-                        <p className="text-xs text-slate-400 mt-3">سيتصل تلقائياً بعد مسح الرمز</p>
+                        <p className="text-xs text-slate-400 mt-3">سيتصل تلقائياً بعد مسح الرمز • يتجدد تلقائياً كل 45 ثانية</p>
                       </div>
                     )}
 
