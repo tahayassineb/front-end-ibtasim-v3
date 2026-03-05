@@ -92,8 +92,8 @@ export const createAndConnectSession = action({
       sessionId = createData?.data?.id;
       apiKey = createData?.data?.api_key;
 
-      if (!sessionId || !apiKey) {
-        return { success: false, error: "Invalid response from WaSender (missing id or api_key)." };
+      if (!sessionId) {
+        return { success: false, error: "Invalid response from WaSender (missing session id)." };
       }
     } catch (e) {
       return { success: false, error: `Network error creating session: ${e instanceof Error ? e.message : String(e)}` };

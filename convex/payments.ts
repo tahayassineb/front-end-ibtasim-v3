@@ -56,14 +56,15 @@ export const createWhopCheckout = action({
     }
 
     // ── Build request payload ────────────────────────────────────────────
-    // Whop uses minor currency units (centimes): 1 MAD = 100 centimes
-    const amountCentimes = Math.round(args.amountMAD * 100);
+    // Whop uses the actual currency amount (MAD), NOT centimes.
+    // e.g. for 5 MAD, send initial_price: 5 (not 500).
+    const effectiveProductId = productId ?? "prod_1khGq1pY0YRXM"; // ibtasimm product (fallback)
 
     const requestBody = {
       plan: {
         company_id: companyId,
-        ...(productId ? { product_id: productId } : {}),
-        initial_price: amountCentimes,
+        product_id: effectiveProductId,
+        initial_price: args.amountMAD,
         plan_type: "one_time",
         currency: "mad",
         visibility: "hidden",
@@ -75,9 +76,9 @@ export const createWhopCheckout = action({
     };
 
     console.log("[payments] Calling Whop API:", WHOP_API_URL, {
-      amountCentimes,
+      amountMAD: args.amountMAD,
       companyId,
-      productId: productId ?? "(none)",
+      productId: effectiveProductId,
       redirectUrl: requestBody.redirect_url,
     });
 
@@ -125,9 +126,8 @@ export const createWhopCheckout = action({
             details: JSON.stringify({
               donationId: args.donationId,
               amountMAD: args.amountMAD,
-              amountCentimes,
               companyId,
-              productId: productId ?? null,
+              productId: effectiveProductId,
               redirectUrl: requestBody.redirect_url,
             }),
             apiUrl: WHOP_API_URL,
