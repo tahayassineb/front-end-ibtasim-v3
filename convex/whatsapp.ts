@@ -89,12 +89,15 @@ export const createAndConnectSession = action({
       }
 
       const createData = await createRes.json();
+      console.log("[whatsapp] Session create response keys:", Object.keys(createData?.data ?? {}));
       sessionId = createData?.data?.id;
       apiKey = createData?.data?.api_key;
 
       if (!sessionId) {
+        console.error("[whatsapp] WaSender create response (no id):", JSON.stringify(createData));
         return { success: false, error: "Invalid response from WaSender (missing session id)." };
       }
+      console.log("[whatsapp] Session created, id:", sessionId);
     } catch (e) {
       return { success: false, error: `Network error creating session: ${e instanceof Error ? e.message : String(e)}` };
     }
@@ -112,16 +115,19 @@ export const createAndConnectSession = action({
 
       if (connectRes.ok) {
         const connectData = await connectRes.json();
+        // Log the actual keys returned so we know which QR field WaSender uses
+        console.log("[whatsapp] Connect response keys:", JSON.stringify(Object.keys(connectData?.data ?? {})));
+        console.log("[whatsapp] Connect data.qr present:", !!connectData?.data?.qr, "| qr_code:", !!connectData?.data?.qr_code, "| qrCode:", !!connectData?.data?.qrCode);
         qrCode = normalizeQrCode(
           connectData?.data?.qr || connectData?.data?.qr_code || connectData?.data?.qrCode
         );
       } else {
         const errText = await connectRes.text();
-        console.error("Connect session error:", errText);
+        console.error("[whatsapp] Connect session error:", connectRes.status, errText);
         // Not fatal — continue to try fetching QR directly
       }
     } catch (e) {
-      console.error("Network error connecting session:", e);
+      console.error("[whatsapp] Network error connecting session:", e);
     }
 
     // Step 2b: If QR not in connect response, fetch it explicitly from the QR endpoint
@@ -137,16 +143,24 @@ export const createAndConnectSession = action({
         });
         if (qrRes.ok) {
           const qrData = await qrRes.json();
+          console.log("[whatsapp] QRCode endpoint keys:", JSON.stringify(Object.keys(qrData?.data ?? {})));
+          console.log("[whatsapp] QRCode data.qr:", !!qrData?.data?.qr, "| qr_code:", !!qrData?.data?.qr_code, "| qrCode:", !!qrData?.data?.qrCode, "| base64:", !!qrData?.data?.base64);
           qrCode = normalizeQrCode(
             qrData?.data?.qr || qrData?.data?.qr_code || qrData?.data?.qrCode || qrData?.data?.base64
           );
         } else {
-          console.error("QR fetch error:", await qrRes.text());
+          console.error("[whatsapp] QR fetch error:", qrRes.status, await qrRes.text());
         }
       } catch (e) {
-        console.error("Network error fetching QR code:", e);
+        console.error("[whatsapp] Network error fetching QR code:", e);
       }
     }
+
+    // Log final QR result
+    console.log(
+      "[whatsapp] Final qrCode type:", qrCode ? (qrCode.startsWith("data:") ? "base64-image" : /^\d@/.test(qrCode) ? "raw-pairing-string" : "other") : "NONE",
+      "| length:", qrCode?.length ?? 0
+    );
 
     // Step 3: Store session data in Convex config
     await ctx.runMutation(api.config.setConfig, {
