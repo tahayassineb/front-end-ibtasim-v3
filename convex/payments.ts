@@ -12,40 +12,43 @@ declare const process: {
   };
 };
 
-const WHOP_API_URL = "https://api.whop.com/v2/checkout_configurations";
+// Whop v1 API — these endpoints work with standard API keys
+// (v2/checkout_configurations requires special scopes that most keys don't have)
+const WHOP_PLANS_URL      = "https://api.whop.com/api/v2/plans";
+const WHOP_CHECKOUT_URL   = "https://api.whop.com/api/v2/checkout_sessions";
 
 // ============================================
-// Pre-created hidden plans in MAD (created via Whop MCP, stable IDs)
-// Using plan_id avoids needing plan:create permission on the API key.
+// Pre-created hidden plans in MAD (stable IDs, created once)
+// Using pre-created plans avoids creating a new plan on every checkout
+// for the common donation amounts.
 // ============================================
 const PRESET_PLAN_IDS: Record<number, string> = {
-  200:  "plan_FX2nfOyGnmaCf", // Donation 200 MAD
-  500:  "plan_KCTR7FdaRv4rv", // Donation 500 MAD
-  1000: "plan_6Ed3nRvJGJ8cO", // Donation 1000 MAD
+  200:  "plan_FX2nfOyGnmaCf",
+  500:  "plan_KCTR7FdaRv4rv",
+  1000: "plan_6Ed3nRvJGJ8cO",
 };
 
-// Extract a readable error string from a Whop API error response.
-// Whop returns: { error: { status: 401, message: "..." } } or { message: "..." }
+// Extract a readable error string from any Whop API error shape
 function extractWhopError(data: any, status: number): string {
   if (typeof data?.message === "string") return data.message;
   if (typeof data?.error === "string") return data.error;
   if (typeof data?.error?.message === "string") return data.error.message;
   if (Array.isArray(data?.errors) && typeof data.errors[0]?.message === "string")
     return data.errors[0].message;
-  return `Whop checkout failed with HTTP ${status}`;
+  return `Whop API failed with HTTP ${status}`;
 }
 
 // ============================================
 // WHOP PAYMENT INTEGRATION
-// Creates a checkout session and returns the purchase URL.
-// For preset amounts (200/500/1000 MAD) uses a pre-created plan_id.
-// For custom amounts creates a plan inline.
+// 1. For preset amounts (200/500/1000 MAD): use pre-created plan_id directly
+// 2. For custom amounts: create a new hidden plan first, then create checkout session
+// Both paths use /api/v2/checkout_sessions which works with standard API keys.
 // ============================================
 
 export const createWhopCheckout = action({
   args: {
     donationId: v.id("donations"),
-    amountMAD: v.number(), // Amount in MAD
+    amountMAD: v.number(),
   },
   returns: v.object({
     purchaseUrl: v.string(),
@@ -59,182 +62,145 @@ export const createWhopCheckout = action({
       process.env.CONVEX_SITE_URL ??
       "";
 
-    // ── Validate credentials ────────────────────────────────────────────
     if (!apiKey || !companyId) {
       const msg =
         "Whop API credentials not configured. Set WHOP_API_KEY and WHOP_COMPANY_ID in Convex environment variables.";
       console.error("[payments]", msg);
       try {
         await ctx.runMutation(api.errorLogs.insertErrorLog, {
-          source: "payments",
-          level: "error",
-          message: msg,
+          source: "payments", level: "error", message: msg,
           details: JSON.stringify({ donationId: args.donationId }),
         });
-      } catch (logErr) {
-        console.error("[payments] Failed to write error log:", logErr);
-      }
+      } catch {}
       throw new Error(msg);
     }
 
-    // ── Build request payload ────────────────────────────────────────────
-    // For preset amounts: use a pre-created plan_id (no plan:create needed).
-    // For custom amounts: create the plan inline.
     const redirectUrl = siteUrl ? `${siteUrl}/donate/success` : undefined;
-    const presetPlanId = PRESET_PLAN_IDS[args.amountMAD];
 
-    let requestBody: Record<string, unknown>;
+    // ── Step 1: Get or create a plan ─────────────────────────────────────
+    let planId: string;
+
+    const presetPlanId = PRESET_PLAN_IDS[args.amountMAD];
     if (presetPlanId) {
-      // Preset amount — just reference existing plan
-      requestBody = {
-        plan_id: presetPlanId,
-        redirect_url: redirectUrl,
-        metadata: { donationId: args.donationId },
-      };
-      console.log("[payments] Using preset plan_id", presetPlanId, "for", args.amountMAD, "MAD");
+      // Use pre-created plan for common amounts (200/500/1000 MAD)
+      planId = presetPlanId;
+      console.log("[payments] Using preset plan", planId, "for", args.amountMAD, "MAD");
     } else {
-      // Custom amount — create plan inline
-      requestBody = {
-        plan: {
-          company_id: companyId,
-          product_id: productId,
-          initial_price: args.amountMAD,
-          plan_type: "one_time",
-          currency: "mad",
-          visibility: "hidden",
-        },
-        redirect_url: redirectUrl,
-        metadata: { donationId: args.donationId },
-      };
-      console.log("[payments] Creating inline plan for custom amount", args.amountMAD, "MAD");
+      // Custom amount — create a new hidden one-time plan
+      console.log("[payments] Creating plan for custom amount:", args.amountMAD, "MAD");
+      let planRes: Response;
+      let planText: string;
+      let planData: any;
+      try {
+        planRes = await fetch(WHOP_PLANS_URL, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            company_id: companyId,
+            access_pass_id: productId,
+            initial_price: args.amountMAD,
+            base_currency: "mad",
+            plan_type: "one_time",
+            visibility: "hidden",
+            unlimited_stock: true,
+          }),
+        });
+        planText = await planRes.text();
+        try { planData = JSON.parse(planText); } catch { planData = { raw: planText }; }
+      } catch (err: any) {
+        const msg = `Network error creating Whop plan: ${err.message ?? String(err)}`;
+        console.error("[payments]", msg);
+        await ctx.runMutation(api.errorLogs.insertErrorLog, {
+          source: "payments", level: "error", message: msg,
+          details: JSON.stringify({ donationId: args.donationId, amountMAD: args.amountMAD }),
+          apiUrl: WHOP_PLANS_URL, donationId: args.donationId,
+        }).catch(() => {});
+        throw new Error(msg);
+      }
+
+      if (!planRes.ok || !planData?.id) {
+        const errorMsg = extractWhopError(planData, planRes.status);
+        console.error("[payments] Plan creation failed:", errorMsg, planText);
+        await ctx.runMutation(api.errorLogs.insertErrorLog, {
+          source: "payments", level: "error",
+          message: `Whop plan creation error: ${errorMsg}`,
+          details: JSON.stringify({ donationId: args.donationId, amountMAD: args.amountMAD }),
+          apiUrl: WHOP_PLANS_URL, apiStatus: planRes.status,
+          apiResponse: planText.slice(0, 4000), donationId: args.donationId,
+        }).catch(() => {});
+        throw new Error(`Whop plan creation error: ${errorMsg}`);
+      }
+
+      planId = planData.id;
+      console.log("[payments] Created plan", planId, "for", args.amountMAD, "MAD");
     }
 
-    console.log("[payments] Calling Whop API:", WHOP_API_URL, {
-      amountMAD: args.amountMAD,
-      companyId,
-      presetPlanId: presetPlanId ?? "(custom)",
-      redirectUrl,
-    });
+    // ── Step 2: Create checkout session ──────────────────────────────────
+    console.log("[payments] Creating checkout session, plan:", planId, "donationId:", args.donationId);
 
-    // ── Call Whop API ────────────────────────────────────────────────────
-    let responseStatus: number;
-    let responseText: string;
-    let data: any;
+    let checkoutRes: Response;
+    let checkoutText: string;
+    let checkoutData: any;
 
     try {
-      const response = await fetch(WHOP_API_URL, {
+      checkoutRes = await fetch(WHOP_CHECKOUT_URL, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          plan_id: planId,
+          redirect_url: redirectUrl,
+          metadata: { donationId: args.donationId },
+        }),
       });
-
-      responseStatus = response.status;
-      responseText = await response.text();
-
-      try {
-        data = JSON.parse(responseText);
-      } catch {
-        data = { raw: responseText };
-      }
-
-      console.log("[payments] Whop API response:", responseStatus, JSON.stringify(data));
-
-      // ── Handle non-2xx response ─────────────────────────────────────
-      if (!response.ok) {
-        const errorMsg = extractWhopError(data, responseStatus);
-
-        console.error("[payments] Whop error:", errorMsg, "| Full response:", responseText);
-
-        // Log the raw 401 hint for easier diagnosis
-        if (responseStatus === 401) {
-          console.error(
-            "[payments] 401 HINT: Your WHOP_API_KEY is missing permissions. " +
-            "The key needs: checkout_configuration:create, access_pass:create, " +
-            "access_pass:update, checkout_configuration:basic:read. " +
-            "(Also plan:create if using custom amounts.) " +
-            "Go to Whop Dashboard → Developer → API Keys and add these scopes."
-          );
-        }
-
-        try {
-          await ctx.runMutation(api.errorLogs.insertErrorLog, {
-            source: "payments",
-            level: "error",
-            message: `Whop API error: ${errorMsg}`,
-            details: JSON.stringify({
-              donationId: args.donationId,
-              amountMAD: args.amountMAD,
-              companyId,
-              presetPlanId: presetPlanId ?? null,
-              redirectUrl,
-            }),
-            apiUrl: WHOP_API_URL,
-            apiStatus: responseStatus,
-            apiResponse: responseText.slice(0, 4000),
-            donationId: args.donationId,
-          });
-        } catch (logErr) {
-          console.error("[payments] Failed to write error log:", logErr);
-        }
-
-        throw new Error(`Whop API error (${responseStatus}): ${errorMsg}`);
-      }
-
-      // ── Validate purchase_url in response ───────────────────────────
-      if (!data.purchase_url) {
-        const errorMsg = "Whop API returned no purchase_url in response";
-        console.error("[payments]", errorMsg, "| Full response:", responseText);
-
-        try {
-          await ctx.runMutation(api.errorLogs.insertErrorLog, {
-            source: "payments",
-            level: "error",
-            message: errorMsg,
-            apiUrl: WHOP_API_URL,
-            apiStatus: responseStatus,
-            apiResponse: responseText.slice(0, 4000),
-            donationId: args.donationId,
-          });
-        } catch (logErr) {
-          console.error("[payments] Failed to write error log:", logErr);
-        }
-
-        throw new Error(errorMsg);
-      }
-
-      console.log("[payments] Checkout created successfully:", data.purchase_url);
-      return { purchaseUrl: data.purchase_url };
+      checkoutText = await checkoutRes.text();
+      try { checkoutData = JSON.parse(checkoutText); } catch { checkoutData = { raw: checkoutText }; }
     } catch (err: any) {
-      // Re-throw errors already handled above (they all include "Whop" or "purchase_url")
-      if (
-        err.message?.startsWith("Whop") ||
-        err.message?.includes("purchase_url") ||
-        err.message?.includes("credentials")
-      ) {
-        throw err;
-      }
-
-      // True network/fetch error
-      const errorMsg = `Network error calling Whop API: ${err.message ?? String(err)}`;
-      console.error("[payments]", errorMsg);
-
-      try {
-        await ctx.runMutation(api.errorLogs.insertErrorLog, {
-          source: "payments",
-          level: "error",
-          message: errorMsg,
-          details: JSON.stringify({ donationId: args.donationId }),
-          apiUrl: WHOP_API_URL,
-          donationId: args.donationId,
-        });
-      } catch (logErr) {
-        console.error("[payments] Failed to write error log:", logErr);
-      }
-
-      throw new Error(errorMsg);
+      const msg = `Network error creating Whop checkout: ${err.message ?? String(err)}`;
+      console.error("[payments]", msg);
+      await ctx.runMutation(api.errorLogs.insertErrorLog, {
+        source: "payments", level: "error", message: msg,
+        details: JSON.stringify({ donationId: args.donationId }),
+        apiUrl: WHOP_CHECKOUT_URL, donationId: args.donationId,
+      }).catch(() => {});
+      throw new Error(msg);
     }
+
+    console.log("[payments] Checkout response:", checkoutRes.status, JSON.stringify(checkoutData));
+
+    if (!checkoutRes.ok) {
+      const errorMsg = extractWhopError(checkoutData, checkoutRes.status);
+      console.error("[payments] Checkout error:", errorMsg);
+      await ctx.runMutation(api.errorLogs.insertErrorLog, {
+        source: "payments", level: "error",
+        message: `Whop checkout error: ${errorMsg}`,
+        details: JSON.stringify({
+          donationId: args.donationId, amountMAD: args.amountMAD,
+          planId, redirectUrl,
+        }),
+        apiUrl: WHOP_CHECKOUT_URL, apiStatus: checkoutRes.status,
+        apiResponse: checkoutText.slice(0, 4000), donationId: args.donationId,
+      }).catch(() => {});
+      throw new Error(`Whop checkout error: ${errorMsg}`);
+    }
+
+    if (!checkoutData?.purchase_url) {
+      const msg = "Whop checkout returned no purchase_url";
+      console.error("[payments]", msg, checkoutText);
+      await ctx.runMutation(api.errorLogs.insertErrorLog, {
+        source: "payments", level: "error", message: msg,
+        apiUrl: WHOP_CHECKOUT_URL, apiStatus: checkoutRes.status,
+        apiResponse: checkoutText.slice(0, 4000), donationId: args.donationId,
+      }).catch(() => {});
+      throw new Error(msg);
+    }
+
+    console.log("[payments] Success:", checkoutData.purchase_url);
+    return { purchaseUrl: checkoutData.purchase_url };
   },
 });
