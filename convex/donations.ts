@@ -447,7 +447,89 @@ export const updateWhopPayment = mutation({
       whopPaymentStatus: args.whopPaymentStatus,
       updatedAt: Date.now(),
     });
-    
+
+    return true;
+  },
+});
+
+// ============================================
+// WHOP PAYMENT SUCCESS HANDLER
+// Called by the /donate/success HTTP endpoint after Whop redirects back.
+// Idempotent: safe to call multiple times for the same payment.
+// ============================================
+export const processWhopPayment = mutation({
+  args: {
+    donationId: v.id("donations"),
+    whopPaymentId: v.string(),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const donation = await ctx.db.get(args.donationId);
+    if (!donation) {
+      console.error("[processWhopPayment] Donation not found:", args.donationId);
+      return false;
+    }
+
+    // Idempotency: skip if already verified or completed
+    if (donation.status === "verified" || donation.status === "completed") {
+      console.log("[processWhopPayment] Already processed:", args.donationId);
+      return true;
+    }
+
+    const now = Date.now();
+
+    // Mark donation as verified with Whop payment details
+    await ctx.db.patch(args.donationId, {
+      whopPaymentId: args.whopPaymentId,
+      whopPaymentStatus: "paid",
+      status: "verified",
+      verifiedAt: now,
+      verificationNotes: `Whop card payment auto-verified. Payment ID: ${args.whopPaymentId}`,
+      updatedAt: now,
+    });
+
+    // Update project raised amount
+    const project = await ctx.db.get(donation.projectId);
+    if (project) {
+      await ctx.db.patch(donation.projectId, {
+        raisedAmount: project.raisedAmount + donation.amount,
+        updatedAt: now,
+      });
+    }
+
+    // Update donor stats
+    const user = await ctx.db.get(donation.userId);
+    if (user) {
+      await ctx.db.patch(donation.userId, {
+        totalDonated: (user.totalDonated ?? 0) + donation.amount,
+        donationCount: (user.donationCount ?? 0) + 1,
+      });
+    }
+
+    // Log verification
+    await ctx.db.insert("verificationLogs", {
+      donationId: args.donationId,
+      adminId: undefined,
+      action: "verify",
+      notes: `Auto-verified via Whop payment ${args.whopPaymentId}`,
+      createdAt: now,
+    });
+
+    // Schedule WhatsApp notification
+    try {
+      if (project) {
+        await ctx.scheduler.runAfter(0, api.notifications.sendDonationVerificationNotification, {
+          userId: donation.userId,
+          donationId: args.donationId,
+          amount: donation.amount,
+          projectTitle: project.title.ar,
+        });
+      }
+    } catch (err) {
+      console.error("[processWhopPayment] Failed to schedule notification:", err);
+    }
+
+    console.log("[processWhopPayment] Donation", args.donationId, "verified. Payment:", args.whopPaymentId);
     return true;
   },
 });

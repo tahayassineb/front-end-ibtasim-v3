@@ -20,6 +20,7 @@ import Contact from './pages/Contact';
 
 // Donation Flow
 import DonationFlow from './pages/DonationFlow';
+import DonateSuccess from './pages/DonateSuccess';
 
 // Error Boundary
 import ErrorBoundary from './components/ErrorBoundary';
@@ -164,6 +165,7 @@ function AppContent() {
           {/* Donation Flow */}
           <Route path="/donate/:projectId" element={<ErrorBoundary><DonationFlow /></ErrorBoundary>} />
           <Route path="/donate" element={<ErrorBoundary><DonationFlow /></ErrorBoundary>} />
+          <Route path="/donate/success" element={<ErrorBoundary><DonateSuccess /></ErrorBoundary>} />
           
           {/* ============================================
               ADMIN ROUTES
