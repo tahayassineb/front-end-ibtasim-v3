@@ -118,6 +118,68 @@ Because `apiKey` was undefined, this check always failed, meaning the session wa
 
 ---
 
+## Session 4: QR Scan Failure — The Real Fix (and Why It Took So Long)
+
+### The Problem
+WhatsApp QR code was displaying correctly on screen but scanning it with WhatsApp did nothing — no connection established.
+
+### What I (Claude) Did Wrong — 5 Times
+
+The user told me multiple times that the QR wasn't connecting. Each time, I:
+
+1. **Checked the wrong thing**: I kept reading `convex/whatsapp.ts` (backend), looking at session creation, QR normalization logic, and the `apiKey` bug. Those were real bugs but they were already fixed.
+
+2. **Assumed the backend was the problem**: Because the previous session had a backend bug (`if (!sessionId || !apiKey)`), I kept investigating there. But that bug was already fixed. The QR was being generated and displayed correctly — the backend was fine.
+
+3. **Never questioned qrserver.com**: The line in `AdminSettings.jsx` that called `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(whatsappSession.qrCode)}` was accepted as correct. I documented it in JOURNEY.md as "confirmed correct, no change needed." This was wrong.
+
+4. **`encodeURIComponent` gave false confidence**: The code used `encodeURIComponent()` which looks correct. But qrserver.com is an external HTTP API — it receives the URL, then on its server it decodes the query parameter, and generates a QR from that. In practice, certain combinations of special characters in the WhatsApp pairing string (`+`, `/`, `=`, `@`, newlines) were being mangled through the encode→HTTP→decode chain. The resulting QR image *looked valid* but contained wrong data.
+
+5. **Focused on visible errors, not invisible data corruption**: There was no 404, no console error, no broken image. The QR displayed perfectly. So I never suspected the QR image itself was wrong. But the data inside the QR was corrupted — only discoverable by actually scanning it and seeing the connection fail.
+
+### The Actual Root Cause
+
+**External QR generation via HTTP = data corruption for WhatsApp pairing strings.**
+
+WhatsApp pairing strings look like: `2@DfzdT+abc/xyz==,somedata,moredata`
+
+These contain URL-special characters. The flow was:
+```
+Raw string → encodeURIComponent → URL parameter → HTTP request to qrserver.com
+→ qrserver.com decodes it → generates QR from decoded string
+```
+
+The decode step on qrserver.com's server was not perfectly reversing the encoding for all character combinations. The QR image it returned was built from a slightly corrupted version of the pairing string. WhatsApp scanned it, got wrong data, and silently failed.
+
+### The Fix
+
+Replace external HTTP QR generation with **client-side QR generation**:
+
+```jsx
+// BEFORE (broken)
+<img src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrCode)}`} />
+
+// AFTER (correct)
+import { QRCodeSVG } from 'qrcode.react';
+<QRCodeSVG value={qrCode} size={192} />
+```
+
+`qrcode.react` encodes the raw string directly in JavaScript — no HTTP round-trip, no encoding/decoding chain, no data corruption. The pairing string reaches the QR generator intact.
+
+Also added:
+- **Auto-refresh every 20 seconds** — WaSender QR codes expire in ~20-30s. Without auto-refresh, even a valid QR would become stale.
+- **Status polling every 5 seconds** — detects when WhatsApp scan succeeds and updates UI automatically.
+
+### Lesson for Future Claude
+
+**When a QR code displays but scanning fails, the problem is almost always the QR data content, not the display.** Never assume an externally-generated QR image is correct just because it renders. If the data goes through URL encoding + HTTP + decoding, character corruption is possible.
+
+**Always suspect the boundary between systems** — in this case, the boundary between JavaScript string → URL-encoded HTTP request → external server decode. That's where data gets corrupted silently.
+
+**When a user says "this thing doesn't work" 5 times and the backend looks fine, look at the frontend rendering.** The last place you'd think to look is often the correct place.
+
+---
+
 ## Architecture Notes
 
 - **Convex** is both backend (actions/mutations/queries) and database. Deploy separately from frontend.
