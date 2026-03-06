@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '../../convex/_generated/api';
+import { QRCodeSVG } from 'qrcode.react';
 
 // ============================================
 // ADMIN SETTINGS PAGE - System Configuration (Arabic)
@@ -79,6 +80,43 @@ const AdminSettings = () => {
       }
     }
   }, [whatsappSettingsData]);
+
+  // Auto-refresh QR every 20 seconds while QR is shown and not yet connected
+  const autoRefreshTimerRef = useRef(null);
+  useEffect(() => {
+    if (!whatsappSession.qrCode || whatsappSession.isConnected) {
+      clearInterval(autoRefreshTimerRef.current);
+      return;
+    }
+    autoRefreshTimerRef.current = setInterval(async () => {
+      try {
+        const result = await refreshQrCodeAction({});
+        if (result.qrCode) {
+          setWhatsappSession(prev => ({ ...prev, qrCode: result.qrCode }));
+        }
+      } catch (_) { /* silent — user can manually refresh */ }
+    }, 20000);
+    return () => clearInterval(autoRefreshTimerRef.current);
+  }, [whatsappSession.qrCode, whatsappSession.isConnected]);
+
+  // Poll session status every 5 seconds while QR is visible (detect scan success)
+  const statusPollRef = useRef(null);
+  useEffect(() => {
+    if (!whatsappSession.instanceId || whatsappSession.isConnected || !whatsappSession.qrCode) {
+      clearInterval(statusPollRef.current);
+      return;
+    }
+    statusPollRef.current = setInterval(async () => {
+      try {
+        const result = await syncSessionStatusAction({});
+        if (result?.isConnected) {
+          setWhatsappSession(prev => ({ ...prev, isConnected: true, qrCode: null }));
+          clearInterval(statusPollRef.current);
+        }
+      } catch (_) { /* silent */ }
+    }, 5000);
+    return () => clearInterval(statusPollRef.current);
+  }, [whatsappSession.instanceId, whatsappSession.isConnected, whatsappSession.qrCode]);
 
   // Arabic Translations Only
   const t = {
@@ -763,16 +801,24 @@ const AdminSettings = () => {
                       <div className="text-center p-6 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
                         <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">{t.scanQrCode}</p>
 
-                        {/* QR Image — raw pairing string → api.qrserver.com; base64/URL → direct */}
-                        <img
-                          src={
-                            whatsappSession.qrCode.startsWith('data:') || whatsappSession.qrCode.startsWith('http')
-                              ? whatsappSession.qrCode
-                              : `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(whatsappSession.qrCode)}`
-                          }
-                          alt="QR Code"
-                          className="mx-auto w-48 h-48 rounded-lg"
-                        />
+                        {/* QR Code — rendered client-side to avoid encoding issues */}
+                        <div className="flex justify-center">
+                          {whatsappSession.qrCode.startsWith('data:') || whatsappSession.qrCode.startsWith('http') ? (
+                            <img
+                              src={whatsappSession.qrCode}
+                              alt="QR Code"
+                              className="w-48 h-48 rounded-lg"
+                            />
+                          ) : (
+                            <QRCodeSVG
+                              value={whatsappSession.qrCode}
+                              size={192}
+                              bgColor="#ffffff"
+                              fgColor="#000000"
+                              level="M"
+                            />
+                          )}
+                        </div>
 
                         {/* Manual Refresh QR button */}
                         <button
@@ -786,7 +832,7 @@ const AdminSettings = () => {
                           }
                         </button>
 
-                        <p className="text-xs text-slate-400 mt-2">سيتصل تلقائياً بعد مسح الرمز</p>
+                        <p className="text-xs text-slate-400 mt-2">يتجدد تلقائياً كل 20 ثانية • سيتصل تلقائياً بعد المسح</p>
                       </div>
                     )}
 
