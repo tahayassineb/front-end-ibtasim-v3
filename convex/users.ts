@@ -214,7 +214,6 @@ export const getAllVerifiedUsersWithPhone = query({
       .query("users")
       .filter((q) =>
         q.and(
-          q.eq(q.field("isVerified"), true),
           q.neq(q.field("phoneNumber"), ""),
           q.eq(q.field("notificationsEnabled"), true)
         )

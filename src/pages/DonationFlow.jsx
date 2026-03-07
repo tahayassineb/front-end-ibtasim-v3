@@ -837,46 +837,66 @@ const Step3ReceiptUpload = ({
   
   return (
     <main className="flex flex-col flex-1 px-6 gap-6 pb-10">
-      {/* Bank Info Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xl shadow-primary/5 overflow-hidden">
-        <div className="bg-primary px-5 py-3 flex items-center justify-between">
-          <span className="text-white text-sm font-bold">{tx.bankInfo}</span>
-          <span className="material-symbols-outlined text-white/80 text-lg">account_balance</span>
-        </div>
-        <div className="p-5 flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-              {tx.accountHolder}
-            </label>
-            <button
-              onClick={() => copyToClipboard(bankInfo.name)}
-              className="flex items-center justify-between bg-primary/5 dark:bg-primary/10 p-3 rounded-xl border border-primary/5 transition-all active:scale-[0.98] text-right w-full"
-            >
-              <span className="text-gray-800 dark:text-white font-bold text-[15px] leading-tight flex-1">
-                {bankInfo.name}
-              </span>
-              <span className="material-symbols-outlined text-primary/60 text-[18px] mr-2">content_copy</span>
-            </button>
+      {/* Bank Info Card — only for bank transfer */}
+      {paymentMethod !== 'cash' ? (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xl shadow-primary/5 overflow-hidden">
+          <div className="bg-primary px-5 py-3 flex items-center justify-between">
+            <span className="text-white text-sm font-bold">{tx.bankInfo}</span>
+            <span className="material-symbols-outlined text-white/80 text-lg">account_balance</span>
           </div>
-          <div className="h-px bg-gray-100 w-full"></div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-              {tx.rib}
-            </label>
-            <div className="flex items-center justify-between bg-primary/10 dark:bg-primary/20 p-3 rounded-xl border border-primary/10">
-              <span className="text-primary font-mono font-bold text-lg tracking-wider" dir="ltr">
-                {bankInfo.rib}
-              </span>
+          <div className="p-5 flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                {tx.accountHolder}
+              </label>
               <button
-                onClick={() => copyToClipboard(bankInfo.rib.replace(/\s/g, ''))}
-                className="flex items-center justify-center w-9 h-9 bg-primary text-white rounded-lg transition-all active:scale-95 shadow-md"
+                onClick={() => copyToClipboard(bankInfo.name)}
+                className="flex items-center justify-between bg-primary/5 dark:bg-primary/10 p-3 rounded-xl border border-primary/5 transition-all active:scale-[0.98] text-right w-full"
               >
-                <span className="material-symbols-outlined text-[20px]">content_copy</span>
+                <span className="text-gray-800 dark:text-white font-bold text-[15px] leading-tight flex-1">
+                  {bankInfo.name}
+                </span>
+                <span className="material-symbols-outlined text-primary/60 text-[18px] mr-2">content_copy</span>
               </button>
+            </div>
+            <div className="h-px bg-gray-100 w-full"></div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                {tx.rib}
+              </label>
+              <div className="flex items-center justify-between bg-primary/10 dark:bg-primary/20 p-3 rounded-xl border border-primary/10">
+                <span className="text-primary font-mono font-bold text-lg tracking-wider" dir="ltr">
+                  {bankInfo.rib}
+                </span>
+                <button
+                  onClick={() => copyToClipboard(bankInfo.rib.replace(/\s/g, ''))}
+                  className="flex items-center justify-center w-9 h-9 bg-primary text-white rounded-lg transition-all active:scale-95 shadow-md"
+                >
+                  <span className="material-symbols-outlined text-[20px]">content_copy</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex items-start gap-3 p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+            <span className="material-symbols-outlined text-[18px]">store</span>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <h4 className="text-[13px] font-bold text-gray-800 dark:text-white">
+              {lang === 'ar' ? 'إيصال الوكالة' : lang === 'fr' ? 'Reçu de l\'agence' : 'Agency Receipt'}
+            </h4>
+            <p className="text-[11px] text-gray-500 leading-relaxed">
+              {lang === 'ar'
+                ? 'ارفع صورة إيصال الدفع الذي حصلت عليه من وكالة الأداء.'
+                : lang === 'fr'
+                ? 'Téléchargez le reçu de paiement obtenu auprès de votre agence de paiement.'
+                : 'Upload the payment receipt you received from the cash payment agency.'}
+            </p>
+          </div>
+        </div>
+      )}
       
       {/* Upload Area */}
       <div className="flex flex-col gap-3">

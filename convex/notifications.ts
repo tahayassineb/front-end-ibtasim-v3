@@ -65,7 +65,8 @@ async function sendWhatsAppMessage(
   to: string,
   text: string,
   retryCount: number = 0,
-  tokenOverride?: string
+  tokenOverride?: string,
+  imageUrl?: string
 ): Promise<{ success: boolean; error?: string; status?: number; responseBody?: string; response?: any }> {
   const token = tokenOverride || getApiToken();
 
@@ -79,16 +80,16 @@ async function sendWhatsAppMessage(
   try {
     const formattedPhone = formatPhoneNumber(to);
 
+    const body: Record<string, string> = { to: formattedPhone, text };
+    if (imageUrl) body.imageUrl = imageUrl;
+
     const response = await fetch(WASENDER_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        to: formattedPhone,
-        text: text,
-      }),
+      body: JSON.stringify(body),
     });
 
     const responseBody = await response.text();
@@ -98,7 +99,7 @@ async function sendWhatsAppMessage(
       if (retryCount < MAX_RETRIES) {
         const delay = RETRY_DELAY_MS * Math.pow(2, retryCount);
         await sleep(delay);
-        return sendWhatsAppMessage(to, text, retryCount + 1, tokenOverride);
+        return sendWhatsAppMessage(to, text, retryCount + 1, tokenOverride, imageUrl);
       }
       return {
         success: false,
@@ -201,6 +202,7 @@ export const broadcastToAllUsers = action({
   args: {
     text: v.string(),
     projectId: v.optional(v.id("projects")),
+    imageUrl: v.optional(v.string()),
   },
   returns: v.object({
     total: v.number(),
@@ -245,7 +247,7 @@ export const broadcastToAllUsers = action({
       const firstName = user.fullName?.split(' ')[0] || 'صديقي';
       const personalizedText = args.text.replace(/{name}/g, firstName);
 
-      const result = await sendWhatsAppMessage(user.phoneNumber, personalizedText, 0, sessionApiKey);
+      const result = await sendWhatsAppMessage(user.phoneNumber, personalizedText, 0, sessionApiKey, args.imageUrl);
 
       if (result.success) {
         successful++;
@@ -427,14 +429,19 @@ export const sendProjectPublishedNotification = action({
     
     // Import api inside handler to avoid circular dependency issues
     const { api } = await import("./_generated/api");
-    
+
+    // Fetch project to get mainImage URL
+    const project = await ctx.runQuery(api.projects.getProjectById, { projectId: args.projectId });
+    const imageUrl = project?.mainImage || undefined;
+
     // Create announcement message in Arabic
     const message = `🌟 مشروع جديد على منصة الأمل!\n\n"${args.projectTitle}"\n\nتبرع الآن وساهم في صنع الفرق.\n\nفريق جمعية الأمل`;
-    
+
     // Broadcast to all users using the broadcast action
     const result = await ctx.runAction(api.notifications.broadcastToAllUsers, {
       text: message,
       projectId: args.projectId,
+      imageUrl,
     });
 
     // Log summary to errorLogs for admin visibility

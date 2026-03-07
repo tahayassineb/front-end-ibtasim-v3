@@ -64,6 +64,9 @@ const AdminDonations = () => {
         pending: 'معلق',
         rejected: 'مرفوض',
         total: 'إجمالي الإيرادات',
+        verified: 'مؤكد',
+        awaiting_receipt: 'في انتظار الإيصال',
+        awaiting_verification: 'قيد المراجعة',
       },
       search: 'البحث برقم الهوية، الاسم أو الهاتف...',
       dateRange: 'نطاق التاريخ',
@@ -99,6 +102,9 @@ const AdminDonations = () => {
         pending: 'En Attente',
         rejected: 'Rejeté',
         total: 'Revenus Totaux',
+        verified: 'Vérifié',
+        awaiting_receipt: 'En attente de reçu',
+        awaiting_verification: 'En vérification',
       },
       search: 'Rechercher ID, Nom ou Téléphone...',
       dateRange: 'Plage de Dates',
@@ -134,6 +140,9 @@ const AdminDonations = () => {
         pending: 'Pending',
         rejected: 'Rejected',
         total: 'Total Revenue',
+        verified: 'Verified',
+        awaiting_receipt: 'Awaiting Receipt',
+        awaiting_verification: 'Under Review',
       },
       search: 'Search ID, Name or Phone...',
       dateRange: 'Date Range',
@@ -190,11 +199,22 @@ const AdminDonations = () => {
   ];
 
 
+  const getStatusVariant = (status) => {
+    if (status === 'verified') return 'success';
+    if (status === 'awaiting_receipt' || status === 'awaiting_verification') return 'warning';
+    return 'error'; // rejected
+  };
+
+  const getStatusLabel = (status) => {
+    return t.stats[status] || status;
+  };
+
   const getStatusStyles = (status) => {
     switch (status) {
-      case 'pending':
+      case 'awaiting_receipt':
+      case 'awaiting_verification':
         return 'bg-yellow-50/50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-900/30';
-      case 'confirmed':
+      case 'verified':
         return 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800';
       case 'rejected':
         return 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 opacity-80';
@@ -312,8 +332,9 @@ const AdminDonations = () => {
           className="flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 text-xs font-medium text-text-primary dark:text-white"
         >
           <option value="all">{t.status}: {t.all}</option>
-          <option value="pending">{t.status}: {t.stats.pending}</option>
-          <option value="confirmed">{t.status}: {t.stats.confirmed}</option>
+          <option value="awaiting_receipt">{t.status}: {t.stats.awaiting_receipt}</option>
+          <option value="awaiting_verification">{t.status}: {t.stats.awaiting_verification}</option>
+          <option value="verified">{t.status}: {t.stats.verified}</option>
           <option value="rejected">{t.status}: {t.stats.rejected}</option>
         </select>
         <button className="flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 text-xs font-medium text-text-primary dark:text-white">
@@ -344,17 +365,11 @@ const AdminDonations = () => {
               <div className="flex justify-between items-start">
                 <div className="flex flex-col">
                   <Badge
-                    variant={
-                      donation.status === 'confirmed'
-                        ? 'success'
-                        : donation.status === 'pending'
-                        ? 'warning'
-                        : 'error'
-                    }
+                    variant={getStatusVariant(donation.status)}
                     size="sm"
                     className="w-fit mb-1 text-[10px] uppercase tracking-wider"
                   >
-                    {donation.status === 'confirmed' ? t.stats.confirmed : donation.status === 'pending' ? t.stats.pending : t.stats.rejected}
+                    {getStatusLabel(donation.status)}
                   </Badge>
                   <h4 className="text-sm font-bold text-text-primary dark:text-white">{donation.donor}</h4>
                   <p className="text-xs text-slate-500">{donation.phone}</p>
@@ -427,16 +442,10 @@ const AdminDonations = () => {
               </h2>
               <div className="flex w-10 items-center justify-end">
                 <Badge
-                  variant={
-                    viewingDonation.status === 'confirmed'
-                      ? 'success'
-                      : viewingDonation.status === 'pending'
-                      ? 'warning'
-                      : 'error'
-                  }
+                  variant={getStatusVariant(viewingDonation.status)}
                   size="sm"
                 >
-                  {viewingDonation.status === 'confirmed' ? t.stats.confirmed : viewingDonation.status === 'pending' ? t.stats.pending : t.stats.rejected}
+                  {getStatusLabel(viewingDonation.status)}
                 </Badge>
               </div>
             </div>
