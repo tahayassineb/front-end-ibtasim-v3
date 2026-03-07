@@ -270,6 +270,66 @@ Backend correctness is necessary but not sufficient. The frontend must also call
 
 ---
 
+---
+
+## Session 6: Notifications, Observability, Cash Agency Flow, Verification Queue
+
+### What Was Reported
+
+Three interrelated issues:
+1. Project creation doesn't send notifications (even though the Convex function returns success)
+2. No visibility into what actually happened in the backend — API calls fail silently
+3. Wafash/agency donations appear as "pending" and never reach the verification queue; verification page stays empty for them
+
+### Root Causes Found
+
+**Issue 1 (Notifications):**
+The notification scheduling code was already in `createProject`/`updateProject` (fixed in Session 5). The actual problem is that ALL WaSender API calls in `notifications.ts` were completely silent on failure — no `insertErrorLog` calls anywhere. If the WASENDER_MASTER_TOKEN is wrong or the session isn't connected, the action returns `{ success: false }` internally but nothing gets written to the error logs. Admin had no way to see what was failing.
+
+**Issue 2 (Observability):**
+Only `payments.ts` had systematic error logging. The gaps were:
+- `notifications.ts`: `sendWhatsAppMessage` returned error details but none of its 4 caller actions logged to `errorLogs`
+- `http.ts`: All three webhook handlers (`/webhooks/whop`, `/whatsapp-webhook`, `/donate/success`) used only `console.error` — never visible in the admin panel
+- `donations.ts`: `processWhopPayment` had no try/catch at all; notification scheduler errors only in console
+- `payments.ts`: No success logging (only errors)
+
+**Issue 3 (Cash Agency / Verification):**
+The Wafash/cash payment flow was completely unimplemented:
+- UI let users select "cash" payment but the `BottomAction` handler at step 2 only intercepted `paymentMethod === 'card'` for Whop. Cash users fell through to step 3 (receipt upload), which required a file — but cash users have reference numbers, not files. They were stuck.
+- `createDonation` only set `awaiting_receipt` for `bank_transfer` and `pending` for everything else. `cash_agency` donations got stuck at `pending` forever.
+- `getPendingVerifications` had a hardcoded `.filter(paymentMethod === "bank_transfer")` which excluded any `cash_agency` donations even if they had `awaiting_verification` status.
+
+### What Was Fixed
+
+1. **`convex/notifications.ts`**: Modified `sendWhatsAppMessage` to also return `status` and `responseBody`. Added `insertErrorLog` calls in all 4 notification action callers: per-failure logging in `broadcastToAllUsers` (and summary at end), error+info logging in `sendDonationVerificationNotification`, summary logging in `sendProjectPublishedNotification`, failure logging in `sendProjectClosingSoonNotifications`.
+
+2. **`convex/http.ts`**: Replaced `console.error` with `ctx.runMutation(api.errorLogs.insertErrorLog)` in all three handlers: Whop webhook, WaSender webhook, and `/donate/success` (for payment lookup failure, processWhopPayment failure, and network errors).
+
+3. **`convex/donations.ts`**: Added try/catch to `processWhopPayment` with structured `errorLog` inserts on every failure path and a success log. Also: `createDonation` now sets `awaiting_verification` directly for `cash_agency` (no file upload step needed). `getPendingVerifications` drops the `paymentMethod === "bank_transfer"` filter — now shows all `awaiting_verification` donations including `cash_agency`. Added `message` field to the return shape (carries reference number for cash agency).
+
+4. **`convex/payments.ts`**: Added info-level `insertErrorLog` after successful Whop plan creation and checkout session creation.
+
+5. **`src/pages/DonationFlow.jsx`**: Added `referenceNumber`, `selectedAgency`, and `message` to `donationData` state. `Step3ReceiptUpload` now accepts `paymentMethod` prop and renders a reference number input form for cash users instead of file upload. `handleSubmitDonation` in `BottomAction` has a separate cash branch: validates reference number, calls `createDonation` with `paymentMethod: 'cash_agency'` + reference in `message` field, goes straight to step 4.
+
+6. **`src/pages/AdminVerifications.jsx`**: Added `paymentMethodRaw`, `referenceNumber`, `agencyName` to the mapped donation object. Receipt/verification section is now conditional: shows reference number + agency name for `cash_agency`, receipt image viewer for `bank_transfer`.
+
+### Mistakes Made This Session
+
+None of the previous session's bugs were re-introduced. However:
+- The "bank transfer donations appear as rejected" symptom was listed in the user prompt but the code already correctly sets `awaiting_receipt` on creation. This is probably historical test data (admin manually rejected test donations). It was NOT a code bug — no fix was needed. The observability improvements will surface any future silent failures.
+
+### Lessons for Next Claude
+
+1. **Add observability first, diagnose second.** The notification issue couldn't be diagnosed without error logs. After deploying this session's fixes, go to Admin → Error Logs and trigger a project publish — the log will immediately show whether WaSender is failing and why (wrong token, disconnected session, etc.).
+
+2. **When payment method selection doesn't trigger a special handler, it falls through to the default step progression.** Always check: is there a `paymentMethod === 'X'` check in `BottomAction`? If not, cash users walk into the bank transfer UI.
+
+3. **`getPendingVerifications` had a hardcoded payment method filter** that would have silently excluded new payment methods. When adding a new payment method, always audit the queries that drive admin views.
+
+4. **Direct `ctx.db.insert("errorLogs", ...)` from inside a mutation** is cleaner than `ctx.runMutation(api.errorLogs.insertErrorLog)` — avoids a redundant function call and potential circular dependency.
+
+---
+
 ## Architecture Notes
 
 - **Convex** is both backend (actions/mutations/queries) and database. Deploy separately from frontend.
