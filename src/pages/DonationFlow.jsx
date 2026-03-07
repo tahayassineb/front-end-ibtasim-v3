@@ -1118,6 +1118,8 @@ const DonationFlow = () => {
   const requestOTP = useMutation(api.auth.requestOTP);
   const verifyOTP = useMutation(api.auth.verifyOTP);
   const createDonation = useMutation(api.donations.createDonation);
+  const uploadReceiptMutation = useMutation(api.donations.uploadReceipt);
+  const generateUploadUrl = useMutation(api.storage.generateProjectImageUploadUrl);
   const createWhopCheckout = useAction(api.payments.createWhopCheckout);
   const setPassword = useMutation(api.auth.setPassword);
   
@@ -1458,21 +1460,43 @@ const DonationFlow = () => {
           showToast(lang === 'ar' ? 'يرجى تسجيل الدخول أولاً' : lang === 'fr' ? 'Veuillez vous connecter d\'abord' : 'Please login first', 'error');
           return;
         }
-        
+        if (!uploadedFile) {
+          showToast(lang === 'ar' ? 'يرجى رفع صورة الإيصال' : lang === 'fr' ? 'Veuillez télécharger le reçu' : 'Please upload the receipt', 'error');
+          return;
+        }
+
         setIsLoading(true);
         try {
+          // Step 1: Create the donation record (status = awaiting_receipt)
           const donationId = await createDonation({
             userId: user.userId || user.id,
             projectId: projectId,
             amount: calculateTotal(),
-            paymentMethod: donationData.paymentMethod === 'bank' ? 'bank_transfer' :
-                          donationData.paymentMethod === 'card' ? 'card_whop' : 'cash_agency',
+            paymentMethod: 'bank_transfer',
             coversFees: donationData.coverFees,
             isAnonymous: false,
             message: donationData.message || '',
             bankName: donationData.bankName || '',
           });
-          
+
+          // Step 2: Upload the receipt file to Convex storage
+          const uploadUrl = await generateUploadUrl();
+          const uploadResponse = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': uploadedFile.type },
+            body: uploadedFile,
+          });
+          if (!uploadResponse.ok) {
+            throw new Error('Receipt upload failed');
+          }
+          const { storageId } = await uploadResponse.json();
+
+          // Step 3: Attach receipt to donation (status → awaiting_verification)
+          await uploadReceiptMutation({
+            donationId,
+            receiptUrl: storageId,
+          });
+
           setDonationReference(donationId);
           setIsLoading(false);
           setStep(4);

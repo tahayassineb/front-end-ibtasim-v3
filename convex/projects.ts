@@ -252,7 +252,16 @@ export const createProject = mutation({
       isFeatured: args.isFeatured || false,
       featuredOrder: featuredOrder,
     });
-    
+
+    // Schedule notification if published directly as active
+    if ((args.status || "draft") === "active") {
+      await ctx.scheduler.runAfter(0, api.notifications.sendProjectPublishedNotification, {
+        projectId,
+        projectTitle: args.title.ar,
+        notifyAll: true,
+      });
+    }
+
     return projectId;
   },
 });
@@ -318,6 +327,16 @@ export const updateProject = mutation({
       ...updates,
       updatedAt: Date.now(),
     });
+
+    // Schedule notification if project is being published (draft → active)
+    if (updates.status === "active" && project.status !== "active") {
+      const title = updates.title ?? project.title;
+      await ctx.scheduler.runAfter(0, api.notifications.sendProjectPublishedNotification, {
+        projectId: args.projectId,
+        projectTitle: title.ar,
+        notifyAll: true,
+      });
+    }
 
     return true;
   },
