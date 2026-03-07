@@ -180,6 +180,96 @@ Also added:
 
 ---
 
+## Session 5: 6 Bug Fixes — OTP, Notifications, Donor Totals, Verification Queue
+
+### What Was Reported
+
+User gave a list of 6 bugs:
+1. OTP is 6 digits but the input only has 4 fields
+2. Project creation doesn't send notifications to users
+3. Donor profile shows wrong total (e.g. 0.05 MAD instead of 5 MAD)
+4. Donation history shows unverified/pending donations mixed in
+5. Donations ledger page has Verify/Reject buttons it shouldn't have
+6. Verification page does nothing — no donations appear in the queue
+
+---
+
+### What I Fixed (Round 1) — Some Right, Some Wrong
+
+**Correctly fixed:**
+- OTP: changed 4 fields → 6 in `Register.jsx` (state, refs, map, index boundary)
+- Donor total: removed `/100` division in `AdminDonorDetail.jsx` — amounts are in MAD not cents
+- Donation status badge: replaced hardcoded "SUCCESS" badge with real status-aware badge
+- Donations ledger: removed verify/reject buttons and mutations from `AdminDonations.jsx`
+
+**Incorrectly fixed (wrong root cause):**
+
+**Bug 2 (notifications):** I found that `publishProject` mutation called `ctx.runAction()` which is not allowed in Convex mutations. I fixed that — but I didn't check whether `publishProject` was actually called from the UI. It wasn't. The admin form uses `createProject` and `updateProject` directly. So my fix was on a dead code path. Notifications still didn't fire.
+
+**Bug 6 (verification queue empty):** I looked at `AdminVerifications.jsx` and `verifyDonation` mutation and said they looked correct. I told the user the verification page is functional. It wasn't. I never traced the actual data flow: what puts a donation into `awaiting_verification` status. I assumed the backend was fine without checking whether the frontend ever actually called `uploadReceipt`.
+
+---
+
+### What the User Said
+
+"you didn't fix the problem — the verification page still doesn't receive donations with receipts, it has nothing. Also the notification for projects doesn't work. Check the logs."
+
+---
+
+### What I Did Wrong (Be Honest)
+
+1. **I declared victory without end-to-end tracing.** For bug 6, I read the backend query and mutation, saw they looked correct, and assumed the feature worked. I never followed the user flow: user uploads file → does the file actually reach the server? Answer: no. The file was stored in local React state only.
+
+2. **I fixed the wrong function for bug 2.** I saw `ctx.runAction()` in `publishProject` and fixed it. But I never checked whether `publishProject` is called anywhere in the admin UI. One `grep` for `publishProject` in `src/pages/` would have shown it's never used. I skipped that check.
+
+3. **I said "deployed" and "done" without verifying the feature worked end-to-end.** Both bugs required me to trace from the UI action all the way to the database. I stopped at the first plausible-looking code.
+
+---
+
+### The Actual Root Causes
+
+**Bug 6 — Verification queue always empty:**
+
+`DonationFlow.jsx` step 3 (`handleSubmitDonation`) only called `createDonation`. It never:
+- Generated a Convex storage upload URL
+- POSTed the file to Convex storage
+- Called `uploadReceipt` mutation
+
+The file sat in `uploadedFile` React state and was discarded on navigation. Every bank transfer donation stayed permanently at `awaiting_receipt`. The verification queue query only returns `awaiting_verification` donations → always empty.
+
+**Fix:** Three-step flow in `handleSubmitDonation`:
+1. `createDonation` → get `donationId`
+2. `generateUploadUrl()` + `fetch(uploadUrl, { method: 'POST', body: file })` → get `storageId`
+3. `uploadReceipt({ donationId, receiptUrl: storageId })` → status becomes `awaiting_verification`
+
+**Bug 2 — Notifications never fired:**
+
+`AdminProjectForm.jsx` uses `createProject` and `updateProject` directly. `publishProject` is never called from the UI. So the notification scheduling I added to `publishProject` was unreachable.
+
+**Fix:** Added notification scheduling directly into `createProject` (when `status === 'active'`) and `updateProject` (when `project.status !== 'active'` and new status is `'active'`). These are the actual code paths the admin form uses.
+
+---
+
+### Lesson for Future Claude
+
+**Rule: Always trace the complete user flow before declaring a bug fixed.**
+
+For any data flow bug:
+1. Start from the UI action (button click, form submit)
+2. Follow every step: which mutation is called? what does it do? what status does it set?
+3. Then check the read side: what query fetches the data? what filter does it apply?
+4. Confirm both sides match
+
+**Rule: Before fixing a function, check if it's actually called.**
+
+`grep` for the function name in `src/pages/` before spending time fixing it. A function that's never called from the UI is a dead code path — fixing it changes nothing.
+
+**Rule: "The backend looks correct" is not the same as "the feature works."**
+
+Backend correctness is necessary but not sufficient. The frontend must also call the backend. A complete file upload flow needs: (1) get upload URL, (2) POST file, (3) call the mutation with the storage ID. Any missing step and nothing gets saved.
+
+---
+
 ## Architecture Notes
 
 - **Convex** is both backend (actions/mutations/queries) and database. Deploy separately from frontend.

@@ -191,6 +191,22 @@ View in: Admin panel → Error Logs (`/admin/error-logs`).
 
 ---
 
+## Standing Instruction — End of Every Session or Task
+
+**Always write a new entry in `JOURNEY.md` when you finish a task or at the end of a conversation.**
+
+The entry must include:
+- What the user reported / what was broken
+- What you did — first attempt, second attempt if needed
+- What mistakes YOU made — be honest, name them exactly
+- What the actual root cause was
+- What the fix was
+- Lessons for the next Claude instance
+
+This is non-negotiable. Do it even for small sessions.
+
+---
+
 ## Common Gotchas
 
 1. **Two deploys needed**: Frontend (git push) + Backend (`npx convex deploy --yes`) are separate
