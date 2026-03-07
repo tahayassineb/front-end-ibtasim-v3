@@ -165,7 +165,7 @@ const AdminDonorDetail = () => {
         <div className="text-center">
           <h1 className="text-text-primary dark:text-white text-2xl font-bold leading-tight">{donor.name}</h1>
           <p className="text-primary font-bold text-xl leading-normal mt-1">
-            {formatCurrency(donor.totalDonated / 100)} {t.totalDonated}
+            {formatCurrency(donor.totalDonated)} {t.totalDonated}
           </p>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
             {t.donorSince} {formatDate(donor.donorSince)}
@@ -231,7 +231,23 @@ const AdminDonorDetail = () => {
               </div>
               <div className="shrink-0 text-right">
                 <p className="text-slate-400 text-[10px] mb-1">{formatDate(donation.date)}</p>
-                <Badge variant="success" size="sm" className="text-[10px]">{t.success}</Badge>
+                <Badge
+                  variant={
+                    donation.status === 'verified' || donation.status === 'completed'
+                      ? 'success'
+                      : donation.status === 'rejected'
+                      ? 'error'
+                      : 'warning'
+                  }
+                  size="sm"
+                  className="text-[10px]"
+                >
+                  {donation.status === 'verified' || donation.status === 'completed'
+                    ? t.success
+                    : donation.status === 'rejected'
+                    ? (currentLanguage.code === 'ar' ? 'مرفوض' : currentLanguage.code === 'fr' ? 'Rejeté' : 'Rejected')
+                    : (currentLanguage.code === 'ar' ? 'معلق' : currentLanguage.code === 'fr' ? 'En attente' : 'Pending')}
+                </Badge>
               </div>
             </div>
           ))}

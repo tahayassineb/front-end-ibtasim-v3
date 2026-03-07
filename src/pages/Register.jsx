@@ -61,9 +61,9 @@ const Register = () => {
   
   // OTP states
   const [otpSent, setOtpSent] = useState(false);
-  const [otpValues, setOtpValues] = useState(['', '', '', '']);
+  const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
   const [otpTimer, setOtpTimer] = useState(120);
-  const otpRefs = [useRef(), useRef(), useRef(), useRef()];
+  const otpRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
   
   const phoneInputRef = useRef(null);
   const cursorPositionRef = useRef(0);
@@ -209,7 +209,7 @@ const Register = () => {
     newOtp[index] = value;
     setOtpValues(newOtp);
     
-    if (value && index < 3) {
+    if (value && index < 5) {
       otpRefs[index + 1].current?.focus();
     }
   };
@@ -358,7 +358,7 @@ const Register = () => {
               
               <div className="mt-10 w-full max-w-sm">
                 <fieldset className="flex justify-between gap-2 sm:gap-4" dir="ltr">
-                  {[0, 1, 2, 3].map((index) => (
+                  {[0, 1, 2, 3, 4, 5].map((index) => (
                     <input
                       key={index}
                       ref={otpRefs[index]}

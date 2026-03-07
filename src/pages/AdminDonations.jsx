@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import Card from '../components/Card';
@@ -11,7 +11,7 @@ import Badge from '../components/Badge';
 // ============================================
 
 const AdminDonations = () => {
-  const { currentLanguage, showToast } = useApp();
+  const { currentLanguage } = useApp();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -20,9 +20,6 @@ const AdminDonations = () => {
   // Convex hooks
   const rawDonations = useQuery(api.donations.getAllDonations, {});
   const dashboardStats = useQuery(api.admin.getDashboardStats);
-  const verifyDonationMutation = useMutation(api.donations.verifyDonation);
-  const rejectDonationMutation = useMutation(api.donations.rejectDonation);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Transform Convex data to match component structure
   const donations = useMemo(() => {
@@ -53,40 +50,6 @@ const AdminDonations = () => {
 
   const handleCloseModal = () => {
     setViewingDonation(null);
-  };
-
-  const handleVerify = async (donation) => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-    try {
-      await verifyDonationMutation({ donationId: donation._id, verified: true });
-      showToast(
-        currentLanguage?.code === 'ar' ? 'تم التحقق من التبرع' : 'Donation verified',
-        'success'
-      );
-      handleCloseModal();
-    } catch {
-      showToast(currentLanguage?.code === 'ar' ? 'حدث خطأ' : 'Error occurred', 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleReject = async (donation) => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-    try {
-      await rejectDonationMutation({ donationId: donation._id });
-      showToast(
-        currentLanguage?.code === 'ar' ? 'تم رفض التبرع' : 'Donation rejected',
-        'error'
-      );
-      handleCloseModal();
-    } catch {
-      showToast(currentLanguage?.code === 'ar' ? 'حدث خطأ' : 'Error occurred', 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   // Translations
@@ -561,28 +524,9 @@ const AdminDonations = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2">
-              {viewingDonation?.status === 'pending' && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleReject(viewingDonation)}
-                    disabled={isSubmitting}
-                    className="flex-1 px-4 py-3 rounded-xl font-bold text-red-500 border border-red-100 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
-                  >
-                    {isSubmitting ? '...' : (currentLanguage?.code === 'ar' ? 'رفض' : 'Reject')}
-                  </button>
-                  <button
-                    onClick={() => handleVerify(viewingDonation)}
-                    disabled={isSubmitting}
-                    className="flex-[2] px-4 py-3 rounded-xl font-bold bg-primary text-white hover:opacity-95 transition-all shadow-lg shadow-[#0D737722] disabled:opacity-70"
-                  >
-                    {isSubmitting ? '...' : (currentLanguage?.code === 'ar' ? 'تأكيد التبرع' : 'Verify Donation')}
-                  </button>
-                </div>
-              )}
+            <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
               <button
                 onClick={handleCloseModal}
-                disabled={isSubmitting}
                 className="w-full px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
                 {t.close}

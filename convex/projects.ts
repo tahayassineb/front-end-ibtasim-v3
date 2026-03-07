@@ -1,5 +1,6 @@
 import { query, mutation, action } from "./_generated/server";
 import { v } from "convex/values";
+import { api } from "./_generated/api";
 
 // ============================================
 // PROJECT QUERIES
@@ -425,20 +426,18 @@ export const publishProject = mutation({
       updatedAt: Date.now(),
     });
     
-    // Send WhatsApp notification if requested
+    // Schedule WhatsApp notification if requested
+    // Use scheduler (mutations cannot call ctx.runAction directly)
     if (args.notifySubscribers) {
       try {
-        // Import api inside handler to avoid circular dependency issues
-        const { api } = await import("./_generated/api");
-        
-        await ctx.runAction(api.notifications.sendProjectPublishedNotification, {
+        await ctx.scheduler.runAfter(0, api.notifications.sendProjectPublishedNotification, {
           projectId: args.projectId,
-          projectTitle: project.title.ar, // Use Arabic title
+          projectTitle: project.title.ar,
           notifyAll: true,
         });
       } catch (error) {
-        console.error("Failed to send project published notification:", error);
-        // Don't fail the publish if notification fails
+        console.error("Failed to schedule project published notification:", error);
+        // Don't fail the publish if scheduling fails
       }
     }
     
