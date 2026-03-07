@@ -177,7 +177,9 @@ export const getPendingVerifications = query({
         amount: d.amount,
         paymentMethod: d.paymentMethod,
         status: d.status,
-        receiptUrl: d.receiptUrl,
+        receiptUrl: d.receiptUrl
+          ? (await ctx.storage.getUrl(d.receiptUrl as any)) ?? undefined
+          : undefined,
         bankName: d.bankName,
         message: d.message,
         createdAt: d.createdAt,
@@ -224,7 +226,9 @@ export const getAllDonations = query({
         amount: d.amount,
         paymentMethod: d.paymentMethod,
         status: d.status,
-        receiptUrl: d.receiptUrl,
+        receiptUrl: d.receiptUrl
+          ? (await ctx.storage.getUrl(d.receiptUrl as any)) ?? undefined
+          : undefined,
         bankName: d.bankName,
         createdAt: d.createdAt ?? d._creationTime,
       };
@@ -260,9 +264,8 @@ export const createDonation = mutation({
     if (args.paymentMethod === "bank_transfer") {
       initialStatus = "awaiting_receipt";
     } else if (args.paymentMethod === "cash_agency") {
-      // Cash agency donations go straight to awaiting_verification
-      // (reference info is provided inline, no file upload needed)
-      initialStatus = "awaiting_verification";
+      // Cash agency donations require a receipt upload, same as bank transfer
+      initialStatus = "awaiting_receipt";
     }
     
     const donationId = await ctx.db.insert("donations", {

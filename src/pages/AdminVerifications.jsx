@@ -232,13 +232,22 @@ const AdminVerifications = () => {
     if (!selectedDonation || isSubmitting) return;
     setIsSubmitting(true);
     try {
-      await verifyDonationMutation({
+      const ok = await verifyDonationMutation({
         donationId: selectedDonation._id,
         verified: true,
         notes: verificationChecks.amountMatches && verificationChecks.referenceVisible
           ? 'All checks passed'
           : undefined,
       });
+      if (!ok) {
+        showToast(
+          currentLanguage.code === 'ar' ? 'فشل التحقق: التبرع ليس في حالة انتظار' :
+          currentLanguage.code === 'fr' ? 'Échec: le don n\'est pas en attente' :
+          'Verification failed: donation is not in pending state',
+          'error'
+        );
+        return;
+      }
       showToast(
         currentLanguage.code === 'ar' ? 'تم التحقق من التبرع بنجاح' :
         currentLanguage.code === 'fr' ? 'Don vérifié avec succès' :

@@ -797,52 +797,6 @@ const Step3ReceiptUpload = ({
   donationData,
   setDonationData,
 }) => {
-  // Cash agency flow — show reference number input instead of file upload
-  if (paymentMethod === 'cash') {
-    return (
-      <main className="flex flex-col flex-1 px-6 gap-6 pb-10">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xl shadow-primary/5 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="bg-primary/10 p-2 rounded-lg">
-              <span className="material-symbols-outlined text-primary">payments</span>
-            </div>
-            <h3 className="text-gray-900 dark:text-white text-lg font-bold">{tx.cashAgencyTitle}</h3>
-          </div>
-
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-4 mb-5">
-            <p className="text-sm text-amber-800 dark:text-amber-200 leading-relaxed">{tx.cashNote}</p>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{tx.agencyName}</label>
-              <input
-                type="text"
-                value={donationData.selectedAgency}
-                onChange={(e) => setDonationData(prev => ({ ...prev, selectedAgency: e.target.value }))}
-                placeholder={tx.agencyPlaceholder}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                dir="auto"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {tx.referenceNum} <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={donationData.referenceNumber}
-                onChange={(e) => setDonationData(prev => ({ ...prev, referenceNumber: e.target.value }))}
-                placeholder={tx.referencePlaceholder}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                dir="ltr"
-              />
-            </div>
-          </div>
-        </div>
-      </main>
-    );
-  }
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -1536,31 +1490,7 @@ const DonationFlow = () => {
 
         setIsLoading(true);
         try {
-          // ── Cash agency path ──────────────────────────────────────────────
-          if (donationData.paymentMethod === 'cash') {
-            if (!donationData.referenceNumber?.trim()) {
-              setIsLoading(false);
-              showToast(lang === 'ar' ? 'يرجى إدخال رقم المرجع' : lang === 'fr' ? 'Veuillez entrer le numéro de référence' : 'Please enter the reference number', 'error');
-              return;
-            }
-            const donationId = await createDonation({
-              userId: user.userId || user.id,
-              projectId: projectId,
-              amount: calculateTotal(),
-              paymentMethod: 'cash_agency',
-              coversFees: donationData.coverFees,
-              isAnonymous: false,
-              message: donationData.referenceNumber.trim(),
-              bankName: donationData.selectedAgency || '',
-            });
-            setDonationReference(donationId);
-            setIsLoading(false);
-            setStep(4);
-            showToast(lang === 'ar' ? 'تم إرسال التبرع بنجاح' : lang === 'fr' ? 'Don envoyé avec succès' : 'Donation submitted successfully', 'success');
-            return;
-          }
-
-          // ── Bank transfer path ────────────────────────────────────────────
+          // ── Bank transfer & cash agency path (both require receipt upload) ──
           if (!uploadedFile) {
             setIsLoading(false);
             showToast(lang === 'ar' ? 'يرجى رفع صورة الإيصال' : lang === 'fr' ? 'Veuillez télécharger le reçu' : 'Please upload the receipt', 'error');
@@ -1572,7 +1502,7 @@ const DonationFlow = () => {
             userId: user.userId || user.id,
             projectId: projectId,
             amount: calculateTotal(),
-            paymentMethod: 'bank_transfer',
+            paymentMethod: donationData.paymentMethod === 'cash' ? 'cash_agency' : 'bank_transfer',
             coversFees: donationData.coverFees,
             isAnonymous: false,
             message: donationData.message || '',
@@ -1612,12 +1542,7 @@ const DonationFlow = () => {
         <footer className="p-6 mt-auto bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-t border-gray-100 dark:border-gray-700">
           <Button
             onClick={handleSubmitDonation}
-            disabled={
-              isLoading ||
-              (donationData.paymentMethod === 'cash'
-                ? !donationData.referenceNumber?.trim()
-                : !uploadedFile)
-            }
+            disabled={isLoading || !uploadedFile}
             fullWidth
             size="xl"
             icon="verified"

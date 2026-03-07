@@ -211,7 +211,20 @@ export const broadcastToAllUsers = action({
   handler: async (ctx, args) => {
     // Import api inside handler to avoid circular dependency issues
     const { api } = await import("./_generated/api");
-    
+
+    // Read session API key — WaSender requires the per-session key (🔑) for sending,
+    // not the master token (which is only for session management).
+    let sessionApiKey: string | undefined;
+    try {
+      const rawSettings = await ctx.runQuery(api.config.getConfig, { key: "whatsapp_settings" });
+      if (rawSettings) {
+        const settings = JSON.parse(rawSettings);
+        if (settings.apiKey) sessionApiKey = settings.apiKey;
+      }
+    } catch (e) {
+      console.error("Could not read whatsapp_settings config:", e);
+    }
+
     // Get all verified users with phone numbers
     const users = await ctx.runQuery(api.users.getAllVerifiedUsersWithPhone);
     
@@ -232,7 +245,7 @@ export const broadcastToAllUsers = action({
       const firstName = user.fullName?.split(' ')[0] || 'صديقي';
       const personalizedText = args.text.replace(/{name}/g, firstName);
 
-      const result = await sendWhatsAppMessage(user.phoneNumber, personalizedText);
+      const result = await sendWhatsAppMessage(user.phoneNumber, personalizedText, 0, sessionApiKey);
 
       if (result.success) {
         successful++;
@@ -311,23 +324,36 @@ export const sendDonationVerificationNotification = action({
     // Import api inside handler to avoid circular dependency issues
     const { api } = await import("./_generated/api");
     
+    // Read session API key — WaSender requires the per-session key for sending,
+    // not the master token (which is only for session management).
+    let sessionApiKey: string | undefined;
+    try {
+      const rawSettings = await ctx.runQuery(api.config.getConfig, { key: "whatsapp_settings" });
+      if (rawSettings) {
+        const settings = JSON.parse(rawSettings);
+        if (settings.apiKey) sessionApiKey = settings.apiKey;
+      }
+    } catch (e) {
+      console.error("Could not read whatsapp_settings config:", e);
+    }
+
     // Get user details using the query
     const user = await ctx.runQuery(api.users.getUserById, { userId: args.userId });
-    
+
     if (!user || !user.phoneNumber) {
       return {
         success: false,
         error: "User not found or has no phone number",
       };
     }
-    
+
     // Amount is already in MAD
     const amountMAD = args.amount.toFixed(2);
-    
+
     // Create personalized thank you message in Arabic
     const message = `بارك الله فيك ${user.fullName}! ✨\n\nتم تأكيد تبرعك بمبلغ ${amountMAD} درهم لمشروع "${args.projectTitle}".\n\nجزاك الله خيرًا على سخائك.\n\nفريق جمعية الأمل`;
-    
-    const result = await sendWhatsAppMessage(user.phoneNumber, message);
+
+    const result = await sendWhatsAppMessage(user.phoneNumber, message, 0, sessionApiKey);
 
     // Log result to errorLogs for admin visibility
     try {
@@ -534,6 +560,18 @@ export const sendProjectClosingSoonNotifications = action({
       // Import api inside handler to avoid circular dependency issues
       const { api } = await import("./_generated/api");
       
+      // Read session API key for sending messages
+      let sessionApiKey: string | undefined;
+      try {
+        const rawSettings = await ctx.runQuery(api.config.getConfig, { key: "whatsapp_settings" });
+        if (rawSettings) {
+          const settings = JSON.parse(rawSettings);
+          if (settings.apiKey) sessionApiKey = settings.apiKey;
+        }
+      } catch (e) {
+        console.error("Could not read whatsapp_settings config:", e);
+      }
+
       // Get all active projects with endDate within next 7 days
       const allProjects = await ctx.runQuery(api.projects.getProjects, { status: "active" });
       
@@ -578,7 +616,7 @@ export const sendProjectClosingSoonNotifications = action({
           const firstName = user.fullName?.split(' ')[0] || 'صديقي';
           const personalizedMessage = message.replace(/{name}/g, firstName);
 
-          const result = await sendWhatsAppMessage(user.phoneNumber, personalizedMessage);
+          const result = await sendWhatsAppMessage(user.phoneNumber, personalizedMessage, 0, sessionApiKey);
 
           if (result.success) {
             notificationsSent++;

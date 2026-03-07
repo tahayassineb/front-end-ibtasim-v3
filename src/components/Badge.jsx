@@ -88,6 +88,8 @@ export const StatusBadge = ({
     verified: { variant: 'success', icon: 'verified', label: 'Verified' },
     rejected: { variant: 'error', icon: 'error', label: 'Rejected' },
     processing: { variant: 'info', icon: 'sync', label: 'Processing' },
+    awaiting_receipt: { variant: 'warning', icon: 'upload_file', label: 'Awaiting Receipt' },
+    awaiting_verification: { variant: 'warning', icon: 'schedule', label: 'Awaiting Verification' },
     
     // Payment statuses
     paid: { variant: 'success', icon: 'payments', label: 'Paid' },
