@@ -41,10 +41,13 @@ const AdminVerifications = () => {
       amount: d.amount,
       trxId: `TRX-${String(d._id).slice(-6).toUpperCase()}`,
       project: d.projectTitle[currentLanguage?.code] || d.projectTitle.ar,
+      paymentMethodRaw: d.paymentMethod,
       method: d.paymentMethod === 'bank_transfer' ? 'bank' :
               d.paymentMethod === 'cash_agency' ? 'agency' : 'card',
       status: 'pending',
       receiptImage: d.receiptUrl || null,
+      referenceNumber: d.message || null,
+      agencyName: d.bankName || null,
       date: new Date(d.createdAt).toISOString().split('T')[0],
     }));
   }, [rawDonations, currentLanguage]);
@@ -96,6 +99,10 @@ const AdminVerifications = () => {
       whatsappChat: 'محادثة واتساب',
       verificationWorkflow: 'سير عمل التحقق',
       donationDetails: 'تفاصيل التبرع',
+      agencyPaymentInfo: 'معلومات الدفع النقدي',
+      referenceNumLabel: 'رقم المرجع / الوصل',
+      agencyNameLabel: 'الوكالة',
+      noReference: 'لم يُدخل رقم مرجع',
     },
     fr: {
       title: 'Vérification des Dons',
@@ -132,6 +139,10 @@ const AdminVerifications = () => {
       whatsappChat: 'Chat WhatsApp',
       verificationWorkflow: 'Workflow de Vérification',
       donationDetails: 'Détails du Don',
+      agencyPaymentInfo: 'Informations de paiement en espèces',
+      referenceNumLabel: 'Numéro de référence / reçu',
+      agencyNameLabel: 'Agence',
+      noReference: 'Aucun numéro de référence fourni',
     },
     en: {
       title: 'Donation Verification',
@@ -169,6 +180,10 @@ const AdminVerifications = () => {
       whatsappChat: 'WhatsApp Chat',
       verificationWorkflow: 'Verification Workflow',
       donationDetails: 'Donation Details',
+      agencyPaymentInfo: 'Cash Payment Information',
+      referenceNumLabel: 'Reference / Receipt Number',
+      agencyNameLabel: 'Agency',
+      noReference: 'No reference number provided',
     },
   };
 
@@ -491,7 +506,28 @@ const AdminVerifications = () => {
 
                 {/* Receipt & Verification Section */}
                 <div className="p-6 space-y-6 bg-slate-50/50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
-                  {/* Receipt Image */}
+                  {/* Receipt Image (bank transfer) OR Reference Number (cash agency) */}
+                  {selectedDonation.paymentMethodRaw === 'cash_agency' ? (
+                    <div className="space-y-3">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-secondary dark:text-slate-400">
+                        {t.agencyPaymentInfo}
+                      </span>
+                      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+                        {selectedDonation.agencyName && (
+                          <div>
+                            <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">{t.agencyNameLabel}</p>
+                            <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{selectedDonation.agencyName}</p>
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">{t.referenceNumLabel}</p>
+                          <p className="text-sm font-mono font-bold text-slate-800 dark:text-slate-200 break-all">
+                            {selectedDonation.referenceNumber || <span className="text-slate-400 italic">{t.noReference}</span>}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-secondary dark:text-slate-400">
@@ -499,13 +535,13 @@ const AdminVerifications = () => {
                       </span>
                       <span className="text-[10px] font-medium text-slate-400 italic">{t.tapToEnlarge}</span>
                     </div>
-                    <div 
+                    <div
                       className="relative group rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 aspect-video sm:aspect-[4/3] bg-slate-100 dark:bg-slate-800 cursor-zoom-in"
                       onClick={() => setImageExpanded(true)}
                     >
-                      <img 
-                        className="w-full h-full object-cover" 
-                        src={selectedDonation.receiptImage} 
+                      <img
+                        className="w-full h-full object-cover"
+                        src={selectedDonation.receiptImage}
                         alt="Receipt"
                       />
                       <div className="absolute inset-0 bg-slate-900/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
@@ -515,6 +551,7 @@ const AdminVerifications = () => {
                       </div>
                     </div>
                   </div>
+                  )}
 
                   {/* Payment Method Display */}
                   <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">

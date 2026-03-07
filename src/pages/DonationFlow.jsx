@@ -86,6 +86,13 @@ const translations = {
     verifyClarity: 'تأكد من وضوح البيانات',
     clarityDesc: 'يجب أن يكون رقم العملية والمبلغ وتاريخ التحويل ظاهرين بشكل كامل',
     submitDonation: 'إرسال التبرع',
+    // Cash agency
+    cashAgencyTitle: 'تأكيد الدفع النقدي',
+    agencyName: 'اسم الوكالة',
+    agencyPlaceholder: 'مثال: Wafacash، Cash Plus',
+    referenceNum: 'رقم المرجع / الوصل',
+    referencePlaceholder: 'أدخل رقم الوصل الذي حصلت عليه من الوكالة',
+    cashNote: 'بعد الدفع في الوكالة، أدخل رقم المرجع الخاص بمعاملتك للتحقق.',
     
     // Step 5 - Success
     success: 'تم بنجاح',
@@ -166,6 +173,13 @@ const translations = {
     verifyClarity: 'Assurez la lisibilité',
     clarityDesc: 'Le numéro de transaction, le montant et la date doivent être visibles',
     submitDonation: 'Valider le don',
+    // Cash agency
+    cashAgencyTitle: 'Confirmer le paiement en espèces',
+    agencyName: "Nom de l'agence",
+    agencyPlaceholder: 'Ex: Wafacash, Cash Plus',
+    referenceNum: 'Numéro de référence / reçu',
+    referencePlaceholder: 'Entrez le numéro de reçu obtenu à l\'agence',
+    cashNote: 'Après le paiement à l\'agence, entrez le numéro de référence de votre transaction.',
     
     // Step 5 - Success
     success: 'Succès',
@@ -246,6 +260,13 @@ const translations = {
     verifyClarity: 'Ensure clarity',
     clarityDesc: 'Transaction number, amount and date must be clearly visible',
     submitDonation: 'Submit Donation',
+    // Cash agency
+    cashAgencyTitle: 'Confirm Cash Payment',
+    agencyName: 'Agency Name',
+    agencyPlaceholder: 'e.g. Wafacash, Cash Plus',
+    referenceNum: 'Reference / Receipt Number',
+    referencePlaceholder: 'Enter the receipt number you received at the agency',
+    cashNote: 'After paying at the agency, enter the reference number from your transaction.',
     
     // Step 5 - Success
     success: 'Success',
@@ -762,7 +783,7 @@ const Step2PaymentMethods = ({ tx, isRTL, donationData, setDonationData, bankInf
   );
 };
 
-// Step 3: Receipt Upload
+// Step 3: Receipt Upload (bank transfer) OR Reference Number (cash agency)
 const Step3ReceiptUpload = ({
   tx,
   lang,
@@ -772,7 +793,56 @@ const Step3ReceiptUpload = ({
   setDragActive,
   showToast,
   bankInfo,
+  paymentMethod,
+  donationData,
+  setDonationData,
 }) => {
+  // Cash agency flow — show reference number input instead of file upload
+  if (paymentMethod === 'cash') {
+    return (
+      <main className="flex flex-col flex-1 px-6 gap-6 pb-10">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xl shadow-primary/5 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="bg-primary/10 p-2 rounded-lg">
+              <span className="material-symbols-outlined text-primary">payments</span>
+            </div>
+            <h3 className="text-gray-900 dark:text-white text-lg font-bold">{tx.cashAgencyTitle}</h3>
+          </div>
+
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-4 mb-5">
+            <p className="text-sm text-amber-800 dark:text-amber-200 leading-relaxed">{tx.cashNote}</p>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{tx.agencyName}</label>
+              <input
+                type="text"
+                value={donationData.selectedAgency}
+                onChange={(e) => setDonationData(prev => ({ ...prev, selectedAgency: e.target.value }))}
+                placeholder={tx.agencyPlaceholder}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                dir="auto"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {tx.referenceNum} <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={donationData.referenceNumber}
+                onChange={(e) => setDonationData(prev => ({ ...prev, referenceNumber: e.target.value }))}
+                placeholder={tx.referencePlaceholder}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                dir="ltr"
+              />
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -1195,6 +1265,9 @@ const DonationFlow = () => {
     paymentMethod: donationState.paymentMethod || null,
     receipt: null,
     coverFees: false,
+    referenceNumber: '',
+    selectedAgency: '',
+    message: '',
   });
   
   const tx = translations[lang] || translations.en;
@@ -1460,13 +1533,40 @@ const DonationFlow = () => {
           showToast(lang === 'ar' ? 'يرجى تسجيل الدخول أولاً' : lang === 'fr' ? 'Veuillez vous connecter d\'abord' : 'Please login first', 'error');
           return;
         }
-        if (!uploadedFile) {
-          showToast(lang === 'ar' ? 'يرجى رفع صورة الإيصال' : lang === 'fr' ? 'Veuillez télécharger le reçu' : 'Please upload the receipt', 'error');
-          return;
-        }
 
         setIsLoading(true);
         try {
+          // ── Cash agency path ──────────────────────────────────────────────
+          if (donationData.paymentMethod === 'cash') {
+            if (!donationData.referenceNumber?.trim()) {
+              setIsLoading(false);
+              showToast(lang === 'ar' ? 'يرجى إدخال رقم المرجع' : lang === 'fr' ? 'Veuillez entrer le numéro de référence' : 'Please enter the reference number', 'error');
+              return;
+            }
+            const donationId = await createDonation({
+              userId: user.userId || user.id,
+              projectId: projectId,
+              amount: calculateTotal(),
+              paymentMethod: 'cash_agency',
+              coversFees: donationData.coverFees,
+              isAnonymous: false,
+              message: donationData.referenceNumber.trim(),
+              bankName: donationData.selectedAgency || '',
+            });
+            setDonationReference(donationId);
+            setIsLoading(false);
+            setStep(4);
+            showToast(lang === 'ar' ? 'تم إرسال التبرع بنجاح' : lang === 'fr' ? 'Don envoyé avec succès' : 'Donation submitted successfully', 'success');
+            return;
+          }
+
+          // ── Bank transfer path ────────────────────────────────────────────
+          if (!uploadedFile) {
+            setIsLoading(false);
+            showToast(lang === 'ar' ? 'يرجى رفع صورة الإيصال' : lang === 'fr' ? 'Veuillez télécharger le reçu' : 'Please upload the receipt', 'error');
+            return;
+          }
+
           // Step 1: Create the donation record (status = awaiting_receipt)
           const donationId = await createDonation({
             userId: user.userId || user.id,
@@ -1512,7 +1612,12 @@ const DonationFlow = () => {
         <footer className="p-6 mt-auto bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-t border-gray-100 dark:border-gray-700">
           <Button
             onClick={handleSubmitDonation}
-            disabled={!uploadedFile || isLoading}
+            disabled={
+              isLoading ||
+              (donationData.paymentMethod === 'cash'
+                ? !donationData.referenceNumber?.trim()
+                : !uploadedFile)
+            }
             fullWidth
             size="xl"
             icon="verified"
@@ -1645,6 +1750,9 @@ const DonationFlow = () => {
     setDragActive,
     showToast,
     bankInfo,
+    paymentMethod: donationData.paymentMethod,
+    donationData,
+    setDonationData,
   };
   
   const step4Props = {

@@ -59,13 +59,14 @@ function getApiToken(): string {
 /**
  * Send a single WhatsApp message via WaSender API
  * Includes retry logic for rate limiting
+ * Returns status code and response body for structured error logging
  */
 async function sendWhatsAppMessage(
   to: string,
   text: string,
   retryCount: number = 0,
   tokenOverride?: string
-): Promise<{ success: boolean; error?: string; response?: any }> {
+): Promise<{ success: boolean; error?: string; status?: number; responseBody?: string; response?: any }> {
   const token = tokenOverride || getApiToken();
 
   if (!token) {
@@ -74,10 +75,10 @@ async function sendWhatsAppMessage(
       error: "WaSender API token not configured",
     };
   }
-  
+
   try {
     const formattedPhone = formatPhoneNumber(to);
-    
+
     const response = await fetch(WASENDER_API_URL, {
       method: "POST",
       headers: {
@@ -90,10 +91,11 @@ async function sendWhatsAppMessage(
       }),
     });
 
+    const responseBody = await response.text();
+
     // Handle rate limiting (429 Too Many Requests)
     if (response.status === 429) {
       if (retryCount < MAX_RETRIES) {
-        // Exponential backoff: wait longer for each retry
         const delay = RETRY_DELAY_MS * Math.pow(2, retryCount);
         await sleep(delay);
         return sendWhatsAppMessage(to, text, retryCount + 1, tokenOverride);
@@ -101,20 +103,26 @@ async function sendWhatsAppMessage(
       return {
         success: false,
         error: "Rate limit exceeded. Max retries reached.",
+        status: 429,
+        responseBody,
       };
     }
 
     if (!response.ok) {
-      const errorText = await response.text();
       return {
         success: false,
-        error: `API Error (${response.status}): ${errorText}`,
+        error: `API Error (${response.status}): ${responseBody}`,
+        status: response.status,
+        responseBody,
       };
     }
 
-    const data = await response.json();
+    let data: any;
+    try { data = JSON.parse(responseBody); } catch { data = responseBody; }
     return {
       success: true,
+      status: response.status,
+      responseBody,
       response: data,
     };
   } catch (error) {
@@ -225,17 +233,42 @@ export const broadcastToAllUsers = action({
       const personalizedText = args.text.replace(/{name}/g, firstName);
 
       const result = await sendWhatsAppMessage(user.phoneNumber, personalizedText);
-      
+
       if (result.success) {
         successful++;
       } else {
         failed++;
-        if (result.error) {
-          errors.push(`Failed to send to ${user.phoneNumber}: ${result.error}`);
+        const errMsg = `Failed to send to ${user.phoneNumber}: ${result.error}`;
+        errors.push(errMsg);
+        // Log each individual failure to errorLogs so admin can see it
+        try {
+          await ctx.runMutation(api.errorLogs.insertErrorLog, {
+            source: "broadcastToAllUsers",
+            level: "error",
+            message: errMsg,
+            apiUrl: WASENDER_API_URL,
+            apiStatus: result.status,
+            apiResponse: result.responseBody?.slice(0, 2000),
+            userId: user._id,
+          });
+        } catch (logErr) {
+          console.error("Failed to log notification error:", logErr);
         }
       }
     }
-    
+
+    // Log broadcast summary
+    try {
+      await ctx.runMutation(api.errorLogs.insertErrorLog, {
+        source: "broadcastToAllUsers",
+        level: failed === users.length && users.length > 0 ? "error" : "info",
+        message: `Broadcast complete: ${successful}/${users.length} sent, ${failed} failed`,
+        details: JSON.stringify({ projectId: args.projectId, total: users.length, successful, failed }),
+      });
+    } catch (logErr) {
+      console.error("Failed to log broadcast summary:", logErr);
+    }
+
     return {
       total: users.length,
       successful,
@@ -295,7 +328,25 @@ export const sendDonationVerificationNotification = action({
     const message = `بارك الله فيك ${user.fullName}! ✨\n\nتم تأكيد تبرعك بمبلغ ${amountMAD} درهم لمشروع "${args.projectTitle}".\n\nجزاك الله خيرًا على سخائك.\n\nفريق جمعية الأمل`;
     
     const result = await sendWhatsAppMessage(user.phoneNumber, message);
-    
+
+    // Log result to errorLogs for admin visibility
+    try {
+      await ctx.runMutation(api.errorLogs.insertErrorLog, {
+        source: "sendDonationVerificationNotification",
+        level: result.success ? "info" : "error",
+        message: result.success
+          ? `Donation verification WhatsApp sent to ${user.phoneNumber}`
+          : `Failed to send donation verification WhatsApp to ${user.phoneNumber}: ${result.error}`,
+        apiUrl: WASENDER_API_URL,
+        apiStatus: result.status,
+        apiResponse: result.responseBody?.slice(0, 2000),
+        userId: args.userId,
+        donationId: args.donationId,
+      });
+    } catch (logErr) {
+      console.error("Failed to log donation notification result:", logErr);
+    }
+
     return {
       success: result.success,
       error: result.error,
@@ -359,7 +410,20 @@ export const sendProjectPublishedNotification = action({
       text: message,
       projectId: args.projectId,
     });
-    
+
+    // Log summary to errorLogs for admin visibility
+    // (Per-message failures are already logged inside broadcastToAllUsers)
+    try {
+      await ctx.runMutation(api.errorLogs.insertErrorLog, {
+        source: "sendProjectPublishedNotification",
+        level: result.successful > 0 ? "info" : "error",
+        message: `Project "${args.projectTitle}" notification: ${result.successful}/${result.total} WhatsApp messages sent`,
+        details: JSON.stringify({ projectId: args.projectId, total: result.total, successful: result.successful, failed: result.failed }),
+      });
+    } catch (logErr) {
+      console.error("Failed to log project notification summary:", logErr);
+    }
+
     return {
       success: result.failed === 0 || result.successful > 0,
       broadcastResult: {
@@ -367,8 +431,8 @@ export const sendProjectPublishedNotification = action({
         successful: result.successful,
         failed: result.failed,
       },
-      error: result.errors && result.errors.length > 0 
-        ? result.errors[0] 
+      error: result.errors && result.errors.length > 0
+        ? result.errors[0]
         : undefined,
     };
   },
@@ -515,9 +579,23 @@ export const sendProjectClosingSoonNotifications = action({
           const personalizedMessage = message.replace(/{name}/g, firstName);
 
           const result = await sendWhatsAppMessage(user.phoneNumber, personalizedMessage);
-          
+
           if (result.success) {
             notificationsSent++;
+          } else {
+            try {
+              await ctx.runMutation(api.errorLogs.insertErrorLog, {
+                source: "sendProjectClosingSoonNotifications",
+                level: "error",
+                message: `Failed to send closing-soon notification to ${user.phoneNumber}: ${result.error}`,
+                apiUrl: WASENDER_API_URL,
+                apiStatus: result.status,
+                apiResponse: result.responseBody?.slice(0, 2000),
+                userId: user._id,
+              });
+            } catch (logErr) {
+              console.error("Failed to log closing-soon notification error:", logErr);
+            }
           }
         }
       }

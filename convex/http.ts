@@ -105,7 +105,14 @@ http.route({
           console.log(`Unhandled Whop event: ${event}`);
       }
     } catch (err) {
-      console.error("Whop webhook processing error:", err);
+      try {
+        await ctx.runMutation(api.errorLogs.insertErrorLog, {
+          source: "whop_webhook",
+          level: "error",
+          message: `Whop webhook processing error: ${err instanceof Error ? err.message : String(err)}`,
+          details: JSON.stringify({ rawBody: rawBody?.slice(0, 1000) }),
+        });
+      } catch {}
       // Return 200 to prevent Whop from retrying indefinitely
     }
 
@@ -159,7 +166,13 @@ http.route({
           });
         }
       } catch (e) {
-        console.error("Error updating whatsapp_settings on connect:", e);
+        try {
+          await ctx.runMutation(api.errorLogs.insertErrorLog, {
+            source: "whatsapp_webhook",
+            level: "error",
+            message: `Error updating whatsapp_settings on connect: ${e instanceof Error ? e.message : String(e)}`,
+          });
+        } catch {}
       }
     }
 
@@ -237,14 +250,38 @@ http.route({
                 whopPaymentId: paymentId,
               });
             } catch (err) {
-              console.error("[donate/success] processWhopPayment error:", err);
+              try {
+                await ctx.runMutation(api.errorLogs.insertErrorLog, {
+                  source: "donate_success",
+                  level: "error",
+                  message: `processWhopPayment failed: ${err instanceof Error ? err.message : String(err)}`,
+                  details: JSON.stringify({ paymentId, donationId }),
+                });
+              } catch {}
             }
           }
         } else {
-          console.error("[donate/success] Payment lookup failed:", res.status, await res.text());
+          const errBody = await res.text();
+          try {
+            await ctx.runMutation(api.errorLogs.insertErrorLog, {
+              source: "donate_success",
+              level: "error",
+              message: `Whop payment lookup failed: HTTP ${res.status}`,
+              apiUrl: `https://api.whop.com/api/v2/payments/${paymentId}`,
+              apiStatus: res.status,
+              apiResponse: errBody.slice(0, 2000),
+            });
+          } catch {}
         }
       } catch (err) {
-        console.error("[donate/success] Error fetching payment:", err);
+        try {
+          await ctx.runMutation(api.errorLogs.insertErrorLog, {
+            source: "donate_success",
+            level: "error",
+            message: `Error fetching Whop payment: ${err instanceof Error ? err.message : String(err)}`,
+            details: JSON.stringify({ paymentId }),
+          });
+        } catch {}
       }
     }
 

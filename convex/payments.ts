@@ -135,7 +135,12 @@ export const createWhopCheckout = action({
       }
 
       planId = planData.id;
-      console.log("[payments] Created plan", planId, "for", args.amountMAD, "MAD");
+      await ctx.runMutation(api.errorLogs.insertErrorLog, {
+        source: "payments", level: "info",
+        message: `Whop plan created: ${planId} for ${args.amountMAD} MAD`,
+        apiUrl: WHOP_PLANS_URL, apiStatus: planRes.status,
+        apiResponse: planText.slice(0, 2000), donationId: args.donationId,
+      }).catch(() => {});
     }
 
     // ── Step 2: Create checkout session ──────────────────────────────────
@@ -200,7 +205,12 @@ export const createWhopCheckout = action({
       throw new Error(msg);
     }
 
-    console.log("[payments] Success:", checkoutData.purchase_url);
+    await ctx.runMutation(api.errorLogs.insertErrorLog, {
+      source: "payments", level: "info",
+      message: `Whop checkout created successfully for donation ${args.donationId}`,
+      apiUrl: WHOP_CHECKOUT_URL, apiStatus: checkoutRes.status,
+      apiResponse: checkoutText.slice(0, 2000), donationId: args.donationId,
+    }).catch(() => {});
     return { purchaseUrl: checkoutData.purchase_url };
   },
 });
