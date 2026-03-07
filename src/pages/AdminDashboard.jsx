@@ -179,7 +179,7 @@ const AdminDashboard = () => {
 
   // Format currency
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US').format(amount / 100); // Convert cents to MAD
+    return new Intl.NumberFormat('en-US').format(amount);
   };
 
   // Save the new order to Convex
@@ -257,14 +257,14 @@ const AdminDashboard = () => {
   // Mock chart data (replace with actual data from Convex)
   const donationData = stats?.monthlyDonations?.map(m => ({
     name: m.month,
-    amount: m.amount / 100, // Convert cents to MAD
+    amount: m.amount,
   })) || [];
 
   const recentDonations = pendingVerifications?.slice(0, 5).map(d => ({
     id: d._id,
     donor: d.user?.fullName || 'Anonymous',
     project: d.project?.title || 'Unknown Project',
-    amount: d.amount / 100,
+    amount: d.amount,
     status: d.status,
   })) || [];
 

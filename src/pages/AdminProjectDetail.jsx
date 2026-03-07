@@ -350,7 +350,7 @@ const AdminProjectDetail = () => {
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-primary text-sm">
-                        {formatCurrency(donation.amount / 100)}
+                        {formatCurrency(donation.amount)}
                       </p>
                       <Badge
                         variant={donation.status === 'completed' ? 'success' : donation.status === 'pending' ? 'warning' : 'neutral'}

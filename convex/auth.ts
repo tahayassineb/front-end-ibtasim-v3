@@ -54,6 +54,7 @@ export const requestOTP = mutation({
     success: v.boolean(),
     message: v.string(),
     cooldownSeconds: v.optional(v.number()),
+    whatsappDelivery: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -116,22 +117,25 @@ export const requestOTP = mutation({
       lastOtpRequestAt: now,
     });
     
-    // Schedule OTP WhatsApp message
-    // (ctx.scheduler.runAfter is used here because mutations cannot call ctx.runAction)
+    // Send OTP via WhatsApp — personalized with user's first name
+    const firstName = user.fullName?.split(' ')[0] || 'عزيزي';
+    const otpMessage = `مرحباً ${firstName}، رمز التحقق الخاص بك هو: ${otp}\nصالح لمدة 10 دقائق.`;
+
+    let whatsappDelivery = "scheduled";
     try {
-      const message = `رمز التحقق الخاص بك هو: ${otp}`;
       await ctx.scheduler.runAfter(0, api.notifications.sendWhatsApp, {
         to: args.phoneNumber,
-        text: message,
+        text: otpMessage,
       });
     } catch (error) {
       console.error("Failed to schedule WhatsApp OTP:", error);
-      // Continue even if scheduling fails - user can request again
+      whatsappDelivery = "failed";
     }
-    
+
     return {
       success: true,
       message: "Verification code sent successfully.",
+      whatsappDelivery,
     };
   },
 });

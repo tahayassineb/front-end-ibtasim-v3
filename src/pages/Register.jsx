@@ -271,7 +271,11 @@ const Register = () => {
 
       setOtpSent(true);
       setOtpTimer(120);
-      showToast(lang === 'ar' ? 'تم إرسال الرمز' : lang === 'fr' ? 'Code envoyé' : 'Code sent', 'success');
+      if (otpResult.whatsappDelivery === 'failed') {
+        showToast(lang === 'ar' ? 'تم إنشاء الرمز لكن فشل إرسال الواتساب — تواصل مع الإدارة' : lang === 'fr' ? 'Code créé mais envoi WhatsApp échoué' : 'Code created but WhatsApp delivery failed', 'warning');
+      } else {
+        showToast(lang === 'ar' ? 'تم إرسال الرمز' : lang === 'fr' ? 'Code envoyé' : 'Code sent', 'success');
+      }
     } catch (err) {
       showToast(err.message || 'Registration failed', 'error');
     } finally {

@@ -77,28 +77,26 @@ http.route({
 
       switch (event) {
         case "payment.succeeded": {
-          await ctx.runMutation(api.donations.verifyDonation, {
-            donationId: donationId,
-            verified: true,
-            notes: `Whop payment completed. Payment ID: ${data.id}`,
+          // processWhopPayment handles card_whop donations correctly (works on "pending" status)
+          await ctx.runMutation(api.donations.processWhopPayment, {
+            donationId: donationId as any,
+            whopPaymentId: data.id,
           });
           break;
         }
 
         case "payment.failed": {
-          await ctx.runMutation(api.donations.verifyDonation, {
-            donationId: donationId,
-            verified: false,
-            notes: `Whop payment failed. Payment ID: ${data.id}`,
+          await ctx.runMutation(api.donations.updateDonationStatus, {
+            donationId: donationId as any,
+            status: "rejected",
           });
           break;
         }
 
         case "payment.refunded": {
-          await ctx.runMutation(api.donations.verifyDonation, {
-            donationId: donationId,
-            verified: false,
-            notes: `Whop payment refunded. Payment ID: ${data.id}`,
+          await ctx.runMutation(api.donations.updateDonationStatus, {
+            donationId: donationId as any,
+            status: "rejected",
           });
           break;
         }

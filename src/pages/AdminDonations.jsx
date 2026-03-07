@@ -220,7 +220,7 @@ const AdminDonations = () => {
     {
       label: t.stats.total,
       value: dashboardStats
-        ? `${(dashboardStats.totalRaised / 100).toLocaleString()} MAD`
+        ? `${dashboardStats.totalRaised.toLocaleString()} MAD`
         : '—',
       color: 'dark',
     },

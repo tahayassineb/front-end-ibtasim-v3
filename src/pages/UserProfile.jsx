@@ -123,9 +123,8 @@ const UserProfile = () => {
   
   const tx = translations[currentLanguage.code] || translations.ar;
   
-  // Calculate stats from real Convex data (amount is in cents)
   const donations = userDonations || [];
-  const totalDonated = donations.reduce((sum, d) => sum + (d.amount || 0), 0) / 100;
+  const totalDonated = donations.reduce((sum, d) => sum + (d.amount || 0), 0);
   const verifiedDonations = donations.filter(d => d.status === 'verified');
   const isDonationsLoading = userDonations === undefined;
   
@@ -427,7 +426,7 @@ const UserProfile = () => {
                         </p>
                       </div>
                       <div className={`${isRTL ? 'text-left' : 'text-right'}`}>
-                        <p className="font-bold text-primary">{formatCurrency(donation.amount / 100)}</p>
+                        <p className="font-bold text-primary">{formatCurrency(donation.amount)}</p>
                         <div className="mt-1">
                           {getStatusBadge(donation.status)}
                         </div>

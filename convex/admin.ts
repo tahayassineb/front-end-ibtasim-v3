@@ -240,6 +240,7 @@ export const getVerifications = query({
     const donations = await ctx.db
       .query("donations")
       .withIndex("by_status", (q) => q.eq("status", targetStatus as any))
+      .filter((q) => q.eq(q.field("paymentMethod"), "bank_transfer"))
       .order("asc")
       .take(args.limit || 50);
     

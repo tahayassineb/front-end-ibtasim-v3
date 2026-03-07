@@ -225,7 +225,7 @@ const AdminDonorDetail = () => {
                   <span className="material-symbols-outlined">{getProjectIcon(donation.project)}</span>
                 </div>
                 <div className="flex flex-col justify-center">
-                  <p className="text-text-primary dark:text-white text-base font-bold">{formatCurrency(donation.amount / 100)}</p>
+                  <p className="text-text-primary dark:text-white text-base font-bold">{formatCurrency(donation.amount)}</p>
                   <p className="text-slate-500 dark:text-slate-400 text-xs">{donation.project}</p>
                 </div>
               </div>

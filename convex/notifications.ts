@@ -12,7 +12,7 @@ const WASENDER_API_URL = "https://www.wasenderapi.com/api/send-message";
 // In Convex, env vars are accessed via process.env
 declare const process: {
   env: {
-    WASENDER_API_TOKEN?: string;
+    WASENDER_MASTER_TOKEN?: string;
   };
 };
 
@@ -53,7 +53,7 @@ function sleep(ms: number): Promise<void> {
  * Get WaSender API token from environment
  */
 function getApiToken(): string {
-  return process.env.WASENDER_API_TOKEN || "";
+  return process.env.WASENDER_MASTER_TOKEN || "";
 }
 
 /**
@@ -213,14 +213,18 @@ export const broadcastToAllUsers = action({
     
     for (let i = 0; i < users.length; i++) {
       const user = users[i];
-      
-      // Respect rate limit: 256 requests per minute
-      // 250ms delay = 240 requests per minute (safe margin)
+
+      // Random delay between 2s and 30s to appear more human-like to WhatsApp
       if (i > 0) {
-        await sleep(RATE_LIMIT_DELAY_MS);
+        const randomDelay = Math.floor(Math.random() * (30000 - 2000 + 1)) + 2000;
+        await sleep(randomDelay);
       }
-      
-      const result = await sendWhatsAppMessage(user.phoneNumber, args.text);
+
+      // Personalize message: replace {name} placeholder with user's first name
+      const firstName = user.fullName?.split(' ')[0] || 'صديقي';
+      const personalizedText = args.text.replace(/{name}/g, firstName);
+
+      const result = await sendWhatsAppMessage(user.phoneNumber, personalizedText);
       
       if (result.success) {
         successful++;
@@ -284,8 +288,8 @@ export const sendDonationVerificationNotification = action({
       };
     }
     
-    // Format amount (convert from cents to MAD)
-    const amountMAD = (args.amount / 100).toFixed(2);
+    // Amount is already in MAD
+    const amountMAD = args.amount.toFixed(2);
     
     // Create personalized thank you message in Arabic
     const message = `بارك الله فيك ${user.fullName}! ✨\n\nتم تأكيد تبرعك بمبلغ ${amountMAD} درهم لمشروع "${args.projectTitle}".\n\nجزاك الله خيرًا على سخائك.\n\nفريق جمعية الأمل`;
@@ -497,16 +501,20 @@ export const sendProjectClosingSoonNotifications = action({
         // Create notification message
         const message = `⏰ تذكير: مشروع "${projectTitle}" ينتهي خلال ${daysRemaining} أيام!\n\nساهم الآن قبل إغلاق المشروع.\n\nفريق جمعية الأمل`;
         
-        // Send to all users (with rate limiting delay)
+        // Send to all users with random 2-30s delay between each
         for (let i = 0; i < users.length; i++) {
           const user = users[i];
-          
-          // Respect rate limit: 250ms delay between messages
+
           if (i > 0) {
-            await sleep(RATE_LIMIT_DELAY_MS);
+            const randomDelay = Math.floor(Math.random() * (30000 - 2000 + 1)) + 2000;
+            await sleep(randomDelay);
           }
-          
-          const result = await sendWhatsAppMessage(user.phoneNumber, message);
+
+          // Personalize with user's first name
+          const firstName = user.fullName?.split(' ')[0] || 'صديقي';
+          const personalizedMessage = message.replace(/{name}/g, firstName);
+
+          const result = await sendWhatsAppMessage(user.phoneNumber, personalizedMessage);
           
           if (result.success) {
             notificationsSent++;

@@ -158,6 +158,7 @@ export const getPendingVerifications = query({
     const donations = await ctx.db
       .query("donations")
       .withIndex("by_status", (q) => q.eq("status", "awaiting_verification"))
+      .filter((q) => q.eq(q.field("paymentMethod"), "bank_transfer"))
       .order("asc")
       .take(args.limit || 50);
 
