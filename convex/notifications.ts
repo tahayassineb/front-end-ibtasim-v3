@@ -75,13 +75,8 @@ async function sendWhatsAppMessage(
   try {
     const formattedPhone = formatPhoneNumber(to);
 
-    // Build request body. For image messages send both "text" and "caption"
-    // since different WaSender API versions may use one or the other for the caption.
     const body: Record<string, string> = { to: formattedPhone, text };
-    if (imageUrl) {
-      body.imageUrl = imageUrl;
-      body.caption = text; // belt-and-suspenders: cover both field names
-    }
+    if (imageUrl) body.imageUrl = imageUrl;
 
     const response = await fetch(WASENDER_API_URL, {
       method: "POST",
