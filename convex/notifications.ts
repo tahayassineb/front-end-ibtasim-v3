@@ -75,11 +75,13 @@ async function sendWhatsAppMessage(
   try {
     const formattedPhone = formatPhoneNumber(to);
 
-    // When imageUrl is present: send image first (with text as caption),
-    // then send text as a SEPARATE message so the link is always visible.
-    // When no image: send text only.
+    // Build request body. For image messages send both "text" and "caption"
+    // since different WaSender API versions may use one or the other for the caption.
     const body: Record<string, string> = { to: formattedPhone, text };
-    if (imageUrl) body.imageUrl = imageUrl;
+    if (imageUrl) {
+      body.imageUrl = imageUrl;
+      body.caption = text; // belt-and-suspenders: cover both field names
+    }
 
     const response = await fetch(WASENDER_API_URL, {
       method: "POST",
@@ -89,21 +91,6 @@ async function sendWhatsAppMessage(
       },
       body: JSON.stringify(body),
     });
-
-    // If we also sent an image, follow up with the text as a plain message
-    // so the link is guaranteed to appear (captions can be truncated by some clients)
-    if (imageUrl && response.ok) {
-      try {
-        await new Promise(r => setTimeout(r, 500));
-        await fetch(WASENDER_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify({ to: formattedPhone, text }),
-        });
-      } catch {
-        // ignore — the image already went through
-      }
-    }
 
     const responseBody = await response.text();
 
