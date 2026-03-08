@@ -13,6 +13,7 @@ const WASENDER_API_URL = "https://www.wasenderapi.com/api/send-message";
 declare const process: {
   env: {
     WASENDER_MASTER_TOKEN?: string;
+    FRONTEND_URL?: string;
   };
 };
 
@@ -50,30 +51,24 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Get WaSender API token from environment
- */
-function getApiToken(): string {
-  return process.env.WASENDER_MASTER_TOKEN || "";
-}
-
-/**
  * Send a single WhatsApp message via WaSender API
  * Includes retry logic for rate limiting
  * Returns status code and response body for structured error logging
+ *
+ * NOTE: `token` must be the session-specific API key (not master token).
+ * Using the master token routes through an arbitrary session in the account.
  */
 async function sendWhatsAppMessage(
   to: string,
   text: string,
   retryCount: number = 0,
-  tokenOverride?: string,
+  token?: string,
   imageUrl?: string
 ): Promise<{ success: boolean; error?: string; status?: number; responseBody?: string; response?: any }> {
-  const token = tokenOverride || getApiToken();
-
   if (!token) {
     return {
       success: false,
-      error: "WaSender API token not configured",
+      error: "No session API key configured. Connect WhatsApp in Admin Settings first.",
     };
   }
 
@@ -99,7 +94,7 @@ async function sendWhatsAppMessage(
       if (retryCount < MAX_RETRIES) {
         const delay = RETRY_DELAY_MS * Math.pow(2, retryCount);
         await sleep(delay);
-        return sendWhatsAppMessage(to, text, retryCount + 1, tokenOverride, imageUrl);
+        return sendWhatsAppMessage(to, text, retryCount + 1, token, imageUrl);
       }
       return {
         success: false,
@@ -430,12 +425,31 @@ export const sendProjectPublishedNotification = action({
     // Import api inside handler to avoid circular dependency issues
     const { api } = await import("./_generated/api");
 
-    // Fetch project to get mainImage URL
+    // Fetch project and resolve mainImage storage ID to a real URL
     const project = await ctx.runQuery(api.projects.getProjectById, { projectId: args.projectId });
-    const imageUrl = project?.mainImage || undefined;
+    let imageUrl: string | undefined;
+    if (project?.mainImage) {
+      try {
+        const resolved = await ctx.storage.getUrl(project.mainImage as any);
+        imageUrl = resolved || undefined;
+        console.log("[notifications] Resolved project mainImage URL:", imageUrl ? "ok" : "null");
+      } catch (e) {
+        console.error("[notifications] Could not resolve mainImage storage URL:", e);
+      }
+    }
 
-    // Create announcement message in Arabic
-    const message = `🌟 مشروع جديد على منصة الأمل!\n\n"${args.projectTitle}"\n\nتبرع الآن وساهم في صنع الفرق.\n\nفريق جمعية الأمل`;
+    // Build project link
+    const frontendUrl = process.env.FRONTEND_URL || "";
+    const projectLink = frontendUrl ? `${frontendUrl}/projects/${args.projectId}` : "";
+
+    // Create announcement message in Arabic — {name} is replaced per-user in broadcastToAllUsers
+    const message =
+      `السلام عليكم {name} 👋\n\n` +
+      `🌟 مشروع جديد على منصة ابتسم!\n\n` +
+      `"${args.projectTitle}"\n\n` +
+      `تبرع الآن وساهم في صنع الفرق ❤️` +
+      (projectLink ? `\n${projectLink}` : ``) +
+      `\n\nفريق جمعية الأمل`;
 
     // Broadcast to all users using the broadcast action
     const result = await ctx.runAction(api.notifications.broadcastToAllUsers, {
@@ -606,10 +620,30 @@ export const sendProjectClosingSoonNotifications = action({
       for (const project of closingSoonProjects) {
         const daysRemaining = Math.ceil((project.endDate! - now) / (24 * 60 * 60 * 1000));
         const projectTitle = project.title.ar; // Use Arabic title
-        
-        // Create notification message
-        const message = `⏰ تذكير: مشروع "${projectTitle}" ينتهي خلال ${daysRemaining} أيام!\n\nساهم الآن قبل إغلاق المشروع.\n\nفريق جمعية الأمل`;
-        
+
+        // Resolve project main image storage ID to a real URL
+        let projectImageUrl: string | undefined;
+        if (project.mainImage) {
+          try {
+            const resolved = await ctx.storage.getUrl(project.mainImage as any);
+            projectImageUrl = resolved || undefined;
+          } catch {
+            // ignore — image is optional
+          }
+        }
+
+        // Build project link
+        const frontendUrl = process.env.FRONTEND_URL || "";
+        const projectLink = frontendUrl ? `${frontendUrl}/projects/${project._id}` : "";
+
+        // Create notification message — {name} replaced per-user below
+        const message =
+          `السلام عليكم {name} 👋\n\n` +
+          `⏰ تذكير: مشروع "${projectTitle}" ينتهي خلال ${daysRemaining} أيام!\n\n` +
+          `ساهم الآن قبل إغلاق المشروع ❤️` +
+          (projectLink ? `\n${projectLink}` : ``) +
+          `\n\nفريق جمعية الأمل`;
+
         // Send to all users with random 2-30s delay between each
         for (let i = 0; i < users.length; i++) {
           const user = users[i];
@@ -623,7 +657,7 @@ export const sendProjectClosingSoonNotifications = action({
           const firstName = user.fullName?.split(' ')[0] || 'صديقي';
           const personalizedMessage = message.replace(/{name}/g, firstName);
 
-          const result = await sendWhatsAppMessage(user.phoneNumber, personalizedMessage, 0, sessionApiKey);
+          const result = await sendWhatsAppMessage(user.phoneNumber, personalizedMessage, 0, sessionApiKey, projectImageUrl);
 
           if (result.success) {
             notificationsSent++;

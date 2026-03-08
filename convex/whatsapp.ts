@@ -98,6 +98,23 @@ export const createAndConnectSession = action({
         return { success: false, error: "Invalid response from WaSender (missing session id)." };
       }
       console.log("[whatsapp] Session created, id:", sessionId);
+
+      // If WaSender didn't return api_key in the create response, fetch it from session details
+      if (!apiKey) {
+        try {
+          const detailRes = await fetch(`${WASENDER_API_URL}/whatsapp-sessions/${sessionId}`, {
+            method: "GET",
+            headers: { Authorization: `Bearer ${masterToken}` },
+          });
+          if (detailRes.ok) {
+            const detailData = await detailRes.json();
+            apiKey = detailData?.data?.api_key;
+            console.log("[whatsapp] Fetched api_key from session details:", !!apiKey);
+          }
+        } catch (e) {
+          console.error("[whatsapp] Could not fetch session details for api_key:", e);
+        }
+      }
     } catch (e) {
       return { success: false, error: `Network error creating session: ${e instanceof Error ? e.message : String(e)}` };
     }
@@ -511,5 +528,72 @@ export const autoRefreshQrIfNeeded = action({
     }
 
     return null;
+  },
+});
+
+/**
+ * Re-fetch the session API key from WaSender for the currently stored session.
+ * Use this when messages are going through the wrong session — it fixes the stored
+ * apiKey without requiring a full delete + reconnect.
+ */
+export const resyncApiKey = action({
+  args: {},
+  returns: v.object({
+    success: v.boolean(),
+    hasApiKey: v.boolean(),
+    error: v.optional(v.string()),
+  }),
+  handler: async (ctx) => {
+    const masterToken = process.env.WASENDER_MASTER_TOKEN;
+    if (!masterToken) {
+      return { success: false, hasApiKey: false, error: "WASENDER_MASTER_TOKEN not configured." };
+    }
+
+    const rawSettings = await ctx.runQuery(api.config.getConfig, { key: "whatsapp_settings" });
+    if (!rawSettings) {
+      return { success: false, hasApiKey: false, error: "No active WhatsApp session found." };
+    }
+
+    let settings: { instanceId?: string; [key: string]: unknown };
+    try {
+      settings = JSON.parse(rawSettings);
+    } catch {
+      return { success: false, hasApiKey: false, error: "Invalid session data." };
+    }
+
+    const { instanceId } = settings;
+    if (!instanceId) {
+      return { success: false, hasApiKey: false, error: "No session ID found." };
+    }
+
+    try {
+      const res = await fetch(`${WASENDER_API_URL}/whatsapp-sessions/${instanceId}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${masterToken}` },
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        return { success: false, hasApiKey: false, error: `WaSender error: ${errText}` };
+      }
+
+      const data = await res.json();
+      const apiKey = data?.data?.api_key;
+
+      if (!apiKey) {
+        return { success: false, hasApiKey: false, error: "WaSender did not return api_key for this session." };
+      }
+
+      // Save updated api_key back to config
+      await ctx.runMutation(api.config.setConfig, {
+        key: "whatsapp_settings",
+        value: JSON.stringify({ ...settings, apiKey }),
+      });
+
+      console.log("[whatsapp] resyncApiKey: api_key updated for session", instanceId);
+      return { success: true, hasApiKey: true };
+    } catch (e) {
+      return { success: false, hasApiKey: false, error: `Network error: ${e instanceof Error ? e.message : String(e)}` };
+    }
   },
 });

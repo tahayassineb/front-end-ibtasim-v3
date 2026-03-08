@@ -31,6 +31,7 @@ const AdminSettings = () => {
   const refreshQrCodeAction = useAction(api.whatsapp.refreshQrCode);
   const syncSessionStatusAction = useAction(api.whatsapp.syncSessionStatus);
   const deleteSessionAction = useAction(api.whatsapp.deleteSession);
+  const resyncApiKeyAction = useAction(api.whatsapp.resyncApiKey);
 
   // Admin invitation mutation
   const createAdminInvitation = useMutation(api.admin.createAdminInvitation);
@@ -502,6 +503,22 @@ const AdminSettings = () => {
     }
   };
 
+  const handleResyncApiKey = async () => {
+    setWhatsappSession(prev => ({ ...prev, isLoading: true }));
+    try {
+      const result = await resyncApiKeyAction({});
+      if (result.success) {
+        showToast('تم تحديث مفتاح الجلسة بنجاح ✓', 'success');
+      } else {
+        showToast(result.error || 'فشل تحديث مفتاح الجلسة', 'error');
+      }
+    } catch (error) {
+      showToast(error.message || 'فشل تحديث مفتاح الجلسة', 'error');
+    } finally {
+      setWhatsappSession(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
   const handleDeleteSession = async () => {
     if (!window.confirm('هل أنت متأكد من حذف جلسة الواتساب؟ سيتم حذفها نهائياً من WaSender.')) return;
     setWhatsappSession(prev => ({ ...prev, isLoading: true }));
@@ -909,6 +926,21 @@ const AdminSettings = () => {
                       >
                         <span className="material-symbols-outlined ml-2">sync</span>
                         مزامنة الحالة
+                      </Button>
+                    )}
+
+                    {/* Resync API Key button — fixes "wrong session" sending issue */}
+                    {(whatsappSession.instanceId || whatsappSession.isConnected) && (
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        fullWidth
+                        onClick={handleResyncApiKey}
+                        loading={whatsappSession.isLoading}
+                        className="border-orange-300 text-orange-600 hover:bg-orange-50"
+                      >
+                        <span className="material-symbols-outlined ml-2">key</span>
+                        مزامنة مفتاح الجلسة
                       </Button>
                     )}
 
