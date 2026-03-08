@@ -532,6 +532,118 @@ export const autoRefreshQrIfNeeded = action({
 });
 
 /**
+ * List all WhatsApp sessions in the WaSender account.
+ * Returns id, name, phone, status, and api_key for each session.
+ * The admin can then call selectSessionForSending to pick the correct one.
+ */
+export const listWaSenderSessions = action({
+  args: {},
+  returns: v.object({
+    success: v.boolean(),
+    sessions: v.optional(v.array(v.object({
+      id: v.string(),
+      name: v.string(),
+      phoneNumber: v.optional(v.string()),
+      status: v.string(),
+      apiKey: v.optional(v.string()),
+    }))),
+    error: v.optional(v.string()),
+  }),
+  handler: async (ctx) => {
+    const masterToken = process.env.WASENDER_MASTER_TOKEN;
+    if (!masterToken) {
+      return { success: false, error: "WASENDER_MASTER_TOKEN not configured." };
+    }
+
+    try {
+      const res = await fetch(`${WASENDER_API_URL}/whatsapp-sessions`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${masterToken}` },
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        return { success: false, error: `WaSender error ${res.status}: ${errText}` };
+      }
+
+      const data = await res.json();
+      const rawSessions: any[] = Array.isArray(data?.data) ? data.data : [];
+
+      const sessions = rawSessions.map((s: any) => ({
+        id: String(s.id ?? s._id ?? ""),
+        name: String(s.name ?? s.id ?? ""),
+        phoneNumber: s.phone_number ? String(s.phone_number) : undefined,
+        status: String(s.status ?? s.connection ?? "unknown"),
+        apiKey: s.api_key ? String(s.api_key) : undefined,
+      }));
+
+      return { success: true, sessions };
+    } catch (e) {
+      return { success: false, error: `Network error: ${e instanceof Error ? e.message : String(e)}` };
+    }
+  },
+});
+
+/**
+ * Select a specific WaSender session to use for all future message sends.
+ * Fetches the session's api_key and stores it in whatsapp_settings.
+ */
+export const selectSessionForSending = action({
+  args: { sessionId: v.string() },
+  returns: v.object({
+    success: v.boolean(),
+    error: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const masterToken = process.env.WASENDER_MASTER_TOKEN;
+    if (!masterToken) {
+      return { success: false, error: "WASENDER_MASTER_TOKEN not configured." };
+    }
+
+    try {
+      const res = await fetch(`${WASENDER_API_URL}/whatsapp-sessions/${args.sessionId}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${masterToken}` },
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        return { success: false, error: `WaSender error ${res.status}: ${errText}` };
+      }
+
+      const data = await res.json();
+      const apiKey = data?.data?.api_key;
+      const phoneNumber = data?.data?.phone_number;
+      const status = data?.data?.status ?? data?.data?.connection ?? "";
+
+      if (!apiKey) {
+        return { success: false, error: "هذه الجلسة لا تحتوي على مفتاح API — تأكد من أنها متصلة أولاً." };
+      }
+
+      // Read existing settings and merge — keep phone/qr data, just update session identity
+      const rawSettings = await ctx.runQuery(api.config.getConfig, { key: "whatsapp_settings" });
+      const existing = rawSettings ? (() => { try { return JSON.parse(rawSettings); } catch { return {}; } })() : {};
+
+      await ctx.runMutation(api.config.setConfig, {
+        key: "whatsapp_settings",
+        value: JSON.stringify({
+          ...existing,
+          instanceId: args.sessionId,
+          apiKey,
+          phoneNumber: phoneNumber ?? existing.phoneNumber,
+          isConnected: status === "connected" || status === "open",
+          selectedAt: new Date().toISOString(),
+        }),
+      });
+
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: `Network error: ${e instanceof Error ? e.message : String(e)}` };
+    }
+  },
+});
+
+/**
  * Re-fetch the session API key from WaSender for the currently stored session.
  * Use this when messages are going through the wrong session — it fixes the stored
  * apiKey without requiring a full delete + reconnect.

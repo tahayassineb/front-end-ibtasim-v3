@@ -32,6 +32,8 @@ const AdminSettings = () => {
   const syncSessionStatusAction = useAction(api.whatsapp.syncSessionStatus);
   const deleteSessionAction = useAction(api.whatsapp.deleteSession);
   const resyncApiKeyAction = useAction(api.whatsapp.resyncApiKey);
+  const listWaSenderSessionsAction = useAction(api.whatsapp.listWaSenderSessions);
+  const selectSessionForSendingAction = useAction(api.whatsapp.selectSessionForSending);
 
   // Admin invitation mutation
   const createAdminInvitation = useMutation(api.admin.createAdminInvitation);
@@ -42,6 +44,8 @@ const AdminSettings = () => {
   const [isSavingTeam, setIsSavingTeam] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingNotifications, setIsSavingNotifications] = useState(false);
+  const [waSessionsList, setWaSessionsList] = useState(null); // null = not loaded, [] = loaded
+  const [waSessionsLoading, setWaSessionsLoading] = useState(false);
 
   // Check if any data is loading
   const isLoading = 
@@ -519,6 +523,44 @@ const AdminSettings = () => {
     }
   };
 
+  const handleListWaSenderSessions = async () => {
+    setWaSessionsLoading(true);
+    try {
+      const result = await listWaSenderSessionsAction({});
+      if (result.success) {
+        setWaSessionsList(result.sessions || []);
+      } else {
+        showToast(result.error || 'فشل جلب الجلسات', 'error');
+      }
+    } catch (error) {
+      showToast(error.message || 'فشل جلب الجلسات', 'error');
+    } finally {
+      setWaSessionsLoading(false);
+    }
+  };
+
+  const handleSelectSession = async (sessionId) => {
+    setWaSessionsLoading(true);
+    try {
+      const result = await selectSessionForSendingAction({ sessionId });
+      if (result.success) {
+        showToast('✓ تم تحديد الجلسة بنجاح — كل الرسائل ستُرسل من هذه الجلسة', 'success');
+        setWaSessionsList(null); // close list
+        // Re-sync status to update UI
+        const sync = await syncSessionStatusAction({});
+        if (sync.success) {
+          setWhatsappSession(prev => ({ ...prev, isConnected: sync.isConnected }));
+        }
+      } else {
+        showToast(result.error || 'فشل تحديد الجلسة', 'error');
+      }
+    } catch (error) {
+      showToast(error.message || 'فشل تحديد الجلسة', 'error');
+    } finally {
+      setWaSessionsLoading(false);
+    }
+  };
+
   const handleDeleteSession = async () => {
     if (!window.confirm('هل أنت متأكد من حذف جلسة الواتساب؟ سيتم حذفها نهائياً من WaSender.')) return;
     setWhatsappSession(prev => ({ ...prev, isLoading: true }));
@@ -929,20 +971,57 @@ const AdminSettings = () => {
                       </Button>
                     )}
 
-                    {/* Resync API Key button — fixes "wrong session" sending issue */}
-                    {(whatsappSession.instanceId || whatsappSession.isConnected) && (
+                    {/* Select Sending Session — pick the correct WaSender session */}
+                    <div className="border border-orange-200 rounded-xl p-4 bg-orange-50">
+                      <p className="text-sm text-orange-700 mb-3 font-medium">
+                        📡 تحديد جلسة الإرسال — اختر الجلسة الصحيحة من حساب WaSender
+                      </p>
                       <Button
                         variant="outline"
-                        size="lg"
+                        size="sm"
                         fullWidth
-                        onClick={handleResyncApiKey}
-                        loading={whatsappSession.isLoading}
-                        className="border-orange-300 text-orange-600 hover:bg-orange-50"
+                        onClick={handleListWaSenderSessions}
+                        loading={waSessionsLoading}
+                        className="border-orange-300 text-orange-700 hover:bg-orange-100 mb-3"
                       >
-                        <span className="material-symbols-outlined ml-2">key</span>
-                        مزامنة مفتاح الجلسة
+                        <span className="material-symbols-outlined ml-2" style={{fontSize:'18px'}}>list</span>
+                        {waSessionsList === null ? 'عرض جلسات WaSender' : 'تحديث القائمة'}
                       </Button>
-                    )}
+
+                      {waSessionsList !== null && (
+                        waSessionsList.length === 0 ? (
+                          <p className="text-sm text-slate-500 text-center py-2">لا توجد جلسات</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {waSessionsList.map(session => {
+                              const isConnected = session.status === 'connected' || session.status === 'open';
+                              return (
+                                <div key={session.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-orange-100">
+                                  <div className="flex-1 min-w-0 mr-2">
+                                    <p className="font-medium text-sm text-slate-800 truncate">{session.name}</p>
+                                    {session.phoneNumber && <p className="text-xs text-slate-500">{session.phoneNumber}</p>}
+                                    <span className={`text-xs font-semibold ${isConnected ? 'text-green-600' : 'text-red-500'}`}>
+                                      {isConnected ? '● متصل' : '○ غير متصل'}
+                                    </span>
+                                  </div>
+                                  <button
+                                    onClick={() => handleSelectSession(session.id)}
+                                    disabled={waSessionsLoading || !session.apiKey}
+                                    className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
+                                      session.apiKey
+                                        ? 'bg-orange-500 text-white hover:bg-orange-600'
+                                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                    }`}
+                                  >
+                                    {session.apiKey ? 'استخدام هذه' : 'لا يوجد مفتاح'}
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )
+                      )}
+                    </div>
 
                     {/* Delete Session button — visible whenever a session record exists */}
                     {(whatsappSession.instanceId || whatsappSession.isConnected) && (
