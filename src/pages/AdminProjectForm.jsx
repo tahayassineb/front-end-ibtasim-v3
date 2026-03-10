@@ -267,6 +267,7 @@ const AdminProjectForm = () => {
     },
     impactMetrics: [],
     updates: [],
+    transformationStage: '',
   });
 
   const [draggedItem, setDraggedItem] = useState(null);
@@ -286,6 +287,7 @@ const AdminProjectForm = () => {
         location: existingProject.location || '',
         beneficiaries: existingProject.beneficiaries?.toString() || '',
         status: existingProject.status || 'draft',
+        transformationStage: existingProject.transformationStage || '',
       }));
     }
   }, [isEditMode, existingProject]);
@@ -574,6 +576,7 @@ const AdminProjectForm = () => {
             isFeatured: submitIsFeatured,
             location: formData.location,
             beneficiaries: parseInt(formData.beneficiaries) || 0,
+            ...(formData.transformationStage ? { transformationStage: formData.transformationStage } : {}),
           }
         });
         showToast(submitStatus === 'active' ? 'Project published!' : 'Draft saved', 'success');
@@ -597,6 +600,7 @@ const AdminProjectForm = () => {
           beneficiaries: parseInt(formData.beneficiaries) || 0,
           isFeatured: submitIsFeatured,
           createdBy: adminId,
+          ...(formData.transformationStage ? { transformationStage: formData.transformationStage } : {}),
         });
         showToast(submitStatus === 'active' ? 'Project published!' : 'Draft saved', 'success');
       }
@@ -813,6 +817,25 @@ const AdminProjectForm = () => {
                 <option value="orphan_care">Orphan Care / رعاية الأيتام</option>
               </select>
             </div>
+
+            {/* Transformation Stage — orphan_care only */}
+            {formData.category === 'orphan_care' && (
+              <div>
+                <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">
+                  مرحلة التحول / Transformation Stage
+                </label>
+                <select
+                  value={formData.transformationStage}
+                  onChange={(e) => handleInputChange('transformationStage', e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="">— لا ينطبق —</option>
+                  <option value="early_care">الرعاية المبكرة</option>
+                  <option value="education">التعليم</option>
+                  <option value="integration">الاندماج</option>
+                </select>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               {/* Currency */}

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import Card from '../components/Card';
@@ -16,10 +16,14 @@ const AdminDonations = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewingDonation, setViewingDonation] = useState(null);
-  
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [isBulkLoading, setIsBulkLoading] = useState(false);
+
   // Convex hooks
   const rawDonations = useQuery(api.donations.getAllDonations, {});
   const dashboardStats = useQuery(api.admin.getDashboardStats);
+  const verifyDonation = useMutation(api.donations.verifyDonation);
+  const rejectDonation = useMutation(api.donations.rejectDonation);
 
   // Transform Convex data to match component structure
   const donations = useMemo(() => {
@@ -247,9 +251,57 @@ const AdminDonations = () => {
     const matchesSearch = d.donor.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          d.trxId.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          d.phone.includes(searchQuery);
-    const matchesStatus = statusFilter === 'all' || d.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' ||
+      (statusFilter === 'awaiting_verification'
+        ? (d.status === 'awaiting_verification' || d.status === 'awaiting_receipt')
+        : d.status === statusFilter);
     return matchesSearch && matchesStatus;
   });
+
+  // Count by tab for badges
+  const tabCounts = useMemo(() => ({
+    all: donations.length,
+    awaiting_verification: donations.filter(d => d.status === 'awaiting_verification' || d.status === 'awaiting_receipt').length,
+    verified: donations.filter(d => d.status === 'verified').length,
+    rejected: donations.filter(d => d.status === 'rejected').length,
+  }), [donations]);
+
+  // Checkbox helpers
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredDonations.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredDonations.map(d => d.id)));
+    }
+  };
+
+  const handleBulkVerify = async () => {
+    setIsBulkLoading(true);
+    try {
+      await Promise.all([...selectedIds].map(id => verifyDonation({ donationId: id, verified: true })));
+      setSelectedIds(new Set());
+    } finally {
+      setIsBulkLoading(false);
+    }
+  };
+
+  const handleBulkReject = async () => {
+    setIsBulkLoading(true);
+    try {
+      await Promise.all([...selectedIds].map(id => rejectDonation({ donationId: id })));
+      setSelectedIds(new Set());
+    } finally {
+      setIsBulkLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -320,36 +372,49 @@ const AdminDonations = () => {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar">
-        <button className="flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 text-xs font-medium text-text-primary dark:text-white">
-          <span className="material-symbols-outlined text-lg">calendar_today</span>
-          {t.dateRange}
-        </button>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 text-xs font-medium text-text-primary dark:text-white"
-        >
-          <option value="all">{t.status}: {t.all}</option>
-          <option value="awaiting_receipt">{t.status}: {t.stats.awaiting_receipt}</option>
-          <option value="awaiting_verification">{t.status}: {t.stats.awaiting_verification}</option>
-          <option value="verified">{t.status}: {t.stats.verified}</option>
-          <option value="rejected">{t.status}: {t.stats.rejected}</option>
-        </select>
-        <button className="flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 text-xs font-medium text-text-primary dark:text-white">
-          {t.project}: {t.all}
-          <span className="material-symbols-outlined text-lg">expand_more</span>
-        </button>
+      {/* Status Pill Tabs */}
+      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+        {[
+          { key: 'all', label: t.all },
+          { key: 'awaiting_verification', label: t.stats.awaiting_verification },
+          { key: 'verified', label: t.stats.verified },
+          { key: 'rejected', label: t.stats.rejected },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => { setStatusFilter(tab.key); setSelectedIds(new Set()); }}
+            className={`flex h-9 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors ${
+              statusFilter === tab.key
+                ? 'bg-primary text-white shadow-md'
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-primary/50 hover:text-primary'
+            }`}
+          >
+            {tab.label}
+            <span className={`inline-flex items-center justify-center rounded-full text-[10px] font-bold min-w-[18px] h-[18px] px-1 ${
+              statusFilter === tab.key
+                ? 'bg-white/25 text-white'
+                : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+            }`}>
+              {tabCounts[tab.key] ?? 0}
+            </span>
+          </button>
+        ))}
       </div>
 
-      {/* Recent Donations Header */}
+      {/* Recent Donations Header + Select All */}
       <div className="flex items-center justify-between">
-        <h3 className="text-text-primary dark:text-white text-base font-bold">{t.recentDonations}</h3>
-        <button className="text-primary text-xs font-semibold flex items-center gap-1 hover:underline">
-          {t.bulkActions}
-          <span className="material-symbols-outlined text-sm">keyboard_arrow_down</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={filteredDonations.length > 0 && selectedIds.size === filteredDonations.length}
+              onChange={toggleSelectAll}
+              className="w-4 h-4 rounded accent-primary"
+            />
+            <h3 className="text-text-primary dark:text-white text-base font-bold">{t.recentDonations}</h3>
+          </label>
+        </div>
+        <span className="text-xs text-slate-400">{filteredDonations.length} نتيجة</span>
       </div>
 
       {/* Donations List */}
@@ -358,23 +423,32 @@ const AdminDonations = () => {
           <Card
             key={donation.id}
             padding="md"
-            className={getStatusStyles(donation.status)}
+            className={`${getStatusStyles(donation.status)} ${selectedIds.has(donation.id) ? 'ring-2 ring-primary/40' : ''}`}
           >
             <div className="flex flex-col gap-3">
               {/* Main Info */}
-              <div className="flex justify-between items-start">
-                <div className="flex flex-col">
-                  <Badge
-                    variant={getStatusVariant(donation.status)}
-                    size="sm"
-                    className="w-fit mb-1 text-[10px] uppercase tracking-wider"
-                  >
-                    {getStatusLabel(donation.status)}
-                  </Badge>
-                  <h4 className="text-sm font-bold text-text-primary dark:text-white">{donation.donor}</h4>
-                  <p className="text-xs text-slate-500">{donation.phone}</p>
+              <div className="flex justify-between items-start gap-2">
+                <div className="flex items-start gap-2 flex-1 min-w-0">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(donation.id)}
+                    onChange={() => toggleSelect(donation.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="mt-1 w-4 h-4 rounded accent-primary shrink-0"
+                  />
+                  <div className="flex flex-col min-w-0">
+                    <Badge
+                      variant={getStatusVariant(donation.status)}
+                      size="sm"
+                      className="w-fit mb-1 text-[10px] uppercase tracking-wider"
+                    >
+                      {getStatusLabel(donation.status)}
+                    </Badge>
+                    <h4 className="text-sm font-bold text-text-primary dark:text-white truncate">{donation.donor}</h4>
+                    <p className="text-xs text-slate-500">{donation.phone}</p>
+                  </div>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   <p className={`text-sm font-bold ${donation.status === 'rejected' ? 'text-slate-400' : 'text-primary'}`}>
                     {donation.amount.toFixed(2)} MAD
                   </p>
@@ -424,6 +498,38 @@ const AdminDonations = () => {
           </button>
         </div>
       </div>
+
+      {/* Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-5 py-3 bg-slate-900 dark:bg-slate-800 rounded-2xl shadow-2xl border border-white/10 animate-in slide-in-from-bottom-4">
+          <span className="text-white/70 text-sm font-medium ml-1">
+            {selectedIds.size} محدد
+          </span>
+          <div className="w-px h-5 bg-white/20" />
+          <button
+            onClick={handleBulkVerify}
+            disabled={isBulkLoading}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-dark disabled:opacity-60 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[16px]">check_circle</span>
+            تحقق من المحدد
+          </button>
+          <button
+            onClick={handleBulkReject}
+            disabled={isBulkLoading}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 disabled:opacity-60 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[16px]">cancel</span>
+            رفض المحدد
+          </button>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="text-white/50 hover:text-white transition-colors"
+          >
+            <span className="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
+      )}
 
       {/* View Donation Modal */}
       {viewingDonation && (

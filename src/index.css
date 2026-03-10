@@ -693,4 +693,15 @@
   .dark ::-webkit-scrollbar-thumb:hover {
     @apply bg-slate-600;
   }
+
+  /* Warm card variant */
+  .card-warm {
+    background: linear-gradient(135deg, var(--color-bg-white) 0%, var(--color-bg-teal-wash) 100%);
+    border-color: var(--color-border-primary);
+  }
+
+  .dark .card-warm {
+    background: linear-gradient(135deg, var(--color-bg-dark-card) 0%, rgba(13,116,119,0.08) 100%);
+    border-color: var(--color-border-primary);
+  }
 }

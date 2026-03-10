@@ -188,42 +188,42 @@ const AdminDonors = () => {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <div className="flex w-full flex-1 items-stretch rounded-xl h-14 shadow-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-          <div className="text-primary flex items-center justify-center pl-4 rounded-l-xl">
-            <span className="material-symbols-outlined">search</span>
+      {/* Search + Tier Filters — consolidated horizontal bar */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <div className="flex w-full items-stretch rounded-xl h-12 shadow-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <div className="text-primary flex items-center justify-center pr-3 pl-4">
+              <span className="material-symbols-outlined text-[20px]">search</span>
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t.search}
+              className="w-full border-none bg-transparent focus:ring-0 text-sm text-text-primary dark:text-white placeholder:text-slate-400 pl-1 pr-4"
+            />
           </div>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t.search}
-            className="w-full border-none bg-transparent focus:ring-0 text-base text-text-primary dark:text-white placeholder:text-slate-400 px-4"
-          />
         </div>
-      </div>
-
-      {/* Tier Filters */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar">
-        {[
-          { key: 'all', label: t.allDonors },
-          { key: 'gold', label: t.goldTier },
-          { key: 'silver', label: t.silverTier },
-          { key: 'bronze', label: t.bronzeTier },
-        ].map((filter) => (
-          <button
-            key={filter.key}
-            onClick={() => setTierFilter(filter.key)}
-            className={`flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg px-4 transition-colors ${
-              tierFilter === filter.key
-                ? 'bg-primary text-white shadow-md'
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-            }`}
-          >
-            <span className="text-sm font-medium">{filter.label}</span>
-          </button>
-        ))}
+        <div className="flex gap-2 flex-wrap">
+          {[
+            { key: 'all', label: t.allDonors },
+            { key: 'gold', label: t.goldTier },
+            { key: 'silver', label: t.silverTier },
+            { key: 'bronze', label: t.bronzeTier },
+          ].map((filter) => (
+            <button
+              key={filter.key}
+              onClick={() => setTierFilter(filter.key)}
+              className={`flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full px-4 text-sm font-medium transition-colors ${
+                tierFilter === filter.key
+                  ? 'bg-primary text-white shadow-md'
+                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-primary/50 hover:text-primary'
+              }`}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Column Headers (List View Only) */}

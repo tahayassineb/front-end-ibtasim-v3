@@ -40,6 +40,7 @@ const AdminSettings = () => {
 
   // Loading states for save operations
   const [isSavingBank, setIsSavingBank] = useState(false);
+  const [ribCopied, setRibCopied] = useState(false);
   const [isSavingWhatsapp, setIsSavingWhatsapp] = useState(false);
   const [isSavingTeam, setIsSavingTeam] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -739,7 +740,7 @@ const AdminSettings = () => {
           ) : (
             <>
               {activeTab === 'bank' && (
-                <Card padding="lg">
+                <Card padding="lg" className="card-warm">
                   <div className="flex flex-col gap-1 mb-6">
                     <h3 className="text-text-primary dark:text-white text-2xl font-bold font-serif">{t.bankManagement}</h3>
                     <p className="text-slate-500 text-sm font-medium">{t.bankDescription}</p>
@@ -771,22 +772,40 @@ const AdminSettings = () => {
                     </label>
 
                     {/* RIB */}
-                    <label className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-1.5">
                       <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mr-1">
                         {t.rib}
                       </span>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={formData.rib}
-                          onChange={(e) => handleInputChange('rib', e.target.value)}
-                          className="w-full rounded-2xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-300 font-mono text-text-primary dark:text-white shadow-sm pl-12"
-                          placeholder="000 000 0000000000000000 00"
-                        />
-                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary/40 text-xl">lock</span>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <input
+                            type="text"
+                            value={formData.rib}
+                            onChange={(e) => handleInputChange('rib', e.target.value)}
+                            className="w-full rounded-2xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-300 font-mono text-text-primary dark:text-white shadow-sm pl-12"
+                            placeholder="000 000 0000000000000000 00"
+                          />
+                          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary/40 text-xl">lock</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (formData.rib) {
+                              navigator.clipboard.writeText(formData.rib);
+                              setRibCopied(true);
+                              setTimeout(() => setRibCopied(false), 2000);
+                            }
+                          }}
+                          title="نسخ RIB"
+                          className="flex items-center justify-center w-14 shrink-0 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-primary hover:border-primary/50 transition-colors shadow-sm"
+                        >
+                          <span className="material-symbols-outlined text-xl">
+                            {ribCopied ? 'check' : 'content_copy'}
+                          </span>
+                        </button>
                       </div>
                       <p className="text-[10px] text-slate-400 mt-1 mr-1">{t.ribHint}</p>
-                    </label>
+                    </div>
 
                     {/* Bank Name */}
                     <label className="flex flex-col gap-1.5">
@@ -828,7 +847,7 @@ const AdminSettings = () => {
               )}
 
               {activeTab === 'whatsapp' && (
-                <Card padding="lg">
+                <Card padding="lg" className="card-warm">
                   <div className="flex flex-col gap-1 mb-6">
                     <h3 className="text-text-primary dark:text-white text-2xl font-bold font-serif">{t.whatsappManagement}</h3>
                     <p className="text-slate-500 text-sm font-medium">{t.whatsappDescription}</p>
@@ -862,21 +881,24 @@ const AdminSettings = () => {
 
                         {/* QR Code — rendered client-side to avoid encoding issues */}
                         <div className="flex justify-center">
-                          {whatsappSession.qrCode.startsWith('data:') || whatsappSession.qrCode.startsWith('http') ? (
-                            <img
-                              src={whatsappSession.qrCode}
-                              alt="QR Code"
-                              className="w-48 h-48 rounded-lg"
-                            />
-                          ) : (
-                            <QRCodeSVG
-                              value={whatsappSession.qrCode}
-                              size={192}
-                              bgColor="#ffffff"
-                              fgColor="#000000"
-                              level="M"
-                            />
-                          )}
+                          <div className="p-2 rounded-2xl ring-2 ring-[#C9A84C] ring-offset-2 ring-offset-white dark:ring-offset-slate-800 inline-block">
+                            {whatsappSession.qrCode.startsWith('data:') || whatsappSession.qrCode.startsWith('http') ? (
+                              <img
+                                src={whatsappSession.qrCode}
+                                alt="QR Code"
+                                className="w-64 h-64 rounded-xl"
+                              />
+                            ) : (
+                              <QRCodeSVG
+                                value={whatsappSession.qrCode}
+                                size={256}
+                                bgColor="#ffffff"
+                                fgColor="#000000"
+                                level="M"
+                                style={{ borderRadius: '0.75rem' }}
+                              />
+                            )}
+                          </div>
                         </div>
 
                         {/* Manual Refresh QR button */}
@@ -1082,7 +1104,7 @@ const AdminSettings = () => {
               )}
 
               {activeTab === 'team' && (
-                <Card padding="lg">
+                <Card padding="lg" className="card-warm">
                   <div className="flex flex-col gap-1 mb-6">
                     <h3 className="text-text-primary dark:text-white text-2xl font-bold font-serif">{t.teamMembers}</h3>
                     <p className="text-slate-500 text-sm">أرسل دعوة عبر الواتساب لإضافة عضو جديد للفريق</p>
@@ -1202,7 +1224,7 @@ const AdminSettings = () => {
               )}
 
               {activeTab === 'profile' && (
-                <Card padding="lg">
+                <Card padding="lg" className="card-warm">
                   <h3 className="text-text-primary dark:text-white text-2xl font-bold mb-6">{t.associationProfile}</h3>
                   <div className="space-y-5">
                     <label className="flex flex-col gap-1.5">
@@ -1274,7 +1296,7 @@ const AdminSettings = () => {
               )}
 
               {activeTab === 'notifications' && (
-                <Card padding="lg">
+                <Card padding="lg" className="card-warm">
                   <h3 className="text-text-primary dark:text-white text-2xl font-bold mb-6">{t.notificationRules}</h3>
                   <div className="space-y-4">
                     <div className="border-b border-slate-200 dark:border-slate-700 pb-4">

@@ -559,23 +559,25 @@ const Step0Auth = ({
 const Step1Amount = ({ tx, lang, project, donationData, setDonationData, formatCurrency, calculateTotal }) => (
   <div className="pb-24">
     {/* Project Hero */}
-    <div className="px-4 py-3">
-      <div 
-        className="bg-cover bg-center flex flex-col justify-end overflow-hidden rounded-xl min-h-[200px] relative shadow-sm"
-        style={{ 
-          backgroundImage: `linear-gradient(0deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 50%), url(${project.image})` 
-        }}
-      >
-        <div className="flex flex-col p-4">
-          <span className="text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">
-            {tx.activeCampaign}
-          </span>
-          <p className="text-white tracking-tight text-2xl font-bold leading-tight">
-            {lang === 'ar' ? project.titleAr : project.title}
-          </p>
+    {project && (
+      <div className="px-4 py-3">
+        <div
+          className="bg-cover bg-center flex flex-col justify-end overflow-hidden rounded-xl min-h-[200px] relative shadow-sm"
+          style={{
+            backgroundImage: `linear-gradient(0deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 50%)${project.image ? `, url(${project.image})` : ''}`
+          }}
+        >
+          <div className="flex flex-col p-4">
+            <span className="text-white/80 text-xs font-semibold uppercase tracking-wider mb-1">
+              {tx.activeCampaign}
+            </span>
+            <p className="text-white tracking-tight text-2xl font-bold leading-tight">
+              {lang === 'ar' ? project.titleAr : project.title}
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+    )}
     
     {/* Amount Selection */}
     <div className="px-4 pt-6">

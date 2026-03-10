@@ -116,10 +116,17 @@ export default defineSchema({
     // Feature flags
     isFeatured: v.boolean(),
     featuredOrder: v.optional(v.number()),
-    
+
     // Location
     location: v.optional(v.string()),
     beneficiaries: v.optional(v.number()),
+
+    // Transformation stage (orphan → citizen narrative)
+    transformationStage: v.optional(v.union(
+      v.literal("early_care"),    // مرحلة الرعاية المبكرة
+      v.literal("education"),     // مرحلة التعليم والتأهيل
+      v.literal("integration"),   // مرحلة الاندماج المجتمعي
+    )),
   })
     .index("by_status", ["status"])
     .index("by_category", ["category"])

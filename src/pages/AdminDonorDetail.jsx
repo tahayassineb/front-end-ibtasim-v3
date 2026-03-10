@@ -160,7 +160,7 @@ const AdminDonorDetail = () => {
       {/* Profile Header */}
       <div className="flex flex-col items-center gap-4 pt-2">
         <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-32 w-32 border-4 border-white dark:border-slate-800 shadow-lg"
-          style={{ backgroundImage: `url('${donor.avatar}')` }}
+          style={donor.avatar ? { backgroundImage: `url('${donor.avatar}')` } : {}}
         />
         <div className="text-center">
           <h1 className="text-text-primary dark:text-white text-2xl font-bold leading-tight">{donor.name}</h1>
@@ -191,7 +191,7 @@ const AdminDonorDetail = () => {
           <p className="text-text-primary dark:text-slate-100 text-xs font-semibold">{t.email}</p>
         </a>
         <a 
-          href={`https://wa.me/${donor.phone.replace(/\D/g, '')}`}
+          href={`https://wa.me/${donor.phone?.replace(/\D/g, '') || ''}`}
           target="_blank"
           rel="noopener noreferrer"
           className="flex flex-col items-center gap-2 bg-white dark:bg-slate-800/40 p-3 rounded-2xl shadow-sm cursor-pointer border border-slate-100 dark:border-slate-800 hover:border-primary/30 transition-colors"

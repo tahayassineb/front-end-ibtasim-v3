@@ -330,6 +330,66 @@ None of the previous session's bugs were re-introduced. However:
 
 ---
 
+## Session 7: WhatsApp Notifications — Wrong Session, Missing Image, Missing Link, Duplicate Messages
+
+### What Was Reported
+
+1. WhatsApp messages were being sent from the wrong WaSender session (account had multiple sessions)
+2. Project notification messages had no main image
+3. Notification messages had no project name, no user name, no link to the project
+4. After some fixes: messages were sent twice (one with image, one without)
+5. After link fix attempt: link still not appearing in messages
+
+### Root Causes (In Order of Discovery)
+
+**Wrong session sending:**
+The send function in `notifications.ts` used `WASENDER_MASTER_TOKEN` for all sends. This is the account-level token. When the account has multiple WhatsApp sessions, WaSender may route sends through any of them. There is no way to control routing unless you use the session-specific `api_key`.
+
+Fix attempt: Add UI for admin to explicitly select which session to use. Added `listWaSenderSessions` action and `selectSessionForSendingAction`, stored chosen session's `api_key` in `whatsapp_settings` config, modified `sendWhatsAppMessage` to read it.
+
+Later the user clarified this was a mistake on their part — no other session had actually sent. Reverted to simpler approach.
+
+**No image in messages:**
+`project.mainImage` stores a **Convex storage ID** (e.g. `kg2abc123...`), not a URL. Passing the storage ID directly to WaSender as `imageUrl` produces a broken link. Fix: call `ctx.storage.getUrl(project.mainImage)` to resolve it to an actual HTTPS URL before broadcasting.
+
+**No name/title/link in messages:**
+The broadcast function didn't pass user name, project title, or project link. Fixed by:
+- Querying the user's name from the DB inside `broadcastToAllUsers`
+- Building the project link from `process.env.FRONTEND_URL` (or `FRONTEND_URL` Convex env var)
+- Composing a full message: `السلام عليكم {name} 👋\n\n🌟 مشروع جديد...\n"${title}"\n\nتبرع الآن...\n${link}\n\nفريق جمعية الأمل`
+
+**Link not appearing — the real root cause:**
+After multiple code attempts (trying `caption` field, splitting image+text into two calls, checking message format), the actual problem was discovered: **`FRONTEND_URL` was not set in Convex environment variables at all.** The link variable was an empty string. Once the user added `FRONTEND_URL` via Convex Dashboard, links appeared immediately.
+
+**Duplicate messages:**
+During debugging, the send function was split into two calls: one `POST /messages` with `imageUrl`, then another with `text`. This caused two WhatsApp messages per user. Reverted to a single call with `{ to, text, imageUrl }` — WaSender renders image+caption as one message.
+
+### What I Did Wrong
+
+1. **Spent multiple iterations changing message format, field names (`caption` vs `text`), and message structure** — never checked whether `FRONTEND_URL` was set. A single `npx convex env list` at the start would have revealed the missing env var immediately. I should have checked env vars before touching code.
+
+2. **Split message into two calls** when debugging the link issue. This "fix" introduced the duplicate message bug. Lesson: don't change unrelated things while chasing a bug.
+
+3. **Asserted with confidence that the problem was a code bug** when it was a configuration gap. The user was reasonably frustrated: "the problem was bc it was not in the env arement variable, at all how you can be sure like that it wasent in evn variable in convex." I declared the code correct without verifying the runtime environment.
+
+### The Actual Fix
+
+1. Resolve `project.mainImage` storage ID via `ctx.storage.getUrl()` before broadcasting
+2. Pass user name (`user.name`) and project title into message text per user
+3. Build project link from `process.env.FRONTEND_URL`
+4. Single WaSender call: `{ to: phoneNumber, text: fullMessage, imageUrl: resolvedUrl }`
+5. **Set `FRONTEND_URL` in Convex Dashboard** — this is the actual fix that made links appear
+
+### Lessons for Next Claude
+
+**Check env vars first.** Before assuming a bug is in the code, run `npx convex env list` and verify every variable the affected function reads. A missing env var is invisible in code review — it only shows up at runtime as an empty string or undefined.
+
+**Never change multiple things at once when debugging.** Each change should be isolated and testable. Splitting a single message call into two calls "to debug" introduced a new bug (duplicate messages). Change one thing, verify, then change the next.
+
+**Convex storage IDs are not URLs.** Any `mainImage`, `receipt`, or `file` field stored in Convex is a storage ID. Always call `ctx.storage.getUrl(storageId)` to get the actual HTTPS URL before passing to external APIs.
+
+---
+
 ## Architecture Notes
 
 - **Convex** is both backend (actions/mutations/queries) and database. Deploy separately from frontend.
