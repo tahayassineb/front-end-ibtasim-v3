@@ -112,6 +112,53 @@ export const getUserProfile = query({
 // USER MUTATIONS
 // ============================================
 
+/**
+ * Find a user by phone number, or create one if not found.
+ * Used by kafala (and any flow where the user may not be logged in).
+ * Returns the user's _id in either case.
+ */
+export const getOrCreateUser = mutation({
+  args: {
+    fullName: v.string(),
+    email: v.optional(v.string()),
+    phoneNumber: v.string(),
+    preferredLanguage: v.union(v.literal("ar"), v.literal("fr"), v.literal("en")),
+  },
+  returns: v.id("users"),
+  handler: async (ctx, args) => {
+    // Look up existing user by phone
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_phone", (q) => q.eq("phoneNumber", args.phoneNumber))
+      .first();
+
+    if (existing) {
+      // Keep name up to date if the user re-entered different info
+      if (args.fullName && args.fullName !== existing.fullName) {
+        await ctx.db.patch(existing._id, { fullName: args.fullName });
+      }
+      return existing._id;
+    }
+
+    // Create new guest user record
+    const now = Date.now();
+    return await ctx.db.insert("users", {
+      fullName: args.fullName,
+      email: args.email ?? "",
+      phoneNumber: args.phoneNumber,
+      isVerified: false,
+      preferredLanguage: args.preferredLanguage,
+      notificationsEnabled: true,
+      totalDonated: 0,
+      donationCount: 0,
+      dataRetentionConsent: true,
+      consentGivenAt: now,
+      createdAt: now,
+      lastLoginAt: now,
+    });
+  },
+});
+
 export const createUser = mutation({
   args: {
     fullName: v.string(),

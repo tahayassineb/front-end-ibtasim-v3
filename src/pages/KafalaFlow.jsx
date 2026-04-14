@@ -118,6 +118,7 @@ export default function KafalaFlow() {
   const kafalaData = useQuery(api.kafala.getKafalaById, { kafalaId: id });
   const bankInfoRaw = useQuery(api.config.getConfig, { key: 'bank_info' });
 
+  const getOrCreateUser = useMutation(api.users.getOrCreateUser);
   const createSponsorship = useMutation(api.kafala.createSponsorship);
   const cancelSponsorship = useMutation(api.kafala.cancelSponsorship);
   const uploadKafalaReceipt = useMutation(api.kafala.uploadKafalaReceipt);
@@ -200,11 +201,23 @@ export default function KafalaFlow() {
     setSubmitting(true);
 
     try {
-      // 1. Create sponsorship + first donation record
       const fullPhone = user.countryCode + user.phone.replace(/^0/, '');
+
+      // 1. Resolve user ID — use logged-in user or create/find by phone
+      let resolvedUserId = appUser?.userId || appUser?.id;
+      if (!resolvedUserId) {
+        resolvedUserId = await getOrCreateUser({
+          fullName: user.fullName,
+          email: user.email || undefined,
+          phoneNumber: fullPhone,
+          preferredLanguage: lang === 'ar' ? 'ar' : lang === 'fr' ? 'fr' : 'en',
+        });
+      }
+
+      // 2. Create sponsorship + first donation record
       const result = await createSponsorship({
         kafalaId: id,
-        userId: appUser?.userId || appUser?.id,
+        userId: resolvedUserId,
         paymentMethod,
         isAnonymous: user.isAnonymous,
       });
