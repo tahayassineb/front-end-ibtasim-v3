@@ -53,13 +53,15 @@ export const createKafalaWhopCheckout = action({
     });
     if (!kafala) throw new Error("الكفالة غير موجودة");
 
-    // monthlyPrice is in cents — Whop initial_price is actual MAD amount
+    // monthlyPrice is in cents — convert to actual MAD amount for Whop
     const priceInMAD = Math.round(kafala.monthlyPrice / 100);
 
-    // Step 1: Create a hidden recurring plan via Whop v1 API.
-    // billing_period: 30 days → Whop auto-bills the sponsor every month.
-    // stock: 1 → only one subscriber per plan (matches one-sponsor-per-orphan rule).
-    const planRes = await fetch(`${WHOP_API_BASE}/api/v1/plans`, {
+    // Step 1: Create a hidden recurring plan via Whop v2 API.
+    // plan_type "renewal" + billing_period 30 → Whop auto-bills every 30 days.
+    // Only renewal_price is set (no initial_price) so the first charge = one month, not two.
+    // currency "mad" → prices shown in Moroccan Dirhams, not USD.
+    // unlimited_stock: true → our DB guards the one-sponsor rule via kafala.status check.
+    const planRes = await fetch(`${WHOP_API_BASE}/api/v2/plans`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -68,11 +70,12 @@ export const createKafalaWhopCheckout = action({
       body: JSON.stringify({
         company_id: companyId,
         product_id: productId,
-        initial_price: priceInMAD,
-        renewal_price: priceInMAD,
+        plan_type: "renewal",
         billing_period: 30,
+        renewal_price: priceInMAD,
+        currency: "mad",
         visibility: "hidden",
-        stock: 1,
+        unlimited_stock: true,
       }),
     });
 
