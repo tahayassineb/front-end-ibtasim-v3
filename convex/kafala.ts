@@ -337,15 +337,42 @@ export const createSponsorship = mutation({
     // Link donation back to sponsorship
     await ctx.db.patch(sponsorshipId, { lastDonationId: donationId });
 
-    // For card_whop, optimistically lock the kafala (Whop checkout is about to start)
-    if (args.paymentMethod === "card_whop") {
-      await ctx.db.patch(args.kafalaId, {
-        status: "sponsored",
-        updatedAt: now,
-      });
-    }
+    // NOTE: kafala stays "active" until payment is confirmed via processKafalaWhopPayment
+    // or admin verification. Never lock optimistically — payment can fail.
 
     return { sponsorshipId, donationId };
+  },
+});
+
+/**
+ * Cancel a pending sponsorship + donation if Whop checkout fails.
+ * Restores kafala to "active" so it can be claimed again.
+ */
+export const cancelSponsorship = mutation({
+  args: {
+    sponsorshipId: v.id("kafalaSponsorship"),
+    donationId: v.id("kafalaDonations"),
+  },
+  handler: async (ctx, args) => {
+    const sponsorship = await ctx.db.get(args.sponsorshipId);
+    if (!sponsorship) return;
+
+    // Only cancel if still pending (idempotency guard)
+    if (sponsorship.status !== "pending_payment") return;
+
+    await ctx.db.patch(args.sponsorshipId, {
+      status: "cancelled",
+      updatedAt: Date.now(),
+    });
+    await ctx.db.patch(args.donationId, {
+      status: "rejected",
+      updatedAt: Date.now(),
+    });
+    // Ensure kafala is re-opened (in case it was incorrectly locked)
+    await ctx.db.patch(sponsorship.kafalaId, {
+      status: "active",
+      updatedAt: Date.now(),
+    });
   },
 });
 

@@ -119,6 +119,7 @@ export default function KafalaFlow() {
   const bankInfoRaw = useQuery(api.config.getConfig, { key: 'bank_info' });
 
   const createSponsorship = useMutation(api.kafala.createSponsorship);
+  const cancelSponsorship = useMutation(api.kafala.cancelSponsorship);
   const uploadKafalaReceipt = useMutation(api.kafala.uploadKafalaReceipt);
   const generateUploadUrl = useMutation(api.storage.generateProjectImageUploadUrl);
   const createCheckout = useAction(api.kafalaPayments.createKafalaWhopCheckout);
@@ -153,7 +154,7 @@ export default function KafalaFlow() {
   if (!kafalaData) {
     return <div className="min-h-screen flex items-center justify-center text-text-secondary">{tx.notfound}</div>;
   }
-  if (kafalaData.status !== 'active') {
+  if (kafalaData.status === 'sponsored') {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center max-w-sm">
@@ -211,11 +212,22 @@ export default function KafalaFlow() {
       setDonationId(result.donationId);
 
       if (paymentMethod === 'card_whop') {
-        // Redirect to Whop subscription checkout
-        const purchaseUrl = await createCheckout({
-          kafalaId: id,
-          donationId: result.donationId,
-        });
+        let purchaseUrl;
+        try {
+          purchaseUrl = await createCheckout({
+            kafalaId: id,
+            donationId: result.donationId,
+          });
+        } catch (whopErr) {
+          // Whop checkout failed — cancel the pending sponsorship so kafala stays open
+          try {
+            await cancelSponsorship({
+              sponsorshipId: result.sponsorshipId,
+              donationId: result.donationId,
+            });
+          } catch (_) {}
+          throw whopErr; // re-throw so outer catch shows error toast
+        }
         window.location.href = purchaseUrl;
         return; // page will redirect
       }
