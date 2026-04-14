@@ -56,10 +56,10 @@ export const createKafalaWhopCheckout = action({
     // monthlyPrice is in cents — Whop initial_price is actual MAD amount
     const priceInMAD = Math.round(kafala.monthlyPrice / 100);
 
-    // Step 1: Create a hidden one-time plan for the monthly kafala payment.
-    // We use one_time (same proven API as regular donations).
-    // Monthly renewal is handled via WhatsApp reminders + new payments each month.
-    const planRes = await fetch(`${WHOP_API_BASE}/api/v2/plans`, {
+    // Step 1: Create a hidden recurring plan via Whop v1 API.
+    // billing_period: 30 days → Whop auto-bills the sponsor every month.
+    // stock: 1 → only one subscriber per plan (matches one-sponsor-per-orphan rule).
+    const planRes = await fetch(`${WHOP_API_BASE}/api/v1/plans`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -67,12 +67,12 @@ export const createKafalaWhopCheckout = action({
       },
       body: JSON.stringify({
         company_id: companyId,
-        access_pass_id: productId,
+        product_id: productId,
         initial_price: priceInMAD,
-        base_currency: "mad",
-        plan_type: "one_time",
+        renewal_price: priceInMAD,
+        billing_period: 30,
         visibility: "hidden",
-        unlimited_stock: true,
+        stock: 1,
       }),
     });
 

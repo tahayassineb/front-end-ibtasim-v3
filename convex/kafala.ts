@@ -509,6 +509,88 @@ export const processKafalaWhopPayment = mutation({
 });
 
 /**
+ * Look up an active sponsorship by Whop subscription/membership ID.
+ * Used by the webhook handler to detect recurring monthly charges.
+ */
+export const getSponsorshipBySubscriptionId = query({
+  args: { whopSubscriptionId: v.string() },
+  handler: async (ctx, args) => {
+    const active = await ctx.db
+      .query("kafalaSponsorship")
+      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .filter((q) => q.eq(q.field("whopSubscriptionId"), args.whopSubscriptionId))
+      .first();
+    return active ?? null;
+  },
+});
+
+/**
+ * Extend an active Whop subscription sponsorship by one month.
+ * Called on each recurring `payment.succeeded` webhook from Whop.
+ * Creates a new kafalaDonation record and pushes nextRenewalDate forward 30 days.
+ */
+export const extendKafalaSponsorship = mutation({
+  args: {
+    sponsorshipId: v.id("kafalaSponsorship"),
+    whopPaymentId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const sponsorship = await ctx.db.get(args.sponsorshipId);
+    if (!sponsorship) throw new Error("الاشتراك غير موجود");
+    if (sponsorship.status !== "active") return; // Already expired or cancelled
+
+    const kafala = await ctx.db.get(sponsorship.kafalaId);
+    if (!kafala) throw new Error("الكفالة غير موجودة");
+
+    // Idempotency: check if this payment ID was already processed
+    const recentDonations = await ctx.db
+      .query("kafalaDonations")
+      .withIndex("by_sponsorship", (q) => q.eq("sponsorshipId", args.sponsorshipId))
+      .order("desc")
+      .take(5);
+    const alreadyProcessed = recentDonations.some(
+      (d) => d.whopPaymentId === args.whopPaymentId
+    );
+    if (alreadyProcessed) return; // Already handled — idempotent
+
+    const now = Date.now();
+    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+
+    // Create new donation record for this renewal cycle
+    const donationId = await ctx.db.insert("kafalaDonations", {
+      kafalaId: sponsorship.kafalaId,
+      userId: sponsorship.userId,
+      sponsorshipId: args.sponsorshipId,
+      amount: kafala.monthlyPrice,
+      currency: "MAD",
+      paymentMethod: "card_whop",
+      status: "verified",
+      whopPaymentId: args.whopPaymentId,
+      whopSubscriptionId: sponsorship.whopSubscriptionId,
+      periodStart: now,
+      periodEnd: now + thirtyDays,
+      isAnonymous: false,
+      verifiedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Push the renewal date forward 30 days and link latest donation
+    await ctx.db.patch(args.sponsorshipId, {
+      nextRenewalDate: now + thirtyDays,
+      lastDonationId: donationId,
+      updatedAt: now,
+    });
+
+    // Ensure kafala stays marked as sponsored
+    await ctx.db.patch(sponsorship.kafalaId, {
+      status: "sponsored",
+      updatedAt: now,
+    });
+  },
+});
+
+/**
  * Donor renews kafala for the next month (bank/cash path).
  * Creates a new kafalaDonation linked to the existing sponsorship.
  */

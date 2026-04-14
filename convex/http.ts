@@ -68,8 +68,53 @@ http.route({
       const event = payload.event;
       const data = payload.data;
 
-      // Get donationId from metadata
       const donationId = data?.metadata?.donationId;
+      const paymentType = data?.metadata?.type; // "kafala" for kafala payments
+
+      // ── Kafala recurring subscription payments ──────────────────────────────
+      if (paymentType === "kafala") {
+        const membershipId: string | undefined = data?.membership_id;
+
+        switch (event) {
+          case "payment.succeeded": {
+            if (membershipId) {
+              // Check if we already have an active sponsorship for this subscription
+              const sponsorship = await ctx.runQuery(
+                api.kafala.getSponsorshipBySubscriptionId,
+                { whopSubscriptionId: membershipId }
+              );
+
+              if (sponsorship) {
+                // Recurring renewal — extend by 30 days, create new donation record
+                await ctx.runMutation(api.kafala.extendKafalaSponsorship, {
+                  sponsorshipId: sponsorship._id,
+                  whopPaymentId: data.id,
+                });
+              } else if (donationId) {
+                // First payment — activate sponsorship and mark donation verified
+                await ctx.runMutation(api.kafala.processKafalaWhopPayment, {
+                  donationId: donationId as any,
+                  whopPaymentId: data.id,
+                  whopSubscriptionId: membershipId,
+                });
+              }
+            } else if (donationId) {
+              // No membership_id (one-time fallback)
+              await ctx.runMutation(api.kafala.processKafalaWhopPayment, {
+                donationId: donationId as any,
+                whopPaymentId: data.id,
+              });
+            }
+            break;
+          }
+          default:
+            console.log(`Unhandled Whop kafala event: ${event}`);
+        }
+
+        return new Response("OK", { status: 200 });
+      }
+
+      // ── Regular donation payments ────────────────────────────────────────────
       if (!donationId) {
         console.error("Missing donationId in webhook metadata");
         return new Response("OK", { status: 200 }); // Return 200 to stop Whop retries
