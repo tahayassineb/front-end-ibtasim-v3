@@ -212,11 +212,23 @@ export default function KafalaFlow() {
       setDonationId(result.donationId);
 
       if (paymentMethod === 'card_whop') {
+        // Detect user's country for currency selection:
+        // Morocco → MAD (درهم), elsewhere → USD equivalent
+        let userCountry;
+        try {
+          const geoRes = await fetch('https://ipapi.co/json/');
+          if (geoRes.ok) {
+            const geoData = await geoRes.json();
+            userCountry = geoData.country_code; // e.g. "MA", "FR", "US"
+          }
+        } catch { /* fall through — action uses MAD as default */ }
+
         let purchaseUrl;
         try {
           purchaseUrl = await createCheckout({
             kafalaId: id,
             donationId: result.donationId,
+            userCountry,
           });
         } catch (whopErr) {
           // Whop checkout failed — cancel the pending sponsorship so kafala stays open
