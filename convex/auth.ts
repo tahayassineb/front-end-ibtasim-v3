@@ -220,8 +220,23 @@ export const registerUser = mutation({
       .query("users")
       .withIndex("by_phone", (q) => q.eq("phoneNumber", args.phoneNumber))
       .first();
-    
+
     if (existingUser) {
+      // If account exists but unverified and no password set, allow re-registration
+      // (user registered but never completed OTP verification)
+      if (!existingUser.isVerified && !existingUser.passwordHash) {
+        await ctx.db.patch(existingUser._id, {
+          fullName: args.fullName,
+          email: args.email,
+          preferredLanguage: args.preferredLanguage,
+          lastLoginAt: now,
+        });
+        return {
+          success: true,
+          message: "Account updated. Please verify your phone number.",
+          userId: existingUser._id,
+        };
+      }
       return {
         success: false,
         message: "Phone number already registered.",
@@ -342,6 +357,7 @@ export const loginWithPassword = mutation({
     success: v.boolean(),
     message: v.string(),
     userId: v.optional(v.id("users")),
+    requiresOtpVerification: v.optional(v.boolean()),
     user: v.optional(v.object({
       _id: v.id("users"),
       fullName: v.string(),
@@ -364,6 +380,16 @@ export const loginWithPassword = mutation({
       };
     }
     
+    // Account registered but OTP never completed — prompt them to verify
+    if (!user.isVerified && !user.passwordHash) {
+      return {
+        success: false,
+        message: "Account not verified. Please verify your phone number.",
+        requiresOtpVerification: true,
+        userId: user._id,
+      };
+    }
+
     if (!user.passwordHash) {
       return {
         success: false,

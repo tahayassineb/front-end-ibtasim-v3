@@ -1346,10 +1346,17 @@ const DonationFlow = () => {
           preferredLanguage: result.user.preferredLanguage,
           isVerified: result.user.isVerified,
         };
-        
+
         login(userData);
         setStep(1); // Go to amount selection
         showToast(lang === 'ar' ? 'تم تسجيل الدخول' : lang === 'fr' ? 'Connecté' : 'Logged in', 'success');
+      } else if (result.requiresOtpVerification) {
+        // Account exists but was never verified — resend OTP and show verification screen
+        const fullPhoneNumber = countryCode + authFormData.phone;
+        try { await requestOTP({ phoneNumber: fullPhoneNumber }); } catch {}
+        setOtpSent(true);
+        setOtpTimer(120);
+        showToast(lang === 'ar' ? 'حسابك غير مفعّل. تم إرسال رمز التحقق مجدداً.' : lang === 'fr' ? 'Compte non vérifié. Code renvoyé.' : 'Account not verified. Code resent.', 'info');
       } else {
         setAuthErrors({ password: result.message || (lang === 'ar' ? 'فشل تسجيل الدخول' : lang === 'fr' ? 'Échec de connexion' : 'Login failed') });
         showToast(result.message || 'Login failed', 'error');

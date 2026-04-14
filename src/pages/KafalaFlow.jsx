@@ -201,6 +201,12 @@ export default function KafalaFlow() {
         login({ id: result.user._id, userId: result.user._id, name: result.user.fullName, phone: result.user.phoneNumber, email: result.user.email });
         setStep(1);
         showToast(lang === 'ar' ? 'تم تسجيل الدخول' : 'Connecté', 'success');
+      } else if (result.requiresOtpVerification) {
+        // Account exists but was never verified — resend OTP and show verification screen
+        try { await requestOTP({ phoneNumber: fullPhone }); } catch {}
+        setOtpSent(true);
+        setOtpTimer(120);
+        showToast(lang === 'ar' ? 'حسابك غير مفعّل. تم إرسال رمز التحقق مجدداً.' : 'Compte non vérifié. Code renvoyé.', 'info');
       } else {
         setAuthErrors({ password: result.message || (lang === 'ar' ? 'فشل تسجيل الدخول' : 'Échec') });
       }
@@ -276,11 +282,15 @@ export default function KafalaFlow() {
         return;
       }
 
-      if (paymentMethod === 'bank_transfer' && receipt) {
-        const uploadUrl = await generateUploadUrl();
-        const uploadRes = await fetch(uploadUrl, { method: 'POST', body: receipt, headers: { 'Content-Type': receipt.type } });
-        const { storageId } = await uploadRes.json();
-        await uploadKafalaReceipt({ donationId: result.donationId, receiptUrl: storageId, bankName });
+      if (paymentMethod === 'bank_transfer') {
+        let storageId = '';
+        if (receipt) {
+          const uploadUrl = await generateUploadUrl();
+          const uploadRes = await fetch(uploadUrl, { method: 'POST', body: receipt, headers: { 'Content-Type': receipt.type } });
+          const uploadData = await uploadRes.json();
+          storageId = uploadData.storageId;
+        }
+        await uploadKafalaReceipt({ donationId: result.donationId, receiptUrl: storageId, bankName, transactionReference: reference || undefined });
       }
 
       if (paymentMethod === 'cash_agency' && reference) {
@@ -507,19 +517,41 @@ export default function KafalaFlow() {
 
             {paymentMethod === 'bank_transfer' && (
               <div className="space-y-4">
-                <div className="bg-gray-50 dark:bg-white/5 rounded-xl p-4 space-y-2">
-                  <p className="text-sm font-bold text-text-secondary mb-3">{tx.bankDetails}</p>
-                  {[
-                    { label: tx.bankHolder, value: bankInfo.name },
-                    { label: tx.bankRib,    value: bankInfo.rib, mono: true },
-                    { label: tx.bankNameLabel, value: bankInfo.bank },
-                  ].map(row => (
-                    <div key={row.label} className="flex justify-between items-center text-sm">
-                      <span className="text-text-muted">{row.label}</span>
-                      <span className={`font-semibold text-text-primary dark:text-white ${row.mono ? 'font-mono' : ''}`}>{row.value}</span>
+                {/* Bank account info with copy buttons */}
+                <div className="bg-white dark:bg-bg-dark-card rounded-2xl border border-border-light dark:border-white/10 overflow-hidden">
+                  <div className="bg-primary px-5 py-3 flex items-center justify-between">
+                    <span className="text-white text-sm font-bold">{tx.bankDetails}</span>
+                    <span className="material-symbols-outlined text-white/80 text-lg">account_balance</span>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    {/* Account holder */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-text-muted uppercase tracking-wider">{tx.bankHolder}</label>
+                      <button onClick={() => { navigator.clipboard.writeText(bankInfo.name); showToast(lang === 'ar' ? 'تم النسخ' : 'Copié', 'success'); }}
+                        className="flex items-center justify-between w-full bg-primary/5 dark:bg-primary/10 p-3 rounded-xl border border-primary/10 active:scale-[.98] transition-all">
+                        <span className="text-text-primary dark:text-white font-bold text-sm flex-1 text-right">{bankInfo.name}</span>
+                        <span className="material-symbols-outlined text-primary/60 text-lg mr-2">content_copy</span>
+                      </button>
                     </div>
-                  ))}
+                    {/* RIB */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-text-muted uppercase tracking-wider">{tx.bankRib}</label>
+                      <div className="flex items-center gap-2 bg-primary/10 dark:bg-primary/20 p-3 rounded-xl border border-primary/10">
+                        <span className="text-primary font-mono font-bold text-base tracking-wider flex-1" dir="ltr">{bankInfo.rib}</span>
+                        <button onClick={() => { navigator.clipboard.writeText((bankInfo.rib || '').replace(/\s/g, '')); showToast(lang === 'ar' ? 'تم النسخ' : 'Copié', 'success'); }}
+                          className="flex items-center justify-center w-9 h-9 bg-primary text-white rounded-lg active:scale-95 shadow transition-all">
+                          <span className="material-symbols-outlined text-[20px]">content_copy</span>
+                        </button>
+                      </div>
+                    </div>
+                    {/* Bank name */}
+                    <div className="flex justify-between items-center text-sm pt-1 border-t border-border-light dark:border-white/10">
+                      <span className="text-text-muted">{tx.bankNameLabel}</span>
+                      <span className="font-semibold text-text-primary dark:text-white">{bankInfo.bank}</span>
+                    </div>
+                  </div>
                 </div>
+                {/* Receipt upload */}
                 <div>
                   <label className="block text-sm font-semibold text-text-secondary mb-1">{tx.uploadReceipt}</label>
                   <button type="button" onClick={() => fileRef.current?.click()}
@@ -530,11 +562,13 @@ export default function KafalaFlow() {
                   </button>
                   <input ref={fileRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => setReceipt(e.target.files?.[0] || null)} />
                 </div>
+                {/* Transaction reference (same as agency) */}
                 <div>
-                  <label className="block text-sm font-semibold text-text-secondary mb-1">{tx.bankNameLabel}</label>
-                  <input type="text" placeholder="Attijariwafa, CIH, BMCE..."
-                    value={bankName} onChange={e => setBankName(e.target.value)}
+                  <label className="block text-sm font-semibold text-text-secondary mb-1">{tx.refNum}</label>
+                  <input type="text" placeholder={tx.refPlaceholder}
+                    value={reference} onChange={e => setReference(e.target.value)}
                     className="w-full border border-border-light dark:border-white/20 rounded-xl px-4 py-3 bg-white dark:bg-bg-dark-card text-text-primary dark:text-white placeholder:text-text-muted focus:outline-none focus:border-primary"
+                    dir="ltr"
                   />
                 </div>
               </div>
