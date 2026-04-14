@@ -471,6 +471,33 @@ Added two-path webhook routing in `/webhooks/whop`:
 
 ---
 
+## Session: Bank Transfer UI + Unverified Account Recovery — 2026-04-14
+
+### Problems reported
+1. Bank transfer payment step looked different (worse) than agency/cash transfer — no copy buttons, no reference number field.
+2. If a user registered but never completed OTP verification (navigated away at the OTP step), they were locked out: re-registering gave "phone already registered" and logging in gave "password not set" — no recovery path.
+
+### Fix 1 — Bank transfer parity with agency
+Rewrote the `bank_transfer` section in KafalaFlow step 4:
+- Added a polished card with green header (matching DonationFlow style)
+- Copy-to-clipboard button on account holder name
+- Copy button with highlight on RIB (monospace, primary color)
+- Added transaction reference number input field — same `reference` state used by cash_agency
+- `handleSubmit` now passes `transactionReference: reference` for bank_transfer too
+
+### Fix 2 — Unverified account recovery
+**Backend (`convex/auth.ts`)**:
+- `registerUser`: if phone exists but `!isVerified && !passwordHash` → update name/email and return `success: true, userId`. The frontend then sets their password and resends OTP. Previously it returned an error, leaving them stuck.
+- `loginWithPassword`: added `requiresOtpVerification: v.optional(v.boolean())` to return schema. If user exists but `!isVerified && !passwordHash`, returns `{ success: false, requiresOtpVerification: true }` instead of a generic error.
+
+**Frontend (`KafalaFlow.jsx` + `DonationFlow.jsx`)**:
+- `handleLogin`: if `result.requiresOtpVerification === true`, automatically calls `requestOTP` and switches to OTP screen with toast: "حسابك غير مفعّل. تم إرسال رمز التحقق مجدداً."
+
+### Lesson
+Two-step auth flows (register → OTP) always create a "partial registration" trap. The recovery path must be built into both `registerUser` (allow re-register if unverified) and `loginWithPassword` (redirect to OTP if unverified). Handle this at account creation time, not as an afterthought.
+
+---
+
 ## Architecture Notes
 
 - **Convex** is both backend (actions/mutations/queries) and database. Deploy separately from frontend.
