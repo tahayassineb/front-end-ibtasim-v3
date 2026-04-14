@@ -20,7 +20,7 @@ const WHOP_API_BASE = "https://api.whop.com";
 const DEFAULT_PRODUCT_ID = "prod_1khGq1pY0YRXM";
 const DEFAULT_COMPANY_ID = "biz_bMROFFVg1qyi39";
 
-// Fallback MAD→USD rate (updated periodically). Whop needs USD for non-MAD countries.
+// Fallback MAD→USD rate (Morocco has a managed peg, fairly stable)
 const FALLBACK_MAD_TO_USD = 0.0991; // 1 MAD ≈ $0.099
 
 // ============================================
@@ -32,20 +32,14 @@ const FALLBACK_MAD_TO_USD = 0.0991; // 1 MAD ≈ $0.099
  * Returns the purchase_url to redirect the donor to Whop.
  *
  * Currency logic:
- * - Morocco (MA): price in MAD (درهم), shown as-is on Whop checkout
+ * - Morocco (MA) or unknown: price in MAD
  * - Other countries: price converted MAD→USD via live exchange rate API
- *
- * Flow:
- * 1. Determine currency + price based on userCountry
- * 2. Create a hidden recurring plan (plan_type: "renewal", billing_period: 30)
- * 3. Create a checkout session with metadata { kafalaId, donationId, type: "kafala" }
- * 4. Return purchase_url
  */
 export const createKafalaWhopCheckout = action({
   args: {
     kafalaId: v.id("kafala"),
     donationId: v.id("kafalaDonations"),
-    userCountry: v.optional(v.string()), // ISO-3166 country code, e.g. "MA", "FR", "US"
+    userCountry: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<string> => {
     const apiKey = process.env.WHOP_API_KEY;
@@ -71,53 +65,59 @@ export const createKafalaWhopCheckout = action({
     let renewalPrice: number;
 
     if (isMorocco) {
-      // Moroccan users: charge in MAD
       planCurrency = "mad";
       renewalPrice = priceInMAD;
     } else {
-      // International users: convert MAD → USD using live exchange rate
       planCurrency = "usd";
       let madToUsd = FALLBACK_MAD_TO_USD;
       try {
-        const rateRes = await fetch(
-          "https://api.exchangerate-api.com/v4/latest/MAD"
-        );
+        const rateRes = await fetch("https://api.exchangerate-api.com/v4/latest/MAD");
         if (rateRes.ok) {
           const rateData = await rateRes.json();
           if (rateData?.rates?.USD) madToUsd = rateData.rates.USD;
         }
-      } catch {
-        // Use fallback rate silently
-      }
-      // Round to 2 decimal places for Whop
+      } catch { /* use fallback */ }
       renewalPrice = Math.round(priceInMAD * madToUsd * 100) / 100;
     }
 
     // ── Step 1: Create hidden recurring plan ─────────────────────────────────
-    // plan_type "renewal" + billing_period 30 → Whop auto-bills every 30 days.
-    // Only renewal_price (no initial_price) → first charge = one month, not two.
-    // access_pass_id matches the field name used by working one-time donation plans.
+    // Uses product_id (renewal plans) + base_currency (raw Whop v2 field).
+    // Only renewal_price — no initial_price — so day-1 charge = one month only.
+    const planBody = {
+      company_id: companyId,
+      product_id: productId,
+      plan_type: "renewal",
+      billing_period: 30,
+      renewal_price: renewalPrice,
+      base_currency: planCurrency,
+      visibility: "hidden",
+      unlimited_stock: true,
+    };
+
     const planRes = await fetch(`${WHOP_API_BASE}/api/v2/plans`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        company_id: companyId,
-        access_pass_id: productId,
-        plan_type: "renewal",
-        billing_period: 30,
-        renewal_price: renewalPrice,
-        base_currency: planCurrency,
-        visibility: "hidden",
-        unlimited_stock: true,
-      }),
+      body: JSON.stringify(planBody),
     });
 
     if (!planRes.ok) {
       const errBody = await planRes.text();
-      throw new Error(`Failed to create Whop plan: ${planRes.status} — ${errBody}`);
+      // Log the exact Whop error for debugging
+      try {
+        await ctx.runMutation(api.errorLogs.insertErrorLog, {
+          source: "kafala_whop_plan",
+          level: "error",
+          message: `Whop plan creation failed: HTTP ${planRes.status}`,
+          apiUrl: `${WHOP_API_BASE}/api/v2/plans`,
+          apiStatus: planRes.status,
+          apiResponse: errBody.slice(0, 2000),
+          details: JSON.stringify({ planBody, userCountry: args.userCountry }),
+        });
+      } catch {}
+      throw new Error(`فشل إنشاء خطة الدفع: ${planRes.status} — ${errBody.slice(0, 200)}`);
     }
 
     const planData = await planRes.json();
@@ -145,8 +145,19 @@ export const createKafalaWhopCheckout = action({
 
     if (!checkoutRes.ok) {
       const errBody = await checkoutRes.text();
+      try {
+        await ctx.runMutation(api.errorLogs.insertErrorLog, {
+          source: "kafala_whop_checkout",
+          level: "error",
+          message: `Whop checkout session failed: HTTP ${checkoutRes.status}`,
+          apiUrl: `${WHOP_API_BASE}/api/v2/checkout_sessions`,
+          apiStatus: checkoutRes.status,
+          apiResponse: errBody.slice(0, 2000),
+          details: JSON.stringify({ planId, userCountry: args.userCountry }),
+        });
+      } catch {}
       throw new Error(
-        `Failed to create Whop checkout session: ${checkoutRes.status} — ${errBody}`
+        `فشل إنشاء جلسة الدفع: ${checkoutRes.status} — ${errBody.slice(0, 200)}`
       );
     }
 

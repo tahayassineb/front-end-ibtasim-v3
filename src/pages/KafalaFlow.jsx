@@ -272,7 +272,8 @@ export default function KafalaFlow() {
       setDone(true);
     } catch (err) {
       const msg = err?.message || tx.unknownError;
-      showToast?.(msg.includes('مكفول') ? tx.kafalaUnavailable : tx.unknownError, 'error');
+      // Show actual error in toast so we can debug (includes Whop HTTP status)
+      showToast?.(msg.includes('مكفول') ? tx.kafalaUnavailable : msg, 'error');
     } finally {
       setSubmitting(false);
     }
