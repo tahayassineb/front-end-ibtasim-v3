@@ -64,8 +64,8 @@ export default function AdminKafalaForm() {
 
   const validate = () => {
     if (!name.trim()) { showToast?.('الاسم مطلوب', 'error'); return false; }
-    if (!age || isNaN(Number(age)) || Number(age) < 1 || Number(age) > 18) {
-      showToast?.('العمر يجب أن يكون بين 1 و 18', 'error'); return false;
+    if (!age || isNaN(Number(age)) || Number(age) < 1) {
+      showToast?.('العمر يجب أن يكون رقماً صحيحاً', 'error'); return false;
     }
     if (!location.trim()) { showToast?.('المدينة مطلوبة', 'error'); return false; }
     if (!bio.ar.trim()) { showToast?.('النبذة بالعربية مطلوبة', 'error'); return false; }
@@ -106,7 +106,7 @@ export default function AdminKafalaForm() {
         });
         showToast?.(publish ? 'تم نشر الكفالة' : 'تم حفظ التغييرات', 'success');
       } else {
-        const adminId = adminUser?.userId || adminUser?.id;
+        const adminId = adminUser?.id;
         if (!adminId) throw new Error('لم يتم التعرف على الأدمن');
         await createKafala({
           adminId,
@@ -234,7 +234,6 @@ export default function AdminKafalaForm() {
               <input
                 type="number"
                 min="1"
-                max="18"
                 placeholder="مثال: 8"
                 value={age}
                 onChange={e => setAge(e.target.value)}
