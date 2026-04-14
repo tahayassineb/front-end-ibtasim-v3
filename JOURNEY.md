@@ -419,18 +419,55 @@ Add a full "kafala" (orphan sponsorship) system: individual orphan profiles, fix
 ### Mistakes made
 - Initially referenced `api.admins.getAdminByUserId` which doesn't exist — fixed by using `adminUser?.userId || adminUser?.id` from AppContext (same pattern as AdminProjectForm).
 - Used `appUser?._id` instead of `appUser?.userId` for Convex IDs — caught and corrected.
+- First tried Whop v2 recurring plan (`plan_type: "recurring"`, `billing_period: 30`) — Whop v2 API doesn't support recurring plans this way. Then switched to one-time (worked but no auto-billing). Finally implemented v1 recurring correctly (see session below).
+- Optimistically locked kafala slot for card payments before Whop checkout confirmed — this caused stuck "sponsored" state on Whop failure. Removed optimistic lock entirely; slot only locks after webhook/redirect confirms payment.
 
 ### Key design decisions
 - Kafala uses **separate tables** (`kafalaDonations` not `donations`) to avoid polluting project donation logic
-- Card payments use Whop **recurring plans** (`plan_type: "recurring"`, `billing_period: 30`) not one-time plans
-- Kafala slot is **optimistically locked** for card payments at checkout start (status → "sponsored") since the user is being redirected to Whop
+- Card payments use Whop **recurring plans via v1 API** (`billing_period: 30`, `renewal_price`) so Whop auto-charges every month
+- Kafala slot stays "active" until payment confirmed — never lock optimistically
 - For bank/cash: slot stays "active" until admin verifies → avoids blocking the slot on unconfirmed payments
-- WhatsApp reminders exclude Whop subscribers (Whop handles auto-billing)
+- WhatsApp reminders exclude Whop subscribers (`card_whop`) since Whop handles auto-billing
 
 ### For the next Claude instance
-- The Whop recurring plan API may need testing — Whop's recurring plan behavior needs confirmation that `billing_period: 30` means 30 days
 - `KafalaFlow` requires the user to be logged in (`appUser`) to create a sponsorship — if no user, `createSponsorship` will fail because `userId` will be undefined. Consider adding a guest flow similar to `DonationFlow`.
 - Admin verification for kafala donations is currently done via `getPendingKafalaVerifications` query — no UI page exists yet for admin to verify them. This could be added to `AdminVerifications.jsx` as a new tab.
+
+---
+
+## Session: Whop Recurring Auto-Billing for Kafala
+
+### Problem
+The kafala payment used Whop one-time plans (not auto-renewing). The user explicitly asked for true monthly auto-billing so the sponsor doesn't need to manually pay each month.
+
+### Root cause of initial failures
+1. First attempt: `plan_type: "recurring"` on `/api/v2/plans` — v2 doesn't support recurring this way, returned API error
+2. Second attempt: `plan_type: "one_time"` — worked, but no auto-billing
+
+### Solution (session 3)
+Searched Whop MCP documentation → found v1 recurring plan API:
+- Endpoint: `POST /api/v1/plans` (NOT v2)
+- Body: `{ company_id, product_id, billing_period: 30, initial_price, renewal_price, visibility: "hidden", stock: 1 }`
+- Key differences: `product_id` not `access_pass_id`, `renewal_price` field, `billing_period` instead of `plan_type`
+
+### Webhook handling for recurring payments
+Added two-path webhook routing in `/webhooks/whop`:
+- `metadata.type === "kafala"` → routes to kafala handler
+- First payment: `processKafalaWhopPayment(donationId, paymentId, membershipId)` — activates sponsorship
+- Subsequent months: `getSponsorshipBySubscriptionId(membershipId)` → `extendKafalaSponsorship(sponsorshipId, paymentId)` — creates new kafalaDonation + extends nextRenewalDate 30 days (idempotent: checks whopPaymentId against recent donations)
+
+### Files changed
+- `convex/kafalaPayments.ts`: v1 recurring plan API
+- `convex/kafala.ts`: `getSponsorshipBySubscriptionId` query + `extendKafalaSponsorship` mutation
+- `convex/http.ts`: webhook routing for kafala vs regular donations
+
+### Mistakes made
+- None in this session — had clear spec from MCP docs before implementing
+
+### For the next Claude instance
+- Whop v1 plans may behave differently from v2 plans regarding checkout session creation (v2 `checkout_sessions` endpoint used with v1 plan ID — not yet confirmed in production)
+- If `membership_id` is missing from recurring payment webhooks, fall back to checking `donationId` metadata — the dedup check in `extendKafalaSponsorship` uses `whopPaymentId` on recent donations for idempotency
+- Still needed: admin UI to verify pending kafala bank/cash donations
 
 ---
 
