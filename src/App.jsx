@@ -22,12 +22,22 @@ import Contact from './pages/Contact';
 import DonationFlow from './pages/DonationFlow';
 import DonateSuccess from './pages/DonateSuccess';
 
+// Kafala (Orphan Sponsorship)
+import KafalaList from './pages/KafalaList';
+import KafalaDetail from './pages/KafalaDetail';
+import KafalaFlow from './pages/KafalaFlow';
+import KafalaRenew from './pages/KafalaRenew';
+
 // Error Boundary
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Convex error logging
 import { useMutation } from 'convex/react';
 import { api } from '../convex/_generated/api';
+
+// Admin Kafala Pages
+import AdminKafala from './pages/AdminKafala';
+import AdminKafalaForm from './pages/AdminKafalaForm';
 
 // Admin Pages
 import AdminLogin from './pages/AdminLogin';
@@ -166,6 +176,12 @@ function AppContent() {
           <Route path="/donate/:projectId" element={<ErrorBoundary><DonationFlow /></ErrorBoundary>} />
           <Route path="/donate" element={<ErrorBoundary><DonationFlow /></ErrorBoundary>} />
           <Route path="/donate/success" element={<ErrorBoundary><DonateSuccess /></ErrorBoundary>} />
+
+          {/* Kafala (Orphan Sponsorship) */}
+          <Route path="/kafala" element={<ErrorBoundary><MainLayout><KafalaList /></MainLayout></ErrorBoundary>} />
+          <Route path="/kafala/:id" element={<ErrorBoundary><MainLayout><KafalaDetail /></MainLayout></ErrorBoundary>} />
+          <Route path="/kafala/:id/sponsor" element={<ErrorBoundary><KafalaFlow /></ErrorBoundary>} />
+          <Route path="/kafala/:id/renew" element={<ErrorBoundary><KafalaRenew /></ErrorBoundary>} />
           
           {/* ============================================
               ADMIN ROUTES
@@ -202,6 +218,11 @@ function AppContent() {
             {/* Settings */}
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/settings/config" element={<AdminSettings />} />
+
+            {/* Kafala Management */}
+            <Route path="/admin/kafala" element={<AdminKafala />} />
+            <Route path="/admin/kafala/new" element={<AdminKafalaForm />} />
+            <Route path="/admin/kafala/:id/edit" element={<AdminKafalaForm />} />
 
             {/* Error Logs */}
             <Route path="/admin/error-logs" element={<AdminErrorLogs />} />

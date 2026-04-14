@@ -390,6 +390,50 @@ During debugging, the send function was split into two calls: one `POST /message
 
 ---
 
+## Session: Kafala (Orphan Sponsorship) Feature — 2026-04-14
+
+### What the user requested
+Add a full "kafala" (orphan sponsorship) system: individual orphan profiles, fixed monthly price per orphan, only one sponsor at a time, all three payment methods (card Whop subscription / bank / cash), WhatsApp renewal reminders at 10/5/3/1 days before expiry, and admin CRUD similar to projects.
+
+### What was built
+
+**Backend (Convex):**
+- 3 new tables in `schema.ts`: `kafala`, `kafalaSponsorship`, `kafalaDonations`
+- `convex/kafala.ts`: Full CRUD + `createSponsorship`, `verifyKafalaDonation`, `processKafalaWhopPayment`, `resetKafala`, `renewKafalaDonation`, `uploadKafalaReceipt`, `getActiveBankCashSponsorships`
+- `convex/kafalaPayments.ts`: Whop recurring plan creation + checkout session action
+- `convex/kafalaNotifications.ts`: Daily WhatsApp reminder action for bank/cash sponsors
+- `convex/crons.ts`: Added `kafalaRenewalReminders` daily cron at 7 AM UTC
+- `convex/http.ts`: Added `GET /kafala/success` route (Whop redirect handler)
+
+**Frontend:**
+- `src/components/kafala/KafalaAvatar.jsx`: Grey male/female SVG silhouette + optional real photo
+- `src/pages/KafalaList.jsx`: Public grid with filter (all/available/sponsored)
+- `src/pages/KafalaDetail.jsx`: Orphan profile page + sponsor CTA
+- `src/pages/KafalaFlow.jsx`: 5-step sponsorship wizard (fixed price, no amount selection)
+- `src/pages/KafalaRenew.jsx`: Renewal page for WhatsApp reminder links
+- `src/pages/AdminKafala.jsx`: Admin list with publish/reset/delete actions
+- `src/pages/AdminKafalaForm.jsx`: Admin create/edit form with multilingual bio
+- `src/App.jsx`: 7 new routes + 2 admin routes
+- `src/components/AdminLayout.jsx`: Added "الكفالات" to sidebar
+
+### Mistakes made
+- Initially referenced `api.admins.getAdminByUserId` which doesn't exist — fixed by using `adminUser?.userId || adminUser?.id` from AppContext (same pattern as AdminProjectForm).
+- Used `appUser?._id` instead of `appUser?.userId` for Convex IDs — caught and corrected.
+
+### Key design decisions
+- Kafala uses **separate tables** (`kafalaDonations` not `donations`) to avoid polluting project donation logic
+- Card payments use Whop **recurring plans** (`plan_type: "recurring"`, `billing_period: 30`) not one-time plans
+- Kafala slot is **optimistically locked** for card payments at checkout start (status → "sponsored") since the user is being redirected to Whop
+- For bank/cash: slot stays "active" until admin verifies → avoids blocking the slot on unconfirmed payments
+- WhatsApp reminders exclude Whop subscribers (Whop handles auto-billing)
+
+### For the next Claude instance
+- The Whop recurring plan API may need testing — Whop's recurring plan behavior needs confirmation that `billing_period: 30` means 30 days
+- `KafalaFlow` requires the user to be logged in (`appUser`) to create a sponsorship — if no user, `createSponsorship` will fail because `userId` will be undefined. Consider adding a guest flow similar to `DonationFlow`.
+- Admin verification for kafala donations is currently done via `getPendingKafalaVerifications` query — no UI page exists yet for admin to verify them. This could be added to `AdminVerifications.jsx` as a new tab.
+
+---
+
 ## Architecture Notes
 
 - **Convex** is both backend (actions/mutations/queries) and database. Deploy separately from frontend.

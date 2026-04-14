@@ -261,7 +261,8 @@ export default defineSchema({
       v.literal("donation_rejected"),
       v.literal("project_funded"),
       v.literal("receipt_reminder"),
-      v.literal("otp_code")
+      v.literal("otp_code"),
+      v.literal("kafala_renewal_reminder")
     ),
     channel: v.union(v.literal("whatsapp"), v.literal("email")),
     status: v.union(
@@ -328,6 +329,100 @@ export default defineSchema({
     .index("by_created", ["createdAt"]),
 
   // ============================================
+  // KAFALA TABLE (Orphan Sponsorship Profiles)
+  // ============================================
+  kafala: defineTable({
+    name: v.string(),
+    gender: v.union(v.literal("male"), v.literal("female")),
+    age: v.number(),
+    location: v.string(),
+    bio: v.object({ ar: v.string(), fr: v.string(), en: v.string() }),
+    photo: v.optional(v.string()), // storageId — fallback: grey silhouette by gender
+    monthlyPrice: v.number(),      // In cents MAD (e.g. 30000 = 300 MAD)
+    currency: v.literal("MAD"),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("active"),     // visible, available for sponsorship
+      v.literal("sponsored"),  // claimed, shown as مكفول
+      v.literal("inactive")    // hidden from public
+    ),
+    createdBy: v.id("admins"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_gender", ["gender"]),
+
+  // ============================================
+  // KAFALA SPONSORSHIP TABLE (Active sponsorship records)
+  // ============================================
+  kafalaSponsorship: defineTable({
+    kafalaId: v.id("kafala"),
+    userId: v.id("users"),
+    paymentMethod: v.union(
+      v.literal("card_whop"),
+      v.literal("bank_transfer"),
+      v.literal("cash_agency")
+    ),
+    whopSubscriptionId: v.optional(v.string()), // For auto-renewing Whop subscriptions
+    whopPlanId: v.optional(v.string()),
+    startDate: v.number(),
+    nextRenewalDate: v.number(), // Unix ms — used by cron for reminders
+    status: v.union(
+      v.literal("active"),
+      v.literal("pending_payment"), // bank/cash awaiting admin verification
+      v.literal("expired"),
+      v.literal("cancelled")
+    ),
+    lastDonationId: v.optional(v.id("kafalaDonations")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_kafala", ["kafalaId"])
+    .index("by_user", ["userId"])
+    .index("by_renewal", ["nextRenewalDate"])
+    .index("by_status", ["status"]),
+
+  // ============================================
+  // KAFALA DONATIONS TABLE (Payment records per monthly cycle)
+  // ============================================
+  kafalaDonations: defineTable({
+    kafalaId: v.id("kafala"),
+    userId: v.id("users"),
+    sponsorshipId: v.id("kafalaSponsorship"),
+    amount: v.number(),    // In cents
+    currency: v.literal("MAD"),
+    paymentMethod: v.union(
+      v.literal("card_whop"),
+      v.literal("bank_transfer"),
+      v.literal("cash_agency")
+    ),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("awaiting_receipt"),
+      v.literal("awaiting_verification"),
+      v.literal("verified"),
+      v.literal("rejected")
+    ),
+    whopPaymentId: v.optional(v.string()),
+    whopSubscriptionId: v.optional(v.string()),
+    receiptUrl: v.optional(v.string()),
+    bankName: v.optional(v.string()),
+    transactionReference: v.optional(v.string()),
+    verifiedBy: v.optional(v.id("admins")),
+    verifiedAt: v.optional(v.number()),
+    periodStart: v.number(),  // Start of sponsored month
+    periodEnd: v.number(),    // End of sponsored month
+    isAnonymous: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_kafala", ["kafalaId"])
+    .index("by_user", ["userId"])
+    .index("by_sponsorship", ["sponsorshipId"])
+    .index("by_status", ["status"]),
+
+  // ============================================
   // ACTIVITY LOG TABLE (Audit Trail)
   // ============================================
   activities: defineTable({
@@ -339,7 +434,8 @@ export default defineSchema({
       v.literal("project"),
       v.literal("donation"),
       v.literal("payment"),
-      v.literal("admin")
+      v.literal("admin"),
+      v.literal("kafala")
     ),
     entityId: v.string(),
     metadata: v.optional(v.record(v.string(), v.any())),

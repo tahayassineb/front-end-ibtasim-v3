@@ -15,6 +15,14 @@ crons.daily(
   {}
 );
 
+// Daily at 7:00 AM UTC — send WhatsApp renewal reminders for bank/cash kafala sponsors
+crons.daily(
+  "kafalaRenewalReminders",
+  { hourUTC: 7, minuteUTC: 0 },
+  api.kafalaNotifications.sendKafalaRenewalReminders,
+  {}
+);
+
 // Auto-refresh disabled: QR is only fetched when the user explicitly clicks "Connect/Reconnect".
 // crons.interval(
 //   "autoRefreshWhatsAppQr",

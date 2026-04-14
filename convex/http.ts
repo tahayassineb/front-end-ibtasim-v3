@@ -301,6 +301,108 @@ http.route({
   }),
 });
 
+// ============================================
+// Kafala (Orphan Sponsorship) Whop Success Redirect Handler
+// Whop redirects here after kafala subscription checkout.
+// ============================================
+
+http.route({
+  path: "/kafala/success",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const paymentId = url.searchParams.get("payment_id") || url.searchParams.get("receipt_id");
+    const checkoutStatus = url.searchParams.get("checkout_status") || url.searchParams.get("status");
+
+    // If payment failed or was cancelled, show error inline
+    if (checkoutStatus && !["success", "complete", "completed"].includes(checkoutStatus)) {
+      return new Response(
+        renderPaymentPage({ success: false, amount: 0, paymentId: paymentId ?? "" }),
+        { headers: { "Content-Type": "text/html; charset=utf-8" } }
+      );
+    }
+
+    let kafalaId: string | null = null;
+    let donationId: string | null = null;
+    let amount = 0;
+
+    if (paymentId) {
+      const apiKey = process.env.WHOP_API_KEY;
+      if (apiKey) {
+        try {
+          const res = await fetch(`https://api.whop.com/api/v2/payments/${paymentId}`, {
+            headers: { Authorization: `Bearer ${apiKey}` },
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            kafalaId = data?.metadata?.kafalaId ?? null;
+            donationId = data?.metadata?.donationId ?? null;
+            amount = data?.final_amount ?? 0;
+
+            if (donationId && kafalaId) {
+              try {
+                await ctx.runMutation(api.kafala.processKafalaWhopPayment, {
+                  donationId: donationId as any,
+                  whopPaymentId: paymentId,
+                  whopSubscriptionId: data?.membership_id ?? undefined,
+                });
+              } catch (mutErr) {
+                try {
+                  await ctx.runMutation(api.errorLogs.insertErrorLog, {
+                    source: "kafala_success",
+                    level: "error",
+                    message: `processKafalaWhopPayment error: ${mutErr instanceof Error ? mutErr.message : String(mutErr)}`,
+                    details: JSON.stringify({ paymentId, donationId, kafalaId }),
+                  });
+                } catch {}
+              }
+            }
+          } else {
+            const errBody = await res.text();
+            try {
+              await ctx.runMutation(api.errorLogs.insertErrorLog, {
+                source: "kafala_success",
+                level: "error",
+                message: `Whop payment lookup failed: HTTP ${res.status}`,
+                apiUrl: `https://api.whop.com/api/v2/payments/${paymentId}`,
+                apiStatus: res.status,
+                apiResponse: errBody.slice(0, 2000),
+              });
+            } catch {}
+          }
+        } catch (err) {
+          try {
+            await ctx.runMutation(api.errorLogs.insertErrorLog, {
+              source: "kafala_success",
+              level: "error",
+              message: `Error fetching Whop payment: ${err instanceof Error ? err.message : String(err)}`,
+              details: JSON.stringify({ paymentId }),
+            });
+          } catch {}
+        }
+      }
+    }
+
+    // Redirect to frontend kafala page with success indicator
+    const frontendUrl = process.env.FRONTEND_URL;
+    if (frontendUrl && kafalaId) {
+      const params = new URLSearchParams({ sponsored: "true" });
+      if (amount) params.set("amount", String(amount));
+      return Response.redirect(`${frontendUrl}/kafala/${kafalaId}?${params}`, 302);
+    }
+    if (frontendUrl) {
+      return Response.redirect(`${frontendUrl}/kafala?sponsored=true`, 302);
+    }
+
+    // Fallback inline page
+    return new Response(
+      renderPaymentPage({ success: true, amount, paymentId: paymentId ?? "" }),
+      { headers: { "Content-Type": "text/html; charset=utf-8" } }
+    );
+  }),
+});
+
 function renderPaymentPage({
   success,
   amount,

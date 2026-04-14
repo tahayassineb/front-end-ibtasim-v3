@@ -43,6 +43,7 @@ const AdminLayout = () => {
   const sidebarItems = [
     { path: '/admin', label: t('home') || 'Dashboard', icon: 'dashboard', exact: true },
     { path: '/admin/projects', label: 'Projects', icon: 'folder_special' },
+    { path: '/admin/kafala', label: 'الكفالات', icon: 'child_care' },
     { path: '/admin/donations', label: 'Donations', icon: 'payments' },
     { path: '/admin/donors', label: 'Donors', icon: 'people' },
     { path: '/admin/verification', label: 'Verification', icon: 'verified' },
