@@ -38,6 +38,7 @@ import { api } from '../convex/_generated/api';
 // Admin Kafala Pages
 import AdminKafala from './pages/AdminKafala';
 import AdminKafalaForm from './pages/AdminKafalaForm';
+import AdminKafalaVerifications from './pages/AdminKafalaVerifications';
 
 // Admin Pages
 import AdminLogin from './pages/AdminLogin';
@@ -223,6 +224,7 @@ function AppContent() {
             <Route path="/admin/kafala" element={<AdminKafala />} />
             <Route path="/admin/kafala/new" element={<AdminKafalaForm />} />
             <Route path="/admin/kafala/:id/edit" element={<AdminKafalaForm />} />
+            <Route path="/admin/kafala/verifications" element={<AdminKafalaVerifications />} />
 
             {/* Error Logs */}
             <Route path="/admin/error-logs" element={<AdminErrorLogs />} />

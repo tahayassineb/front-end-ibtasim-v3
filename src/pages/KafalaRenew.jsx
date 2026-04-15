@@ -1,165 +1,174 @@
 import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useAction } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import { convexFileUrl } from '../lib/convex';
 import KafalaAvatar from '../components/kafala/KafalaAvatar';
 
 // ============================================
-// KAFALA RENEW PAGE — Monthly renewal for bank/cash sponsors
-// Reached via WhatsApp reminder link: /kafala/:id/renew
+// KAFALA RENEW — Monthly renewal page for bank/cash sponsors
+// Route: /kafala/:id/renew  (:id = kafalaId)
+//
+// Flow:
+//   1. Auth check — must be logged in and be the active sponsor
+//   2. Show orphan card + current sponsorship status
+//   3. Payment proof form — bank (copy details + receipt + ref) or cash (ref)
+//   4. Submit → renewKafalaDonation + uploadKafalaReceipt → success screen
 // ============================================
 
+const TX = {
+  title: 'تجديد الكفالة',
+  perMonth: 'درهم / شهر',
+  loginRequired: 'يجب تسجيل الدخول للوصول إلى هذه الصفحة.',
+  goLogin: 'تسجيل الدخول',
+  notSponsor: 'أنت لست الكافل الحالي لهذا اليتيم.',
+  notFound: 'الكفالة غير موجودة',
+  paymentMethod: 'طريقة الدفع',
+  bank: 'تحويل بنكي',
+  cash: 'وكالة نقدية',
+  bankDetails: 'بيانات الحساب البنكي',
+  bankHolder: 'صاحب الحساب',
+  bankRib: 'رقم الحساب (RIB)',
+  bankNameLabel: 'البنك',
+  uploadReceipt: 'رفع وصل الدفع',
+  receiptUploaded: 'تم رفع الوصل',
+  selectFile: 'اختر ملفاً أو اسحبه هنا',
+  refNum: 'رقم المرجع / الوصل',
+  refPlaceholder: 'أدخل رقم العملية من الوصل',
+  cashAgencies: 'الوكالات المتاحة',
+  agenciesList: 'Wafacash، Cash Plus',
+  nextRenewal: 'موعد التجديد',
+  statusLabel: 'حالة الاشتراك',
+  statusActive: 'نشط',
+  statusPending: 'في انتظار التحقق',
+  statusExpired: 'منتهي',
+  alreadyPending: 'يوجد طلب تجديد قيد المراجعة. سيتواصل معك الفريق قريباً.',
+  proofTitle: 'إثبات الدفع',
+  submit: 'إرسال طلب التجديد',
+  submitting: 'جاري الإرسال...',
+  successTitle: 'تم إرسال طلب التجديد!',
+  successSub: 'سيراجع فريقنا الوصل ويؤكد تجديد كفالتك خلال 24 ساعة. جزاك الله خيراً.',
+  backHome: 'العودة للرئيسية',
+  submitError: 'حدث خطأ. يرجى المحاولة مرة أخرى.',
+  copied: 'تم النسخ',
+};
+
+function formatDate(ts) {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleDateString('ar-MA', {
+    year: 'numeric', month: 'long', day: 'numeric',
+  });
+}
+
 export default function KafalaRenew() {
-  const { id } = useParams();
+  const { id } = useParams(); // kafalaId
   const navigate = useNavigate();
-  const { currentLanguage, showToast, user: appUser } = useApp();
-  const lang = currentLanguage?.code || 'ar';
+  const { user: appUser, isAuthenticated, showToast } = useApp();
 
-  const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
-  const [receipt, setReceipt] = useState(null);
-  const [reference, setReference] = useState('');
-  const [bankName, setBankName] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState(false);
-  const fileRef = useRef();
+  const userId = appUser?.userId || appUser?.id;
 
-  const kafalaData = useQuery(api.kafala.getKafalaById, { kafalaId: id });
-  const bankInfoRaw = useQuery(api.config.getConfig, { key: 'bank_info' });
-  const userSponsorships = useQuery(
-    api.kafala.getUserKafalaSponsorship,
-    appUser ? { userId: appUser.userId || appUser.id } : 'skip'
+  // ── Queries ─────────────────────────────────────────────────────────────────
+  const kafalaData    = useQuery(api.kafala.getKafalaById, { kafalaId: id });
+  const bankInfoRaw   = useQuery(api.config.getConfig, { key: 'bank_info' });
+  const sponsorship   = useQuery(
+    api.kafala.getActiveSponsorshipByKafalaAndUser,
+    userId ? { kafalaId: id, userId } : 'skip'
   );
 
-  const renewDonation = useMutation(api.kafala.renewKafalaDonation);
-  const uploadKafalaReceipt = useMutation(api.kafala.uploadKafalaReceipt);
+  // ── Mutations ────────────────────────────────────────────────────────────────
+  const renewMut          = useMutation(api.kafala.renewKafalaDonation);
+  const uploadReceiptMut  = useMutation(api.kafala.uploadKafalaReceipt);
   const generateUploadUrl = useMutation(api.storage.generateProjectImageUploadUrl);
-  const createCheckout = useAction(api.kafalaPayments.createKafalaWhopCheckout);
 
+  // ── Local state ──────────────────────────────────────────────────────────────
+  const [receipt, setReceipt]       = useState(null);
+  const [reference, setReference]   = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone]             = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const fileRef = useRef();
+
+  // ── Derived ──────────────────────────────────────────────────────────────────
   const bankInfo = React.useMemo(() => {
     if (!bankInfoRaw) return { name: '—', rib: '—', bank: '—' };
     try { return JSON.parse(bankInfoRaw); } catch { return { name: '—', rib: '—', bank: '—' }; }
   }, [bankInfoRaw]);
 
-  const tx = {
-    ar: {
-      title: 'تجديد الكفالة',
-      subtitle: 'جزاك الله خيراً على استمرارك في كفالة هذا اليتيم',
-      perMonth: 'درهم / شهر',
-      card: 'بطاقة بنكية',
-      bank: 'تحويل بنكي',
-      cash: 'وكالة نقدية',
-      bankDetails: 'بيانات الحساب البنكي',
-      bankHolder: 'صاحب الحساب',
-      bankRib: 'رقم الحساب (RIB)',
-      bankNameLabel: 'البنك',
-      uploadReceipt: 'رفع وصل الدفع',
-      receiptUploaded: 'تم رفع الوصل',
-      selectFile: 'اختر ملف',
-      refNum: 'رقم المرجع / الوصل',
-      refPlaceholder: 'أدخل رقم الوصل',
-      agenciesList: 'Wafacash، Cash Plus',
-      submit: 'تأكيد التجديد',
-      submitting: 'جاري الإرسال...',
-      redirecting: 'جاري التحويل...',
-      successTitle: 'تم تأكيد التجديد!',
-      successSub: 'شكراً لك على استمرارك. سيتم مراجعة تبرعك وتأكيده خلال 24 ساعة.',
-      backHome: 'العودة للرئيسية',
-      loading: 'جاري التحميل...',
-      noSponsorship: 'لم يتم العثور على اشتراك كفالة نشط لهذا الحساب.',
-      notfound: 'الكفالة غير موجودة',
-      age: 'سنة',
-    },
-    fr: {
-      title: 'Renouvellement de kafala',
-      subtitle: 'Jazak Allah Khayran pour votre fidélité',
-      perMonth: 'MAD / mois',
-      card: 'Carte bancaire',
-      bank: 'Virement bancaire',
-      cash: 'Agence en espèces',
-      bankDetails: 'Coordonnées bancaires',
-      bankHolder: 'Titulaire',
-      bankRib: 'RIB',
-      bankNameLabel: 'Banque',
-      uploadReceipt: 'Télécharger le reçu',
-      receiptUploaded: 'Reçu téléchargé',
-      selectFile: 'Choisir un fichier',
-      refNum: 'Numéro de référence',
-      refPlaceholder: 'Entrez votre numéro de reçu',
-      agenciesList: 'Wafacash, Cash Plus',
-      submit: 'Confirmer le renouvellement',
-      submitting: 'Envoi...',
-      redirecting: 'Redirection...',
-      successTitle: 'Renouvellement confirmé!',
-      successSub: 'Merci pour votre fidélité. Votre don sera vérifié dans les 24h.',
-      backHome: 'Retour à l\'accueil',
-      loading: 'Chargement...',
-      noSponsorship: 'Aucun parrainage actif trouvé pour ce compte.',
-      notfound: 'Kafala introuvable',
-      age: 'ans',
-    },
+  const copy = (text) => {
+    navigator.clipboard.writeText(text);
+    showToast(TX.copied, 'success');
   };
-  const tl = tx[lang] || tx.ar;
-  const isRTL = lang === 'ar';
 
-  if (kafalaData === undefined) {
+  // ── Auth guard ────────────────────────────────────────────────────────────────
+  if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-bg-light dark:bg-bg-dark flex items-center justify-center px-4">
+        <div className="bg-white dark:bg-bg-dark-card rounded-3xl shadow-card p-8 max-w-sm w-full text-center">
+          <span className="material-symbols-outlined text-5xl text-text-muted mb-4 block">lock</span>
+          <p className="text-text-primary dark:text-white font-semibold mb-4">{TX.loginRequired}</p>
+          <button onClick={() => navigate('/login')}
+            className="bg-primary text-white px-6 py-3 rounded-xl font-bold w-full">
+            {TX.goLogin}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Loading ───────────────────────────────────────────────────────────────────
+  if (kafalaData === undefined || sponsorship === undefined) {
+    return (
+      <div className="min-h-screen bg-bg-light dark:bg-bg-dark flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
       </div>
     );
   }
 
   if (!kafalaData) {
-    return <div className="min-h-screen flex items-center justify-center text-text-secondary">{tl.notfound}</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center text-text-secondary">
+        {TX.notFound}
+      </div>
+    );
   }
 
-  // Find active sponsorship for this kafala + user
-  const activeSponsorships = (userSponsorships || []).filter(
-    (s) => s.kafalaId === id && (s.status === 'active' || s.status === 'expired')
-  );
-  const sponsorship = activeSponsorships[0] || null;
+  // ── Not the current sponsor ───────────────────────────────────────────────────
+  if (!sponsorship) {
+    return (
+      <div className="min-h-screen bg-bg-light dark:bg-bg-dark flex items-center justify-center px-4">
+        <div className="bg-white dark:bg-bg-dark-card rounded-3xl shadow-card p-8 max-w-sm w-full text-center">
+          <span className="material-symbols-outlined text-5xl text-amber-400 mb-4 block">warning</span>
+          <p className="text-text-primary dark:text-white font-semibold mb-4">{TX.notSponsor}</p>
+          <button onClick={() => navigate('/kafala')}
+            className="bg-primary text-white px-6 py-3 rounded-xl font-bold w-full">
+            العودة للكفالات
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-  const kafala = kafalaData;
-  const photoUrl = kafala.photo ? (convexFileUrl(kafala.photo) || kafala.photo) : null;
-  const priceMAD = (kafala.monthlyPrice / 100).toLocaleString('fr-MA');
+  // ── Renewal already pending ───────────────────────────────────────────────────
+  if (sponsorship.status === 'pending_payment') {
+    return (
+      <div className="min-h-screen bg-bg-light dark:bg-bg-dark flex items-center justify-center px-4">
+        <div className="bg-white dark:bg-bg-dark-card rounded-3xl shadow-card p-8 max-w-sm w-full text-center">
+          <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="material-symbols-outlined text-amber-500 text-3xl">pending</span>
+          </div>
+          <h2 className="text-lg font-bold text-text-primary dark:text-white mb-3">طلب قيد المراجعة</h2>
+          <p className="text-text-secondary text-sm leading-relaxed mb-5">{TX.alreadyPending}</p>
+          <button onClick={() => navigate('/')}
+            className="bg-primary text-white px-6 py-3 rounded-xl font-bold w-full">
+            {TX.backHome}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-  const handleSubmit = async () => {
-    if (submitting || !sponsorship) return;
-    setSubmitting(true);
-
-    try {
-      const result = await renewDonation({
-        sponsorshipId: sponsorship._id,
-        paymentMethod,
-      });
-
-      if (paymentMethod === 'card_whop') {
-        const purchaseUrl = await createCheckout({ kafalaId: id, donationId: result.donationId });
-        window.location.href = purchaseUrl;
-        return;
-      }
-
-      if (paymentMethod === 'bank_transfer' && receipt) {
-        const uploadUrl = await generateUploadUrl();
-        const uploadRes = await fetch(uploadUrl, { method: 'POST', body: receipt, headers: { 'Content-Type': receipt.type } });
-        const { storageId } = await uploadRes.json();
-        await uploadKafalaReceipt({ donationId: result.donationId, receiptUrl: storageId, bankName });
-      }
-
-      if (paymentMethod === 'cash_agency' && reference) {
-        await uploadKafalaReceipt({ donationId: result.donationId, receiptUrl: '', transactionReference: reference, bankName: 'cash_agency' });
-      }
-
-      setDone(true);
-    } catch (err) {
-      showToast?.(err?.message || 'حدث خطأ', 'error');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
+  // ── Success ────────────────────────────────────────────────────────────────────
   if (done) {
     return (
       <div className="min-h-screen bg-bg-light dark:bg-bg-dark flex items-center justify-center px-4">
@@ -167,124 +176,298 @@ export default function KafalaRenew() {
           <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-5">
             <span className="material-symbols-outlined text-emerald-600 text-4xl">check_circle</span>
           </div>
-          <h2 className="text-xl font-bold text-text-primary dark:text-white mb-3">{tl.successTitle}</h2>
-          <p className="text-text-secondary text-sm mb-6 leading-relaxed">{tl.successSub}</p>
-          <button onClick={() => navigate('/')} className="w-full bg-primary text-white py-3 rounded-xl font-bold">{tl.backHome}</button>
+          <h2 className="text-2xl font-bold text-text-primary dark:text-white mb-3">{TX.successTitle}</h2>
+          <p className="text-text-secondary text-sm leading-relaxed mb-6">{TX.successSub}</p>
+          <button onClick={() => navigate('/')}
+            className="bg-primary text-white px-8 py-3 rounded-xl font-bold w-full hover:bg-primary/90 transition-colors">
+            {TX.backHome}
+          </button>
         </div>
       </div>
     );
   }
 
+  // ── Main render ───────────────────────────────────────────────────────────────
+  const kafala    = kafalaData;
+  const photoUrl  = kafala.photo ? (convexFileUrl(kafala.photo) || kafala.photo) : null;
+  const priceMAD  = (kafala.monthlyPrice / 100).toLocaleString('fr-MA');
+  const payMethod = sponsorship.paymentMethod; // bank_transfer | cash_agency
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragActive(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) setReceipt(file);
+  };
+
+  const handleSubmit = async () => {
+    if (submitting) return;
+
+    if (payMethod === 'bank_transfer' && !receipt && !reference.trim()) {
+      showToast('يرجى رفع الوصل أو إدخال رقم المرجع', 'error');
+      return;
+    }
+    if (payMethod === 'cash_agency' && !reference.trim()) {
+      showToast('يرجى إدخال رقم المرجع / الوصل', 'error');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const { donationId } = await renewMut({
+        sponsorshipId: sponsorship._id,
+        paymentMethod: payMethod,
+      });
+
+      let storageId = '';
+      if (receipt) {
+        const uploadUrl = await generateUploadUrl();
+        const res = await fetch(uploadUrl, {
+          method: 'POST', body: receipt,
+          headers: { 'Content-Type': receipt.type },
+        });
+        const data = await res.json();
+        storageId = data.storageId;
+      }
+
+      await uploadReceiptMut({
+        donationId,
+        receiptUrl: storageId,
+        transactionReference: reference.trim() || undefined,
+        bankName: payMethod === 'cash_agency' ? 'cash_agency' : undefined,
+      });
+
+      setDone(true);
+    } catch (err) {
+      showToast(err?.message || TX.submitError, 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-bg-light dark:bg-bg-dark pb-24" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="bg-gradient-to-br from-primary to-emerald-700 text-white py-8 px-4">
-        <div className="max-w-lg mx-auto text-center">
-          <KafalaAvatar gender={kafala.gender} photo={kafala.photo} photoUrl={photoUrl} size={72} className="mx-auto mb-3 ring-4 ring-white/30" />
-          <h1 className="text-xl font-bold">{tl.title}</h1>
-          <p className="text-white/80 text-sm mt-1">{kafala.name} — {kafala.age} {tl.age} — {kafala.location}</p>
-          <p className="text-white/70 text-xs mt-2">{tl.subtitle}</p>
+    <div className="bg-bg-light dark:bg-bg-dark min-h-screen pb-32" dir="rtl">
+
+      {/* ── Sticky header ──────────────────────────────────────────────────── */}
+      <div className="sticky top-0 z-10 bg-white/90 dark:bg-bg-dark-card/90 backdrop-blur-sm border-b border-border-light dark:border-white/10">
+        <div className="max-w-lg mx-auto px-4 py-4 flex items-center gap-4">
+          <button onClick={() => navigate(`/kafala/${id}`)}
+            className="shrink-0 text-text-secondary hover:text-primary">
+            <span className="material-symbols-outlined text-2xl">arrow_forward</span>
+          </button>
+          <h1 className="text-base font-bold text-text-primary dark:text-white">{TX.title}</h1>
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
-        {/* Price reminder */}
-        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-center">
-          <p className="text-3xl font-bold text-primary">{priceMAD}<span className="text-base font-medium text-text-secondary mr-1"> {tl.perMonth}</span></p>
-        </div>
+      <div className="max-w-lg mx-auto px-4 pt-6 space-y-5">
 
-        {/* No sponsorship warning */}
-        {!sponsorship && userSponsorships !== undefined && (
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 rounded-xl p-4 text-amber-800 dark:text-amber-200 text-sm">
-            {tl.noSponsorship}
+        {/* ── Orphan summary strip ────────────────────────────────────────────── */}
+        <div className="bg-white dark:bg-bg-dark-card rounded-2xl p-4 flex items-center gap-4 shadow-sm border border-border-light dark:border-white/10">
+          <KafalaAvatar gender={kafala.gender} photo={kafala.photo} photoUrl={photoUrl} size={56} />
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-text-primary dark:text-white">{kafala.name}</p>
+            <p className="text-sm text-text-secondary">{kafala.age} سنة • {kafala.location}</p>
           </div>
-        )}
-
-        {/* Payment method */}
-        <div className="space-y-3">
-          {[
-            { id: 'bank_transfer', label: tl.bank, icon: 'account_balance' },
-            { id: 'cash_agency', label: tl.cash, icon: 'store' },
-            { id: 'card_whop', label: tl.card, icon: 'credit_card' },
-          ].map((m) => (
-            <button
-              key={m.id}
-              onClick={() => setPaymentMethod(m.id)}
-              className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-right ${
-                paymentMethod === m.id
-                  ? 'border-primary bg-primary/5'
-                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-bg-dark-card'
-              }`}
-            >
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${paymentMethod === m.id ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>
-                <span className="material-symbols-outlined text-xl">{m.icon}</span>
-              </div>
-              <span className={`flex-1 font-semibold text-sm ${paymentMethod === m.id ? 'text-primary' : 'text-text-primary dark:text-white'}`}>{m.label}</span>
-              <span className={`material-symbols-outlined text-lg ${paymentMethod === m.id ? 'text-primary' : 'text-gray-300'}`}>
-                {paymentMethod === m.id ? 'radio_button_checked' : 'radio_button_unchecked'}
-              </span>
-            </button>
-          ))}
+          <div className="text-right shrink-0">
+            <p className="text-2xl font-bold text-primary">{priceMAD}</p>
+            <p className="text-xs text-text-muted">{TX.perMonth}</p>
+          </div>
         </div>
 
-        {/* Bank details */}
-        {paymentMethod === 'bank_transfer' && (
-          <div className="space-y-4">
-            <div className="bg-gray-50 dark:bg-white/5 rounded-xl p-4 space-y-2">
-              <p className="text-sm font-bold text-text-secondary mb-3">{tl.bankDetails}</p>
-              {[
-                { label: tl.bankHolder, value: bankInfo.name },
-                { label: tl.bankRib, value: bankInfo.rib, mono: true },
-                { label: tl.bankNameLabel, value: bankInfo.bank },
-              ].map((row) => (
-                <div key={row.label} className="flex justify-between items-center text-sm">
-                  <span className="text-text-muted">{row.label}</span>
-                  <span className={`font-semibold text-text-primary dark:text-white ${row.mono ? 'font-mono' : ''}`}>{row.value}</span>
+        {/* ── Sponsorship info ────────────────────────────────────────────────── */}
+        <div className="bg-white dark:bg-bg-dark-card rounded-2xl border border-border-light dark:border-white/10 overflow-hidden">
+          <div className="bg-primary/5 px-5 py-3 border-b border-border-light dark:border-white/10">
+            <p className="text-sm font-bold text-primary">معلومات الاشتراك</p>
+          </div>
+          <div className="divide-y divide-border-light dark:divide-white/10">
+            {[
+              {
+                label: TX.paymentMethod,
+                icon: payMethod === 'bank_transfer' ? 'account_balance' : 'store',
+                value: payMethod === 'bank_transfer' ? TX.bank : TX.cash,
+              },
+              {
+                label: TX.nextRenewal,
+                icon: 'calendar_month',
+                value: formatDate(sponsorship.nextRenewalDate),
+              },
+              {
+                label: TX.statusLabel,
+                icon: 'circle',
+                value: sponsorship.status === 'active'
+                  ? TX.statusActive
+                  : sponsorship.status === 'expired'
+                    ? TX.statusExpired
+                    : TX.statusPending,
+                valueClass: sponsorship.status === 'active'
+                  ? 'text-emerald-600'
+                  : 'text-amber-600',
+              },
+            ].map((row) => (
+              <div key={row.label} className="flex items-center justify-between px-5 py-3">
+                <div className="flex items-center gap-2 text-text-muted">
+                  <span className="material-symbols-outlined text-base">{row.icon}</span>
+                  <span className="text-sm">{row.label}</span>
                 </div>
-              ))}
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-text-secondary mb-1">{tl.uploadReceipt}</label>
-              <button onClick={() => fileRef.current?.click()} className="w-full border-2 border-dashed border-primary/30 rounded-xl py-5 text-center hover:bg-primary/5 transition-colors">
-                {receipt ? (
-                  <span className="text-emerald-600 font-semibold text-sm">{tl.receiptUploaded}: {receipt.name}</span>
-                ) : (
-                  <span className="text-text-muted text-sm">{tl.selectFile}</span>
-                )}
-              </button>
-              <input ref={fileRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => setReceipt(e.target.files?.[0] || null)} />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-text-secondary mb-1">{tl.bankNameLabel}</label>
-              <input type="text" placeholder="Attijariwafa, CIH..." value={bankName} onChange={e => setBankName(e.target.value)}
-                className="w-full border border-border-light dark:border-white/20 rounded-xl px-4 py-3 bg-white dark:bg-bg-dark-card text-text-primary dark:text-white focus:outline-none focus:border-primary" />
-            </div>
+                <span className={`text-sm font-semibold ${row.valueClass || 'text-text-primary dark:text-white'}`}>
+                  {row.value}
+                </span>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
 
-        {/* Cash agency */}
-        {paymentMethod === 'cash_agency' && (
-          <div className="space-y-4">
-            <div className="bg-gray-50 dark:bg-white/5 rounded-xl p-4">
-              <p className="text-sm text-text-muted mb-1">{lang === 'ar' ? 'الوكالات المتاحة' : 'Agences disponibles'}</p>
-              <p className="font-semibold text-text-primary dark:text-white">{tl.agenciesList}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-text-secondary mb-1">{tl.refNum}</label>
-              <input type="text" placeholder={tl.refPlaceholder} value={reference} onChange={e => setReference(e.target.value)}
-                className="w-full border border-border-light dark:border-white/20 rounded-xl px-4 py-3 bg-white dark:bg-bg-dark-card text-text-primary dark:text-white focus:outline-none focus:border-primary" dir="ltr" />
-            </div>
-          </div>
-        )}
+        {/* ── Payment proof ───────────────────────────────────────────────────── */}
+        <div className="space-y-4">
+          <h2 className="text-base font-bold text-text-primary dark:text-white">{TX.proofTitle}</h2>
 
-        {/* Submit */}
-        <button
-          onClick={handleSubmit}
-          disabled={submitting || !sponsorship}
-          className="w-full bg-primary text-white py-4 rounded-xl font-bold text-base hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-primary"
-        >
-          {submitting ? (paymentMethod === 'card_whop' ? tl.redirecting : tl.submitting) : tl.submit}
-        </button>
+          {/* ── Bank transfer ── */}
+          {payMethod === 'bank_transfer' && (
+            <>
+              {/* Bank account card with copy buttons */}
+              <div className="bg-white dark:bg-bg-dark-card rounded-2xl border border-border-light dark:border-white/10 overflow-hidden">
+                <div className="bg-primary px-5 py-3 flex items-center justify-between">
+                  <span className="text-white text-sm font-bold">{TX.bankDetails}</span>
+                  <span className="material-symbols-outlined text-white/80 text-lg">account_balance</span>
+                </div>
+                <div className="p-4 space-y-3">
+                  {/* Account holder */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
+                      {TX.bankHolder}
+                    </label>
+                    <button
+                      onClick={() => copy(bankInfo.name)}
+                      className="flex items-center justify-between w-full bg-primary/5 dark:bg-primary/10 p-3 rounded-xl border border-primary/10 active:scale-[.98] transition-all"
+                    >
+                      <span className="text-text-primary dark:text-white font-bold text-sm flex-1 text-right">
+                        {bankInfo.name}
+                      </span>
+                      <span className="material-symbols-outlined text-primary/60 text-lg mr-2">content_copy</span>
+                    </button>
+                  </div>
+                  {/* RIB */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
+                      {TX.bankRib}
+                    </label>
+                    <div className="flex items-center gap-2 bg-primary/10 dark:bg-primary/20 p-3 rounded-xl border border-primary/10">
+                      <span className="text-primary font-mono font-bold text-base tracking-wider flex-1" dir="ltr">
+                        {bankInfo.rib}
+                      </span>
+                      <button
+                        onClick={() => copy((bankInfo.rib || '').replace(/\s/g, ''))}
+                        className="flex items-center justify-center w-9 h-9 bg-primary text-white rounded-lg active:scale-95 shadow transition-all shrink-0"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">content_copy</span>
+                      </button>
+                    </div>
+                  </div>
+                  {/* Bank name */}
+                  <div className="flex justify-between items-center text-sm pt-1 border-t border-border-light dark:border-white/10">
+                    <span className="text-text-muted">{TX.bankNameLabel}</span>
+                    <span className="font-semibold text-text-primary dark:text-white">{bankInfo.bank}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Receipt upload with drag & drop */}
+              <div>
+                <label className="block text-sm font-semibold text-text-secondary mb-2">{TX.uploadReceipt}</label>
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+                  onDragLeave={() => setDragActive(false)}
+                  onDrop={handleDrop}
+                  onClick={() => fileRef.current?.click()}
+                  className={`w-full border-2 border-dashed rounded-xl py-8 text-center cursor-pointer transition-colors ${
+                    dragActive
+                      ? 'border-primary bg-primary/10'
+                      : 'border-primary/30 hover:bg-primary/5'
+                  }`}
+                >
+                  {receipt ? (
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="material-symbols-outlined text-emerald-500 text-3xl">check_circle</span>
+                      <span className="text-emerald-600 font-semibold text-sm">{TX.receiptUploaded}</span>
+                      <span className="text-text-muted text-xs">{receipt.name}</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="material-symbols-outlined text-primary/40 text-3xl">upload_file</span>
+                      <span className="text-text-muted text-sm">{TX.selectFile}</span>
+                      <span className="text-text-muted text-xs">JPG، PNG، PDF</span>
+                    </div>
+                  )}
+                </div>
+                <input
+                  ref={fileRef} type="file" accept="image/*,.pdf" className="hidden"
+                  onChange={(e) => setReceipt(e.target.files?.[0] || null)}
+                />
+              </div>
+
+              {/* Transaction reference */}
+              <div>
+                <label className="block text-sm font-semibold text-text-secondary mb-2">{TX.refNum}</label>
+                <input
+                  type="text" placeholder={TX.refPlaceholder}
+                  value={reference} onChange={(e) => setReference(e.target.value)}
+                  className="w-full border border-border-light dark:border-white/20 rounded-xl px-4 py-3 bg-white dark:bg-bg-dark-card text-text-primary dark:text-white placeholder:text-text-muted focus:outline-none focus:border-primary"
+                  dir="ltr"
+                />
+              </div>
+            </>
+          )}
+
+          {/* ── Cash agency ── */}
+          {payMethod === 'cash_agency' && (
+            <>
+              <div className="bg-white dark:bg-bg-dark-card rounded-2xl border border-border-light dark:border-white/10 p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-primary text-xl">store</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-text-secondary">{TX.cashAgencies}</p>
+                    <p className="text-text-primary dark:text-white font-semibold">{TX.agenciesList}</p>
+                  </div>
+                </div>
+                <p className="text-xs text-text-muted leading-relaxed border-t border-border-light dark:border-white/10 pt-3">
+                  بعد الدفع في الوكالة، أدخل رقم المرجع الخاص بمعاملتك أدناه للتحقق.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-text-secondary mb-2">{TX.refNum}</label>
+                <input
+                  type="text" placeholder={TX.refPlaceholder}
+                  value={reference} onChange={(e) => setReference(e.target.value)}
+                  className="w-full border border-border-light dark:border-white/20 rounded-xl px-4 py-3 bg-white dark:bg-bg-dark-card text-text-primary dark:text-white placeholder:text-text-muted focus:outline-none focus:border-primary"
+                  dir="ltr"
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* ── Submit ──────────────────────────────────────────────────────────── */}
+        <div className="pt-2">
+          <button
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="w-full bg-primary text-white py-4 rounded-xl font-bold text-base hover:bg-primary/90 active:scale-[.98] transition-all shadow-primary disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {submitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                {TX.submitting}
+              </span>
+            ) : TX.submit}
+          </button>
+          <p className="text-center text-xs text-text-muted mt-3">
+            سيتم مراجعة طلبك وتأكيده خلال 24 ساعة عبر واتساب.
+          </p>
+        </div>
+
       </div>
     </div>
   );

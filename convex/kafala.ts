@@ -129,6 +129,26 @@ export const getActiveBankCashSponsorships = query({
 });
 
 /**
+ * Get the active/pending sponsorship for a specific kafala + user combination.
+ * Used by the sponsor's renewal page to confirm they are the current sponsor.
+ */
+export const getActiveSponsorshipByKafalaAndUser = query({
+  args: { kafalaId: v.id("kafala"), userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const sponsorships = await ctx.db
+      .query("kafalaSponsorship")
+      .withIndex("by_kafala", (q) => q.eq("kafalaId", args.kafalaId))
+      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .collect();
+    // Return the most recent active or pending one
+    const active = sponsorships.find(
+      (s) => s.status === "active" || s.status === "pending_payment" || s.status === "expired"
+    );
+    return active ?? null;
+  },
+});
+
+/**
  * Get sponsorships for a user (their kafala history).
  */
 export const getUserKafalaSponsorship = query({
