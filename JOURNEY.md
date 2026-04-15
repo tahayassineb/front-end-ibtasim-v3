@@ -468,6 +468,7 @@ Added two-path webhook routing in `/webhooks/whop`:
 - Whop v1 plans may behave differently from v2 plans regarding checkout session creation (v2 `checkout_sessions` endpoint used with v1 plan ID — not yet confirmed in production)
 - If `membership_id` is missing from recurring payment webhooks, fall back to checking `donationId` metadata — the dedup check in `extendKafalaSponsorship` uses `whopPaymentId` on recent donations for idempotency
 - Still needed: admin UI to verify pending kafala bank/cash donations
+- ✅ DONE in next session — see "Kafala Renewal + Admin Verification" entry below
 
 ---
 
@@ -495,6 +496,41 @@ Rewrote the `bank_transfer` section in KafalaFlow step 4:
 
 ### Lesson
 Two-step auth flows (register → OTP) always create a "partial registration" trap. The recovery path must be built into both `registerUser` (allow re-register if unverified) and `loginWithPassword` (redirect to OTP if unverified). Handle this at account creation time, not as an afterthought.
+
+---
+
+## Session: Kafala Renewal + Admin Verification Panel — 2026-04-15
+
+### Problem
+The manual renewal system was incomplete:
+1. Bank/cash sponsors got a WhatsApp reminder to pay but had no page in the app to submit their receipt.
+2. Admins had no UI to see and approve/reject pending kafala renewals.
+
+### What was built
+
+**Backend (`convex/kafala.ts`)**:
+- Added `getActiveSponsorshipByKafalaAndUser` query — takes kafalaId + userId, returns the most recent active/pending/expired sponsorship. Used by the renewal page to confirm the logged-in user is the sponsor and to know their payment method.
+- `renewKafalaDonation` and `uploadKafalaReceipt` mutations already existed.
+
+**`src/pages/KafalaRenew.jsx`** — Sponsor-facing renewal page at `/kafala/:id/renew`:
+- Auth guard (redirect to login if not authenticated)
+- Sponsorship check (403-style screen if not the current sponsor)
+- Pending guard (if `status === "pending_payment"`, shows "already under review")
+- Orphan summary strip + sponsorship info card (payment method, next renewal date, status)
+- Bank transfer: polished card with copy buttons for RIB/account holder + drag-and-drop receipt upload + transaction reference input
+- Cash agency: agencies info card + reference input
+- Calls `renewKafalaDonation` → `uploadKafalaReceipt` → success screen
+
+**`src/pages/AdminKafalaVerifications.jsx`** — Admin panel at `/admin/kafala/verifications`:
+- Uses `getPendingKafalaVerifications` to list all pending bank/cash renewals
+- Search by donor name, phone, or orphan name
+- Pending card list with donor avatar, amount, orphan name, payment method badge, date
+- Detail modal: donor info with WhatsApp deep-link, receipt image (tap to expand), transaction reference, 3-item checklist (amount / reference / date), rejection reason textarea, Approve / Reject buttons
+- Approve calls `verifyKafalaDonation({ verified: true })` → activates sponsorship, extends nextRenewalDate +30 days
+- Added route `/admin/kafala/verifications` in App.jsx + "🔄 تجديدات الكفالة" item in admin sidebar المالية section
+
+### Lesson
+Always build the full renewal loop when adding a manual payment method: reminder cron alone is not enough. You need: (1) sponsor renewal page, (2) admin verification UI, (3) idempotent mutation that extends the renewal date. All three existed except the frontend pages.
 
 ---
 
