@@ -79,6 +79,7 @@ const Home = () => {
 
   // Fetch active projects from Convex
   const activeProjectsData = useQuery(api.projects.getProjects, { status: 'active', limit: 12 });
+  const dashboardStats = useQuery(api.admin.getDashboardStats);
 
   const activeProjects = useMemo(() => {
     if (!activeProjectsData) return [];
@@ -249,10 +250,10 @@ const Home = () => {
       <section style={{ background: '#0A5F62', padding: 0 }}>
         <div className="grid grid-cols-2 lg:grid-cols-4" style={{ gap: 2 }}>
           {[
-            { num: 142000, suffix: '', unit: 'درهم مغربي', label: 'إجمالي التبرعات المستلمة' },
-            { num: 48, suffix: '', unit: 'يتيم', label: 'تحت رعاية الكفالة الشهرية' },
-            { num: 1200, suffix: '+', unit: 'أسرة', label: 'استفادت من مشاريعنا' },
-            { num: 7, suffix: '', unit: 'مشاريع', label: 'مكتملة بنجاح منذ 2018' },
+            { num: Math.round((dashboardStats?.totalDonations || 0) / 100), suffix: '', unit: 'درهم مغربي', label: 'إجمالي التبرعات المستلمة' },
+            { num: dashboardStats?.activeKafala || 0, suffix: '', unit: 'يتيم', label: 'تحت رعاية الكفالة الشهرية' },
+            { num: dashboardStats?.donationCount || 0, suffix: '', unit: 'تبرع', label: 'تبرع وصلنا حتى الآن' },
+            { num: (activeProjectsData || []).filter(p => p.status === 'active').length, suffix: '', unit: 'مشروع', label: 'مشاريع نشطة الآن' },
           ].map((stat, i) => (
             <div key={i} style={{ padding: '40px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.04)' }}>
               <div style={{ fontSize: 44, fontWeight: 900, color: 'white', fontFamily: 'Inter, sans-serif', lineHeight: 1 }}>

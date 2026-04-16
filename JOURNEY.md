@@ -615,3 +615,77 @@ This was deliberately saved for last because it's the most complex page (~1400 l
 - **The full 31-file redesign is now truly complete.** All pages match the design mockups in `design/screens/`.
 - AdminSettings is the most stateful page — treat it with care if modifying. All WhatsApp logic is tightly coupled to the `whatsappSession` state object.
 - The `resyncApiKey` utility button was kept even though it's not in the design's tab preview, because users may need it to recover from broken sessions.
+
+---
+
+## Session: Mobile UX, Dynamic Kafala, Admin Stories (9-step plan)
+
+**Date**: 2026-04-16
+
+### What the user reported
+1. Donation flow broken on mobile — elements scroll out of view, bottom CTA floats away
+2. Wafacash and bank transfer are separate but both need receipt upload — should be one screen
+3. Bank name/RIB configured in Settings doesn't appear in donation flow
+4. Kafala form has 3 hardcoded need cards — user wants to add/delete/rename freely
+5. ImpactStories page is totally broken on mobile (3-col grid, fixed layout)
+6. Stories should be publishable directly from admin panel
+7. No link to admin panel from the public site
+8. Full mobile/desktop design gap identified via audit
+
+### What was done (all 9 steps)
+
+**Step 1 — Fix bank info field name mismatch (`DonationFlow.jsx`)**
+- Root cause: AdminSettings saves `{ accountHolder, rib, bankName }` but DonationFlow read `bankInfo.name` and `bankInfo.bank` (both undefined — silent fallback to hardcoded strings)
+- Fix: Changed `DEFAULT_BANK_INFO` keys + 2 reference sites in Step2Payment component
+
+**Step 2 — Fix donation flow viewport height (`DonationFlow.jsx`)**
+- Root cause: Both outer containers used `minHeight: '100vh'` — page grew taller than viewport
+- Fix: `height: '100dvh', overflow: 'hidden'` on outer + `height: '100%', overflow: 'hidden'` on inner card. Step content areas already have `flex: 1, overflowY: 'auto'`
+
+**Step 3 — Merge bank+cash into single transfer method (`DonationFlow.jsx`)**
+- Changed METHODS from 3 (bank/cash/card) to 2 (transfer/card)
+- When 'transfer' selected, a sub-toggle appears: `🏦 تحويل بنكي` / `💳 Wafacash · Cash Plus`
+- `transferType` stored in `donationData` state so `handleSubmitDonation` can map to `bank_transfer` or `cash_agency`
+
+**Step 4 — Fix ImpactStories mobile (`ImpactStories.jsx`)**
+- Added `useIsMobile()` hook (window.innerWidth < 768 with resize listener)
+- Featured story grid: `1fr 1fr` → conditional `1fr` on mobile
+- Stories grid: `repeat(3,1fr)` → `repeat(auto-fill, minmax(100%, 1fr))` on mobile
+- Hero padding, story image height, section padding all responsive
+
+**Step 5 — Dynamic kafala needs cards (`AdminKafalaForm.jsx`)**
+- Replaced 3 fixed state vars (`needsEdu`, `needsFood`, `needsHealth`) with `needs` array
+- Each need: `{ id, icon, label, price }` — editable inline
+- Add button (dashed border), delete (×) button per row
+- Edit pre-fill: distributes `monthlyPrice` proportionally (40%/33%/27%) into the 3 default needs
+- `validate()` checks `needs.length > 0 && totalMAD >= 1`
+
+**Step 6 — Admin panel link in MainLayout.jsx**
+- Desktop dropdown: conditional link to `/admin` when `user?.role === 'admin'`
+- Mobile menu authenticated section: same conditional link
+- Footer bottom bar: always-visible `🔐 إدارة` link to `/admin/login`
+
+**Step 7 — Stories Convex schema + functions**
+- Added `stories` table to `convex/schema.ts` with `by_published` index
+- Created `convex/stories.ts`: `getAllStories`, `getPublishedStories`, `createStory`, `updateStory`, `deleteStory`, `publishStory`, `unpublishStory`
+
+**Step 8 — AdminStories page + route + sidebar**
+- Created `src/pages/AdminStories.jsx`: list with gradient preview, publish toggle, edit modal, delete
+- Added route `/admin/stories` in `App.jsx`
+- Added `📖 القصص` nav item in `AdminLayout.jsx` المحتوى section
+
+**Step 9 — ImpactStories connect to Convex**
+- Added `useQuery(api.stories.getPublishedStories)` with static stories as fallback when DB is empty
+- Maps Convex story shape (adds `id`, formats `date` from `publishedAt`)
+
+### Deploy
+- `git push origin main` → Vercel rebuild
+- `npx convex deploy --yes` → schema change applied, `stories.by_published` index created
+
+### Mistakes made
+- None — all 9 steps executed cleanly on first attempt.
+
+### Lessons
+- `height: 100dvh` (not `minHeight`) is the correct pattern for mobile-first full-screen flows. `100dvh` accounts for browser chrome (address bar) on iOS/Android; `100vh` ignores it.
+- Always verify field names match between the write side (AdminSettings saves `bankName`) and the read side (DonationFlow reads it). A name mismatch causes silent undefined with a hardcoded fallback — hard to notice until testing.
+- For dynamic lists (kafala needs), `Date.now()` as temporary ID works fine for new rows; just use the existing `id` field when pre-filling from DB.

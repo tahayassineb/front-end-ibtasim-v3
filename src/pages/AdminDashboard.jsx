@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
@@ -25,6 +25,7 @@ export default function AdminDashboard() {
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [chartTab, setChartTab] = useState('30');
+  const [hoveredPoint, setHoveredPoint] = useState(null);
 
   React.useEffect(() => {
     if (featuredProjectsData) setFeaturedProjects(featuredProjectsData);
@@ -83,22 +84,38 @@ export default function AdminDashboard() {
     : '0';
 
   const kpiCards = [
-    { icon: '💰', bg: '#E6F4F4', num: totalCollected, label: 'درهم محصّل هذا الشهر', trend: '↑ +12%', trendColor: '#22c55e' },
-    { icon: '🎯', bg: '#F0FDF4', num: (stats?.donationCount || 0).toLocaleString(), label: 'تبرع هذا الشهر', trend: '↑ +8%', trendColor: '#22c55e' },
-    { icon: '🤲', bg: '#FFFBEB', num: stats?.activeKafala || 0, label: 'كفالة نشطة', trend: '↑ +3', trendColor: '#22c55e' },
-    { icon: '⏳', bg: '#EFF6FF', num: stats?.pendingVerifications || 0, label: 'تحويلات تنتظر التحقق', trend: `${stats?.pendingVerifications || 0} انتظار`, trendColor: '#ef4444' },
+    { icon: '💰', bg: '#E6F4F4', num: totalCollected, label: 'درهم محصّل إجمالي', trend: 'إجمالي التبرعات', trendColor: '#0A5F62' },
+    { icon: '🎯', bg: '#F0FDF4', num: (stats?.donationCount || 0).toLocaleString(), label: 'عدد التبرعات', trend: 'جميع الوضعيات', trendColor: '#64748b' },
+    { icon: '🤲', bg: '#FFFBEB', num: stats?.activeKafala || 0, label: 'كفالة نشطة', trend: 'كفالات مفعّلة', trendColor: '#64748b' },
+    { icon: '⏳', bg: '#FEF3C7', num: stats?.pendingVerifications || 0, label: 'تحويلات تنتظر التحقق', trend: (stats?.pendingVerifications || 0) > 0 ? 'تحتاج مراجعة' : 'لا شيء في الانتظار', trendColor: (stats?.pendingVerifications || 0) > 0 ? '#f59e0b' : '#22c55e' },
   ];
 
   const donationData = stats?.monthlyDonations || [];
-  // Build SVG path from data or use static design path
-  const chartPoints = donationData.length >= 2
-    ? donationData.map((d, i) => {
-        const x = (i / (donationData.length - 1)) * 600;
-        const maxAmt = Math.max(...donationData.map(d => d.amount), 1);
-        const y = 190 - (d.amount / maxAmt) * 160;
-        return `${x},${y}`;
-      }).join(' ')
-    : null;
+  const hasChartData = donationData.length >= 2;
+
+  // Chart geometry — computed once from real data
+  const CHART_W = 600, CHART_H = 200, PAD_T = 20, PAD_B = 10;
+  const maxAmt = hasChartData ? Math.max(...donationData.map(d => d.amount), 1) : 1;
+  const chartCoords = hasChartData
+    ? donationData.map((d, i) => ({
+        x: (i / (donationData.length - 1)) * CHART_W,
+        y: PAD_T + (1 - d.amount / maxAmt) * (CHART_H - PAD_T - PAD_B),
+        amount: d.amount,
+        label: d.label || d.date || `${i + 1}`,
+      }))
+    : [];
+  const chartPolyline = chartCoords.map(p => `${p.x},${p.y}`).join(' ');
+  const chartArea = chartCoords.length
+    ? `0,${CHART_H} ${chartPolyline} ${CHART_W},${CHART_H}`
+    : '';
+
+  // Y-axis grid lines (3 lines at 25%, 50%, 75% of max)
+  const yGridLines = hasChartData
+    ? [0.75, 0.5, 0.25].map(pct => ({
+        y: PAD_T + (1 - pct) * (CHART_H - PAD_T - PAD_B),
+        label: ((maxAmt * pct) / 100).toLocaleString('fr-MA'),
+      }))
+    : [];
 
   return (
     <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: 24 }} dir="rtl">
@@ -132,38 +149,98 @@ export default function AdminDashboard() {
               ))}
             </div>
           </div>
-          <div style={{ width: '100%', height: 200, position: 'relative' }}>
-            <svg viewBox="0 0 600 200" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
-              <defs>
-                <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#0d7477" stopOpacity="0.3" />
-                  <stop offset="100%" stopColor="#0d7477" stopOpacity="0.02" />
-                </linearGradient>
-              </defs>
-              <line x1="0" y1="50" x2="600" y2="50" stroke="#E5E9EB" strokeWidth="1" />
-              <line x1="0" y1="100" x2="600" y2="100" stroke="#E5E9EB" strokeWidth="1" />
-              <line x1="0" y1="150" x2="600" y2="150" stroke="#E5E9EB" strokeWidth="1" />
-              {chartPoints ? (
-                <>
-                  <polyline points={chartPoints} fill="none" stroke="#0d7477" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                  <polygon points={`0,200 ${chartPoints} 600,200`} fill="url(#chartGrad)" />
-                </>
-              ) : (
-                <>
-                  <path d="M0,160 C40,140 80,120 120,100 C160,80 200,130 240,90 C280,50 320,70 360,60 C400,50 440,40 480,30 C520,20 560,35 600,25 L600,200 L0,200 Z" fill="url(#chartGrad)" />
-                  <path d="M0,160 C40,140 80,120 120,100 C160,80 200,130 240,90 C280,50 320,70 360,60 C400,50 440,40 480,30 C520,20 560,35 600,25" fill="none" stroke="#0d7477" strokeWidth="2.5" strokeLinecap="round" />
-                  <circle cx="120" cy="100" r="4" fill="#0d7477" />
-                  <circle cx="240" cy="90" r="4" fill="#0d7477" />
-                  <circle cx="360" cy="60" r="4" fill="#0d7477" />
-                  <circle cx="480" cy="30" r="4" fill="#0d7477" />
-                  <circle cx="600" cy="25" r="5" fill="#0d7477" stroke="white" strokeWidth="2" />
-                </>
-              )}
-            </svg>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#94a3b8', fontFamily: 'Inter, sans-serif', marginTop: 4 }}>
-            <span>1 يناير</span><span>8</span><span>15</span><span>22</span><span>29 يناير</span>
-          </div>
+          {hasChartData ? (
+            <div style={{ position: 'relative' }}>
+              {/* Y-axis labels */}
+              <div style={{ position: 'relative', width: '100%', height: 200 }}>
+                {/* Y-axis value labels (absolute positioned over chart) */}
+                {yGridLines.map((g, i) => (
+                  <div key={i} style={{ position: 'absolute', right: 0, top: g.y / 200 * 100 + '%', transform: 'translateY(-50%)', fontSize: 10, color: '#94a3b8', fontFamily: 'Inter, sans-serif', backgroundColor: 'white', paddingRight: 4, lineHeight: 1 }}>
+                    {g.label}
+                  </div>
+                ))}
+                <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} preserveAspectRatio="none"
+                  style={{ width: '100%', height: '100%', overflow: 'visible' }}
+                  onMouseLeave={() => setHoveredPoint(null)}>
+                  <defs>
+                    <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#0d7477" stopOpacity="0.25" />
+                      <stop offset="100%" stopColor="#0d7477" stopOpacity="0.02" />
+                    </linearGradient>
+                  </defs>
+                  {/* Grid lines */}
+                  {yGridLines.map((g, i) => (
+                    <line key={i} x1="0" y1={g.y} x2={CHART_W} y2={g.y} stroke="#E5E9EB" strokeWidth="1" />
+                  ))}
+                  {/* Area fill */}
+                  <polygon points={chartArea} fill="url(#chartGrad)" />
+                  {/* Line */}
+                  <polyline points={chartPolyline} fill="none" stroke="#0d7477" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  {/* Hover zones + dots */}
+                  {chartCoords.map((p, i) => (
+                    <g key={i}>
+                      {/* invisible hover zone */}
+                      <rect
+                        x={p.x - CHART_W / chartCoords.length / 2}
+                        y={0} width={CHART_W / chartCoords.length} height={CHART_H}
+                        fill="transparent"
+                        style={{ cursor: 'crosshair' }}
+                        onMouseEnter={() => setHoveredPoint(i)}
+                      />
+                      {/* dot */}
+                      <circle cx={p.x} cy={p.y} r={hoveredPoint === i ? 6 : 3.5}
+                        fill={hoveredPoint === i ? 'white' : '#0d7477'}
+                        stroke="#0d7477" strokeWidth="2.5"
+                        style={{ transition: 'r .1s' }} />
+                      {/* vertical line when hovered */}
+                      {hoveredPoint === i && (
+                        <line x1={p.x} y1={0} x2={p.x} y2={CHART_H} stroke="#0d7477" strokeWidth="1" strokeDasharray="4 3" opacity="0.5" />
+                      )}
+                    </g>
+                  ))}
+                </svg>
+                {/* Floating tooltip */}
+                {hoveredPoint !== null && chartCoords[hoveredPoint] && (
+                  <div style={{
+                    position: 'absolute',
+                    left: `${(chartCoords[hoveredPoint].x / CHART_W) * 100}%`,
+                    top: `${(chartCoords[hoveredPoint].y / CHART_H) * 100}%`,
+                    transform: 'translate(-50%, -120%)',
+                    background: '#0A5F62',
+                    color: 'white',
+                    borderRadius: 8,
+                    padding: '6px 10px',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    fontFamily: 'Inter, sans-serif',
+                    whiteSpace: 'nowrap',
+                    pointerEvents: 'none',
+                    boxShadow: '0 4px 12px rgba(0,0,0,.2)',
+                    zIndex: 10,
+                  }}>
+                    {(chartCoords[hoveredPoint].amount / 100).toLocaleString('fr-MA')} درهم
+                    <div style={{ fontSize: 10, fontWeight: 400, opacity: 0.8, fontFamily: 'Tajawal, sans-serif', marginTop: 2 }}>
+                      {chartCoords[hoveredPoint].label}
+                    </div>
+                    {/* arrow */}
+                    <div style={{ position: 'absolute', bottom: -5, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid #0A5F62' }} />
+                  </div>
+                )}
+              </div>
+              {/* X-axis labels */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#94a3b8', fontFamily: 'Inter, sans-serif', marginTop: 6 }}>
+                {chartCoords.filter((_, i) => i === 0 || i === Math.floor(chartCoords.length / 2) || i === chartCoords.length - 1).map((p, i) => (
+                  <span key={i}>{p.label}</span>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div style={{ height: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 13 }}>
+              <div style={{ fontSize: 36, marginBottom: 12 }}>📈</div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>لا توجد بيانات بعد</div>
+              <div style={{ fontSize: 12 }}>ستظهر الإحصائيات عند استلام أول تبرع</div>
+            </div>
+          )}
         </div>
 
         {/* Pending queue */}
@@ -236,27 +313,37 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        {/* Recent activity */}
+        {/* Recent donations */}
         <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', overflow: 'hidden' }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E9EB' }}>
-            <div style={{ fontSize: 15, fontWeight: 700 }}>🔔 آخر النشاطات</div>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E9EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>💰 آخر التبرعات</div>
+            <Link to="/admin/donations" style={{ fontSize: 12, color: '#0d7477', fontWeight: 600, textDecoration: 'none' }}>عرض الكل ←</Link>
           </div>
-          <div style={{ padding: '0 20px' }}>
-            {[
-              { icon: '✅', text: `تم التحقق من تبرع ${((pendingVerifications?.[0]?.amount || 50000) / 100).toLocaleString('fr-MA')} درهم`, time: 'منذ 15 دقيقة' },
-              { icon: '💰', text: 'تبرع جديد', time: 'منذ 42 دقيقة' },
-              { icon: '🤲', text: 'كفالة جديدة', time: 'منذ ساعة' },
-              { icon: '📁', text: 'تم إضافة مشروع جديد', time: 'منذ 3 ساعات' },
-            ].map((a, i, arr) => (
-              <div key={i} style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: i < arr.length - 1 ? '1px solid #E5E9EB' : 'none' }}>
-                <div style={{ fontSize: 18 }}>{a.icon}</div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{a.text}</div>
-                  <div style={{ fontSize: 11, color: '#94a3b8' }}>{a.time}</div>
+          {(pendingVerifications && pendingVerifications.length > 0) ? (
+            <div style={{ padding: '0 20px' }}>
+              {pendingVerifications.slice(0, 4).map((d, i, arr) => (
+                <div key={d._id || i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: i < arr.length - 1 ? '1px solid #E5E9EB' : 'none' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#FFFBEB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>⏳</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{d.user?.fullName || d.donorName || 'متبرع'}</div>
+                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{getLocalizedText(d.project?.title) || 'مشروع'}</div>
+                  </div>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#0A5F62', fontFamily: 'Inter, sans-serif' }}>
+                      {((d.amount || 0) / 100).toLocaleString('fr-MA')} <span style={{ fontSize: 10, fontWeight: 500 }}>د.م</span>
+                    </div>
+                    <div style={{ fontSize: 10, color: '#f59e0b', fontWeight: 600 }}>في الانتظار</div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ padding: '40px 20px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+              <div style={{ fontSize: 32, marginBottom: 10 }}>💰</div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>لا توجد تبرعات بعد</div>
+              <div style={{ fontSize: 12 }}>ستظهر التبرعات الجديدة هنا فور وصولها</div>
+            </div>
+          )}
         </div>
       </div>
 
