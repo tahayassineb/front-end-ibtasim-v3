@@ -3,648 +3,298 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
-import Card from '../components/Card';
-import Badge from '../components/Badge';
 
 // ============================================
-// ADMIN DONATIONS PAGE - Donations Management Ledger
+// ADMIN DONATIONS — Table with pending highlight rows
 // ============================================
 
-const AdminDonations = () => {
+const STATUS_CFG = {
+  verified:              { label: '✓ مؤكد',    bg: '#D1FAE5', color: '#16a34a' },
+  awaiting_verification: { label: '⏳ انتظار',  bg: '#FEF3C7', color: '#92400e' },
+  awaiting_receipt:      { label: '⏳ انتظار',  bg: '#FEF3C7', color: '#92400e' },
+  rejected:              { label: '✗ مرفوض',   bg: '#FEE2E2', color: '#dc2626' },
+  pending:               { label: '⏳ انتظار',  bg: '#FEF3C7', color: '#92400e' },
+};
+
+const isPending = (status) =>
+  status === 'awaiting_verification' || status === 'awaiting_receipt' || status === 'pending';
+
+export default function AdminDonations() {
   const { currentLanguage } = useApp();
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
+  const lang = currentLanguage?.code || 'ar';
+
+  const [search, setSearch]             = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewingDonation, setViewingDonation] = useState(null);
-  const [selectedIds, setSelectedIds] = useState(new Set());
-  const [isBulkLoading, setIsBulkLoading] = useState(false);
+  const [selectedIds, setSelectedIds]   = useState(new Set());
+  const [isBulkLoading, setBulkLoading] = useState(false);
+  const [currentPage, setCurrentPage]   = useState(1);
+  const PER_PAGE = 10;
 
-  // Convex hooks
-  const rawDonations = useQuery(api.donations.getAllDonations, {});
+  // ── Convex ────────────────────────────────────────────────────────────────────
+  const rawDonations   = useQuery(api.donations.getAllDonations, {});
   const dashboardStats = useQuery(api.admin.getDashboardStats);
   const verifyDonation = useMutation(api.donations.verifyDonation);
   const rejectDonation = useMutation(api.donations.rejectDonation);
 
-  // Transform Convex data to match component structure
+  // ── Transform ─────────────────────────────────────────────────────────────────
   const donations = useMemo(() => {
     if (!rawDonations) return [];
     return rawDonations.map(d => ({
-      id: d._id,
-      _id: d._id,
-      donor: d.donorName,
-      phone: d.donorPhone,
-      amount: d.amount,
-      trxId: `TRX-${String(d._id).slice(-6).toUpperCase()}`,
-      project: d.projectTitle[currentLanguage?.code] || d.projectTitle.ar,
-      method: d.paymentMethod === 'bank_transfer' ? 'bank' :
-              d.paymentMethod === 'card_whop' ? 'card' : 'cash',
-      status: d.status,
+      id:           d._id,
+      _id:          d._id,
+      donor:        d.donorName || 'مجهول الهوية',
+      phone:        d.donorPhone || '—',
+      amount:       d.amount || 0,
+      trxId:        `IB-${String(d._id).slice(-8).toUpperCase()}`,
+      project:      (typeof d.projectTitle === 'string' ? d.projectTitle : d.projectTitle?.[lang] || d.projectTitle?.ar) || '—',
+      method:       d.paymentMethod,
+      status:       d.status || 'pending',
       receiptImage: d.receiptUrl || null,
-      date: new Date(d.createdAt).toISOString().split('T')[0],
+      date:         d.createdAt ? new Date(d.createdAt).toISOString().split('T')[0] : '—',
     }));
-  }, [rawDonations, currentLanguage]);
+  }, [rawDonations, lang]);
 
-  // Handle view donation details
-  const handleViewDonation = (id) => {
-    const donation = donations.find(d => d.id === id);
-    if (donation) {
-      setViewingDonation(donation);
-    }
-  };
-
-  const handleCloseModal = () => {
-    setViewingDonation(null);
-  };
-
-  // Translations
-  const translations = {
-    ar: {
-      title: 'سجل التبرعات',
-      back: 'عودة',
-      export: 'تصدير',
-      more: 'المزيد',
-      stats: {
-        confirmed: 'مؤكد',
-        pending: 'معلق',
-        rejected: 'مرفوض',
-        total: 'إجمالي الإيرادات',
-        verified: 'مؤكد',
-        awaiting_receipt: 'في انتظار الإيصال',
-        awaiting_verification: 'قيد المراجعة',
-      },
-      search: 'البحث برقم الهوية، الاسم أو الهاتف...',
-      dateRange: 'نطاق التاريخ',
-      status: 'الحالة',
-      all: 'الكل',
-      project: 'المشروع',
-      recentDonations: 'أحدث التبرعات',
-      bulkActions: 'إجراءات جماعية',
-      view: 'عرض',
-      viewReceipt: 'عرض الإيصال',
-      viewDetails: 'عرض التفاصيل',
-      card: 'بطاقة',
-      bankTransfer: 'تحويل بنكي',
-      cash: 'نقدي',
-      swift: 'سويفت',
-      close: 'إغلاق',
-      donationDetails: 'تفاصيل التبرع',
-      donor: 'المتبرع',
-      amount: 'المبلغ',
-      transactionId: 'رقم المعاملة',
-      paymentMethod: 'طريقة الدفع',
-      phone: 'الهاتف',
-      date: 'التاريخ',
-      notes: 'ملاحظات',
-    },
-    fr: {
-      title: 'Registre des Dons',
-      back: 'Retour',
-      export: 'Exporter',
-      more: 'Plus',
-      stats: {
-        confirmed: 'Confirmé',
-        pending: 'En Attente',
-        rejected: 'Rejeté',
-        total: 'Revenus Totaux',
-        verified: 'Vérifié',
-        awaiting_receipt: 'En attente de reçu',
-        awaiting_verification: 'En vérification',
-      },
-      search: 'Rechercher ID, Nom ou Téléphone...',
-      dateRange: 'Plage de Dates',
-      status: 'Statut',
-      all: 'Tous',
-      project: 'Projet',
-      recentDonations: 'Dons Récents',
-      bulkActions: 'Actions en Masse',
-      view: 'Voir',
-      viewReceipt: 'Voir le Reçu',
-      viewDetails: 'Voir Détails',
-      card: 'Carte',
-      bankTransfer: 'Virement Bancaire',
-      cash: 'Espèces',
-      swift: 'Swift',
-      close: 'Fermer',
-      donationDetails: 'Détails du Don',
-      donor: 'Donateur',
-      amount: 'Montant',
-      transactionId: 'ID Transaction',
-      paymentMethod: 'Méthode de Paiement',
-      phone: 'Téléphone',
-      date: 'Date',
-      notes: 'Notes',
-    },
-    en: {
-      title: 'Donations Ledger',
-      back: 'Back',
-      export: 'Export',
-      more: 'More',
-      stats: {
-        confirmed: 'Confirmed',
-        pending: 'Pending',
-        rejected: 'Rejected',
-        total: 'Total Revenue',
-        verified: 'Verified',
-        awaiting_receipt: 'Awaiting Receipt',
-        awaiting_verification: 'Under Review',
-      },
-      search: 'Search ID, Name or Phone...',
-      dateRange: 'Date Range',
-      status: 'Status',
-      all: 'All',
-      project: 'Project',
-      recentDonations: 'Recent Donations',
-      bulkActions: 'Bulk Actions',
-      view: 'View',
-      viewReceipt: 'View Receipt',
-      viewDetails: 'View Details',
-      card: 'Card',
-      bankTransfer: 'Bank Transfer',
-      cash: 'Cash',
-      swift: 'Swift',
-      close: 'Close',
-      donationDetails: 'Donation Details',
-      donor: 'Donor',
-      amount: 'Amount',
-      transactionId: 'Transaction ID',
-      paymentMethod: 'Payment Method',
-      phone: 'Phone',
-      date: 'Date',
-      notes: 'Notes',
-    },
-  };
-
-  const t = translations[currentLanguage.code] || translations.en;
-
-  // Real stats from Convex
-  const stats = [
-    {
-      label: t.stats.confirmed,
-      value: dashboardStats ? String(dashboardStats.totalDonations) : '—',
-      color: 'primary',
-    },
-    {
-      label: t.stats.pending,
-      value: dashboardStats ? String(dashboardStats.pendingVerifications) : '—',
-      color: 'gold',
-    },
-    {
-      label: t.stats.rejected,
-      value: dashboardStats ? String(dashboardStats.rejectedDonations) : '—',
-      color: 'red',
-    },
-    {
-      label: t.stats.total,
-      value: dashboardStats
-        ? `${dashboardStats.totalRaised.toLocaleString()} MAD`
-        : '—',
-      color: 'dark',
-    },
-  ];
-
-
-  const getStatusVariant = (status) => {
-    if (status === 'verified') return 'success';
-    if (status === 'awaiting_receipt' || status === 'awaiting_verification') return 'warning';
-    return 'error'; // rejected
-  };
-
-  const getStatusLabel = (status) => {
-    return t.stats[status] || status;
-  };
-
-  const getStatusStyles = (status) => {
-    switch (status) {
-      case 'awaiting_receipt':
-      case 'awaiting_verification':
-        return 'bg-yellow-50/50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-900/30';
-      case 'verified':
-        return 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800';
-      case 'rejected':
-        return 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 opacity-80';
-      default:
-        return 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800';
-    }
-  };
-
-  const getMethodIcon = (method) => {
-    const icons = {
-      card: 'credit_card',
-      bank: 'account_balance',
-      cash: 'payments',
-      swift: 'account_balance',
-    };
-    return icons[method] || 'payments';
-  };
-
-  const getMethodLabel = (method) => {
-    const labels = {
-      card: t.card,
-      bank: t.bankTransfer,
-      cash: t.cash,
-      swift: t.swift,
-    };
-    return labels[method] || method;
-  };
-
-  const filteredDonations = donations.filter(d => {
-    const matchesSearch = d.donor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         d.trxId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         d.phone.includes(searchQuery);
-    const matchesStatus = statusFilter === 'all' ||
-      (statusFilter === 'awaiting_verification'
-        ? (d.status === 'awaiting_verification' || d.status === 'awaiting_receipt')
-        : d.status === statusFilter);
-    return matchesSearch && matchesStatus;
-  });
-
-  // Count by tab for badges
   const tabCounts = useMemo(() => ({
-    all: donations.length,
-    awaiting_verification: donations.filter(d => d.status === 'awaiting_verification' || d.status === 'awaiting_receipt').length,
-    verified: donations.filter(d => d.status === 'verified').length,
-    rejected: donations.filter(d => d.status === 'rejected').length,
+    all:       donations.length,
+    pending:   donations.filter(d => isPending(d.status)).length,
+    verified:  donations.filter(d => d.status === 'verified').length,
+    rejected:  donations.filter(d => d.status === 'rejected').length,
   }), [donations]);
 
-  // Checkbox helpers
-  const toggleSelect = (id) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
+  const filtered = donations.filter(d => {
+    const q = search.toLowerCase();
+    const matchSearch = d.donor.toLowerCase().includes(q) ||
+                        d.trxId.toLowerCase().includes(q) ||
+                        d.phone.includes(q);
+    const matchStatus =
+      statusFilter === 'all'     ? true :
+      statusFilter === 'pending' ? isPending(d.status) :
+      d.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
 
-  const toggleSelectAll = () => {
-    if (selectedIds.size === filteredDonations.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(filteredDonations.map(d => d.id)));
-    }
-  };
+  const totalPages = Math.ceil(filtered.length / PER_PAGE);
+  const page = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────────
+  const toggleSelect = (id) =>
+    setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const toggleAll = () =>
+    setSelectedIds(prev => prev.size === filtered.length ? new Set() : new Set(filtered.map(d => d.id)));
 
   const handleBulkVerify = async () => {
-    setIsBulkLoading(true);
-    try {
-      await Promise.all([...selectedIds].map(id => verifyDonation({ donationId: id, verified: true })));
-      setSelectedIds(new Set());
-    } finally {
-      setIsBulkLoading(false);
-    }
+    setBulkLoading(true);
+    try { await Promise.all([...selectedIds].map(id => verifyDonation({ donationId: id, verified: true }))); setSelectedIds(new Set()); }
+    finally { setBulkLoading(false); }
   };
 
   const handleBulkReject = async () => {
-    setIsBulkLoading(true);
-    try {
-      await Promise.all([...selectedIds].map(id => rejectDonation({ donationId: id })));
-      setSelectedIds(new Set());
-    } finally {
-      setIsBulkLoading(false);
-    }
+    setBulkLoading(true);
+    try { await Promise.all([...selectedIds].map(id => rejectDonation({ donationId: id }))); setSelectedIds(new Set()); }
+    finally { setBulkLoading(false); }
   };
 
+  const kpis = [
+    { num: (dashboardStats?.totalDonations || 0).toLocaleString(), label: 'إجمالي التبرعات', color: '#0A5F62' },
+    { num: (dashboardStats?.verifiedDonations || tabCounts.verified).toLocaleString(), label: 'مؤكدة', color: '#16a34a' },
+    { num: (dashboardStats?.pendingVerifications || tabCounts.pending).toLocaleString(), label: 'في انتظار التحقق', color: '#f59e0b' },
+    { num: (dashboardStats?.rejectedDonations || tabCounts.rejected).toLocaleString(), label: 'مرفوضة', color: '#ef4444' },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-text-primary dark:text-white">{t.title}</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <button className="flex items-center justify-center rounded-lg h-10 w-10 bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-            <span className="material-symbols-outlined">download</span>
-          </button>
-          <button className="flex items-center justify-center rounded-lg h-10 w-10 bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-            <span className="material-symbols-outlined">more_vert</span>
-          </button>
-        </div>
-      </div>
+    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: 24 }} dir="rtl">
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {stats.map((stat, index) => (
-          <Card
-            key={index}
-            padding="md"
-            className={`border ${
-              stat.color === 'gold'
-                ? 'border-yellow-200 dark:border-yellow-900/30'
-                : stat.color === 'red'
-                ? 'border-red-200 dark:border-red-900/30'
-                : stat.color === 'dark'
-                ? 'bg-slate-800 dark:bg-slate-950 border-slate-700'
-                : 'border-primary/20'
-            }`}
-          >
-            <div className="flex flex-col gap-1">
-              <p className={`text-xs font-medium ${stat.color === 'dark' ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>
-                {stat.label}
-              </p>
-              <p className={`text-xl font-bold ${
-                stat.color === 'gold'
-                  ? 'text-yellow-600 dark:text-yellow-400'
-                  : stat.color === 'red'
-                  ? 'text-red-600 dark:text-red-400'
-                  : stat.color === 'dark'
-                  ? 'text-white'
-                  : 'text-primary'
-              }`}>
-                {stat.value}
-              </p>
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      {/* Search */}
-      <div className="relative">
-        <div className="flex w-full items-stretch rounded-xl h-11 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div className="text-slate-400 flex items-center justify-center pl-4">
-            <span className="material-symbols-outlined">search</span>
+      {/* KPI row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 20 }}>
+        {kpis.map((k, i) => (
+          <div key={i} style={{ background: 'white', borderRadius: 14, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', padding: 16 }}>
+            <div style={{ fontSize: 24, fontWeight: 900, fontFamily: 'Inter, sans-serif', color: k.color }}>{k.num}</div>
+            <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>{k.label}</div>
           </div>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t.search}
-            className="w-full border-none bg-transparent focus:ring-0 text-sm placeholder:text-slate-400 text-text-primary dark:text-white"
-          />
-        </div>
+        ))}
       </div>
 
-      {/* Status Pill Tabs */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+      {/* Filter bar */}
+      <div style={{ background: 'white', borderRadius: 14, border: '1px solid #E5E9EB', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+        <input
+          value={search}
+          onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
+          placeholder="ابحث بالاسم، رقم المرجع..."
+          style={{ flex: 1, minWidth: 200, height: 38, padding: '0 16px', border: '1.5px solid #E5E9EB', borderRadius: 10, fontSize: 14, fontFamily: 'Tajawal, sans-serif', outline: 'none' }}
+          onFocus={e => e.target.style.borderColor = '#0d7477'}
+          onBlur={e => e.target.style.borderColor = '#E5E9EB'}
+        />
         {[
-          { key: 'all', label: t.all },
-          { key: 'awaiting_verification', label: t.stats.awaiting_verification },
-          { key: 'verified', label: t.stats.verified },
-          { key: 'rejected', label: t.stats.rejected },
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => { setStatusFilter(tab.key); setSelectedIds(new Set()); }}
-            className={`flex h-9 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors ${
-              statusFilter === tab.key
-                ? 'bg-primary text-white shadow-md'
-                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-primary/50 hover:text-primary'
-            }`}
-          >
-            {tab.label}
-            <span className={`inline-flex items-center justify-center rounded-full text-[10px] font-bold min-w-[18px] h-[18px] px-1 ${
-              statusFilter === tab.key
-                ? 'bg-white/25 text-white'
-                : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
-            }`}>
-              {tabCounts[tab.key] ?? 0}
-            </span>
+          ['all',      'الكل'],
+          ['verified', '✅ مؤكد'],
+          ['pending',  `⏳ انتظار (${tabCounts.pending})`],
+          ['rejected', '❌ مرفوض'],
+        ].map(([val, label]) => (
+          <button key={val} onClick={() => { setStatusFilter(val); setCurrentPage(1); }}
+            style={{
+              height: 34, padding: '0 14px', borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif',
+              border: `1.5px solid ${statusFilter === val ? (val === 'pending' ? '#f59e0b' : '#0d7477') : '#E5E9EB'}`,
+              background: statusFilter === val ? (val === 'pending' ? '#FEF3C7' : '#0d7477') : 'white',
+              color: statusFilter === val ? (val === 'pending' ? '#92400e' : 'white') : '#64748b',
+            }}>
+            {label}
           </button>
         ))}
       </div>
 
-      {/* Recent Donations Header + Select All */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={filteredDonations.length > 0 && selectedIds.size === filteredDonations.length}
-              onChange={toggleSelectAll}
-              className="w-4 h-4 rounded accent-primary"
-            />
-            <h3 className="text-text-primary dark:text-white text-base font-bold">{t.recentDonations}</h3>
-          </label>
+      {/* Table */}
+      <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', overflow: 'hidden', marginBottom: 16 }}>
+        {/* Head */}
+        <div style={{ display: 'grid', gridTemplateColumns: '40px 2fr 1.5fr 1fr 1fr 1fr 100px', background: '#F0F7F7', borderBottom: '1px solid #E5E9EB' }}>
+          <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center' }}>
+            <input type="checkbox" style={{ accentColor: '#0d7477' }}
+              checked={filtered.length > 0 && selectedIds.size === filtered.length}
+              onChange={toggleAll} />
+          </div>
+          {['المتبرع', 'المشروع', 'المبلغ', 'التاريخ', 'الحالة', 'إجراء'].map(h => (
+            <div key={h} style={{ padding: '12px 14px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#94a3b8', fontFamily: 'Inter, sans-serif' }}>{h}</div>
+          ))}
         </div>
-        <span className="text-xs text-slate-400">{filteredDonations.length} نتيجة</span>
-      </div>
 
-      {/* Donations List */}
-      <div className="flex flex-col gap-3">
-        {filteredDonations.map((donation) => (
-          <Card
-            key={donation.id}
-            padding="md"
-            className={`${getStatusStyles(donation.status)} ${selectedIds.has(donation.id) ? 'ring-2 ring-primary/40' : ''}`}
-          >
-            <div className="flex flex-col gap-3">
-              {/* Main Info */}
-              <div className="flex justify-between items-start gap-2">
-                <div className="flex items-start gap-2 flex-1 min-w-0">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(donation.id)}
-                    onChange={() => toggleSelect(donation.id)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="mt-1 w-4 h-4 rounded accent-primary shrink-0"
-                  />
-                  <div className="flex flex-col min-w-0">
-                    <Badge
-                      variant={getStatusVariant(donation.status)}
-                      size="sm"
-                      className="w-fit mb-1 text-[10px] uppercase tracking-wider"
-                    >
-                      {getStatusLabel(donation.status)}
-                    </Badge>
-                    <h4 className="text-sm font-bold text-text-primary dark:text-white truncate">{donation.donor}</h4>
-                    <p className="text-xs text-slate-500">{donation.phone}</p>
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className={`text-sm font-bold ${donation.status === 'rejected' ? 'text-slate-400' : 'text-primary'}`}>
-                    {donation.amount.toFixed(2)} MAD
-                  </p>
-                  <p className="text-[10px] text-slate-400">#{donation.trxId}</p>
+        {/* Rows */}
+        {page.length === 0 ? (
+          <div style={{ padding: '60px 20px', textAlign: 'center', color: '#94a3b8' }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>💰</div>
+            <p>لا توجد تبرعات</p>
+          </div>
+        ) : page.map((d, i) => {
+          const pend = isPending(d.status);
+          const st = STATUS_CFG[d.status] || STATUS_CFG.pending;
+          return (
+            <div key={d._id}
+              style={{
+                display: 'grid', gridTemplateColumns: '40px 2fr 1.5fr 1fr 1fr 1fr 100px',
+                borderBottom: i < page.length - 1 ? '1px solid #E5E9EB' : 'none',
+                alignItems: 'center',
+                borderRight: pend ? '4px solid #f59e0b' : 'none',
+                background: pend ? '#FFFBEB' : (i % 2 === 1 ? '#fafbfc' : 'white'),
+              }}>
+              <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center' }}>
+                <input type="checkbox" style={{ accentColor: '#0d7477' }}
+                  checked={selectedIds.has(d.id)}
+                  onChange={() => toggleSelect(d.id)} />
+              </div>
+              <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#F0F7F7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>👤</div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{d.donor}</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'Inter, sans-serif' }}>#{d.trxId}</div>
                 </div>
               </div>
-
-              {/* Project & Method */}
-              <div className="flex items-center justify-between text-xs border-t border-slate-100 dark:border-slate-800 pt-2">
-                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                  <span className="material-symbols-outlined text-sm">school</span>
-                  <span>{donation.project}</span>
-                </div>
-                <div className="flex items-center gap-1 text-slate-400">
-                  <span className="material-symbols-outlined text-sm">{getMethodIcon(donation.method)}</span>
-                  <span>{getMethodLabel(donation.method)}</span>
-                </div>
+              <div style={{ padding: '12px 14px', fontSize: 13, fontWeight: 600 }}>{d.project}</div>
+              <div style={{ padding: '12px 14px', fontSize: 13, fontWeight: 800, color: d.status === 'rejected' ? '#ef4444' : '#0A5F62', fontFamily: 'Inter, sans-serif' }}>
+                {(d.amount / 100).toLocaleString('fr-MA')} د.م
               </div>
-
-              {/* Actions - View Details button for all donations */}
-              <div className="flex gap-2 mt-1">
+              <div style={{ padding: '12px 14px', fontSize: 13, color: '#94a3b8', fontFamily: 'Inter, sans-serif' }}>{d.date}</div>
+              <div style={{ padding: '12px 14px' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 100, fontSize: 11, fontWeight: 700, background: st.bg, color: st.color }}>
+                  {st.label}
+                </span>
+              </div>
+              <div style={{ padding: '12px 14px' }}>
                 <button
-                  onClick={() => handleViewDonation(donation.id)}
-                  className="flex-1 border border-primary/30 text-primary text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-primary/5 transition-colors"
-                >
-                  <span className="material-symbols-outlined text-sm">receipt</span>
-                  {t.viewReceipt}
+                  onClick={() => setViewingDonation(d)}
+                  style={{ height: 28, padding: '0 10px', borderRadius: 8, border: `1px solid ${pend ? '#0d7477' : '#E5E9EB'}`, color: pend ? '#0d7477' : '#64748b', background: 'white', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+                  {pend ? 'راجع' : 'عرض'}
                 </button>
               </div>
             </div>
-          </Card>
-        ))}
+          );
+        })}
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-between items-center pt-4 border-t border-slate-200 dark:border-slate-800">
-        <div className="flex flex-col">
-          <span className="text-[10px] text-slate-400 font-bold uppercase">Page 1 of 12</span>
-          <span className="text-xs text-slate-600 dark:text-slate-300">Showing 1-4 of 48</span>
-        </div>
-        <div className="flex gap-2">
-          <button className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-400 disabled:opacity-50" disabled>
-            <span className="material-symbols-outlined">chevron_left</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, color: '#64748b' }}>
+        <span>عرض {filtered.length === 0 ? 0 : (currentPage - 1) * PER_PAGE + 1}–{Math.min(currentPage * PER_PAGE, filtered.length)} من {filtered.length} تبرع</span>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}
+            style={{ height: 32, padding: '0 12px', border: '1px solid #E5E9EB', borderRadius: 8, background: 'white', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', opacity: currentPage === 1 ? 0.5 : 1, fontSize: 13 }}>
+            ‹ السابق
           </button>
-          <button className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-primary hover:bg-primary/5 transition-colors">
-            <span className="material-symbols-outlined">chevron_right</span>
+          <button style={{ height: 32, padding: '0 12px', border: '1px solid #0d7477', borderRadius: 8, background: '#0d7477', color: 'white', fontSize: 13, fontWeight: 700, cursor: 'default' }}>
+            {currentPage}
+          </button>
+          <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0}
+            style={{ height: 32, padding: '0 12px', border: '1px solid #E5E9EB', borderRadius: 8, background: 'white', cursor: (currentPage === totalPages || totalPages === 0) ? 'not-allowed' : 'pointer', opacity: (currentPage === totalPages || totalPages === 0) ? 0.5 : 1, fontSize: 13 }}>
+            التالي ›
           </button>
         </div>
       </div>
 
-      {/* Bulk Action Bar */}
+      {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-5 py-3 bg-slate-900 dark:bg-slate-800 rounded-2xl shadow-2xl border border-white/10 animate-in slide-in-from-bottom-4">
-          <span className="text-white/70 text-sm font-medium ml-1">
-            {selectedIds.size} محدد
-          </span>
-          <div className="w-px h-5 bg-white/20" />
-          <button
-            onClick={handleBulkVerify}
-            disabled={isBulkLoading}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-dark disabled:opacity-60 transition-colors"
-          >
-            <span className="material-symbols-outlined text-[16px]">check_circle</span>
-            تحقق من المحدد
+        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 40, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', background: '#0e1a1b', borderRadius: 16, boxShadow: '0 10px 15px rgba(0,0,0,.2)', border: '1px solid rgba(255,255,255,.1)', fontFamily: 'Tajawal, sans-serif' }}>
+          <span style={{ color: 'rgba(255,255,255,.7)', fontSize: 14 }}>{selectedIds.size} محدد</span>
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,.2)' }} />
+          <button onClick={handleBulkVerify} disabled={isBulkLoading}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 10, background: '#0d7477', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+            ✓ تحقق من المحدد
           </button>
-          <button
-            onClick={handleBulkReject}
-            disabled={isBulkLoading}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 disabled:opacity-60 transition-colors"
-          >
-            <span className="material-symbols-outlined text-[16px]">cancel</span>
-            رفض المحدد
+          <button onClick={handleBulkReject} disabled={isBulkLoading}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 10, background: '#ef4444', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+            ✗ رفض المحدد
           </button>
-          <button
-            onClick={() => setSelectedIds(new Set())}
-            className="text-white/50 hover:text-white transition-colors"
-          >
-            <span className="material-symbols-outlined text-[18px]">close</span>
-          </button>
+          <button onClick={() => setSelectedIds(new Set())}
+            style={{ color: 'rgba(255,255,255,.5)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 18 }}>×</button>
         </div>
       )}
 
-      {/* View Donation Modal */}
+      {/* Donation detail modal */}
       {viewingDonation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm">
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 sm:rounded-2xl shadow-xl overflow-hidden flex flex-col h-screen sm:h-auto sm:max-h-[92vh] border-0 sm:border border-slate-100 dark:border-slate-800">
-            {/* Modal Header */}
-            <div className="flex items-center bg-white dark:bg-slate-900 p-4 border-b border-slate-100 dark:border-slate-800 justify-between sticky top-0 z-10">
-              <button
-                onClick={handleCloseModal}
-                className="text-slate-400 flex size-10 shrink-0 items-center justify-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 rounded-full transition-colors"
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
-              <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight flex-1 text-center">
-                {t.donationDetails}
-              </h2>
-              <div className="flex w-10 items-center justify-end">
-                <Badge
-                  variant={getStatusVariant(viewingDonation.status)}
-                  size="sm"
-                >
-                  {getStatusLabel(viewingDonation.status)}
-                </Badge>
-              </div>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,.5)', backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: 'white', borderRadius: 20, boxShadow: '0 20px 40px rgba(0,0,0,.2)', width: '100%', maxWidth: 480, overflow: 'hidden', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }} dir="rtl">
+            {/* Modal header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #E5E9EB' }}>
+              <button onClick={() => setViewingDonation(null)}
+                style={{ width: 36, height: 36, borderRadius: '50%', background: '#F0F7F7', border: 'none', cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+              <h2 style={{ fontSize: 16, fontWeight: 800 }}>تفاصيل التبرع</h2>
+              <span style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 10px', borderRadius: 100, fontSize: 11, fontWeight: 700, background: (STATUS_CFG[viewingDonation.status] || STATUS_CFG.pending).bg, color: (STATUS_CFG[viewingDonation.status] || STATUS_CFG.pending).color }}>
+                {(STATUS_CFG[viewingDonation.status] || STATUS_CFG.pending).label}
+              </span>
             </div>
 
-            {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto ios-scroller">
-              <div className="flex flex-col">
-                {/* Receipt Image */}
-                {viewingDonation.receiptImage && (
-                  <div className="relative w-full aspect-video bg-slate-100 dark:bg-slate-800">
-                    <img
-                      src={viewingDonation.receiptImage}
-                      alt="Donation Receipt"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <p className="text-white/80 text-xs font-medium uppercase tracking-wider">{t.transactionId}</p>
-                      <p className="text-white text-lg font-mono font-bold">#{viewingDonation.trxId}</p>
-                    </div>
-                  </div>
-                )}
+            {/* Modal body */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
+              {viewingDonation.receiptImage && (
+                <img src={viewingDonation.receiptImage} alt="الوصل" style={{ width: '100%', borderRadius: 12, marginBottom: 16, objectFit: 'cover', maxHeight: 200 }} />
+              )}
 
-                <div className="p-6 space-y-6">
-                  {/* Amount Section */}
-                  <div className="text-center py-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                    <p className="text-[11px] font-bold text-text-secondary dark:text-slate-400 uppercase tracking-[0.2em] mb-2">
-                      {t.amount}
-                    </p>
-                    <p className="text-4xl font-black text-primary tracking-tighter">
-                      {viewingDonation.amount.toFixed(2)} MAD
-                    </p>
-                  </div>
-
-                  {/* Donor Card */}
-                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 space-y-4">
-                    <div className="flex items-center gap-4">
-                      <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-12 w-12 border-2 border-white dark:border-slate-700 shadow-sm bg-primary/10 flex items-center justify-center text-primary font-bold text-xl">
-                        {viewingDonation.donor.charAt(0)}
-                      </div>
-                      <div className="flex flex-col justify-center">
-                        <p className="text-text-secondary dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider">
-                          {t.donor}
-                        </p>
-                        <p className="text-slate-900 dark:text-white text-base font-bold">{viewingDonation.donor}</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 py-3 border-y border-slate-200/60 dark:border-slate-700">
-                      <div>
-                        <span className="text-[10px] text-text-secondary dark:text-slate-400 block font-bold uppercase mb-1">
-                          {t.phone}
-                        </span>
-                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{viewingDonation.phone}</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-text-secondary dark:text-slate-400 block font-bold uppercase mb-1">
-                          {t.date}
-                        </span>
-                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{viewingDonation.date}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Project & Method */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
-                        {t.project}
-                      </span>
-                      <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{viewingDonation.project}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
-                        {t.paymentMethod}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-slate-400">{getMethodIcon(viewingDonation.method)}</span>
-                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{getMethodLabel(viewingDonation.method)}</span>
-                      </div>
-                    </div>
-                  </div>
+              {/* Amount */}
+              <div style={{ textAlign: 'center', padding: '16px 0', background: '#F0F7F7', borderRadius: 12, marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 4, fontFamily: 'Inter, sans-serif' }}>المبلغ</div>
+                <div style={{ fontSize: 36, fontWeight: 900, color: '#0d7477', fontFamily: 'Inter, sans-serif' }}>
+                  {(viewingDonation.amount / 100).toLocaleString('fr-MA')} <span style={{ fontSize: 18 }}>د.م</span>
                 </div>
               </div>
+
+              {/* Details grid */}
+              {[
+                ['المتبرع', viewingDonation.donor],
+                ['رقم المرجع', `#${viewingDonation.trxId}`],
+                ['المشروع', viewingDonation.project],
+                ['التاريخ', viewingDonation.date],
+                ['الهاتف', viewingDonation.phone],
+                ['طريقة الدفع', viewingDonation.method === 'bank_transfer' ? 'تحويل بنكي' : viewingDonation.method === 'card_whop' ? 'بطاقة' : 'نقدي'],
+              ].map(([label, value]) => (
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #E5E9EB', fontSize: 13 }}>
+                  <span style={{ color: '#64748b' }}>{label}</span>
+                  <span style={{ fontWeight: 600 }}>{value}</span>
+                </div>
+              ))}
             </div>
 
-            {/* Modal Footer */}
-            <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
-              <button
-                onClick={handleCloseModal}
-                className="w-full px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-              >
-                {t.close}
+            <div style={{ padding: '14px 20px', borderTop: '1px solid #E5E9EB' }}>
+              <button onClick={() => setViewingDonation(null)}
+                style={{ width: '100%', height: 44, background: '#F0F7F7', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#64748b', fontFamily: 'Tajawal, sans-serif' }}>
+                إغلاق
               </button>
             </div>
           </div>
@@ -652,6 +302,4 @@ const AdminDonations = () => {
       )}
     </div>
   );
-};
-
-export default AdminDonations;
+}

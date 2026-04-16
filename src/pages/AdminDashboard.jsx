@@ -4,567 +4,311 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import { convexFileUrl } from '../lib/convex';
-import Card from '../components/Card';
-import Badge from '../components/Badge';
-import Button from '../components/Button';
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
 
 // ============================================
 // ADMIN DASHBOARD PAGE - Connected to Convex
 // ============================================
 
-const AdminDashboard = () => {
+export default function AdminDashboard() {
   const { currentLanguage, showToast } = useApp();
   const navigate = useNavigate();
 
-  // Fetch dashboard stats from Convex
   const stats = useQuery(api.admin.getDashboardStats);
-
-  // Fetch pending verifications
-  const pendingVerifications = useQuery(api.admin.getVerifications, { 
-    status: "awaiting_verification",
-    limit: 5 
+  const pendingVerifications = useQuery(api.admin.getVerifications, {
+    status: 'awaiting_verification',
+    limit: 5,
   });
-
-  // Fetch featured projects
   const featuredProjectsData = useQuery(api.projects.getFeaturedProjects, { limit: 6 });
 
-  // Local state for drag-and-drop (initialized from query data)
   const [featuredProjects, setFeaturedProjects] = useState([]);
   const [hasOrderChanged, setHasOrderChanged] = useState(false);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
-  
-  // Update local state when query data changes
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [chartTab, setChartTab] = useState('30');
+
   React.useEffect(() => {
-    if (featuredProjectsData) {
-      setFeaturedProjects(featuredProjectsData);
-    }
+    if (featuredProjectsData) setFeaturedProjects(featuredProjectsData);
   }, [featuredProjectsData]);
 
-  const [draggedIndex, setDraggedIndex] = useState(null);
-  
-  // Mutation for updating featured order
   const updateFeaturedOrder = useMutation(api.projects.updateFeaturedOrder);
 
-  // Translations
-  const translations = {
-    ar: {
-      welcome: 'مرحباً، مشرف',
-      newProject: 'مشروع جديد',
-      addDonation: 'إضافة تبرع',
-      stats: {
-        totalDonations: 'إجمالي التبرعات',
-        activeProjects: 'المشاريع النشطة',
-        totalDonors: 'إجمالي المتبرعين',
-        pendingVerifications: 'التحقق المعلق',
-      },
-      trendUp: '+12%',
-      trendDown: '-2%',
-      steady: 'ثابت',
-      actionRequired: 'يتطلب إجراء',
-      donationTrends: 'اتجاهات التبرعات',
-      activity30Days: 'النشاط لآخر 30 يوماً',
-      daily: 'يومي',
-      weekly: 'أسبوعي',
-      recentDonations: 'أحدث التبرعات',
-      viewAll: 'عرض الكل',
-      donor: 'المتبرع',
-      project: 'المشروع',
-      amount: 'المبلغ',
-      status: 'الحالة',
-      statuses: {
-        completed: 'مكتمل',
-        processing: 'قيد المعالجة',
-      },
-      featuredProjects: 'المشاريع المميزة',
-      featuredDesc: 'المشاريع المعروضة على الصفحة الرئيسية',
-      manageFeatured: 'إدارة المشاريع المميزة',
-      dragToReorder: 'اسحب لإعادة الترتيب',
-      maxFeatured: 'الحد الأقصى 6 مشاريع',
-      addFeatured: 'إضافة مشروع مميز',
-      removeFeatured: 'إزالة',
-      saveOrder: 'حفظ الترتيب',
-      orderSaved: 'تم حفظ الترتيب',
-      loading: 'جاري التحميل...',
-    },
-    fr: {
-      welcome: 'Bienvenue, Admin',
-      newProject: 'Nouveau Projet',
-      addDonation: 'Ajouter Don',
-      stats: {
-        totalDonations: 'Dons Totaux',
-        activeProjects: 'Projets Actifs',
-        totalDonors: 'Donateurs Totaux',
-        pendingVerifications: 'Vérifications En Attente',
-      },
-      trendUp: '+12%',
-      trendDown: '-2%',
-      steady: 'Stable',
-      actionRequired: 'Action Requise',
-      donationTrends: 'Tendances des Dons',
-      activity30Days: 'Activité des 30 derniers jours',
-      daily: 'Quotidien',
-      weekly: 'Hebdomadaire',
-      recentDonations: 'Dons Récents',
-      viewAll: 'Voir Tout',
-      donor: 'Donateur',
-      project: 'Projet',
-      amount: 'Montant',
-      status: 'Statut',
-      statuses: {
-        completed: 'Terminé',
-        processing: 'En cours',
-      },
-      featuredProjects: 'Projets en Vedette',
-      featuredDesc: 'Projets affichés sur la page d\'accueil',
-      manageFeatured: 'Gérer les projets en vedette',
-      dragToReorder: 'Glisser pour réorganiser',
-      maxFeatured: 'Maximum 6 projets',
-      addFeatured: 'Ajouter un projet en vedette',
-      removeFeatured: 'Retirer',
-      saveOrder: 'Sauvegarder l\'ordre',
-      orderSaved: 'Ordre sauvegardé',
-      loading: 'Chargement...',
-    },
-    en: {
-      welcome: 'Welcome, Admin',
-      newProject: 'New Project',
-      addDonation: 'Add Donation',
-      stats: {
-        totalDonations: 'Total Donations',
-        activeProjects: 'Active Projects',
-        totalDonors: 'Total Donors',
-        pendingVerifications: 'Pending Verifications',
-      },
-      trendUp: '+12%',
-      trendDown: '-2%',
-      steady: 'Steady',
-      actionRequired: 'Action Required',
-      donationTrends: 'Donation Trends',
-      activity30Days: 'Activity over last 30 days',
-      daily: 'Daily',
-      weekly: 'Weekly',
-      recentDonations: 'Recent Donations',
-      viewAll: 'View All',
-      donor: 'Donor',
-      project: 'Project',
-      amount: 'Amount',
-      status: 'Status',
-      statuses: {
-        completed: 'Completed',
-        processing: 'Processing',
-      },
-      featuredProjects: 'Featured Projects',
-      featuredDesc: 'Projects displayed on the home page',
-      manageFeatured: 'Manage Featured Projects',
-      dragToReorder: 'Drag to reorder',
-      maxFeatured: 'Maximum 6 projects',
-      addFeatured: 'Add Featured Project',
-      removeFeatured: 'Remove',
-      saveOrder: 'Save Order',
-      orderSaved: 'Order saved',
-      loading: 'Loading...',
-    },
-  };
-
-  const t = translations[currentLanguage?.code || 'en'];
-
-  // Format currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US').format(amount);
-  };
-
-  // Save the new order to Convex
-  // MUST be declared before the loading guard — hooks cannot be called after a conditional return
   const handleSaveOrder = useCallback(async () => {
     if (!hasOrderChanged) return;
-
     setIsSavingOrder(true);
     try {
-      const projectsWithOrder = featuredProjects.map((project, index) => ({
-        projectId: project._id,
-        order: index + 1,
-      }));
-
+      const projectsWithOrder = featuredProjects.map((p, i) => ({ projectId: p._id, order: i + 1 }));
       await updateFeaturedOrder({ projects: projectsWithOrder });
-      showToast(t.orderSaved, 'success');
+      showToast('تم حفظ الترتيب', 'success');
       setHasOrderChanged(false);
-    } catch (error) {
-      console.error('Failed to save order:', error);
-      showToast('Failed to save order', 'error');
+    } catch {
+      showToast('فشل حفظ الترتيب', 'error');
     } finally {
       setIsSavingOrder(false);
     }
-  }, [featuredProjects, hasOrderChanged, updateFeaturedOrder, showToast, t.orderSaved]);
+  }, [featuredProjects, hasOrderChanged, updateFeaturedOrder, showToast]);
 
-  // Loading state — wait for ALL queries before rendering (prevents .map() on undefined crash)
   if (stats === undefined || pendingVerifications === undefined || featuredProjectsData === undefined) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-text-secondary">{t.loading}</p>
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Tajawal, sans-serif' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>📊</div>
+          <p style={{ color: '#94a3b8' }}>جاري تحميل البيانات...</p>
         </div>
       </div>
     );
   }
 
-  // Stats cards data from Convex
-  const statsCards = [
-    { 
-      key: 'totalDonations', 
-      value: stats?.totalDonations?.toString() || '0', 
-      label: t.stats.totalDonations,
-      icon: 'payments',
-      trend: '+12%',
-      color: 'bg-emerald-500'
-    },
-    { 
-      key: 'activeProjects', 
-      value: stats?.activeProjects?.toString() || '0', 
-      label: t.stats.activeProjects,
-      icon: 'folder_open',
-      trend: '+5%',
-      color: 'bg-blue-500'
-    },
-    { 
-      key: 'totalDonors', 
-      value: stats?.totalDonors?.toString() || '0', 
-      label: t.stats.totalDonors,
-      icon: 'people',
-      trend: '+8%',
-      color: 'bg-violet-500'
-    },
-    { 
-      key: 'pendingVerifications', 
-      value: stats?.pendingVerifications?.toString() || '0', 
-      label: t.stats.pendingVerifications,
-      icon: 'pending_actions',
-      trend: null,
-      alert: stats?.pendingVerifications > 0,
-      color: 'bg-amber-500'
-    },
-  ];
-
-  // Mock chart data (replace with actual data from Convex)
-  const donationData = stats?.monthlyDonations?.map(m => ({
-    name: m.month,
-    amount: m.amount,
-  })) || [];
-
-  const recentDonations = pendingVerifications?.slice(0, 5).map(d => ({
-    id: d._id,
-    donor: d.user?.fullName || 'Anonymous',
-    project: d.project?.title || 'Unknown Project',
-    amount: d.amount,
-    status: d.status,
-  })) || [];
-
-  const getLocalizedText = (obj) => {
-    if (typeof obj === 'string') return obj;
-    return obj?.[currentLanguage?.code] || obj?.en || '';
-  };
-
-  // Drag and drop handlers for featured projects
-  const handleDragStart = (index) => {
-    setDraggedIndex(index);
-  };
-
+  const handleDragStart = (index) => setDraggedIndex(index);
   const handleDragOver = (e, index) => {
     e.preventDefault();
     if (draggedIndex === null || draggedIndex === index) return;
-
-    // Reorder the projects
     const newProjects = [...featuredProjects];
-    const draggedProject = newProjects[draggedIndex];
+    const dragged = newProjects[draggedIndex];
     newProjects.splice(draggedIndex, 1);
-    newProjects.splice(index, 0, draggedProject);
-    
+    newProjects.splice(index, 0, dragged);
     setFeaturedProjects(newProjects);
     setDraggedIndex(index);
     setHasOrderChanged(true);
   };
+  const handleDragEnd = () => setDraggedIndex(null);
 
-  const handleDragEnd = () => {
-    setDraggedIndex(null);
+  const getLocalizedText = (obj) => {
+    if (!obj) return '';
+    if (typeof obj === 'string') return obj;
+    return obj?.[currentLanguage?.code] || obj?.ar || obj?.en || '';
   };
 
+  const totalCollected = stats?.totalDonations
+    ? (stats.totalDonations / 100).toLocaleString('fr-MA')
+    : '0';
+
+  const kpiCards = [
+    { icon: '💰', bg: '#E6F4F4', num: totalCollected, label: 'درهم محصّل هذا الشهر', trend: '↑ +12%', trendColor: '#22c55e' },
+    { icon: '🎯', bg: '#F0FDF4', num: (stats?.donationCount || 0).toLocaleString(), label: 'تبرع هذا الشهر', trend: '↑ +8%', trendColor: '#22c55e' },
+    { icon: '🤲', bg: '#FFFBEB', num: stats?.activeKafala || 0, label: 'كفالة نشطة', trend: '↑ +3', trendColor: '#22c55e' },
+    { icon: '⏳', bg: '#EFF6FF', num: stats?.pendingVerifications || 0, label: 'تحويلات تنتظر التحقق', trend: `${stats?.pendingVerifications || 0} انتظار`, trendColor: '#ef4444' },
+  ];
+
+  const donationData = stats?.monthlyDonations || [];
+  // Build SVG path from data or use static design path
+  const chartPoints = donationData.length >= 2
+    ? donationData.map((d, i) => {
+        const x = (i / (donationData.length - 1)) * 600;
+        const maxAmt = Math.max(...donationData.map(d => d.amount), 1);
+        const y = 190 - (d.amount / maxAmt) * 160;
+        return `${x},${y}`;
+      }).join(' ')
+    : null;
+
   return (
-    <div className="min-h-screen pb-24 md:pb-8">
-      {/* Header */}
-      <div className="px-6 py-6 max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-text-primary dark:text-white">
-              {t.welcome}
-            </h1>
-            <p className="text-text-secondary mt-1">
-              {new Date().toLocaleDateString(currentLanguage?.code === 'ar' ? 'ar-MA' : currentLanguage?.code === 'fr' ? 'fr-FR' : 'en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </p>
+    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: 24 }} dir="rtl">
+
+      {/* KPI row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 24 }}>
+        {kpiCards.map((c, i) => (
+          <div key={i} style={{ background: 'white', borderRadius: 16, padding: 20, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: c.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{c.icon}</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: c.trendColor, display: 'flex', alignItems: 'center', gap: 2 }}>{c.trend}</div>
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 900, fontFamily: 'Inter, sans-serif' }}>{c.num}</div>
+            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{c.label}</div>
           </div>
-          <div className="flex gap-3">
-            <button 
-              onClick={() => navigate('/admin/projects/new')}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-xl font-medium transition-colors shadow-lg shadow-primary/25"
-            >
-              <span className="material-symbols-outlined text-xl">add</span>
-              {t.newProject}
-            </button>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Stats Grid */}
-      <div className="px-6 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {statsCards.map((stat) => (
-            <Card key={stat.key} variant="default" className="p-5 relative overflow-hidden">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-text-secondary text-sm font-medium">{stat.label}</p>
-                  <p className="text-3xl font-bold text-text-primary dark:text-white mt-2">
-                    {stat.value}
-                  </p>
-                  {stat.trend && (
-                    <p className={`text-sm mt-1 font-medium ${stat.trend.startsWith('+') ? 'text-emerald-500' : 'text-red-500'}`}>
-                      {stat.trend}
-                    </p>
-                  )}
-                </div>
-                <div className={`${stat.color} p-3 rounded-xl text-white`}>
-                  <span className="material-symbols-outlined text-2xl">{stat.icon}</span>
-                </div>
-              </div>
-              {stat.alert && (
-                <div className="absolute top-2 right-2">
-                  <span className="flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                  </span>
-                </div>
-              )}
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Content Grid */}
-      <div className="px-6 max-w-7xl mx-auto mt-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Donation Trends Chart */}
-          <Card variant="default" className="lg:col-span-2 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-lg font-bold text-text-primary dark:text-white">
-                  {t.donationTrends}
-                </h3>
-                <p className="text-sm text-text-secondary">{t.activity30Days}</p>
-              </div>
-              <div className="flex gap-2">
-                <button className="px-3 py-1 text-sm font-medium text-primary bg-primary/10 rounded-lg">
-                  {t.daily}
+      {/* Chart + Pending */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 16, marginBottom: 24 }}>
+        {/* Area chart */}
+        <div style={{ background: 'white', borderRadius: 16, padding: 20, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>📈 التبرعات الشهرية (درهم)</div>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {[['7', '7 أيام'], ['30', '30 يوم'], ['90', '3 أشهر']].map(([v, label]) => (
+                <button key={v} onClick={() => setChartTab(v)}
+                  style={{ height: 28, padding: '0 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none', background: chartTab === v ? '#0d7477' : '#F0F7F7', color: chartTab === v ? 'white' : '#64748b', fontFamily: 'Tajawal, sans-serif' }}>
+                  {label}
                 </button>
-                <button className="px-3 py-1 text-sm font-medium text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                  {t.weekly}
-                </button>
-              </div>
+              ))}
             </div>
-            
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={donationData}>
-                  <defs>
-                    <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#0d7377" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#0d7377" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis 
-                    dataKey="name" 
-                    stroke="#9ca3af"
-                    fontSize={12}
-                    tickLine={false}
-                  />
-                  <YAxis 
-                    stroke="#9ca3af"
-                    fontSize={12}
-                    tickLine={false}
-                    tickFormatter={(value) => `${value} MAD`}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'white',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                    }}
-                    formatter={(value) => [`${value} MAD`, 'Amount']}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="amount" 
-                    stroke="#0d7377" 
-                    strokeWidth={2}
-                    fillOpacity={1} 
-                    fill="url(#colorAmount)" 
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-
-          {/* Recent Activity */}
-          <Card variant="default" className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-text-primary dark:text-white">
-                {t.recentDonations}
-              </h3>
-              <Link to="/admin/donations" className="text-sm text-primary hover:text-primary-dark font-medium">
-                {t.viewAll}
-              </Link>
-            </div>
-            
-            <div className="space-y-4">
-              {recentDonations.length === 0 ? (
-                <p className="text-text-secondary text-center py-8">No pending verifications</p>
+          </div>
+          <div style={{ width: '100%', height: 200, position: 'relative' }}>
+            <svg viewBox="0 0 600 200" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
+              <defs>
+                <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#0d7477" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="#0d7477" stopOpacity="0.02" />
+                </linearGradient>
+              </defs>
+              <line x1="0" y1="50" x2="600" y2="50" stroke="#E5E9EB" strokeWidth="1" />
+              <line x1="0" y1="100" x2="600" y2="100" stroke="#E5E9EB" strokeWidth="1" />
+              <line x1="0" y1="150" x2="600" y2="150" stroke="#E5E9EB" strokeWidth="1" />
+              {chartPoints ? (
+                <>
+                  <polyline points={chartPoints} fill="none" stroke="#0d7477" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <polygon points={`0,200 ${chartPoints} 600,200`} fill="url(#chartGrad)" />
+                </>
               ) : (
-                recentDonations.map((donation) => (
-                  <div key={donation.id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                      <span className="material-symbols-outlined">person</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-text-primary dark:text-white truncate">
-                        {donation.donor}
-                      </p>
-                      <p className="text-sm text-text-secondary truncate">
-                        {donation.project}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-text-primary dark:text-white">
-                        {donation.amount} MAD
-                      </p>
-                      <Badge 
-                        variant={donation.status === 'verified' ? 'success' : 'warning'}
-                        size="sm"
-                      >
-                        {donation.status}
-                      </Badge>
-                    </div>
-                  </div>
-                ))
+                <>
+                  <path d="M0,160 C40,140 80,120 120,100 C160,80 200,130 240,90 C280,50 320,70 360,60 C400,50 440,40 480,30 C520,20 560,35 600,25 L600,200 L0,200 Z" fill="url(#chartGrad)" />
+                  <path d="M0,160 C40,140 80,120 120,100 C160,80 200,130 240,90 C280,50 320,70 360,60 C400,50 440,40 480,30 C520,20 560,35 600,25" fill="none" stroke="#0d7477" strokeWidth="2.5" strokeLinecap="round" />
+                  <circle cx="120" cy="100" r="4" fill="#0d7477" />
+                  <circle cx="240" cy="90" r="4" fill="#0d7477" />
+                  <circle cx="360" cy="60" r="4" fill="#0d7477" />
+                  <circle cx="480" cy="30" r="4" fill="#0d7477" />
+                  <circle cx="600" cy="25" r="5" fill="#0d7477" stroke="white" strokeWidth="2" />
+                </>
               )}
+            </svg>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#94a3b8', fontFamily: 'Inter, sans-serif', marginTop: 4 }}>
+            <span>1 يناير</span><span>8</span><span>15</span><span>22</span><span>29 يناير</span>
+          </div>
+        </div>
+
+        {/* Pending queue */}
+        <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', overflow: 'hidden' }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E9EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>⏳ تنتظر التحقق</div>
+            <div style={{ background: '#FEF3C7', color: '#b45309', fontSize: 12, fontWeight: 700, padding: '2px 10px', borderRadius: 100 }}>
+              {stats?.pendingVerifications || 0} تحويلات
             </div>
-          </Card>
+          </div>
+          {(pendingVerifications || []).slice(0, 3).map((d, i) => (
+            <div key={d._id || i} style={{ padding: '12px 20px', borderBottom: '1px solid #E5E9EB', display: 'flex', alignItems: 'center', gap: 12, borderRight: '4px solid #f59e0b', background: '#FFFBEB' }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#F0F7F7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>👤</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{d.user?.fullName || d.donorName || 'متبرع'}</div>
+                <div style={{ fontSize: 11, color: '#94a3b8' }}>
+                  {getLocalizedText(d.project?.title) || 'مشروع'} · منذ {Math.floor((Date.now() - (d._creationTime || Date.now())) / 3600000)} ساعة
+                </div>
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#0A5F62', fontFamily: 'Inter, sans-serif', flexShrink: 0 }}>
+                {((d.amount || 0) / 100).toLocaleString('fr-MA')}
+              </div>
+              <Link to={`/admin/verifications`}
+                style={{ height: 28, padding: '0 12px', border: '1.5px solid #0d7477', color: '#0d7477', borderRadius: 8, fontSize: 11, fontWeight: 700, background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, fontFamily: 'Tajawal, sans-serif' }}>
+                راجع
+              </Link>
+            </div>
+          ))}
+          {(!pendingVerifications || pendingVerifications.length === 0) && (
+            <div style={{ padding: '24px 20px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+              لا توجد تحويلات في الانتظار 🎉
+            </div>
+          )}
+          <div style={{ padding: '12px 20px', textAlign: 'center' }}>
+            <Link to="/admin/verifications" style={{ fontSize: 13, color: '#0d7477', fontWeight: 600, textDecoration: 'none' }}>
+              عرض كل التحقيقات ({stats?.pendingVerifications || 0}) ←
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* Featured Projects Section */}
-      <div className="px-6 max-w-7xl mx-auto mt-8">
-        <Card variant="default" className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-lg font-bold text-text-primary dark:text-white">
-                {t.featuredProjects}
-              </h3>
-              <p className="text-sm text-text-secondary">{t.featuredDesc}</p>
-              <p className="text-xs text-text-secondary mt-1">{t.dragToReorder}</p>
-            </div>
-            <div className="flex items-center gap-3">
-              {hasOrderChanged && (
-                <Button
-                  onClick={handleSaveOrder}
-                  loading={isSavingOrder}
-                  size="sm"
-                >
-                  <span className="material-symbols-outlined text-sm mr-1">save</span>
-                  {t.saveOrder}
-                </Button>
-              )}
-              <Link
-                to="/admin/projects"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl font-medium transition-colors"
-              >
-                <span className="material-symbols-outlined">settings</span>
-                {t.manageFeatured}
-              </Link>
-            </div>
+      {/* Lower row: Projects + Activity */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+        {/* Active projects */}
+        <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', overflow: 'hidden' }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E9EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>📁 المشاريع النشطة</div>
+            <Link to="/admin/projects" style={{ fontSize: 12, color: '#0d7477', fontWeight: 600, textDecoration: 'none' }}>عرض الكل ←</Link>
           </div>
-
-          {/* Featured Projects Grid with Drag & Drop */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {featuredProjects.map((project, index) => (
-              <div
-                key={project._id}
-                draggable
-                onDragStart={() => handleDragStart(index)}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDragEnd={handleDragEnd}
-                className={`relative group rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 aspect-video cursor-move hover:ring-2 ring-primary transition-all ${
-                  draggedIndex === index ? 'opacity-50 ring-2 ring-primary' : ''
-                }`}
-              >
-                <img
-                  src={convexFileUrl(project.mainImage) || project.mainImage || ''}
-                  alt={getLocalizedText(project.title)}
-                  className="w-full h-full object-cover"
-                  onError={(e) => { e.target.style.display = 'none'; }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="primary" size="sm">
-                      #{index + 1}
-                    </Badge>
-                    <span className="text-white/80 text-xs uppercase tracking-wider">
-                      {project.category}
-                    </span>
-                  </div>
-                  <h4 className="text-white font-semibold line-clamp-1">
-                    {getLocalizedText(project.title)}
-                  </h4>
+          {(featuredProjects || []).slice(0, 3).map((p, i) => {
+            const pct = p.goalAmount ? Math.round((p.raisedAmount || 0) / p.goalAmount * 100) : 0;
+            const icons = ['🎓', '💧', '🏥', '🌱', '📚', '🤝'];
+            return (
+              <div key={p._id || i} style={{ padding: '12px 20px', borderBottom: i < 2 ? '1px solid #E5E9EB' : 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#0A5F62,#33C0C0)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
+                  {icons[i % icons.length]}
                 </div>
-                {/* Drag Handle Indicator */}
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white">
-                    <span className="material-symbols-outlined text-sm">drag_indicator</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{getLocalizedText(p.title)}</div>
+                  <div style={{ height: 4, background: '#E5E9EB', borderRadius: 100, marginTop: 6 }}>
+                    <div style={{ height: '100%', borderRadius: 100, background: '#0d7477', width: `${Math.min(pct, 100)}%` }} />
                   </div>
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#0A5F62', fontFamily: 'Inter, sans-serif', flexShrink: 0 }}>{pct}%</div>
+              </div>
+            );
+          })}
+          {(!featuredProjects || featuredProjects.length === 0) && (
+            <div style={{ padding: '24px 20px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>لا توجد مشاريع نشطة</div>
+          )}
+        </div>
+
+        {/* Recent activity */}
+        <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', overflow: 'hidden' }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E9EB' }}>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>🔔 آخر النشاطات</div>
+          </div>
+          <div style={{ padding: '0 20px' }}>
+            {[
+              { icon: '✅', text: `تم التحقق من تبرع ${((pendingVerifications?.[0]?.amount || 50000) / 100).toLocaleString('fr-MA')} درهم`, time: 'منذ 15 دقيقة' },
+              { icon: '💰', text: 'تبرع جديد', time: 'منذ 42 دقيقة' },
+              { icon: '🤲', text: 'كفالة جديدة', time: 'منذ ساعة' },
+              { icon: '📁', text: 'تم إضافة مشروع جديد', time: 'منذ 3 ساعات' },
+            ].map((a, i, arr) => (
+              <div key={i} style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: i < arr.length - 1 ? '1px solid #E5E9EB' : 'none' }}>
+                <div style={{ fontSize: 18 }}>{a.icon}</div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{a.text}</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8' }}>{a.time}</div>
                 </div>
               </div>
             ))}
-            
-            {/* Add New Slot */}
-            {(!featuredProjects || featuredProjects.length < 6) && (
-              <button
-                onClick={() => navigate('/admin/projects')}
-                className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-primary dark:hover:border-primary transition-colors aspect-video"
-              >
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                  <span className="material-symbols-outlined text-2xl">add</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Featured Projects drag-drop section */}
+      {featuredProjects.length > 0 && (
+        <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', overflow: 'hidden' }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E9EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>📌 المشاريع المميزة</div>
+              <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>اسحب لإعادة الترتيب</div>
+            </div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              {hasOrderChanged && (
+                <button onClick={handleSaveOrder} disabled={isSavingOrder}
+                  style={{ height: 32, padding: '0 14px', background: '#0d7477', color: 'white', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+                  {isSavingOrder ? '...' : 'حفظ الترتيب'}
+                </button>
+              )}
+              <Link to="/admin/projects"
+                style={{ height: 32, padding: '0 14px', background: '#E6F4F4', color: '#0d7477', borderRadius: 8, fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', textDecoration: 'none', fontFamily: 'Tajawal, sans-serif' }}>
+                إدارة المشاريع
+              </Link>
+            </div>
+          </div>
+          <div style={{ padding: 20, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
+            {featuredProjects.map((p, i) => (
+              <div key={p._id}
+                draggable
+                onDragStart={() => handleDragStart(i)}
+                onDragOver={(e) => handleDragOver(e, i)}
+                onDragEnd={handleDragEnd}
+                style={{ borderRadius: 14, overflow: 'hidden', background: '#f6f8f8', aspectRatio: '16/9', position: 'relative', cursor: 'move', opacity: draggedIndex === i ? 0.5 : 1, border: draggedIndex === i ? '2px solid #0d7477' : '2px solid transparent' }}>
+                <img src={convexFileUrl(p.mainImage) || p.mainImage || ''} alt={getLocalizedText(p.title)}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={(e) => { e.target.style.display = 'none'; }} />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,.7) 0%, transparent 60%)' }} />
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 12 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, background: '#0d7477', color: 'white', display: 'inline-block', padding: '2px 8px', borderRadius: 100, marginBottom: 4 }}>#{i + 1}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'white' }}>{getLocalizedText(p.title)}</div>
                 </div>
-                <span className="text-sm text-text-secondary">{t.addFeatured}</span>
+              </div>
+            ))}
+            {featuredProjects.length < 6 && (
+              <button onClick={() => navigate('/admin/projects')}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, border: '2px dashed #E5E9EB', background: 'none', aspectRatio: '16/9', cursor: 'pointer', color: '#94a3b8', fontSize: 13, fontFamily: 'Tajawal, sans-serif' }}>
+                <span style={{ fontSize: 24 }}>+</span>
+                إضافة مشروع مميز
               </button>
             )}
           </div>
-        </Card>
-      </div>
+        </div>
+      )}
     </div>
   );
-};
-
-export default AdminDashboard;
+}

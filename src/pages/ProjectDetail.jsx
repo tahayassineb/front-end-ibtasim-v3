@@ -4,364 +4,333 @@ import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import { convexFileUrl } from '../lib/convex';
-import { Card, Button, ProgressBar } from '../components';
-import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 // ============================================
-// PROJECT DETAIL PAGE - Connected to Convex
+// PROJECT DETAIL PAGE
 // ============================================
+
+const getLocalizedText = (obj, lang = 'ar') => {
+  if (typeof obj === 'string') return obj;
+  if (!obj) return '';
+  return obj[lang] || obj.ar || obj.en || '';
+};
+
+const categoryMeta = {
+  education: { icon: '🎓', label: 'التعليم' },
+  water:     { icon: '💧', label: 'المياه' },
+  health:    { icon: '❤️', label: 'الصحة' },
+  food:      { icon: '🍞', label: 'الغذاء' },
+  housing:   { icon: '🏠', label: 'السكن' },
+  default:   { icon: '🤝', label: 'خيري' },
+};
 
 const ProjectDetail = ({ preview = false }) => {
-  const { t, language, isAuthenticated } = useApp();
+  const { language } = useApp();
   const { id } = useParams();
   const navigate = useNavigate();
-  const [showScrollTop, setShowScrollTop] = useState(false);
   const [previewData, setPreviewData] = useState(null);
+  const [copied, setCopied] = useState(false);
 
-  // Fetch project from Convex backend
+  // Fetch project from Convex backend — PRESERVED
   const convexProject = useQuery(api.projects.getProjectById, { projectId: id });
 
-  // Load preview data from sessionStorage if in preview mode
+  // Fetch recent verified donations for donors section — PRESERVED
+  const convexDonations = useQuery(
+    api.donations.getDonationsByProject,
+    id ? { projectId: id, limit: 10 } : 'skip'
+  );
+
+  // Load preview data from sessionStorage if in preview mode — PRESERVED
   useEffect(() => {
     if (preview) {
       const stored = sessionStorage.getItem('projectPreview');
-      if (stored) {
-        setPreviewData(JSON.parse(stored));
-      }
+      if (stored) setPreviewData(JSON.parse(stored));
     }
   }, [preview]);
 
-  // Handle scroll to top visibility
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 400);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // Transform project data for display
   const project = useMemo(() => {
     if (previewData) return previewData;
     if (!convexProject) return null;
 
-    const progress = Math.round((convexProject.raisedAmount / convexProject.goalAmount) * 100);
+    const progress = Math.round((convexProject.raisedAmount / (convexProject.goalAmount || 1)) * 100);
 
     return {
       id: convexProject._id,
       title: convexProject.title,
-      location: { 
-        ar: convexProject.location || 'المغرب', 
-        fr: convexProject.location || 'Maroc', 
-        en: convexProject.location || 'Morocco' 
-      },
+      location: convexProject.location || 'المغرب',
       description: convexProject.description,
-      description2: { ar: '', fr: '', en: '' },
-      impact: { ar: '', fr: '', en: '' },
       raised: convexProject.raisedAmount / 100,
       goal: convexProject.goalAmount / 100,
-      progress: progress,
-      donors: 0,
-      daysLeft: convexProject.endDate 
-        ? Math.max(0, Math.ceil((convexProject.endDate - Date.now()) / (1000 * 60 * 60 * 24))) 
+      progress: Math.min(progress, 100),
+      daysLeft: convexProject.endDate
+        ? Math.max(0, Math.ceil((convexProject.endDate - Date.now()) / (1000 * 60 * 60 * 24)))
         : 30,
       category: convexProject.category,
       image: convexFileUrl(convexProject.mainImage) || convexProject.mainImage,
-      gallery: convexProject.gallery?.length > 0
-        ? convexProject.gallery.map(id => convexFileUrl(id) || id)
-        : [
-          'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&q=80',
-          'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?w=600&q=80',
-          'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&q=80',
-        ],
-      updates: [],
     };
   }, [convexProject, previewData]);
 
-  const getLocalizedText = (obj) => {
-    if (typeof obj === 'string') return obj;
-    return obj[language] || obj.en;
-  };
-
   const handleDonateClick = () => {
-    if (project) {
-      navigate(`/donate/${project.id}`);
-    }
+    if (project) navigate(`/donate/${project.id}`);
   };
 
-  // Loading state
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  // ── Loading state ──
   if (!preview && convexProject === undefined) {
     return (
-      <div className="min-h-screen bg-bg-light dark:bg-bg-dark flex items-center justify-center">
-        <LoadingSpinner size="large" />
+      <div dir="rtl" style={{ fontFamily: 'Tajawal, sans-serif', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8' }}>
+        <div style={{ textAlign: 'center', color: '#94a3b8' }}>
+          <div style={{ width: 40, height: 40, border: '3px solid #E5E9EB', borderTopColor: '#0d7477', borderRadius: '50%', margin: '0 auto 12px', animation: 'spin 0.8s linear infinite' }} />
+          جاري التحميل...
+        </div>
       </div>
     );
   }
 
-  // Not found state
+  // ── Not found ──
   if (!preview && convexProject === null) {
     return (
-      <div className="min-h-screen bg-bg-light dark:bg-bg-dark flex flex-col items-center justify-center p-4">
-        <span className="material-symbols-outlined text-6xl text-text-secondary mb-4">error_outline</span>
-        <h1 className="text-2xl font-bold text-text-primary dark:text-white mb-2">
-          {language === 'ar' ? 'المشروع غير موجود' : language === 'fr' ? 'Projet non trouvé' : 'Project Not Found'}
-        </h1>
-        <p className="text-text-secondary mb-6">
-          {language === 'ar' ? 'المشروع الذي تبحث عنه غير متوفر' : language === 'fr' ? 'Le projet que vous recherchez n\'est pas disponible' : 'The project you are looking for is not available'}
-        </p>
-        <Button onClick={() => navigate('/projects')}>
-          {language === 'ar' ? 'عرض جميع المشاريع' : language === 'fr' ? 'Voir tous les projets' : 'View All Projects'}
-        </Button>
+      <div dir="rtl" style={{ fontFamily: 'Tajawal, sans-serif', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8', padding: 24 }}>
+        <div style={{ fontSize: 64, marginBottom: 16 }}>🔍</div>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0e1a1b', marginBottom: 8 }}>المشروع غير موجود</h1>
+        <p style={{ color: '#64748b', marginBottom: 24 }}>المشروع الذي تبحث عنه غير متوفر</p>
+        <button onClick={() => navigate('/projects')} style={{ height: 44, padding: '0 24px', background: '#0d7477', color: 'white', border: 'none', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: '0 4px 14px rgba(13,116,119,0.25)' }}>
+          عرض جميع المشاريع
+        </button>
       </div>
     );
   }
 
-  // No project data yet
   if (!project) {
     return (
-      <div className="min-h-screen bg-bg-light dark:bg-bg-dark flex items-center justify-center">
-        <LoadingSpinner size="large" />
+      <div dir="rtl" style={{ fontFamily: 'Tajawal, sans-serif', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8' }}>
+        <div style={{ color: '#94a3b8' }}>جاري التحميل...</div>
       </div>
     );
   }
 
+  const cat = categoryMeta[project.category] || categoryMeta.default;
+  const pct = project.progress;
+  const hasImage = project.image && !String(project.image).includes('undefined');
+  const remaining = Math.max(0, project.goal - project.raised);
+  const donors = convexDonations?.length || 0;
+
+  const heroStyle = hasImage
+    ? { backgroundImage: `url(${project.image})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : { background: 'linear-gradient(160deg,#021718,#052E2F,#0d7477)' };
+
   return (
-    <div className="bg-bg-light dark:bg-bg-dark min-h-screen">
+    <div dir="rtl" style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', background: '#f6f8f8', minHeight: '100vh' }}>
+
       {/* Preview Banner */}
       {preview && (
-        <div className="sticky top-0 z-50 bg-primary text-white px-4 py-3 text-center">
-          <div className="flex items-center justify-center gap-2">
-            <span className="material-symbols-outlined">visibility</span>
-            <span className="font-bold">
-              {language === 'ar' ? 'وضع المعاينة - هذا ليس منشوراً بعد' :
-               language === 'fr' ? 'Mode Aperçu - Ce n\'est pas encore publié' :
-               'Preview Mode - Not Published Yet'}
-            </span>
-          </div>
+        <div style={{ position: 'sticky', top: 0, zIndex: 60, background: '#0d7477', color: 'white', padding: '12px 24px', textAlign: 'center', fontWeight: 700, fontSize: 14 }}>
+          وضع المعاينة — هذا المشروع لم يُنشر بعد
         </div>
       )}
-      {/* Main Content Container - Two Column Layout on Desktop */}
-      <div className="flex flex-col lg:flex-row gap-8 px-4 pb-24 max-w-7xl mx-auto">
-        
-        {/* LEFT COLUMN - Sticky on Desktop */}
-        <div className="lg:w-1/3 lg:sticky lg:top-24 lg:self-start space-y-6">
-          {/* Main Project Image */}
-          <div className="w-full">
-            <div
-              className="w-full bg-center bg-no-repeat bg-cover flex flex-col justify-end overflow-hidden rounded-2xl min-h-[250px] md:min-h-[300px] shadow-lg"
-              style={{ backgroundImage: `url("${project.image}")` }}
-            />
+
+      {/* ── PROJECT HERO ── */}
+      <div style={{ position: 'relative', height: 420, ...heroStyle, display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,.75) 0%,rgba(0,0,0,.2) 50%,transparent 100%)' }} />
+        {/* Back button */}
+        <button
+          onClick={() => navigate(-1)}
+          style={{ position: 'absolute', top: 20, right: 20, zIndex: 3, width: 40, height: 40, background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 18, cursor: 'pointer', border: 'none' }}
+        >
+          ←
+        </button>
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 1200, width: '100%', margin: '0 auto', padding: '0 28px 32px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)', color: 'white', borderRadius: 100, padding: '5px 14px', fontSize: 12, fontWeight: 600, marginBottom: 12 }}>
+            {cat.icon} {cat.label}
           </div>
-
-          {/* Project Title */}
-          <div className="flex flex-col">
-            <h1 className="text-text-primary dark:text-white tracking-tight text-2xl md:text-3xl font-bold leading-tight">
-              {getLocalizedText(project.title)}
-            </h1>
-            <div className="flex items-center gap-2 mt-2 text-primary font-medium">
-              <span className="material-symbols-outlined text-sm">location_on</span>
-              <span className="text-sm">{getLocalizedText(project.location)}</span>
-            </div>
-          </div>
-
-          {/* Top Donate Button - Prominent CTA at top of page */}
-          <button
-            onClick={handleDonateClick}
-            className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-primary text-white font-bold text-lg shadow-lg shadow-primary/25 hover:bg-primary-600 hover:shadow-xl hover:shadow-primary/30 active:scale-[0.98] transition-all duration-200"
-          >
-            <span className="material-symbols-outlined">favorite</span>
-            {language === 'ar' ? 'تبرع الآن' : language === 'fr' ? 'Faire un Don' : 'Donate Now'}
-          </button>
-
-          {/* Donation Progress Card - NOT sticky on mobile, sticky container on desktop */}
-          <div className="bg-white dark:bg-bg-dark-card rounded-2xl p-6 shadow-lg border border-border-light dark:border-white/10">
-            <div className="flex flex-col gap-4">
-              <div className="flex justify-between items-end">
-                <div>
-                  <p className="text-sm text-text-secondary dark:text-text-white/60">
-                    {language === 'ar'
-                      ? `تم جمعه من أصل ${project.goal.toLocaleString()} MAD`
-                      : language === 'fr'
-                      ? `Collecté sur ${project.goal.toLocaleString()} MAD`
-                      : `Raised of ${project.goal.toLocaleString()} MAD`}
-                  </p>
-                  <h3 className="text-2xl font-bold text-primary">{project.raised.toLocaleString()} MAD</h3>
-                </div>
-                <p className="text-sm font-bold text-text-primary dark:text-white">{project.progress}%</p>
-              </div>
-              
-              {/* Progress Bar */}
-              <div className="w-full bg-primary/20 rounded-full h-3 overflow-hidden">
-                <div
-                  className="bg-primary h-full rounded-full transition-all duration-500"
-                  style={{ width: `${project.progress}%` }}
-                />
-              </div>
-              
-              <div className="flex justify-between text-xs font-medium text-text-secondary dark:text-text-white/70">
-                <span>
-                  {project.donors} {language === 'ar' ? 'متبرع' : language === 'fr' ? 'Donateurs' : 'Donors'}
-                </span>
-                <span>
-                  {project.daysLeft} {language === 'ar' ? 'يوم متبقي' : language === 'fr' ? 'Jours Restants' : 'Days Left'}
-                </span>
-              </div>
-              
-              {/* Donate Button - Desktop only (mobile has button at bottom) */}
-              <button
-                onClick={handleDonateClick}
-                className="hidden lg:flex w-full items-center justify-center gap-2 py-4 px-6 rounded-xl bg-primary text-white font-bold text-base shadow-lg shadow-primary/25 hover:bg-primary-600 hover:shadow-xl hover:shadow-primary/30 active:scale-[0.98] transition-all duration-200"
-              >
-                <span className="material-symbols-outlined">favorite</span>
-                {language === 'ar' ? 'تبرع الآن' : language === 'fr' ? 'Faire un Don' : 'Donate Now'}
-              </button>
-            </div>
+          <h1 style={{ fontSize: 32, fontWeight: 900, color: 'white', marginBottom: 8 }}>
+            {getLocalizedText(project.title, language)}
+          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 13, color: 'rgba(255,255,255,0.7)', flexWrap: 'wrap' }}>
+            <span>📍 {getLocalizedText(project.location, language)}</span>
+            <span>|</span>
+            <span>⏳ {project.daysLeft} يوماً متبقياً</span>
           </div>
         </div>
+      </div>
 
-        {/* RIGHT COLUMN - Scrollable Content */}
-        <div className="lg:w-2/3 space-y-8">
-          {/* About Section */}
-          <div className="bg-white dark:bg-bg-dark-card rounded-2xl p-6 shadow-sm border border-border-light dark:border-white/10">
-            <h3 className="text-text-primary dark:text-white text-xl font-bold leading-tight mb-4">
-              {language === 'ar' ? 'عن هذا المشروع' : language === 'fr' ? 'À propos de ce projet' : 'About this project'}
-            </h3>
-            <div className="space-y-4 text-text-secondary dark:text-text-white/80 text-base font-normal leading-relaxed">
-              <p>{getLocalizedText(project.description)}</p>
-              {getLocalizedText(project.description2) && <p>{getLocalizedText(project.description2)}</p>}
-            </div>
+      {/* ── STICKY FUNDING BAR ── */}
+      <div style={{ position: 'sticky', top: 64, zIndex: 40, background: 'white', borderBottom: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03), 0 4px 6px rgba(0,0,0,.05)' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '12px 28px', display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+          <div style={{ fontSize: 22, fontWeight: 900, color: '#0A5F62', whiteSpace: 'nowrap', fontFamily: 'Inter, sans-serif' }}>
+            {project.raised.toLocaleString('en-US')} د.م
           </div>
+          <div style={{ flex: 1, height: 8, background: '#E5E9EB', borderRadius: 100, overflow: 'hidden', minWidth: 80 }}>
+            <div style={{ height: '100%', background: '#0d7477', borderRadius: 100, width: `${pct}%` }} />
+          </div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#64748b', whiteSpace: 'nowrap' }}>{pct}% من الهدف</div>
+          <button
+            onClick={handleDonateClick}
+            style={{ height: 44, padding: '0 22px', background: '#0d7477', color: 'white', border: 'none', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: '0 4px 14px rgba(13,116,119,0.25)', flexShrink: 0 }}
+          >
+            تبرع الآن
+          </button>
+        </div>
+      </div>
 
-          {/* Impact Section */}
-          {getLocalizedText(project.impact) && (
-            <div className="bg-primary/5 dark:bg-primary/10 rounded-2xl p-6 border border-primary/20">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-primary">volunteer_activism</span>
-                </div>
-                <h3 className="text-text-primary dark:text-white text-lg font-bold">
-                  {language === 'ar' ? 'التأثير' : language === 'fr' ? 'Impact' : 'Impact'}
-                </h3>
-              </div>
-              <p className="text-text-secondary dark:text-text-white/80 leading-relaxed">
-                {getLocalizedText(project.impact)}
-              </p>
+      {/* ── MAIN CONTENT ── */}
+      <div>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px]" style={{ gap: 40, alignItems: 'start', maxWidth: 1200, margin: '0 auto', padding: '40px 28px' }}>
+
+          {/* ── LEFT: Description & Donors ── */}
+          <div>
+            {/* About */}
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#0d7477', marginBottom: 8, fontFamily: 'Inter, sans-serif' }}>
+              ABOUT THE PROJECT
             </div>
-          )}
+            <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 16 }}>عن المشروع</h2>
+            <p style={{ fontSize: 15, color: '#64748b', lineHeight: 1.85 }}>
+              {getLocalizedText(project.description, language)}
+            </p>
 
-          {/* Gallery Section */}
-          {project.gallery && project.gallery.length > 0 && (
-            <div>
-              <h3 className="text-text-primary dark:text-white text-lg font-bold leading-tight mb-4">
-                {language === 'ar' ? 'المجتمع والتقدم' : language === 'fr' ? 'Communauté et Progrès' : 'Community & Progress'}
-              </h3>
-              <div className="grid grid-cols-2 gap-3">
-                {project.gallery[0] && (
-                  <div className="aspect-square rounded-xl overflow-hidden shadow-sm">
-                    <img
-                      src={project.gallery[0]}
-                      alt="Community"
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                )}
-                {project.gallery[1] && (
-                  <div className="aspect-square rounded-xl overflow-hidden shadow-sm">
-                    <img
-                      src={project.gallery[1]}
-                      alt="Construction"
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                )}
-                {project.gallery[2] && (
-                  <div className="col-span-2 h-48 rounded-xl overflow-hidden shadow-sm">
-                    <img
-                      src={project.gallery[2]}
-                      alt="Landscape"
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                )}
-              </div>
+            <div style={{ height: 1, background: '#E5E9EB', margin: '28px 0' }} />
+
+            {/* Impact */}
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#0d7477', marginBottom: 8, fontFamily: 'Inter, sans-serif' }}>
+              YOUR IMPACT
             </div>
-          )}
-
-          {/* Project Progress Updates */}
-          {project.updates && project.updates.length > 0 && (
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-text-primary dark:text-white text-lg font-bold">
-                  {language === 'ar' ? 'آخر التحديثات' : language === 'fr' ? 'Dernières Mises à Jour' : 'Latest Updates'}
-                </h3>
-                <span className="text-primary text-sm font-bold cursor-pointer hover:underline">
-                  {language === 'ar' ? 'عرض الكل' : language === 'fr' ? 'Voir Tout' : 'View All'}
-                </span>
-              </div>
-              {project.updates.map((update) => (
-                <div
-                  key={update.id}
-                  className="flex gap-4 p-5 rounded-xl bg-white dark:bg-bg-dark-card border border-border-light dark:border-white/10 shadow-sm"
-                >
-                  <div className="flex-shrink-0 size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                    <span className="material-symbols-outlined">{update.icon}</span>
-                  </div>
-                  <div>
-                    <p className="text-xs text-text-muted dark:text-text-white/50">{update.date}</p>
-                    <h4 className="font-bold text-text-primary dark:text-white">{getLocalizedText(update.title)}</h4>
-                    <p className="text-sm text-text-secondary dark:text-text-white/70">
-                      {getLocalizedText(update.description)}
-                    </p>
-                  </div>
+            <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 20 }}>ماذا يفعل تبرعك؟</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3" style={{ gap: 16 }}>
+              {[
+                { amount: '100 د.م', desc: 'توفر كتباً مدرسية لطالب لمدة سنة كاملة' },
+                { amount: '500 د.م', desc: 'تموّل لوحة سبورة وتجهيزات فصل دراسي' },
+                { amount: '2,000 د.م', desc: 'تبني جداراً كاملاً في المشروع الجديد' },
+              ].map((item, i) => (
+                <div key={i} style={{ background: '#F0F7F7', borderRadius: 14, padding: 18, textAlign: 'center' }}>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: '#0A5F62', fontFamily: 'Inter, sans-serif' }}>{item.amount}</div>
+                  <div style={{ fontSize: 12, color: '#64748b', marginTop: 6, lineHeight: 1.5 }}>{item.desc}</div>
                 </div>
               ))}
             </div>
-          )}
 
-          {/* Footer Action - Transparency */}
-          <div className="py-8 flex flex-col items-center gap-4 text-center bg-white dark:bg-bg-dark-card rounded-2xl p-6 border border-border-light dark:border-white/10">
-            <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2">
-              <span className="material-symbols-outlined text-4xl">verified_user</span>
+            <div style={{ height: 1, background: '#E5E9EB', margin: '28px 0' }} />
+
+            {/* Donors */}
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#0d7477', marginBottom: 8, fontFamily: 'Inter, sans-serif' }}>
+              GENEROUS DONORS
             </div>
-            <h4 className="font-bold text-text-primary dark:text-white text-xl">
-              {language === 'ar' ? '100٪ شفافية' : language === 'fr' ? '100% de Transparence' : '100% Transparency'}
-            </h4>
-            <p className="text-sm text-text-secondary dark:text-text-white/60 px-8 max-w-md">
-              {language === 'ar'
-                ? 'يتم تتبع كل درهم وتدقيقه لضمان الاستفادة المباشرة للمجتمع.'
-                : language === 'fr'
-                ? 'Chaque dirham est suivi et audité pour garantir qu\'il profite directement à la communauté.'
-                : 'Every dirham is tracked and audited to ensure it directly benefits the community.'}
-            </p>
+            <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 20 }}>
+              المتبرعون الكرام{' '}
+              <span style={{ fontSize: 14, color: '#94a3b8', fontWeight: 500 }}>({donors} متبرع)</span>
+            </h2>
+
+            {convexDonations && convexDonations.length > 0 ? (
+              convexDonations.map((donation, i) => (
+                <div key={donation._id || i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: '1px solid #E5E9EB' }}>
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#CCF0F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>👤</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>
+                      {donation.isAnonymous ? 'متبرع مجهول' : (donation.donorName || 'متبرع كريم')}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#94a3b8' }}>
+                      {donation._creationTime ? new Date(donation._creationTime).toLocaleDateString('ar-MA') : ''}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#0A5F62', fontFamily: 'Inter, sans-serif', marginRight: 'auto', marginLeft: 0 }}>
+                    {((donation.amount || 0) / 100).toLocaleString('en-US')} د.م
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p style={{ fontSize: 14, color: '#94a3b8', padding: '16px 0' }}>كن أول من يتبرع لهذا المشروع!</p>
+            )}
+
+            <div style={{ marginTop: 16 }}>
+              <button
+                style={{ height: 36, padding: '0 16px', background: '#E6F4F4', color: '#0A5F62', border: 'none', borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}
+              >
+                عرض جميع المتبرعين →
+              </button>
+            </div>
           </div>
 
-          {/* Mobile: Donate Button at Bottom */}
-          <div className="lg:hidden">
+          {/* ── RIGHT: Sidebar ── */}
+          <div style={{ background: 'white', borderRadius: 18, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03), 0 4px 6px rgba(0,0,0,.05)', padding: 24, position: 'sticky', top: 130 }}>
+            {/* Goal numbers */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 10 }}>
+                <div>
+                  <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4 }}>تم جمع</div>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: '#0A5F62', fontFamily: 'Inter, sans-serif' }}>
+                    {project.raised.toLocaleString('en-US')} د.م
+                  </div>
+                </div>
+                <div style={{ textAlign: 'left', fontSize: 13, color: '#94a3b8' }}>
+                  <div>من أصل</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#0e1a1b' }}>{project.goal.toLocaleString('en-US')} د.م</div>
+                </div>
+              </div>
+              <div style={{ height: 12, background: '#E5E9EB', borderRadius: 100, overflow: 'hidden', marginBottom: 10 }}>
+                <div style={{ height: '100%', background: '#0d7477', borderRadius: 100, width: `${pct}%` }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#94a3b8' }}>
+                <span><strong style={{ color: '#0d7477' }}>{pct}%</strong> مكتمل</span>
+                <span>⏳ {project.daysLeft} يوم متبقي</span>
+              </div>
+            </div>
+
+            {/* Stats strip */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 1, background: '#E5E9EB', borderRadius: 12, overflow: 'hidden', marginBottom: 20 }}>
+              {[
+                { num: donors, label: 'متبرع' },
+                { num: remaining.toLocaleString('en-US'), label: 'درهم متبقي' },
+                { num: project.daysLeft, label: 'يوم متبقي' },
+              ].map((s, i) => (
+                <div key={i} style={{ background: 'white', padding: 14, textAlign: 'center' }}>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: '#0e1a1b', fontFamily: 'Inter, sans-serif' }}>{s.num}</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Donate button */}
             <button
               onClick={handleDonateClick}
-              className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-primary text-white font-bold text-lg shadow-lg shadow-primary/25 hover:bg-primary-600 active:scale-[0.98] transition-all duration-200"
+              style={{ width: '100%', height: 56, background: '#0d7477', color: 'white', border: 'none', borderRadius: 16, fontSize: 17, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,0.25)', fontFamily: 'Tajawal, sans-serif', marginBottom: 12 }}
             >
-              <span className="material-symbols-outlined">favorite</span>
-              {language === 'ar' ? 'تبرع الآن' : language === 'fr' ? 'Faire un Don' : 'Donate Now'}
+              تبرع الآن 💚
             </button>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, color: '#94a3b8' }}>
+              🔒 تبرعك آمن ومحمي بالكامل
+            </div>
+
+            {/* Share row */}
+            <div style={{ display: 'flex', gap: 8, marginTop: 16, paddingTop: 16, borderTop: '1px solid #E5E9EB' }}>
+              {[
+                { icon: '📘', label: 'شارك' },
+                { icon: '💬', label: 'واتساب' },
+                { icon: copied ? '✅' : '🔗', label: copied ? 'تم النسخ' : 'نسخ الرابط' },
+              ].map((btn, i) => (
+                <button
+                  key={i}
+                  onClick={i === 2 ? handleCopyLink : undefined}
+                  style={{ flex: 1, height: 38, borderRadius: 10, fontSize: 13, fontWeight: 600, border: '1.5px solid #E5E9EB', background: 'white', color: '#64748b', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+                >
+                  {btn.icon} {btn.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Certification box */}
+            <div style={{ marginTop: 20, padding: 14, background: '#F0F7F7', borderRadius: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#0A5F62', marginBottom: 6 }}>✓ جمعية معتمدة رسمياً</div>
+              <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.6 }}>تبرعاتكم تصل مباشرة إلى المشروع · نشر تقارير دورية للإنجاز</div>
+            </div>
           </div>
+
         </div>
       </div>
-
-      {/* Floating Scroll to Top Button */}
-      <button
-        onClick={scrollToTop}
-        className={`fixed bottom-24 right-4 lg:bottom-8 lg:right-8 z-50 w-12 h-12 rounded-full bg-white dark:bg-bg-dark-card shadow-lg border border-border-light dark:border-white/10 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all duration-300 ${
-          showScrollTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'
-        }`}
-        aria-label="Scroll to top"
-      >
-        <span className="material-symbols-outlined">arrow_upward</span>
-      </button>
     </div>
   );
 };

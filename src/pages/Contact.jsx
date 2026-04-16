@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { Card, Button, Input } from '../components';
 
 // ============================================
 // CONTACT PAGE - Two Column Layout with Form
@@ -9,11 +7,7 @@ import { Card, Button, Input } from '../components';
 
 const Contact = () => {
   const { t, language } = useApp();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    message: '',
-  });
+  const [formData, setFormData] = useState({ name: '', phone: '', email: '', subject: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -25,242 +19,183 @@ const Contact = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
     setIsSubmitting(false);
     setIsSubmitted(true);
-    setFormData({ name: '', email: '', message: '' });
+    setFormData({ name: '', phone: '', email: '', subject: '', message: '' });
   };
 
-  const translations = {
-    title: {
-      en: 'Get in Touch',
-      fr: 'Contactez-Nous',
-      ar: 'تواصل معنا',
-    },
-    subtitle: {
-      en: 'Have questions about our missions in Morocco? Our team is here to help you make a difference.',
-      fr: 'Vous avez des questions sur nos missions au Maroc? Notre équipe est là pour vous aider à faire la différence.',
-      ar: 'هل لديك أسئلة حول مهماتنا في المغرب؟ فريقنا هنا لمساعدتك في إحداث فرق.',
-    },
-    nameLabel: {
-      en: 'Full Name',
-      fr: 'Nom Complet',
-      ar: 'الاسم الكامل',
-    },
-    namePlaceholder: {
-      en: 'Enter your name',
-      fr: 'Entrez votre nom',
-      ar: 'أدخل اسمك',
-    },
-    emailLabel: {
-      en: 'Email Address',
-      fr: 'Adresse Email',
-      ar: 'عنوان البريد الإلكتروني',
-    },
-    emailPlaceholder: {
-      en: 'example@domain.com',
-      fr: 'exemple@domaine.com',
-      ar: 'exemple@domain.com',
-    },
-    messageLabel: {
-      en: 'Message',
-      fr: 'Message',
-      ar: 'الرسالة',
-    },
-    messagePlaceholder: {
-      en: 'How can we help?',
-      fr: 'Comment pouvons-nous aider?',
-      ar: 'كيف يمكننا المساعدة؟',
-    },
-    submitButton: {
-      en: 'Send Message',
-      fr: 'Envoyer le Message',
-      ar: 'إرسال الرسالة',
-    },
-    successMessage: {
-      en: 'Thank you! Your message has been sent successfully.',
-      fr: 'Merci! Votre message a été envoyé avec succès.',
-      ar: 'شكراً! تم إرسال رسالتك بنجاح.',
-    },
-    emailContact: {
-      en: 'hello@moroccocharity.org',
-      fr: 'hello@moroccocharity.org',
-      ar: 'hello@moroccocharity.org',
-    },
-    phoneContact: {
-      en: '+212 5XX-XXXXXX',
-      fr: '+212 5XX-XXXXXX',
-      ar: '+212 5XX-XXXXXX',
-    },
-    hqOffice: {
-      en: 'HQ Office',
-      fr: 'Bureau Principal',
-      ar: 'المكتب الرئيسي',
-    },
-    location: {
-      en: 'Casablanca, Morocco',
-      fr: 'Casablanca, Maroc',
-      ar: 'الدار البيضاء، المغرب',
-    },
+  const inputStyle = {
+    width: '100%',
+    height: 52,
+    padding: '0 16px',
+    border: '1.5px solid #E5E9EB',
+    borderRadius: 12,
+    fontFamily: 'Tajawal, sans-serif',
+    fontSize: 14,
+    color: '#0e1a1b',
+    background: 'white',
+    outline: 'none',
   };
 
-  const getLocalizedText = (obj) => obj[language] || obj.en;
+  const labelStyle = { display: 'block', fontSize: 13, fontWeight: 600, color: '#0e1a1b', marginBottom: 7 };
+
+  const infoItems = [
+    { icon: '📞', label: 'الهاتف', value: '+212 5 37 XX XX XX', sub: 'متاح من 9ص إلى 5م' },
+    { icon: '💬', label: 'واتساب', value: '+212 6 XX XX XX XX', sub: 'رد سريع — متاح 24/7', highlight: true },
+    { icon: '✉️', label: 'البريد الإلكتروني', value: 'contact@ibtasim.ma', sub: 'رد خلال 24 ساعة' },
+    { icon: '📍', label: 'العنوان', value: 'حي الرياض، الرباط', sub: 'المملكة المغربية 10000' },
+  ];
 
   return (
-    <div className="bg-bg-light dark:bg-bg-dark min-h-screen">
-      <div className="flex-1 flex flex-col lg:flex-row h-full">
-        {/* Left Side: Form Section */}
-        <div className="w-full lg:w-1/2 p-6 lg:p-12 flex flex-col justify-start">
-          <div className="max-w-md mx-auto w-full">
-            <h1 className="text-primary tracking-tight text-[32px] font-bold leading-tight pb-2 pt-4">
-              {getLocalizedText(translations.title)}
-            </h1>
-            <p className="text-text-secondary dark:text-text-white/70 text-base font-normal leading-relaxed pb-8 pt-1">
-              {getLocalizedText(translations.subtitle)}
-            </p>
+    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b' }}>
 
-            {isSubmitted ? (
-              <Card className="p-8 text-center" variant="default">
-                <div className="size-16 rounded-full bg-success/10 flex items-center justify-center text-success mx-auto mb-4">
-                  <span className="material-symbols-outlined text-3xl">check_circle</span>
-                </div>
-                <h3 className="text-xl font-bold text-text-primary dark:text-white mb-2">
-                  {language === 'ar' ? 'تم الإرسال!' : language === 'fr' ? 'Envoyé!' : 'Sent!'}
-                </h3>
-                <p className="text-text-secondary">{getLocalizedText(translations.successMessage)}</p>
-                <Button
-                  variant="ghost"
-                  className="mt-4"
-                  onClick={() => setIsSubmitted(false)}
-                >
-                  {language === 'ar' ? 'إرسال رسالة أخرى' : language === 'fr' ? 'Envoyer un autre message' : 'Send another message'}
-                </Button>
-              </Card>
-            ) : (
-              <form className="space-y-5" onSubmit={handleSubmit}>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-text-primary dark:text-gray-200 text-sm font-semibold leading-normal">
-                    {getLocalizedText(translations.nameLabel)}
-                  </label>
+      {/* Hero */}
+      <div style={{ background: 'linear-gradient(135deg,#052E2F,#0A5F62)', padding: '60px 0', textAlign: 'center' }}>
+        <div style={{ maxWidth: 600, margin: '0 auto', padding: '0 28px' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#33C0C0', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>CONTACT US</div>
+          <h1 style={{ fontSize: 40, fontWeight: 900, color: 'white', marginBottom: 12 }}>تواصل معنا</h1>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,.7)', lineHeight: 1.7 }}>نحن هنا للإجابة على جميع استفساراتك — فريقنا يرد في غضون 24 ساعة</p>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div style={{ maxWidth: 1200, margin: '60px auto', padding: '0 28px', display: 'grid', gridTemplateColumns: '1fr 380px', gap: 48, alignItems: 'start' }}>
+
+        {/* Form Card */}
+        <div style={{ background: 'white', borderRadius: 20, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', padding: 36 }}>
+          {isSubmitted ? (
+            <div style={{ textAlign: 'center', padding: '48px 0' }}>
+              <div style={{ width: 80, height: 80, background: '#D1FAE5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, margin: '0 auto 20px' }}>✅</div>
+              <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>تم إرسال رسالتك بنجاح!</div>
+              <div style={{ fontSize: 15, color: '#64748b', lineHeight: 1.7, marginBottom: 24 }}>شكراً على تواصلك معنا — سيقوم فريقنا بالرد عليك في غضون 24 ساعة على أبعد تقدير</div>
+              <button
+                onClick={() => setIsSubmitted(false)}
+                style={{ height: 44, padding: '0 22px', borderRadius: 100, fontSize: 14, fontWeight: 600, background: '#E6F4F4', color: '#0A5F62', border: 'none', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}
+              >
+                إرسال رسالة أخرى
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit}>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>SEND MESSAGE</div>
+              <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>أرسل لنا رسالة</h2>
+              <p style={{ fontSize: 14, color: '#64748b', marginBottom: 28, lineHeight: 1.6 }}>سواء كان لديك سؤال حول التبرع، أو مشروع، أو الكفالة — نحن نسمعك</p>
+
+              {/* Name + Phone grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+                <div>
+                  <label style={labelStyle}>الاسم الكامل *</label>
                   <input
+                    style={inputStyle}
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
+                    placeholder="محمد العلوي"
                     required
-                    className="form-input flex w-full rounded-xl text-text-primary dark:text-white border-none bg-bg-sage-light dark:bg-white/5 focus:ring-2 focus:ring-primary/50 h-14 placeholder:text-text-muted px-4 text-base transition-all"
-                    placeholder={getLocalizedText(translations.namePlaceholder)}
                   />
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-text-primary dark:text-gray-200 text-sm font-semibold leading-normal">
-                    {getLocalizedText(translations.emailLabel)}
-                  </label>
+                <div>
+                  <label style={labelStyle}>رقم الهاتف *</label>
                   <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
+                    style={inputStyle}
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
                     onChange={handleChange}
+                    placeholder="+212 6 XX XX XX XX"
                     required
-                    className="form-input flex w-full rounded-xl text-text-primary dark:text-white border-none bg-bg-sage-light dark:bg-white/5 focus:ring-2 focus:ring-primary/50 h-14 placeholder:text-text-muted px-4 text-base transition-all"
-                    placeholder={getLocalizedText(translations.emailPlaceholder)}
                   />
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-text-primary dark:text-gray-200 text-sm font-semibold leading-normal">
-                    {getLocalizedText(translations.messageLabel)}
-                  </label>
-                  <textarea
-                    name="message"
-                    value={formData.message}
-                    onChange={handleChange}
-                    required
-                    rows={4}
-                    className="form-input flex w-full rounded-xl text-text-primary dark:text-white border-none bg-bg-sage-light dark:bg-white/5 focus:ring-2 focus:ring-primary/50 placeholder:text-text-muted p-4 text-base transition-all resize-none"
-                    placeholder={getLocalizedText(translations.messagePlaceholder)}
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  fullWidth
-                  size="lg"
-                  loading={isSubmitting}
-                  className="flex items-center justify-center gap-2 group"
-                >
-                  {getLocalizedText(translations.submitButton)}
-                  <span className="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform">
-                    send
-                  </span>
-                </Button>
-              </form>
-            )}
-
-            {/* Contact Info */}
-            <div className="mt-10 flex flex-col sm:flex-row gap-4 sm:gap-6">
-              <div className="flex items-center gap-2 text-primary">
-                <span className="material-symbols-outlined">mail</span>
-                <span className="text-sm font-medium">{getLocalizedText(translations.emailContact)}</span>
               </div>
-              <div className="flex items-center gap-2 text-primary">
-                <span className="material-symbols-outlined">call</span>
-                <span className="text-sm font-medium">{getLocalizedText(translations.phoneContact)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Right Side: Map/Visual Section */}
-        <div className="hidden lg:flex w-1/2 relative bg-bg-sage-light dark:bg-bg-dark-card/30 border-l border-border-light dark:border-white/5 overflow-hidden">
-          {/* Abstract Gradient Background */}
-          <div className="absolute inset-0 opacity-20 dark:opacity-10 pointer-events-none bg-[radial-gradient(circle_at_50%_50%,#0d7478_0%,transparent_70%)]"></div>
-          <div className="w-full h-full p-12 flex items-center justify-center">
-            <div className="relative w-full h-[600px] rounded-3xl overflow-hidden shadow-2xl bg-white dark:bg-white/5 border border-white dark:border-white/10">
-              {/* Stylized Map Placeholder */}
-              <div className="absolute inset-0 bg-bg-sage-light dark:bg-bg-dark overflow-hidden">
-                <img
-                  src="https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=1200&q=80"
-                  alt="Map of Morocco"
-                  className="w-full h-full object-cover opacity-60 grayscale brightness-110 dark:opacity-30 dark:grayscale-0"
+              <div style={{ marginBottom: 20 }}>
+                <label style={labelStyle}>البريد الإلكتروني</label>
+                <input
+                  style={inputStyle}
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="example@gmail.com"
                 />
-                {/* Custom Teal Pin */}
-                <div className="absolute top-[60%] left-[45%] flex flex-col items-center">
-                  <div className="bg-primary p-2 rounded-full shadow-lg shadow-primary/40 animate-pulse">
-                    <span className="material-symbols-outlined text-white text-3xl">location_on</span>
-                  </div>
-                  <div className="mt-2 bg-white/90 dark:bg-bg-dark-card/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-primary/20 shadow-xl">
-                    <p className="text-xs font-bold text-primary uppercase tracking-widest">
-                      {getLocalizedText(translations.hqOffice)}
-                    </p>
-                    <p className="text-sm text-text-primary dark:text-white">
-                      {getLocalizedText(translations.location)}
-                    </p>
-                  </div>
-                </div>
               </div>
-            </div>
-          </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label style={labelStyle}>موضوع الرسالة *</label>
+                <input
+                  style={inputStyle}
+                  type="text"
+                  name="subject"
+                  value={formData.subject}
+                  onChange={handleChange}
+                  placeholder="استفسار حول التبرع"
+                  required
+                />
+              </div>
+
+              <div style={{ marginBottom: 24 }}>
+                <label style={labelStyle}>رسالتك *</label>
+                <textarea
+                  style={{ width: '100%', padding: '14px 16px', border: '1.5px solid #E5E9EB', borderRadius: 12, fontFamily: 'Tajawal, sans-serif', fontSize: 14, color: '#0e1a1b', background: 'white', outline: 'none', resize: 'vertical', minHeight: 140, lineHeight: 1.7 }}
+                  name="message"
+                  value={formData.message}
+                  onChange={handleChange}
+                  placeholder="اكتب رسالتك هنا..."
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                style={{ width: '100%', height: 54, background: '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 17, fontWeight: 700, cursor: isSubmitting ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'Tajawal, sans-serif', opacity: isSubmitting ? 0.7 : 1 }}
+              >
+                {isSubmitting ? 'جاري الإرسال...' : 'إرسال الرسالة 📨'}
+              </button>
+              <div style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', marginTop: 12 }}>🔒 بياناتك محمية ولن تُشارك مع أي طرف ثالث</div>
+            </form>
+          )}
         </div>
 
-        {/* Mobile Map View */}
-        <div className="lg:hidden w-full h-64 relative bg-bg-sage-light overflow-hidden">
-          <img
-            src="https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=800&q=80"
-            alt="Map"
-            className="w-full h-full object-cover grayscale opacity-50"
-          />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-            <div className="bg-primary p-2 rounded-full shadow-lg">
-              <span className="material-symbols-outlined text-white text-4xl">location_on</span>
+        {/* Right side */}
+        <div>
+          {/* Contact Info Card */}
+          <div style={{ background: 'white', borderRadius: 20, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', padding: 28, marginBottom: 20 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 8, fontFamily: 'Inter, sans-serif' }}>CONTACT INFO</div>
+            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 20 }}>معلومات التواصل</div>
+            {infoItems.map((item, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: i < infoItems.length - 1 ? 18 : 0, paddingBottom: i < infoItems.length - 1 ? 18 : 0, borderBottom: i < infoItems.length - 1 ? '1px solid #E5E9EB' : 'none' }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: '#F0F7F7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{item.icon}</div>
+                <div>
+                  <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 3 }}>{item.label}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: item.highlight ? '#0d7477' : '#0e1a1b' }}>{item.value}</div>
+                  <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{item.sub}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Working Hours */}
+          <div style={{ background: '#F0F7F7', borderRadius: 16, padding: 20, marginBottom: 20 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>⏰ أوقات العمل</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#64748b', marginBottom: 6 }}>
+              <span>الاثنين — الجمعة</span><span style={{ color: '#0A5F62', fontWeight: 600 }}>9:00 — 17:00</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#64748b', marginBottom: 6 }}>
+              <span>السبت</span><span>9:00 — 13:00</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#64748b' }}>
+              <span>الأحد</span><span style={{ color: '#94a3b8' }}>مغلق</span>
             </div>
           </div>
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-bg-dark-card/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-primary/20 shadow-xl">
-            <p className="text-xs font-bold text-primary uppercase tracking-widest text-center">
-              {getLocalizedText(translations.hqOffice)}
-            </p>
-            <p className="text-sm text-text-primary dark:text-white text-center">
-              {getLocalizedText(translations.location)}
-            </p>
+
+          {/* Map Placeholder */}
+          <div style={{ background: 'linear-gradient(135deg,#E6F4F4,#F0F7F7)', borderRadius: 16, height: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, border: '1px solid #E5E9EB', cursor: 'pointer' }}>
+            <div style={{ fontSize: 36 }}>📍</div>
+            <div style={{ fontSize: 13, color: '#64748b' }}>حي الرياض، الرباط، المغرب</div>
+            <div style={{ fontSize: 12, color: '#94a3b8' }}>انقر لعرض الخريطة</div>
           </div>
         </div>
       </div>

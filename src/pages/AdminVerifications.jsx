@@ -2,229 +2,72 @@ import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
-import Card from '../components/Card';
-import Badge from '../components/Badge';
 
 // ============================================
-// ADMIN VERIFICATIONS PAGE - Donation Verification Workflow
-// Shows ONLY pending donations (excluding auto-verified card/paypal payments)
+// ADMIN VERIFICATIONS — Split layout: pending list + detail panel
 // ============================================
 
-const AdminVerifications = () => {
+export default function AdminVerifications() {
   const { currentLanguage, showToast } = useApp();
-  const [searchQuery, setSearchQuery] = useState('');
+  const lang = currentLanguage?.code || 'ar';
+
+  const [searchQuery, setSearchQuery]       = useState('');
   const [selectedDonation, setSelectedDonation] = useState(null);
-  const [editedAmount, setEditedAmount] = useState('');
+  const [editedAmount, setEditedAmount]     = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
-  const [verificationChecks, setVerificationChecks] = useState({
-    amountMatches: false,
-    referenceVisible: false,
-    dateRecent: false,
+  const [verificationChecks, setChecks]     = useState({
+    receiptClear:   false,
+    amountMatches:  false,
     accountCorrect: false,
+    dateRecent:     false,
+    referenceVisible: false,
   });
-  const [imageExpanded, setImageExpanded] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageExpanded, setImageExpanded]   = useState(false);
+  const [isSubmitting, setIsSubmitting]     = useState(false);
 
-  // Real Convex data
-  const rawDonations = useQuery(api.donations.getPendingVerifications, {});
-  const verifyDonationMutation = useMutation(api.donations.verifyDonation);
-  const rejectDonationMutation = useMutation(api.donations.rejectDonation);
+  // ── Convex ────────────────────────────────────────────────────────────────────
+  const rawDonations        = useQuery(api.donations.getPendingVerifications, {});
+  const verifyDonationMut   = useMutation(api.donations.verifyDonation);
+  const rejectDonationMut   = useMutation(api.donations.rejectDonation);
 
-  // Normalize data shape for the component
+  // ── Transform ─────────────────────────────────────────────────────────────────
   const donations = useMemo(() => {
     if (!rawDonations) return [];
     return rawDonations.map(d => ({
-      id: d._id,
-      _id: d._id,
-      donor: d.donorName,
-      phone: d.donorPhone,
-      amount: d.amount,
-      trxId: `TRX-${String(d._id).slice(-6).toUpperCase()}`,
-      project: d.projectTitle[currentLanguage?.code] || d.projectTitle.ar,
+      id:               d._id,
+      _id:              d._id,
+      donor:            d.donorName || 'مجهول',
+      phone:            d.donorPhone || '—',
+      amount:           d.amount || 0,
+      trxId:            `IB-${String(d._id).slice(-8).toUpperCase()}`,
+      project:          (typeof d.projectTitle === 'string' ? d.projectTitle : d.projectTitle?.[lang] || d.projectTitle?.ar) || '—',
       paymentMethodRaw: d.paymentMethod,
-      method: d.paymentMethod === 'bank_transfer' ? 'bank' :
-              d.paymentMethod === 'cash_agency' ? 'agency' : 'card',
-      status: 'pending',
-      receiptImage: d.receiptUrl || null,
-      referenceNumber: d.message || null,
-      agencyName: d.bankName || null,
-      date: new Date(d.createdAt).toISOString().split('T')[0],
+      method:           d.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' : d.paymentMethod === 'cash_agency' ? 'وكالة' : 'بطاقة',
+      receiptImage:     d.receiptUrl || null,
+      referenceNumber:  d.message || d.transactionReference || null,
+      agencyName:       d.bankName || null,
+      createdAt:        d.createdAt || Date.now(),
     }));
-  }, [rawDonations, currentLanguage]);
+  }, [rawDonations, lang]);
 
-  // Filter by search query
-  const filteredDonations = useMemo(() => {
-    if (!searchQuery) return donations;
-    return donations.filter(d =>
-      d.donor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      d.trxId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      d.phone.includes(searchQuery)
-    );
-  }, [donations, searchQuery]);
+  const filtered = donations.filter(d => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return d.donor.toLowerCase().includes(q) || d.trxId.toLowerCase().includes(q) || d.phone.includes(q);
+  });
 
-  // Translations
-  const translations = {
-    ar: {
-      title: 'التحقق من التبرعات',
-      subtitle: 'مراجعة وتوثيق التبرعات المعلقة',
-      search: 'البحث بالاسم، الهاتف أو رقم العملية...',
-      pendingCount: 'تبرع معلق',
-      noDonations: 'لا توجد تبرعات معلقة للتحقق',
-      allCaughtUp: 'تم التحقق من جميع التبرعات!',
-      verifyDonation: 'التحقق من التبرع',
-      donorInfo: 'معلومات المتبرع',
-      donorName: 'اسم المتبرع',
-      phone: 'رقم الهاتف',
-      amount: 'المبلغ المعلن',
-      editAmount: 'تعديل المبلغ إذا اختلف عن الفاتورة',
-      transactionId: 'رقم العملية',
-      paymentMethod: 'طريقة الدفع',
-      targetProject: 'المشروع المستهدف',
-      receiptImage: 'صورة الإيصال',
-      tapToEnlarge: 'انقر للتكبير',
-      verificationChecklist: 'قائمة التحقق',
-      amountMatches: 'المبلغ يطابق الإيصال',
-      referenceVisible: 'رقم المرجع مرئي',
-      dateRecent: 'التاريخ حديث (< 7 أيام)',
-      accountCorrect: 'حساب المستلم صحيح',
-      rejectionReason: 'سبب الرفض (داخلي فقط)',
-      rejectionPlaceholder: 'اشرح سبب عدم استيفاء هذا التبرع للمتطلبات...',
-      cancel: 'إلغاء',
-      reject: 'رفض',
-      approve: 'الموافقة على التبرع',
-      approveSuccess: 'تم التحقق من التبرع بنجاح',
-      rejectSuccess: 'تم رفض التبرع',
-      bank: 'تحويل بنكي',
-      agency: 'وكالة',
-      whatsappChat: 'محادثة واتساب',
-      verificationWorkflow: 'سير عمل التحقق',
-      donationDetails: 'تفاصيل التبرع',
-      agencyPaymentInfo: 'معلومات الدفع النقدي',
-      referenceNumLabel: 'رقم المرجع / الوصل',
-      agencyNameLabel: 'الوكالة',
-      noReference: 'لم يُدخل رقم مرجع',
-    },
-    fr: {
-      title: 'Vérification des Dons',
-      subtitle: 'Révision et vérification des dons en attente',
-      search: 'Rechercher par nom, téléphone ou ID...',
-      pendingCount: 'don en attente',
-      noDonations: 'Aucun don en attente à vérifier',
-      allCaughtUp: 'Tous les dons ont été vérifiés!',
-      verifyDonation: 'Vérifier le Don',
-      donorInfo: 'Informations du Donateur',
-      donorName: 'Nom du Donateur',
-      phone: 'Téléphone',
-      amount: 'Montant Déclaré',
-      editAmount: 'Modifier si le montant diffère de la facture',
-      transactionId: 'ID Transaction',
-      paymentMethod: 'Méthode de Paiement',
-      targetProject: 'Projet Cible',
-      receiptImage: 'Image du Reçu',
-      tapToEnlarge: 'Appuyer pour agrandir',
-      verificationChecklist: 'Liste de Vérification',
-      amountMatches: 'Le montant correspond au reçu',
-      referenceVisible: 'Numéro de référence visible',
-      dateRecent: 'Date récente (< 7 jours)',
-      accountCorrect: 'Compte destinataire correct',
-      rejectionReason: 'Raison du Rejet (Interne)',
-      rejectionPlaceholder: 'Expliquez pourquoi ce don ne répond pas aux exigences...',
-      cancel: 'Annuler',
-      reject: 'Rejeter',
-      approve: 'Approuver le Don',
-      approveSuccess: 'Don vérifié avec succès',
-      rejectSuccess: 'Don rejeté',
-      bank: 'Virement Bancaire',
-      agency: 'Agence',
-      whatsappChat: 'Chat WhatsApp',
-      verificationWorkflow: 'Workflow de Vérification',
-      donationDetails: 'Détails du Don',
-      agencyPaymentInfo: 'Informations de paiement en espèces',
-      referenceNumLabel: 'Numéro de référence / reçu',
-      agencyNameLabel: 'Agence',
-      noReference: 'Aucun numéro de référence fourni',
-    },
-    en: {
-      title: 'Donation Verification',
-      subtitle: 'Review and verify pending donations',
-      search: 'Search by name, phone or transaction ID...',
-      pendingCount: 'pending donation',
-      pendingCountPlural: 'pending donations',
-      noDonations: 'No pending donations to verify',
-      allCaughtUp: 'All caught up!',
-      verifyDonation: 'Verify Donation',
-      donorInfo: 'Donor Information',
-      donorName: 'Donor Name',
-      phone: 'Phone Number',
-      amount: 'Declared Amount',
-      editAmount: 'Edit amount if it differs from invoice',
-      transactionId: 'Transaction ID',
-      paymentMethod: 'Payment Method',
-      targetProject: 'Target Project',
-      receiptImage: 'Receipt Image',
-      tapToEnlarge: 'Tap to enlarge',
-      verificationChecklist: 'Verification Checklist',
-      amountMatches: 'Amount matches receipt',
-      referenceVisible: 'Reference number visible',
-      dateRecent: 'Date is recent (< 7 days)',
-      accountCorrect: 'Recipient account correct',
-      rejectionReason: 'Rejection Reason (Internal Only)',
-      rejectionPlaceholder: 'Explain why this donation doesn\'t meet requirements...',
-      cancel: 'Cancel',
-      reject: 'Reject',
-      approve: 'Approve Donation',
-      approveSuccess: 'Donation verified successfully',
-      rejectSuccess: 'Donation rejected',
-      bank: 'Bank Transfer',
-      agency: 'Agency',
-      whatsappChat: 'WhatsApp Chat',
-      verificationWorkflow: 'Verification Workflow',
-      donationDetails: 'Donation Details',
-      agencyPaymentInfo: 'Cash Payment Information',
-      referenceNumLabel: 'Reference / Receipt Number',
-      agencyNameLabel: 'Agency',
-      noReference: 'No reference number provided',
-    },
+  const timeAgo = (ts) => {
+    const h = Math.floor((Date.now() - ts) / 3600000);
+    if (h < 1) return 'منذ قليل';
+    if (h < 24) return `منذ ${h} ساعة`;
+    return `منذ ${Math.floor(h / 24)} يوم`;
   };
 
-  const t = translations[currentLanguage.code] || translations.en;
-
-  const getMethodLabel = (method) => {
-    const labels = {
-      bank: t.bank,
-      agency: t.agency,
-      card: 'Card',
-      paypal: 'PayPal',
-    };
-    return labels[method] || method;
-  };
-
-  const getMethodIcon = (method) => {
-    const icons = {
-      bank: 'account_balance',
-      agency: 'store',
-      card: 'credit_card',
-      paypal: 'payments',
-    };
-    return icons[method] || 'payments';
-  };
-
-  const handleOpenModal = (donation) => {
-    setSelectedDonation(donation);
-    setEditedAmount(donation.amount.toString());
+  const handleSelect = (d) => {
+    setSelectedDonation(d);
+    setEditedAmount((d.amount / 100).toFixed(2));
     setRejectionReason('');
-    setVerificationChecks({
-      amountMatches: false,
-      referenceVisible: false,
-      dateRecent: false,
-      accountCorrect: false,
-    });
-  };
-
-  const handleCloseModal = () => {
-    setSelectedDonation(null);
-    setEditedAmount('');
-    setRejectionReason('');
+    setChecks({ receiptClear: false, amountMatches: false, accountCorrect: false, dateRecent: false, referenceVisible: false });
     setImageExpanded(false);
   };
 
@@ -232,460 +75,239 @@ const AdminVerifications = () => {
     if (!selectedDonation || isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const ok = await verifyDonationMutation({
-        donationId: selectedDonation._id,
-        verified: true,
-        notes: verificationChecks.amountMatches && verificationChecks.referenceVisible
-          ? 'All checks passed'
-          : undefined,
-      });
-      if (!ok) {
-        showToast(
-          currentLanguage.code === 'ar' ? 'فشل التحقق: التبرع ليس في حالة انتظار' :
-          currentLanguage.code === 'fr' ? 'Échec: le don n\'est pas en attente' :
-          'Verification failed: donation is not in pending state',
-          'error'
-        );
-        return;
-      }
-      showToast(
-        currentLanguage.code === 'ar' ? 'تم التحقق من التبرع بنجاح' :
-        currentLanguage.code === 'fr' ? 'Don vérifié avec succès' :
-        'Donation verified successfully',
-        'success'
-      );
-      handleCloseModal();
-    } catch (err) {
-      showToast(
-        currentLanguage.code === 'ar' ? 'حدث خطأ أثناء التحقق' : 'Verification failed',
-        'error'
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+      const ok = await verifyDonationMut({ donationId: selectedDonation._id, verified: true });
+      if (!ok) { showToast('فشل التحقق', 'error'); return; }
+      showToast('تم التحقق من التبرع بنجاح ✅', 'success');
+      setSelectedDonation(null);
+    } catch { showToast('حدث خطأ أثناء التحقق', 'error'); }
+    finally { setIsSubmitting(false); }
   };
 
   const handleReject = async () => {
     if (!selectedDonation || isSubmitting) return;
     setIsSubmitting(true);
     try {
-      await rejectDonationMutation({
-        donationId: selectedDonation._id,
-        reason: rejectionReason || undefined,
-      });
-      showToast(
-        currentLanguage.code === 'ar' ? 'تم رفض التبرع' :
-        currentLanguage.code === 'fr' ? 'Don rejeté' :
-        'Donation rejected',
-        'error'
-      );
-      handleCloseModal();
-    } catch (err) {
-      showToast(
-        currentLanguage.code === 'ar' ? 'حدث خطأ أثناء الرفض' : 'Rejection failed',
-        'error'
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+      await rejectDonationMut({ donationId: selectedDonation._id, reason: rejectionReason || undefined });
+      showToast('تم رفض التبرع', 'error');
+      setSelectedDonation(null);
+    } catch { showToast('حدث خطأ أثناء الرفض', 'error'); }
+    finally { setIsSubmitting(false); }
   };
 
-  const handleCheckChange = (checkName) => {
-    setVerificationChecks(prev => ({
-      ...prev,
-      [checkName]: !prev[checkName]
-    }));
-  };
-
-  const formatWhatsAppLink = (phone) => {
-    const cleaned = phone.replace(/\D/g, '');
-    return `https://wa.me/${cleaned}`;
-  };
-
-  const formatAmount = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  };
-
-  // Loading state while Convex fetches
   if (rawDonations === undefined) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-slate-500">
-            {currentLanguage?.code === 'ar' ? 'جاري التحميل...' : 'Loading...'}
-          </p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'Tajawal, sans-serif' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>✅</div>
+          <p style={{ color: '#94a3b8' }}>جاري التحميل...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-text-primary dark:text-white">{t.title}</h1>
-          <p className="text-sm text-slate-500 mt-1">{t.subtitle}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="warning" size="md" className="text-sm">
-            {filteredDonations.length} {filteredDonations.length === 1 ? (t.pendingCount || 'pending donation') : (t.pendingCountPlural || 'pending donations')}
-          </Badge>
-        </div>
-      </div>
+    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', display: 'flex', height: 'calc(100vh - 56px)', overflow: 'hidden' }} dir="rtl">
 
-      {/* Search */}
-      <div className="relative">
-        <div className="flex w-full items-stretch rounded-xl h-11 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div className="text-slate-400 flex items-center justify-center pl-4">
-            <span className="material-symbols-outlined">search</span>
+      {/* Left: pending list */}
+      <div style={{ width: 360, borderLeft: '1px solid #E5E9EB', flexShrink: 0, overflowY: 'auto', background: 'white', display: 'flex', flexDirection: 'column' }}>
+        {/* List header */}
+        <div style={{ padding: '14px 16px', borderBottom: '1px solid #E5E9EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: 'white', zIndex: 1 }}>
+          <div style={{ fontSize: 14, fontWeight: 700 }}>قائمة الانتظار</div>
+          <div style={{ background: '#FEF3C7', color: '#b45309', fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 100 }}>
+            {filtered.length} تحويل
           </div>
+        </div>
+
+        {/* Search */}
+        <div style={{ padding: '10px 12px', borderBottom: '1px solid #E5E9EB' }}>
           <input
-            type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t.search}
-            className="w-full border-none bg-transparent focus:ring-0 text-sm placeholder:text-slate-400 text-text-primary dark:text-white"
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="ابحث..."
+            style={{ width: '100%', height: 34, padding: '0 12px', border: '1.5px solid #E5E9EB', borderRadius: 8, fontSize: 13, fontFamily: 'Tajawal, sans-serif', outline: 'none', boxSizing: 'border-box' }}
+            onFocus={e => e.target.style.borderColor = '#0d7477'}
+            onBlur={e => e.target.style.borderColor = '#E5E9EB'}
           />
         </div>
+
+        {/* Items */}
+        {filtered.length === 0 ? (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40, textAlign: 'center', color: '#94a3b8' }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
+            <p style={{ fontSize: 14, fontWeight: 600 }}>تم التحقق من جميع التبرعات</p>
+          </div>
+        ) : filtered.map(d => (
+          <div
+            key={d._id}
+            onClick={() => handleSelect(d)}
+            style={{
+              padding: '14px 16px',
+              borderBottom: '1px solid #E5E9EB',
+              cursor: 'pointer',
+              borderRight: `4px solid ${selectedDonation?._id === d._id ? '#0d7477' : '#f59e0b'}`,
+              background: selectedDonation?._id === d._id ? '#E6F4F4' : 'white',
+              transition: 'all .15s',
+            }}
+            onMouseEnter={e => { if (selectedDonation?._id !== d._id) e.currentTarget.style.background = '#F0F7F7'; }}
+            onMouseLeave={e => { if (selectedDonation?._id !== d._id) e.currentTarget.style.background = 'white'; }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>{d.donor}</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#0A5F62', fontFamily: 'Inter, sans-serif' }}>
+                {(d.amount / 100).toLocaleString('fr-MA')} د.م
+              </div>
+            </div>
+            <div style={{ fontSize: 12, color: '#94a3b8' }}>{d.project}</div>
+            <div style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600, marginTop: 2 }}>{timeAgo(d.createdAt)}</div>
+          </div>
+        ))}
       </div>
 
-      {/* Pending Donations List */}
-      {filteredDonations.length > 0 ? (
-        <div className="flex flex-col gap-3">
-          {filteredDonations.map((donation) => (
-            <Card
-              key={donation.id}
-              padding="md"
-              className="border border-yellow-200 dark:border-yellow-900/30 bg-yellow-50/30 dark:bg-yellow-900/5 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => handleOpenModal(donation)}
-            >
-              <div className="flex flex-col gap-3">
-                {/* Main Info */}
-                <div className="flex justify-between items-start">
-                  <div className="flex gap-3">
-                    {/* Avatar */}
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
-                      {donation.donor.charAt(0)}
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-text-primary dark:text-white">{donation.donor}</h4>
-                      <p className="text-xs text-slate-500">{donation.phone}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="warning" size="sm" className="text-[10px]">
-                          {currentLanguage.code === 'ar' ? 'معلق' : currentLanguage.code === 'fr' ? 'En attente' : 'Pending'}
-                        </Badge>
-                        <span className="text-[10px] text-slate-400">#{donation.trxId}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-primary">
-                      {formatAmount(donation.amount)} <span className="text-sm">MAD</span>
-                    </p>
-                    <p className="text-xs text-slate-400">{donation.project}</p>
-                  </div>
-                </div>
-
-                {/* Method & Action Hint */}
-                <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <span className="material-symbols-outlined text-sm">{getMethodIcon(donation.method)}</span>
-                    <span>{getMethodLabel(donation.method)}</span>
-                  </div>
-                  <span className="text-xs text-primary font-medium flex items-center gap-1">
-                    {currentLanguage.code === 'ar' ? 'اضغط للتحقق' : currentLanguage.code === 'fr' ? 'Appuyer pour vérifier' : 'Click to verify'}
-                    <span className="material-symbols-outlined text-sm">arrow_forward</span>
-                  </span>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        /* Empty State */
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-24 h-24 bg-green-50 dark:bg-green-900/20 rounded-full flex items-center justify-center mb-4">
-            <span className="material-symbols-outlined text-5xl text-green-500">check_circle</span>
+      {/* Right: detail panel */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: 24, background: '#f6f8f8' }}>
+        {!selectedDonation ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', color: '#94a3b8' }}>
+            <div style={{ fontSize: 64, marginBottom: 16 }}>✅</div>
+            <p style={{ fontSize: 15, fontWeight: 600 }}>اختر تحويلاً من القائمة للمراجعة</p>
           </div>
-          <h3 className="text-xl font-bold text-text-primary dark:text-white mb-2">{t.allCaughtUp}</h3>
-          <p className="text-slate-500 max-w-sm">{t.noDonations}</p>
-        </div>
-      )}
-
-      {/* Verification Modal */}
-      {selectedDonation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm">
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 sm:rounded-2xl shadow-xl overflow-hidden flex flex-col h-screen sm:h-auto sm:max-h-[92vh] border-0 sm:border border-slate-100 dark:border-slate-800">
-            {/* Modal Header */}
-            <div className="flex items-center bg-white dark:bg-slate-900 p-4 border-b border-slate-100 dark:border-slate-800 justify-between sticky top-0 z-10">
-              <button 
-                onClick={handleCloseModal}
-                className="text-slate-400 flex size-10 shrink-0 items-center justify-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 rounded-full transition-colors"
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
-              <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight flex-1 text-center">
-                {t.verifyDonation}
-              </h2>
-              <div className="flex w-10 items-center justify-end">
-                <button className="flex cursor-pointer items-center justify-center rounded-full size-10 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-400">
-                  <span className="material-symbols-outlined">more_horiz</span>
-                </button>
+        ) : (
+          <>
+            {/* Donor info card */}
+            <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', overflow: 'hidden', marginBottom: 16 }}>
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E9EB', fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                👤 معلومات المتبرع
+              </div>
+              <div style={{ padding: 20 }}>
+                {[
+                  ['الاسم', selectedDonation.donor],
+                  ['الهاتف', selectedDonation.phone],
+                  ['المشروع', selectedDonation.project],
+                  ['المبلغ', `${(selectedDonation.amount / 100).toLocaleString('fr-MA')} درهم`],
+                  ['رقم المرجع', `#${selectedDonation.trxId}`],
+                  ['وقت الإرسال', new Date(selectedDonation.createdAt).toLocaleString('ar-MA')],
+                ].map(([label, value], i, arr) => (
+                  <div key={label} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < arr.length - 1 ? '1px solid #E5E9EB' : 'none' }}>
+                    <div style={{ fontSize: 12, color: '#94a3b8' }}>{label}</div>
+                    <div style={{ fontSize: label === 'المبلغ' ? 20 : 14, fontWeight: 700, textAlign: 'left', color: label === 'المبلغ' ? '#0A5F62' : '#0e1a1b', fontFamily: label === 'الهاتف' || label === 'رقم المرجع' ? 'Inter, sans-serif' : 'inherit' }}>
+                      {value}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto ios-scroller">
-              <div className="flex flex-col">
-                {/* Donor Info Section */}
-                <div className="p-6 space-y-6">
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-primary opacity-80">
-                      {t.verificationWorkflow}
-                    </span>
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">{t.donationDetails}</h3>
+            {/* Receipt card */}
+            <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', overflow: 'hidden', marginBottom: 16 }}>
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E9EB', fontSize: 15, fontWeight: 700 }}>🧾 وصل التحويل المرفق</div>
+              <div style={{ padding: 20 }}>
+                {selectedDonation.receiptImage ? (
+                  <img
+                    src={selectedDonation.receiptImage}
+                    alt="الوصل"
+                    onClick={() => setImageExpanded(true)}
+                    style={{ width: '100%', height: 240, objectFit: 'cover', borderRadius: 12, cursor: 'zoom-in', border: '1px solid #E5E9EB' }}
+                  />
+                ) : (
+                  <div style={{ width: '100%', height: 240, background: 'linear-gradient(135deg,#e0e7ff,#c7d2fe)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64, border: '1px solid #E5E9EB' }}>
+                    🧾
                   </div>
-
-                  {/* Donor Card */}
-                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 space-y-4">
-                    <div className="flex items-center gap-4">
-                      <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-12 w-12 border-2 border-white dark:border-slate-700 shadow-sm bg-primary/10 flex items-center justify-center text-primary font-bold text-xl">
-                        {selectedDonation.donor.charAt(0)}
-                      </div>
-                      <div className="flex flex-col justify-center">
-                        <p className="text-text-secondary dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider">
-                          {t.donorName}
-                        </p>
-                        <p className="text-slate-900 dark:text-white text-base font-bold">{selectedDonation.donor}</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 py-3 border-y border-slate-200/60 dark:border-slate-700">
-                      <div>
-                        <span className="text-[10px] text-text-secondary dark:text-slate-400 block font-bold uppercase mb-1">
-                          {t.transactionId}
-                        </span>
-                        <span className="text-sm font-mono font-bold text-slate-800 dark:text-slate-200">#{selectedDonation.trxId}</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-text-secondary dark:text-slate-400 block font-bold uppercase mb-1">
-                          {t.targetProject}
-                        </span>
-                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{selectedDonation.project}</span>
-                      </div>
-                    </div>
-
-                    {/* WhatsApp Chat Link */}
-                    <div className="pt-1">
-                      <a 
-                        className="flex items-center gap-3 p-3 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:border-green-200 dark:hover:border-green-800 hover:bg-green-50 dark:hover:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg transition-all group"
-                        href={formatWhatsAppLink(selectedDonation.phone)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <span className="material-symbols-outlined text-xl">chat</span>
-                        <span className="text-sm font-bold flex-1">{selectedDonation.phone}</span>
-                        <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward_ios</span>
-                      </a>
-                    </div>
+                )}
+                {selectedDonation.referenceNumber && (
+                  <div style={{ marginTop: 12, padding: '10px 14px', background: '#F0F7F7', borderRadius: 10, fontSize: 13, fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#0A5F62' }}>
+                    Ref: {selectedDonation.referenceNumber}
                   </div>
-
-                  {/* Declared Amount - Editable */}
-                  <div className="text-center py-4 bg-white dark:bg-slate-900">
-                    <p className="text-[11px] font-bold text-text-secondary dark:text-slate-400 uppercase tracking-[0.2em] mb-2">
-                      {t.amount}
-                    </p>
-                    <div className="flex items-center justify-center gap-2">
-                      <input
-                        type="number"
-                        value={editedAmount}
-                        onChange={(e) => setEditedAmount(e.target.value)}
-                        className="text-3xl sm:text-5xl font-black text-primary tracking-tighter bg-transparent border-b-2 border-primary/30 focus:border-primary focus:outline-none text-center w-48 sm:w-64"
-                      />
-                      <span className="text-lg font-bold text-primary ml-1">MAD</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-2">{t.editAmount}</p>
-                  </div>
-                </div>
-
-                {/* Receipt & Verification Section */}
-                <div className="p-6 space-y-6 bg-slate-50/50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
-                  {/* Receipt Image (bank transfer) OR Reference Number (cash agency) */}
-                  {selectedDonation.paymentMethodRaw === 'cash_agency' ? (
-                    <div className="space-y-3">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-secondary dark:text-slate-400">
-                        {t.agencyPaymentInfo}
-                      </span>
-                      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
-                        {selectedDonation.agencyName && (
-                          <div>
-                            <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">{t.agencyNameLabel}</p>
-                            <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{selectedDonation.agencyName}</p>
-                          </div>
-                        )}
-                        <div>
-                          <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">{t.referenceNumLabel}</p>
-                          <p className="text-sm font-mono font-bold text-slate-800 dark:text-slate-200 break-all">
-                            {selectedDonation.referenceNumber || <span className="text-slate-400 italic">{t.noReference}</span>}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-secondary dark:text-slate-400">
-                        {t.receiptImage}
-                      </span>
-                      <span className="text-[10px] font-medium text-slate-400 italic">{t.tapToEnlarge}</span>
-                    </div>
-                    <div
-                      className="relative group rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 aspect-video sm:aspect-[4/3] bg-slate-100 dark:bg-slate-800 cursor-zoom-in"
-                      onClick={() => setImageExpanded(true)}
-                    >
-                      <img
-                        className="w-full h-full object-cover"
-                        src={selectedDonation.receiptImage}
-                        alt="Receipt"
-                      />
-                      <div className="absolute inset-0 bg-slate-900/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                        <div className="bg-white/90 dark:bg-slate-800/90 p-2 rounded-full shadow-lg">
-                          <span className="material-symbols-outlined text-slate-800 dark:text-white">zoom_in</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                  {selectedDonation.receiptImage && (
+                    <button onClick={() => setImageExpanded(true)}
+                      style={{ flex: 1, height: 36, borderRadius: 10, background: '#F0F7F7', border: '1px solid #E5E9EB', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'Tajawal, sans-serif' }}>
+                      🔍 تكبير
+                    </button>
                   )}
-
-                  {/* Payment Method Display */}
-                  <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
-                      {t.paymentMethod}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-slate-400">{getMethodIcon(selectedDonation.method)}</span>
-                      <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{getMethodLabel(selectedDonation.method)}</span>
-                    </div>
-                  </div>
-
-                  {/* Verification Checklist */}
-                  <div className="space-y-3">
-                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
-                      {t.verificationChecklist}
-                    </p>
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer active:scale-[0.98] transition-all hover:shadow-sm">
-                        <input 
-                          type="checkbox"
-                          checked={verificationChecks.amountMatches}
-                          onChange={() => handleCheckChange('amountMatches')}
-                          className="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary"
-                        />
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t.amountMatches}</span>
-                      </label>
-                      <label className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer active:scale-[0.98] transition-all hover:shadow-sm">
-                        <input 
-                          type="checkbox"
-                          checked={verificationChecks.referenceVisible}
-                          onChange={() => handleCheckChange('referenceVisible')}
-                          className="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary"
-                        />
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t.referenceVisible}</span>
-                      </label>
-                      <label className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer active:scale-[0.98] transition-all hover:shadow-sm">
-                        <input 
-                          type="checkbox"
-                          checked={verificationChecks.dateRecent}
-                          onChange={() => handleCheckChange('dateRecent')}
-                          className="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary"
-                        />
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t.dateRecent}</span>
-                      </label>
-                      <label className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer active:scale-[0.98] transition-all hover:shadow-sm">
-                        <input 
-                          type="checkbox"
-                          checked={verificationChecks.accountCorrect}
-                          onChange={() => handleCheckChange('accountCorrect')}
-                          className="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary"
-                        />
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t.accountCorrect}</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Rejection Reason */}
-                  <div className="pt-2">
-                    <label className="block text-[10px] font-bold text-red-500 uppercase tracking-widest mb-2">
-                      {t.rejectionReason}
-                    </label>
-                    <textarea 
-                      value={rejectionReason}
-                      onChange={(e) => setRejectionReason(e.target.value)}
-                      className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:ring-red-200 focus:border-red-400 min-h-[80px] text-slate-700 dark:text-slate-300"
-                      placeholder={t.rejectionPlaceholder}
-                    />
-                  </div>
+                  <button style={{ flex: 1, height: 36, borderRadius: 10, background: '#E6F4F4', border: '1px solid #CCF0F0', color: '#0A5F62', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'Tajawal, sans-serif' }}>
+                    ⬇ تحميل
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
-              <div className="flex gap-3 flex-1">
-                <button
-                  onClick={handleCloseModal}
-                  disabled={isSubmitting}
-                  className="flex-1 px-4 py-3.5 rounded-xl font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border border-transparent disabled:opacity-50"
-                >
-                  {t.cancel}
-                </button>
-                <button
-                  onClick={handleReject}
-                  disabled={!rejectionReason.trim() || isSubmitting}
-                  className="flex-1 px-4 py-3.5 rounded-xl font-bold text-red-500 border border-red-100 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? '...' : t.reject}
-                </button>
+            {/* Checklist card */}
+            <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', overflow: 'hidden', marginBottom: 16 }}>
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E9EB', fontSize: 15, fontWeight: 700 }}>📋 قائمة التحقق</div>
+              <div style={{ padding: '0 20px' }}>
+                {[
+                  ['receiptClear',      'الوصل واضح وقابل للقراءة'],
+                  ['amountMatches',     `المبلغ يطابق: ${(selectedDonation.amount / 100).toLocaleString('fr-MA')} درهم`],
+                  ['accountCorrect',    'رقم الحساب المستفيد مطابق'],
+                  ['dateRecent',        'تاريخ التحويل ضمن 48 ساعة'],
+                  ['referenceVisible',  'الرقم المرجعي للعملية موجود'],
+                ].map(([key, label], i, arr) => (
+                  <label
+                    key={key}
+                    onClick={() => setChecks(prev => ({ ...prev, [key]: !prev[key] }))}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: i < arr.length - 1 ? '1px solid #E5E9EB' : 'none', cursor: 'pointer' }}
+                  >
+                    <div style={{
+                      width: 20, height: 20, borderRadius: 6, border: `2px solid ${verificationChecks[key] ? '#0d7477' : '#E5E9EB'}`,
+                      background: verificationChecks[key] ? '#0d7477' : 'white',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      color: 'white', fontSize: 12, fontWeight: 700,
+                    }}>
+                      {verificationChecks[key] ? '✓' : ''}
+                    </div>
+                    <div style={{ fontSize: 14 }}>{label}</div>
+                  </label>
+                ))}
               </div>
+            </div>
+
+            {/* Rejection note */}
+            <textarea
+              value={rejectionReason}
+              onChange={e => setRejectionReason(e.target.value)}
+              placeholder="سبب الرفض (سيُرسَل للمتبرع عبر واتساب)..."
+              style={{ width: '100%', minHeight: 72, border: '1.5px solid #E5E9EB', borderRadius: 12, padding: '10px 14px', fontSize: 13, fontFamily: 'Tajawal, sans-serif', outline: 'none', resize: 'none', marginBottom: 16, boxSizing: 'border-box' }}
+              onFocus={e => e.target.style.borderColor = '#ef4444'}
+              onBlur={e => e.target.style.borderColor = '#E5E9EB'}
+            />
+
+            {/* Action buttons */}
+            <div style={{ display: 'flex', gap: 12 }}>
               <button
                 onClick={handleVerify}
                 disabled={isSubmitting}
-                className="flex-[1.5] px-6 py-3.5 rounded-xl font-bold bg-primary text-white hover:opacity-95 active:scale-[0.99] transition-all shadow-lg shadow-[#0D737722] disabled:opacity-70"
+                style={{ flex: 1, height: 52, background: '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: isSubmitting ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'Tajawal, sans-serif', opacity: isSubmitting ? 0.7 : 1 }}
               >
-                {isSubmitting ? '...' : t.approve}
+                {isSubmitting ? '⏳ جاري المعالجة...' : '✅ قبول التبرع وإرسال تأكيد واتساب'}
+              </button>
+              <button
+                onClick={handleReject}
+                disabled={isSubmitting}
+                style={{ flexShrink: 0, height: 52, padding: '0 20px', background: '#FEE2E2', color: '#dc2626', border: '1px solid #FCA5A5', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: isSubmitting ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif' }}
+              >
+                ✗ رفض
               </button>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </div>
 
-      {/* Expanded Image Modal */}
-      {imageExpanded && selectedDonation && (
-        <div 
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md"
+      {/* Full-screen image zoom */}
+      {imageExpanded && selectedDonation?.receiptImage && (
+        <div
           onClick={() => setImageExpanded(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,.9)', backdropFilter: 'blur(4px)', cursor: 'zoom-out' }}
         >
-          <button 
-            className="absolute top-4 right-4 text-white/80 hover:text-white p-2"
-            onClick={() => setImageExpanded(false)}
-          >
-            <span className="material-symbols-outlined text-3xl">close</span>
-          </button>
-          <img 
-            className="max-w-full max-h-[90vh] object-contain rounded-lg"
+          <button onClick={() => setImageExpanded(false)}
+            style={{ position: 'absolute', top: 16, right: 16, color: 'rgba(255,255,255,.8)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 28 }}>✕</button>
+          <img
             src={selectedDonation.receiptImage}
-            alt="Receipt - Full Size"
-            onClick={(e) => e.stopPropagation()}
+            alt="الوصل"
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: 12 }}
           />
         </div>
       )}
     </div>
   );
-};
-
-export default AdminVerifications;
+}

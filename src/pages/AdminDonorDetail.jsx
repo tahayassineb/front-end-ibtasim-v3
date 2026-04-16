@@ -1,295 +1,252 @@
-import React from 'react';
-import { Link, useParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
-import Card from '../components/Card';
-import Badge from '../components/Badge';
-import Button from '../components/Button';
 
-// ============================================
-// ADMIN DONOR DETAIL PAGE - Donor Profile & CRM
-// ============================================
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const BORDER = '#E5E9EB';
+const PRIMARY = '#0d7477';
+const P600 = '#0A5F62';
+const TEXT2 = '#64748b';
+const TEXTM = '#94a3b8';
+const SHADOW = '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)';
+const SHADOW_P = '0 4px 14px rgba(13,116,119,.25)';
 
-const AdminDonorDetail = () => {
+const getTier = (totalDonated, donationCount) => {
+  if (totalDonated >= 500000) return 'gold';
+  if (totalDonated >= 100000) return 'silver';
+  if (donationCount <= 1 && totalDonated < 50000) return 'new';
+  return 'bronze';
+};
+
+const TIER_CFG = {
+  gold:   { label: '🥇 متبرع ذهبي',  bg: '#FEF3C7', color: '#92400e' },
+  silver: { label: '🥈 متبرع فضي',   bg: '#F1F5F9', color: '#475569' },
+  bronze: { label: '🥉 متبرع برونزي', bg: '#FFF7ED', color: '#9a3412' },
+  new:    { label: '✨ متبرع جديد',  bg: '#E6F4F4', color: P600 },
+};
+
+const DONATION_STATUS = {
+  verified:              { label: '✓ مؤكد',   bg: '#D1FAE5', color: '#16a34a' },
+  awaiting_verification: { label: '⏳ انتظار', bg: '#FEF3C7', color: '#b45309' },
+  awaiting_receipt:      { label: '⏳ انتظار', bg: '#FEF3C7', color: '#b45309' },
+  pending:               { label: '⏳ انتظار', bg: '#FEF3C7', color: '#b45309' },
+  rejected:              { label: '✕ مرفوض', bg: '#FEE2E2', color: '#dc2626' },
+};
+
+const initials = (name) => {
+  if (!name) return '؟';
+  const parts = name.trim().split(' ');
+  return parts.length >= 2 ? parts[0][0] + parts[1][0] : parts[0][0];
+};
+
+const Section = ({ children, style }) => (
+  <div style={{ background: 'white', borderRadius: 16, border: `1px solid ${BORDER}`, boxShadow: SHADOW, overflow: 'hidden', ...style }}>
+    {children}
+  </div>
+);
+
+export default function AdminDonorDetail() {
   const { id } = useParams();
-  const { currentLanguage, formatCurrency } = useApp();
-  
-  // Convex hooks
+  const navigate = useNavigate();
+  const { showToast } = useApp();
+  const [activeTab, setActiveTab] = useState('donations');
+
+  // ── Convex ────────────────────────────────────────────────────────────────
   const donorData = useQuery(api.admin.getDonorById, { userId: id });
-  
-  // Transform Convex data to match component structure
-  const donor = donorData ? {
-    id: donorData._id,
-    name: donorData.fullName,
-    avatar: null,
-    email: donorData.email,
-    phone: donorData.phoneNumber,
-    totalDonated: donorData.totalDonated,
-    donorSince: new Date(donorData.createdAt).toISOString().split('T')[0],
-    tier: donorData.totalDonated > 20000 ? 'gold' : donorData.totalDonated > 5000 ? 'silver' : 'bronze',
-  } : {
-    id: parseInt(id) || 1,
-    name: 'Loading...',
-    avatar: null,
-    email: '',
-    phone: '',
-    totalDonated: 0,
-    donorSince: '',
-    tier: 'bronze',
-  };
-  
-  // Transform donation history from Convex data
-  const donationHistory = donorData?.donations ? donorData.donations.map(d => ({
-    id: d._id,
-    amount: d.amount,
-    project: d.projectTitle,
-    date: new Date(d.createdAt).toISOString().split('T')[0],
-    status: d.status,
-  })) : [];
 
-  // Translations
-  const translations = {
-    ar: {
-      back: 'العودة للمتبرعين',
-      profile: 'ملف المتبرع',
-      totalDonated: 'إجمالي التبرعات',
-      donorSince: 'متبرع منذ',
-      call: 'اتصال',
-      email: 'بريد إلكتروني',
-      whatsapp: 'واتساب',
-      donationHistory: 'سجل التبرعات',
-      viewAll: 'عرض الكل',
-      communicationLog: 'سجل التواصل',
-      whatsappOutbound: 'واتساب صادر',
-      sendMessage: 'إرسال رسالة واتساب',
-      success: 'نجاح',
-      months: [
-        'يناير', 'فبراير', 'مارس', 'إبريل', 'مايو', 'يونيو',
-        'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
-      ],
-    },
-    fr: {
-      back: 'Retour aux Donateurs',
-      profile: 'Profil du Donateur',
-      totalDonated: 'Total Donné',
-      donorSince: 'Donateur depuis',
-      call: 'Appeler',
-      email: 'Email',
-      whatsapp: 'WhatsApp',
-      donationHistory: 'Historique des Dons',
-      viewAll: 'Voir Tout',
-      communicationLog: 'Journal de Communication',
-      whatsappOutbound: 'WhatsApp Sortant',
-      sendMessage: 'Envoyer Message WhatsApp',
-      success: 'SUCCÈS',
-      months: [
-        'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-        'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
-      ],
-    },
-    en: {
-      back: 'Back to Donors',
-      profile: 'Donor Profile',
-      totalDonated: 'Total Donated',
-      donorSince: 'Donor since',
-      call: 'Call',
-      email: 'Email',
-      whatsapp: 'WhatsApp',
-      donationHistory: 'Donation History',
-      viewAll: 'View All',
-      communicationLog: 'Communication Log',
-      whatsappOutbound: 'WhatsApp Outbound',
-      sendMessage: 'Send WhatsApp Message',
-      success: 'SUCCESS',
-      months: [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-      ],
-    },
-  };
+  if (donorData === undefined) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'Tajawal, sans-serif' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>👥</div>
+          <p style={{ color: TEXTM }}>جاري التحميل...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const t = translations[currentLanguage.code] || translations.en;
+  if (!donorData) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'Tajawal, sans-serif' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>❌</div>
+          <p style={{ color: TEXTM, marginBottom: 16 }}>المتبرع غير موجود</p>
+          <button onClick={() => navigate('/admin/donors')}
+            style={{ height: 40, padding: '0 20px', background: PRIMARY, color: 'white', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+            ← المتبرعون
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-  // Mock communication log
-  const communications = [
-    {
-      id: 1,
-      type: 'whatsapp',
-      direction: 'outbound',
-      message: 'Bonjour Jean, merci encore pour votre don généreux pour le Gala de l\'espoir. Nous aimerions vous inviter à notre prochaine réunion de...',
-      date: 'Yesterday, 14:20',
-      read: true,
-    },
-    {
-      id: 2,
-      type: 'whatsapp',
-      direction: 'outbound',
-      message: 'Merci pour votre soutien! Votre reçu fiscal est disponible sur votre espace personnel.',
-      date: 'Oct 24, 2023',
-      read: true,
-    },
-  ];
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const day = date.getDate();
-    const month = t.months[date.getMonth()];
-    const year = date.getFullYear();
-    return `${day} ${month} ${year}`;
-  };
-
-  const getProjectIcon = (project) => {
-    if (project.includes('Gala')) return 'payments';
-    if (project.includes('Winter')) return 'volunteer_activism';
-    if (project.includes('Subscription')) return 'footprint';
-    return 'payments';
-  };
+  // ── Derived ───────────────────────────────────────────────────────────────
+  const tier = getTier(donorData.totalDonated, donorData.donationCount);
+  const tierCfg = TIER_CFG[tier];
+  const totalMAD = (donorData.totalDonated || 0) / 100;
+  const memberSince = donorData.createdAt
+    ? new Date(donorData.createdAt).toLocaleDateString('ar-MA', { year: 'numeric', month: 'long' })
+    : '—';
+  const donations = donorData.donations || [];
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 pb-8">
-      {/* Back Button */}
-      <Link
-        to="/admin/donors"
-        className="inline-flex items-center gap-2 text-slate-500 hover:text-primary transition-colors"
-      >
-        <span className="material-symbols-outlined">arrow_back</span>
-        <span>{t.back}</span>
-      </Link>
+    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: 24 }} dir="rtl">
 
-      {/* Profile Header */}
-      <div className="flex flex-col items-center gap-4 pt-2">
-        <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-32 w-32 border-4 border-white dark:border-slate-800 shadow-lg"
-          style={donor.avatar ? { backgroundImage: `url('${donor.avatar}')` } : {}}
-        />
-        <div className="text-center">
-          <h1 className="text-text-primary dark:text-white text-2xl font-bold leading-tight">{donor.name}</h1>
-          <p className="text-primary font-bold text-xl leading-normal mt-1">
-            {formatCurrency(donor.totalDonated)} {t.totalDonated}
-          </p>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-            {t.donorSince} {formatDate(donor.donorSince)}
-          </p>
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="grid grid-cols-3 gap-4">
-        <button className="flex flex-col items-center gap-2 bg-white dark:bg-slate-800/40 p-3 rounded-2xl shadow-sm cursor-pointer border border-slate-100 dark:border-slate-800 hover:border-primary/30 transition-colors">
-          <div className="rounded-full bg-primary/10 dark:bg-primary/20 p-3">
-            <span className="material-symbols-outlined text-primary">call</span>
-          </div>
-          <p className="text-text-primary dark:text-slate-100 text-xs font-semibold">{t.call}</p>
+      {/* ── Action row ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div style={{ fontSize: 18, fontWeight: 800 }}>👥 {donorData.fullName}</div>
+        <button onClick={() => navigate('/admin/donors')}
+          style={{ height: 38, padding: '0 16px', border: `1.5px solid ${BORDER}`, borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', background: 'white', color: TEXT2 }}>
+          ← قائمة المتبرعين
         </button>
-        <a 
-          href={`mailto:${donor.email}`}
-          className="flex flex-col items-center gap-2 bg-white dark:bg-slate-800/40 p-3 rounded-2xl shadow-sm cursor-pointer border border-slate-100 dark:border-slate-800 hover:border-primary/30 transition-colors"
-        >
-          <div className="rounded-full bg-primary/10 dark:bg-primary/20 p-3">
-            <span className="material-symbols-outlined text-primary">mail</span>
-          </div>
-          <p className="text-text-primary dark:text-slate-100 text-xs font-semibold">{t.email}</p>
-        </a>
-        <a 
-          href={`https://wa.me/${donor.phone?.replace(/\D/g, '') || ''}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex flex-col items-center gap-2 bg-white dark:bg-slate-800/40 p-3 rounded-2xl shadow-sm cursor-pointer border border-slate-100 dark:border-slate-800 hover:border-primary/30 transition-colors"
-        >
-          <div className="rounded-full bg-primary/10 dark:bg-primary/20 p-3">
-            <span className="material-symbols-outlined text-primary">chat</span>
-          </div>
-          <p className="text-text-primary dark:text-slate-100 text-xs font-semibold">{t.whatsapp}</p>
-        </a>
       </div>
 
-      {/* Donation History */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-text-primary dark:text-white text-xl font-bold">{t.donationHistory}</h2>
-          <Link to="/admin/donations" className="text-primary text-sm font-semibold hover:underline">
-            {t.viewAll}
-          </Link>
+      {/* ── Profile hero ── */}
+      <div style={{ background: 'white', borderRadius: 16, border: `1px solid ${BORDER}`, boxShadow: SHADOW, padding: 24, display: 'flex', alignItems: 'center', gap: 24, marginBottom: 20, flexWrap: 'wrap' }}>
+        {/* Avatar */}
+        <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg,#0A5F62,#33C0C0)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 900, color: 'white', flexShrink: 0 }}>
+          {initials(donorData.fullName)}
         </div>
 
-        <Card padding="none" className="overflow-hidden">
-          {donationHistory.map((donation, index) => (
-            <div
-              key={donation.id}
-              className={`flex items-center gap-4 px-4 min-h-[72px] py-3 justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${
-                index !== 0 ? 'border-t border-slate-100 dark:border-slate-800' : ''
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <div className="text-primary flex items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/20 shrink-0 size-12">
-                  <span className="material-symbols-outlined">{getProjectIcon(donation.project)}</span>
-                </div>
-                <div className="flex flex-col justify-center">
-                  <p className="text-text-primary dark:text-white text-base font-bold">{formatCurrency(donation.amount)}</p>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs">{donation.project}</p>
-                </div>
-              </div>
-              <div className="shrink-0 text-right">
-                <p className="text-slate-400 text-[10px] mb-1">{formatDate(donation.date)}</p>
-                <Badge
-                  variant={
-                    donation.status === 'verified' || donation.status === 'completed'
-                      ? 'success'
-                      : donation.status === 'rejected'
-                      ? 'error'
-                      : 'warning'
-                  }
-                  size="sm"
-                  className="text-[10px]"
-                >
-                  {donation.status === 'verified' || donation.status === 'completed'
-                    ? t.success
-                    : donation.status === 'rejected'
-                    ? (currentLanguage.code === 'ar' ? 'مرفوض' : currentLanguage.code === 'fr' ? 'Rejeté' : 'Rejected')
-                    : (currentLanguage.code === 'ar' ? 'معلق' : currentLanguage.code === 'fr' ? 'En attente' : 'Pending')}
-                </Badge>
-              </div>
-            </div>
-          ))}
-        </Card>
+        {/* Info */}
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+            <div style={{ fontSize: 24, fontWeight: 900 }}>{donorData.fullName}</div>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 700, background: tierCfg.bg, color: tierCfg.color }}>
+              {tierCfg.label}
+            </span>
+          </div>
+          <div style={{ fontSize: 14, color: TEXT2, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            {donorData.phoneNumber && <span>📞 {donorData.phoneNumber}</span>}
+            <span>📅 عضو منذ: {memberSince}</span>
+            {donorData.isVerified && <span style={{ color: '#16a34a' }}>✓ موثّق</span>}
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div style={{ display: 'flex', gap: 32, flexShrink: 0 }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 24, fontWeight: 900, fontFamily: 'Inter, sans-serif', color: P600 }}>{totalMAD.toLocaleString('fr-MA')}</div>
+            <div style={{ fontSize: 12, color: TEXT2 }}>درهم إجمالي</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 24, fontWeight: 900, fontFamily: 'Inter, sans-serif', color: P600 }}>{donorData.donationCount}</div>
+            <div style={{ fontSize: 12, color: TEXT2 }}>تبرع</div>
+          </div>
+        </div>
       </div>
 
-      {/* Communication Log */}
-      <div>
-        <h2 className="text-text-primary dark:text-white text-xl font-bold mb-4">{t.communicationLog}</h2>
+      {/* ── 2-col grid ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 20, alignItems: 'start' }}>
 
-        <div className="space-y-4">
-          {communications.map((comm) => (
-            <Card key={comm.id} padding="md" className="relative">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-lg">chat_bubble</span>
-                  <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">{t.whatsappOutbound}</span>
-                </div>
-                <span className="text-[10px] text-slate-400">{comm.date}</span>
+        {/* ── Main: donation history ── */}
+        <div>
+          {/* Tab bar */}
+          <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+            {[
+              { key: 'donations', label: `💰 التبرعات (${donations.length})` },
+            ].map(({ key, label }) => (
+              <button key={key} onClick={() => setActiveTab(key)}
+                style={{ height: 36, padding: '0 16px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', border: `1px solid ${activeTab === key ? PRIMARY : BORDER}`, background: activeTab === key ? PRIMARY : 'white', color: activeTab === key ? 'white' : TEXT2 }}>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <Section>
+            {/* Table head */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', background: '#F0F7F7', borderBottom: `1px solid ${BORDER}` }}>
+              {['المشروع', 'المبلغ', 'التاريخ', 'الحالة'].map(h => (
+                <div key={h} style={{ padding: '12px 16px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: TEXTM, fontFamily: 'Inter, sans-serif' }}>{h}</div>
+              ))}
+            </div>
+
+            {/* Rows */}
+            {donations.length === 0 ? (
+              <div style={{ padding: '40px 20px', textAlign: 'center', color: TEXTM }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>💰</div>
+                <p>لا توجد تبرعات بعد</p>
               </div>
-              <p className="text-sm text-slate-700 dark:text-slate-300 italic">"{comm.message}"</p>
-              {comm.read && (
-                <div className="mt-2 flex items-center justify-end">
-                  <span className="material-symbols-outlined text-primary text-sm">done_all</span>
+            ) : donations.map((d, i) => {
+              const ds = DONATION_STATUS[d.status] || DONATION_STATUS.pending;
+              const amtMAD = ((d.amount || 0) / 100).toLocaleString('fr-MA');
+              const dateStr = d.createdAt ? new Date(d.createdAt).toLocaleDateString('fr-MA') : '—';
+              const isPend = d.status === 'pending' || d.status === 'awaiting_verification';
+              return (
+                <div key={d._id}
+                  style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', borderBottom: i < donations.length - 1 ? `1px solid ${BORDER}` : 'none', alignItems: 'center', background: i % 2 === 1 ? '#fafbfc' : 'white', borderRight: isPend ? '4px solid #f59e0b' : '4px solid transparent' }}>
+                  <div style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600 }}>{d.projectTitle || '—'}</div>
+                  <div style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, color: P600, fontFamily: 'Inter, sans-serif' }}>{amtMAD} د.م</div>
+                  <div style={{ padding: '12px 16px', fontSize: 13, color: TEXTM, fontFamily: 'Inter, sans-serif' }}>{dateStr}</div>
+                  <div style={{ padding: '12px 16px' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 100, fontSize: 11, fontWeight: 700, background: ds.bg, color: ds.color }}>
+                      {ds.label}
+                    </span>
+                  </div>
                 </div>
-              )}
-            </Card>
-          ))}
+              );
+            })}
+          </Section>
+        </div>
 
-          <Button
-            variant="primary"
-            size="lg"
-            fullWidth
-            icon="send"
-            className="shadow-lg mt-4"
-          >
-            {t.sendMessage}
-          </Button>
+        {/* ── Sidebar ── */}
+        <div>
+          {/* Contact info */}
+          <Section style={{ marginBottom: 16 }}>
+            <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER}` }}>
+              <span style={{ fontSize: 14, fontWeight: 700 }}>📞 معلومات التواصل</span>
+            </div>
+            <div style={{ padding: '4px 20px 8px' }}>
+              {[
+                { label: 'الهاتف', value: donorData.phoneNumber || '—', inter: true },
+                { label: 'البريد الإلكتروني', value: donorData.email || '—', inter: true },
+                { label: 'إشعارات واتساب', value: donorData.notificationsEnabled ? '● مفعّل' : '○ معطّل', color: donorData.notificationsEnabled ? '#16a34a' : TEXTM },
+                { label: 'اللغة المفضلة', value: donorData.preferredLanguage === 'ar' ? '🇲🇦 عربية' : donorData.preferredLanguage === 'fr' ? '🇫🇷 فرنسية' : '🌐 ' + (donorData.preferredLanguage || '—') },
+              ].map(({ label, value, inter, color }) => (
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: `1px solid ${BORDER}` }}>
+                  <span style={{ fontSize: 12, color: TEXTM }}>{label}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, fontFamily: inter ? 'Inter, sans-serif' : undefined, color: color || '#0e1a1b' }}>{value}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* WhatsApp button */}
+            <div style={{ padding: '0 20px 20px' }}>
+              <button
+                onClick={() => {
+                  const phone = (donorData.phoneNumber || '').replace(/\D/g, '');
+                  if (phone) { window.open(`https://wa.me/${phone}`, '_blank'); }
+                  else { showToast('لا يوجد رقم هاتف', 'error'); }
+                }}
+                style={{ width: '100%', height: 40, background: '#25D366', color: 'white', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 14 }}>
+                💬 إرسال رسالة واتساب
+              </button>
+            </div>
+          </Section>
+
+          {/* Stats summary */}
+          <Section>
+            <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER}` }}>
+              <span style={{ fontSize: 14, fontWeight: 700 }}>📊 ملخص التبرعات</span>
+            </div>
+            <div style={{ padding: '4px 20px 16px' }}>
+              {[
+                { label: 'إجمالي التبرعات', value: totalMAD.toLocaleString('fr-MA') + ' د.م', inter: true, bold: true, color: P600 },
+                { label: 'عدد التبرعات', value: donorData.donationCount, inter: true },
+                { label: 'متوسط التبرع', value: donorData.donationCount > 0 ? Math.round(totalMAD / donorData.donationCount).toLocaleString('fr-MA') + ' د.م' : '—', inter: true },
+                { label: 'آخر نشاط', value: donorData.lastLoginAt ? new Date(donorData.lastLoginAt).toLocaleDateString('fr-MA') : '—', inter: true },
+              ].map(({ label, value, inter, bold, color }) => (
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: `1px solid ${BORDER}` }}>
+                  <span style={{ fontSize: 12, color: TEXTM }}>{label}</span>
+                  <span style={{ fontSize: 13, fontWeight: bold ? 800 : 600, fontFamily: inter ? 'Inter, sans-serif' : undefined, color: color || '#0e1a1b' }}>{value}</span>
+                </div>
+              ))}
+            </div>
+          </Section>
         </div>
       </div>
     </div>
   );
-};
-
-export default AdminDonorDetail;
+}

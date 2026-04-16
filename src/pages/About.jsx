@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { Card, Button } from '../components';
 
 // ============================================
 // ABOUT PAGE - Mission, Vision & Team
@@ -10,322 +9,190 @@ import { Card, Button } from '../components';
 const About = () => {
   const { t, language } = useApp();
 
-  // Mission/Vision data
-  const missionVision = {
-    mission: {
-      title: {
-        en: 'Our Mission',
-        fr: 'Notre Mission',
-        ar: 'مهمتنا',
-      },
-      description: {
-        en: 'To empower underprivileged communities across Morocco through sustainable development, education, and healthcare initiatives that create lasting positive change.',
-        fr: 'Autonomiser les communautés défavorisées à travers le Maroc grâce au développement durable, à l\'éducation et aux initiatives de santé qui créent un changement positif durable.',
-        ar: 'تمكين المجتمعات المحرومة في جميع أنحاء المغرب من خلال التنمية المستدامة ومبادرات التعليم والرعاية الصحية التي تخلق تغييراً إيجابياً دائماً.',
-      },
-      icon: 'target',
-    },
-    vision: {
-      title: {
-        en: 'Our Vision',
-        fr: 'Notre Vision',
-        ar: 'رؤيتنا',
-      },
-      description: {
-        en: 'A Morocco where every child has access to quality education, clean water, and healthcare, regardless of their geographic or economic circumstances.',
-        fr: 'Un Maroc où chaque enfant a accès à une éducation de qualité, à de l\'eau propre et à des soins de santé, indépendamment de ses circonstances géographiques ou économiques.',
-        ar: 'مغرب حيث يتمتع كل طفل بالوصول إلى التعليم الجيد والمياه النظيفة والرعاية الصحية، بغض النظر عن ظروفه الجغرافية أو الاقتصادية.',
-      },
-      icon: 'visibility',
-    },
-  };
-
-  // Values data
-  const values = [
-    {
-      icon: 'favorite',
-      title: {
-        en: 'Compassion',
-        fr: 'Compassion',
-        ar: 'الرحمة',
-      },
-      description: {
-        en: 'We lead with empathy and understanding for those in need.',
-        fr: 'Nous dirigeons avec empathie et compréhension pour ceux qui sont dans le besoin.',
-        ar: 'نقود بالتعاطف والفهم لمن هم في حاجة.',
-      },
-    },
-    {
-      icon: 'verified',
-      title: {
-        en: 'Integrity',
-        fr: 'Intégrité',
-        ar: 'النزاهة',
-      },
-      description: {
-        en: '100% transparency in all our operations and financial reporting.',
-        fr: '100% de transparence dans toutes nos opérations et rapports financiers.',
-        ar: '100% شفافية في جميع عملياتنا وتقاريرنا المالية.',
-      },
-    },
-    {
-      icon: 'groups',
-      title: {
-        en: 'Community',
-        fr: 'Communauté',
-        ar: 'المجتمع',
-      },
-      description: {
-        en: 'Working hand-in-hand with local communities for sustainable impact.',
-        fr: 'Travailler main dans la main avec les communautés locales pour un impact durable.',
-        ar: 'العمل جنباً إلى جنب مع المجتمعات المحلية لتحقيق تأثير مستدام.',
-      },
-    },
-    {
-      icon: 'eco',
-      title: {
-        en: 'Sustainability',
-        fr: 'Durabilité',
-        ar: 'الاستدامة',
-      },
-      description: {
-        en: 'Building solutions that last for generations to come.',
-        fr: 'Construire des solutions qui durent pour les générations à venir.',
-        ar: 'بناء حلول تدوم للأجيال القادمة.',
-      },
-    },
-  ];
-
-  // Team data
-  const team = [
-    {
-      name: 'Youssef Alami',
-      role: {
-        en: 'Founder & CEO',
-        fr: 'Fondateur & PDG',
-        ar: 'المؤسس والرئيس التنفيذي',
-      },
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
-    },
-    {
-      name: 'Fatima Zahra',
-      role: {
-        en: 'Operations Director',
-        fr: 'Directrice des Opérations',
-        ar: 'مديرة العمليات',
-      },
-      image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80',
-    },
-    {
-      name: 'Omar Benkirane',
-      role: {
-        en: 'Programs Manager',
-        fr: 'Responsable des Programmes',
-        ar: 'مدير البرامج',
-      },
-      image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80',
-    },
-  ];
-
-  // Timeline/Achievements
-  const achievements = [
-    {
-      year: '2018',
-      title: {
-        en: 'Founded',
-        fr: 'Fondation',
-        ar: 'التأسيس',
-      },
-      description: {
-        en: 'Started with a small water project in rural Atlas.',
-        fr: 'Commencé avec un petit projet d\'eau dans l\'Atlas rural.',
-        ar: 'بدأنا بمشروع مياه صغير في الأطلس الريفي.',
-      },
-    },
-    {
-      year: '2020',
-      title: {
-        en: '100th School',
-        fr: '100ème École',
-        ar: 'المدرسة 100',
-      },
-      description: {
-        en: 'Completed our 100th classroom renovation project.',
-        fr: 'Projet de rénovation de notre 100ème salle de classe terminé.',
-        ar: 'أكملنا مشروع تجديد الفصل الدراسي الـ100.',
-      },
-    },
-    {
-      year: '2023',
-      title: {
-        en: '18,000 Lives',
-        fr: '18,000 Vies',
-        ar: '18,000 حياة',
-      },
-      description: {
-        en: 'Reached milestone of touching 18,000 lives across Morocco.',
-        fr: 'Jalon de 18 000 vies touchées à travers le Maroc.',
-        ar: 'وصلنا إلى 18,000 حياة تم لمسها في جميع أنحاء المغرب.',
-      },
-    },
-  ];
-
   const getLocalizedText = (obj) => {
     if (typeof obj === 'string') return obj;
-    return obj[language] || obj.en;
+    return obj[language] || obj.ar;
   };
 
+  const stats = [
+    { num: '7', unit: 'سنوات', label: 'من العمل الخيري' },
+    { num: '142K', unit: 'درهم', label: 'إجمالي التبرعات' },
+    { num: '4,218', unit: 'متبرع', label: 'يثقون بنا' },
+    { num: '1,200+', unit: 'أسرة', label: 'استفادت' },
+    { num: '7', unit: 'مشاريع', label: 'مكتملة بنجاح' },
+  ];
+
+  const values = [
+    { icon: '🔍', title: 'الشفافية', text: 'ننشر تقارير مالية دورية تفصيلية ونشارك صور وأدلة إنجاز كل مشروع' },
+    { icon: '🤝', title: 'الأمانة', text: 'كل درهم تتبرع به يصل إلى المستفيد — لا مصاريف إدارية مخفية' },
+    { icon: '📊', title: 'الأثر الحقيقي', text: 'نختار المشاريع بعناية بناءً على دراسات احتياج ميدانية وقياس الأثر' },
+    { icon: '🌱', title: 'الاستدامة', text: 'مشاريعنا مصممة لتكون مستدامة ذاتياً وتخدم المجتمع لعقود' },
+  ];
+
+  const team = [
+    { avatar: '👨', name: 'عبد الرحمن الحسني', role: 'المدير التنفيذي', bio: '15 سنة في المجال الخيري، خبير في إدارة المشاريع التنموية' },
+    { avatar: '👩', name: 'مريم العلوي', role: 'مسؤولة المشاريع', bio: 'متخصصة في العمل الميداني وتقييم الاحتياجات الاجتماعية' },
+    { avatar: '👨‍💻', name: 'يوسف بنموسى', role: 'مسؤول المالية', bio: 'محاسب معتمد مع خبرة في المنظمات غير الربحية' },
+    { avatar: '👩‍🎓', name: 'آمنة الشرقاوي', role: 'مسؤولة التواصل', bio: 'إعلامية متخصصة في التواصل الاجتماعي والعلاقات العامة' },
+  ];
+
+  const timeline = [
+    { year: '2018', title: 'التأسيس', text: 'تأسست الجمعية برؤية واضحة ومشروع أول ناجح لتوفير المياه في إقليم الرشيدية', current: false },
+    { year: '2020', title: 'إطلاق برنامج الكفالة', text: 'إضافة برنامج كفالة الأيتام بكفالة 12 يتيماً في السنة الأولى', current: false },
+    { year: '2022', title: 'منصة التبرع الرقمية', text: 'إطلاق المنصة الإلكترونية لتيسير التبرع ومتابعة المشاريع آنياً', current: false },
+    { year: '2024', title: 'الاعتراف الوطني', text: 'حصول الجمعية على جائزة أفضل جمعية خيرية في المغرب من وزارة التضامن', current: false },
+    { year: '2026', title: 'اليوم — نستمر 🌱', text: '12 مشروع نشط · 48 يتيم مكفول · 4,218 متبرع يثقون بنا', current: true },
+  ];
+
+  const certs = [
+    { icon: '🏛', name: 'معتمدة من وزارة الداخلية', desc: 'رقم الاعتماد: 2018/4521' },
+    { icon: '🌙', name: 'عضو صندوق محمد الخامس', desc: 'منذ 2020' },
+    { icon: '📋', name: 'معفاة من الضرائب', desc: 'قرار وزاري 2019' },
+    { icon: '🔒', name: 'شفافية مالية معتمدة', desc: 'مدققة سنوياً' },
+    { icon: '🌍', name: 'شريك UNICEF', desc: 'منذ 2022' },
+    { icon: '🏆', name: 'جائزة التميز الخيري', desc: 'وزارة التضامن 2024' },
+  ];
+
+  const sectionStyle = { padding: '72px 0' };
+  const innerStyle = { maxWidth: 1200, margin: '0 auto', padding: '0 28px' };
+
   return (
-    <div className="bg-bg-light dark:bg-bg-dark min-h-screen">
-      {/* Hero Section */}
-      <section className="relative px-4 pt-4">
-        <div
-          className="relative min-h-[400px] rounded-xl overflow-hidden flex flex-col justify-end p-8 bg-cover bg-center shadow-2xl"
-          style={{
-            backgroundImage: `linear-gradient(to bottom, rgba(13, 116, 119, 0.1), rgba(13, 116, 119, 0.9)), url("https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=1200&q=80")`,
-          }}
-        >
-          <div className="space-y-4 max-w-lg">
-            <span className="text-white/80 text-sm font-medium uppercase tracking-widest">
-              {language === 'ar' ? 'من نحن' : language === 'fr' ? 'Qui Sommes-Nous' : 'Who We Are'}
-            </span>
-            <h1 className="text-white text-4xl md:text-5xl font-black leading-tight tracking-tight">
-              {language === 'ar' ? 'جمعية الأمل' : language === 'fr' ? 'Association Espoir' : 'Association Espoir'}
-            </h1>
-            <p className="text-white/90 text-lg font-medium leading-relaxed max-w-[400px]">
-              {language === 'ar'
-                ? 'نخلق فرقاً حقيقياً في حياة الناس منذ عام 2018.'
-                : language === 'fr'
-                ? 'Nous faisons une différence réelle dans la vie des gens depuis 2018.'
-                : 'Making a real difference in people\'s lives since 2018.'}
-            </p>
+    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b' }}>
+
+      {/* Hero */}
+      <div style={{ background: 'linear-gradient(160deg,#021718,#052E2F 60%,#0d7477)', padding: '80px 0', textAlign: 'center' }}>
+        <div style={{ maxWidth: 700, margin: '0 auto', padding: '0 28px' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#33C0C0', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>
+            ABOUT US · من نحن
+          </div>
+          <h1 style={{ fontSize: 44, fontWeight: 900, color: 'white', lineHeight: 1.15, marginBottom: 16 }}>
+            نحن أداةٌ للخير<br />في أيدي المحسنين
+          </h1>
+          <p style={{ fontSize: 17, color: 'rgba(255,255,255,.7)', lineHeight: 1.8, marginBottom: 28 }}>
+            جمعية ابتسام للأعمال الخيرية تعمل منذ 2018 على ربط قلوب المحسنين باحتياجات الأسر المحتاجة في المغرب بكل شفافية وأمانة
+          </p>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.2)', color: 'rgba(255,255,255,.8)', borderRadius: 100, padding: '8px 18px', fontSize: 13, fontWeight: 500 }}>
+            🏛 تأسست عام 2018 · الرباط، المغرب
           </div>
         </div>
-      </section>
+      </div>
+
+      {/* Stats band */}
+      <div style={{ background: '#0A5F62', padding: '32px 0' }}>
+        <div style={{ ...innerStyle, display: 'grid', gridTemplateColumns: 'repeat(5,1fr)' }}>
+          {stats.map((s, i) => (
+            <div key={i} style={{ textAlign: 'center', padding: '0 16px', borderLeft: i < stats.length - 1 ? '1px solid rgba(255,255,255,.15)' : 'none' }}>
+              <div style={{ fontSize: 34, fontWeight: 900, color: 'white', fontFamily: 'Inter, sans-serif' }}>{s.num}</div>
+              <div style={{ fontSize: 12, color: '#33C0C0', fontWeight: 600, marginTop: 2 }}>{s.unit}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)', marginTop: 4 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Mission & Vision */}
-      <section className="px-6 py-12 max-w-desktop mx-auto">
-        <div className="grid md:grid-cols-2 gap-6">
-          {Object.entries(missionVision).map(([key, item]) => (
-            <Card key={key} variant="default" padding="lg" className="flex flex-col">
-              <div className="size-14 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-4">
-                <span className="material-symbols-outlined text-3xl">{item.icon}</span>
-              </div>
-              <h3 className="text-xl font-bold text-text-primary dark:text-white mb-3">
-                {getLocalizedText(item.title)}
-              </h3>
-              <p className="text-text-secondary dark:text-text-white/70 leading-relaxed">
-                {getLocalizedText(item.description)}
-              </p>
-            </Card>
-          ))}
+      <div style={{ ...sectionStyle, background: 'white' }}>
+        <div style={innerStyle}>
+          <div style={{ marginBottom: 48 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>MISSION & VISION</div>
+            <h2 style={{ fontSize: 34, fontWeight: 800, lineHeight: 1.2 }}>رسالتنا ورؤيتنا</h2>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
+            <div style={{ padding: 32, borderRadius: 20, background: 'linear-gradient(135deg,#F0F7F7,#E6F4F4)' }}>
+              <div style={{ fontSize: 32, marginBottom: 16 }}>🎯</div>
+              <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 12 }}>رسالتنا</div>
+              <p style={{ fontSize: 15, color: '#64748b', lineHeight: 1.85 }}>توفير منصة موثوقة وشفافة تربط المحسنين بالأسر المحتاجة، من خلال مشاريع تنموية مدروسة تحقق أثراً حقيقياً ومستداماً في مجالات التعليم والصحة والمياه والغذاء والسكن.</p>
+            </div>
+            <div style={{ padding: 32, borderRadius: 20, background: 'linear-gradient(135deg,#F5EBD9,#E8D4B0)' }}>
+              <div style={{ fontSize: 32, marginBottom: 16 }}>🌟</div>
+              <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 12 }}>رؤيتنا</div>
+              <p style={{ fontSize: 15, color: '#64748b', lineHeight: 1.85 }}>مجتمع متكافل خالٍ من الفقر والحرمان، حيث تتوفر لكل أسرة مقومات الحياة الكريمة من تعليم وصحة وغذاء ومسكن لائق — وذلك بفضل التضامن والتكافل الاجتماعي.</p>
+            </div>
+          </div>
         </div>
-      </section>
+      </div>
 
       {/* Values */}
-      <section className="bg-bg-sage-light dark:bg-bg-dark-card/30 py-12 px-6">
-        <div className="max-w-desktop mx-auto">
-          <h2 className="text-center text-text-primary dark:text-white text-2xl md:text-3xl font-black mb-8">
-            {language === 'ar' ? 'قيمنا الأساسية' : language === 'fr' ? 'Nos Valeurs Fondamentales' : 'Our Core Values'}
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {values.map((value, index) => (
-              <Card key={index} variant="default" padding="lg" className="text-center">
-                <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mx-auto mb-3">
-                  <span className="material-symbols-outlined text-2xl">{value.icon}</span>
-                </div>
-                <h4 className="font-bold text-text-primary dark:text-white mb-2">
-                  {getLocalizedText(value.title)}
-                </h4>
-                <p className="text-xs text-text-muted dark:text-text-white/60 leading-relaxed">
-                  {getLocalizedText(value.description)}
-                </p>
-              </Card>
+      <div style={sectionStyle}>
+        <div style={innerStyle}>
+          <div style={{ marginBottom: 48, textAlign: 'center' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>OUR VALUES</div>
+            <h2 style={{ fontSize: 34, fontWeight: 800, lineHeight: 1.2, marginBottom: 12 }}>قيمنا الأساسية</h2>
+            <p style={{ fontSize: 16, color: '#64748b', lineHeight: 1.7, maxWidth: 560, margin: '0 auto' }}>هذه القيم تحكم كل قرار نتخذه وكل مشروع نطلقه</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 24 }}>
+            {values.map((v, i) => (
+              <div key={i} style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', padding: 24, textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
+                <div style={{ width: 56, height: 56, borderRadius: 14, background: '#E6F4F4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, margin: '0 auto 14px' }}>{v.icon}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{v.title}</div>
+                <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.65 }}>{v.text}</p>
+              </div>
             ))}
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Timeline/Achievements */}
-      <section className="px-6 py-12 max-w-desktop mx-auto">
-        <h2 className="text-center text-text-primary dark:text-white text-2xl md:text-3xl font-black mb-8">
-          {language === 'ar' ? 'مسيرتنا' : language === 'fr' ? 'Notre Parcours' : 'Our Journey'}
-        </h2>
-        <div className="space-y-6">
-          {achievements.map((item, index) => (
-            <Card key={index} variant="default" padding="md" className="flex items-center gap-4">
-              <div className="size-16 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-lg shrink-0">
-                {item.year}
+      {/* Team */}
+      <div style={{ ...sectionStyle, background: 'white' }}>
+        <div style={innerStyle}>
+          <div style={{ marginBottom: 48, textAlign: 'center' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>OUR TEAM</div>
+            <h2 style={{ fontSize: 34, fontWeight: 800, lineHeight: 1.2, marginBottom: 12 }}>فريق العمل</h2>
+            <p style={{ fontSize: 16, color: '#64748b', lineHeight: 1.7, maxWidth: 560, margin: '0 auto' }}>متطوعون وموظفون شغوفون يعملون من أجل خدمة المجتمع</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 24 }}>
+            {team.map((m, i) => (
+              <div key={i} style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', padding: 24, textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
+                <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg,#CCF0F0,#E6F4F4)', margin: '0 auto 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34 }}>{m.avatar}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{m.name}</div>
+                <div style={{ fontSize: 13, color: '#0A5F62', fontWeight: 600, marginBottom: 8 }}>{m.role}</div>
+                <div style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.6 }}>{m.bio}</div>
               </div>
-              <div>
-                <h4 className="font-bold text-text-primary dark:text-white">
-                  {getLocalizedText(item.title)}
-                </h4>
-                <p className="text-sm text-text-secondary dark:text-text-white/70">
-                  {getLocalizedText(item.description)}
-                </p>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* Team Section */}
-      <section className="bg-bg-sage-light dark:bg-bg-dark-card/30 py-12 px-6">
-        <div className="max-w-desktop mx-auto">
-          <h2 className="text-center text-text-primary dark:text-white text-2xl md:text-3xl font-black mb-8">
-            {language === 'ar' ? 'فريقنا' : language === 'fr' ? 'Notre Équipe' : 'Our Team'}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {team.map((member, index) => (
-              <Card key={index} variant="default" padding="none" className="overflow-hidden text-center">
-                <div
-                  className="h-48 bg-cover bg-center"
-                  style={{ backgroundImage: `url("${member.image}")` }}
-                />
-                <div className="p-6">
-                  <h4 className="font-bold text-text-primary dark:text-white text-lg">{member.name}</h4>
-                  <p className="text-sm text-primary font-medium mt-1">
-                    {getLocalizedText(member.role)}
-                  </p>
-                </div>
-              </Card>
             ))}
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* CTA Section */}
-      <section className="bg-primary text-white py-12 px-8 text-center">
-        <div className="max-w-desktop mx-auto">
-          <h3 className="text-2xl md:text-3xl font-bold mb-4">
-            {language === 'ar'
-              ? 'هل تريد أن تكون جزءاً من التغيير؟'
-              : language === 'fr'
-              ? 'Voulez-vous faire partie du changement?'
-              : 'Want to be part of the change?'}
-          </h3>
-          <p className="text-white/80 text-base mb-8 max-w-md mx-auto">
-            {language === 'ar'
-              ? 'انضم إلينا في مهمتنا لبناء مستقبل أفضل للمغرب.'
-              : language === 'fr'
-              ? 'Rejoignez-nous dans notre mission de construire un avenir meilleur pour le Maroc.'
-              : 'Join us in our mission to build a brighter future for Morocco.'}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/projects">
-              <Button variant="secondary" size="lg" className="bg-white text-primary hover:bg-slate-50">
-                {language === 'ar' ? 'استكشف المشاريع' : language === 'fr' ? 'Explorer les Projets' : 'Explore Projects'}
-              </Button>
-            </Link>
-            <Link to="/contact">
-              <Button variant="ghost" size="lg" className="border-2 border-white text-white hover:bg-white/10">
-                {language === 'ar' ? 'تواصل معنا' : language === 'fr' ? 'Contactez-Nous' : 'Contact Us'}
-              </Button>
-            </Link>
+      {/* Timeline + Certifications */}
+      <div style={sectionStyle}>
+        <div style={innerStyle}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'start' }}>
+            {/* Timeline */}
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>OUR JOURNEY</div>
+              <h2 style={{ fontSize: 34, fontWeight: 800, marginBottom: 32 }}>مسيرتنا</h2>
+              <div style={{ position: 'relative', paddingRight: 28 }}>
+                {/* Vertical line */}
+                <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 2, background: 'linear-gradient(to bottom,#33C0C0,#E6F4F4)' }} />
+                {timeline.map((item, i) => (
+                  <div key={i} style={{ position: 'relative', marginBottom: 36, paddingRight: 24 }}>
+                    <div style={{ position: 'absolute', right: -6, top: 6, width: 12, height: 12, borderRadius: '50%', background: item.current ? '#33C0C0' : '#0d7477', border: '2px solid white', boxShadow: '0 0 0 3px #E6F4F4' }} />
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#0d7477', fontFamily: 'Inter, sans-serif', marginBottom: 4 }}>{item.year}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>{item.title}</div>
+                    <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7 }}>{item.text}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Certifications */}
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>CERTIFICATIONS</div>
+              <h2 style={{ fontSize: 34, fontWeight: 800, marginBottom: 28 }}>شهاداتنا واعتماداتنا</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20 }}>
+                {certs.map((c, i) => (
+                  <div key={i} style={{ background: 'white', borderRadius: 14, border: '1px solid #E5E9EB', padding: 20, display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 10, background: '#E6F4F4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{c.icon}</div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700 }}>{c.name}</div>
+                      <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{c.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 };

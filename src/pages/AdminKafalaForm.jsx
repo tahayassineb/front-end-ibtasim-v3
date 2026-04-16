@@ -6,43 +6,64 @@ import { useApp } from '../context/AppContext';
 import { convexFileUrl } from '../lib/convex';
 import KafalaAvatar from '../components/kafala/KafalaAvatar';
 
-// ============================================
-// ADMIN KAFALA FORM — Create / Edit orphan profile
-// ============================================
+// ─── Kafala design tokens ─────────────────────────────────────────────────────
+const KDARK  = '#8B6914';
+const KBG    = '#F5EBD9';
+const K100   = '#E8D4B0';
+const BORDER = '#E5E9EB';
+const TEXT2  = '#64748b';
+const TEXTM  = '#94a3b8';
+const SHADOW = '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)';
+const SHADOW_K = '0 4px 14px rgba(196,168,130,.35)';
 
-const TABS = ['ar', 'fr', 'en'];
-const TAB_LABELS = { ar: 'عربي', fr: 'Français', en: 'English' };
+const fieldInput = {
+  width: '100%', height: 48, border: `1.5px solid ${BORDER}`, borderRadius: 12,
+  padding: '0 14px', fontSize: 14, fontFamily: 'Tajawal, sans-serif',
+  color: '#0e1a1b', outline: 'none', background: 'white', boxSizing: 'border-box',
+};
+const fieldLabel = { fontSize: 12, fontWeight: 700, color: TEXT2, marginBottom: 7, display: 'flex', alignItems: 'center', gap: 4 };
+
+const Section = ({ icon, title, children }) => (
+  <div style={{ background: 'white', borderRadius: 16, border: `1px solid ${K100}`, boxShadow: SHADOW, marginBottom: 20, overflow: 'hidden' }}>
+    <div style={{ padding: '16px 20px', borderBottom: `1px solid ${K100}`, display: 'flex', alignItems: 'center', gap: 10, background: KBG }}>
+      <span style={{ fontSize: 18 }}>{icon}</span>
+      <span style={{ fontSize: 15, fontWeight: 700, color: KDARK }}>{title}</span>
+    </div>
+    <div style={{ padding: 20 }}>{children}</div>
+  </div>
+);
 
 export default function AdminKafalaForm() {
-  const { id } = useParams(); // present when editing
+  const { id } = useParams();
   const navigate = useNavigate();
   const { showToast, user: adminUser } = useApp();
   const isEdit = !!id;
 
-  const existingKafala = useQuery(
-    api.kafala.getKafalaById,
-    isEdit ? { kafalaId: id } : 'skip'
-  );
-
-  const createKafala = useMutation(api.kafala.createKafala);
-  const updateKafala = useMutation(api.kafala.updateKafala);
+  // ── Convex ────────────────────────────────────────────────────────────────
+  const existingKafala  = useQuery(api.kafala.getKafalaById, isEdit ? { kafalaId: id } : 'skip');
+  const createKafala    = useMutation(api.kafala.createKafala);
+  const updateKafala    = useMutation(api.kafala.updateKafala);
   const generateUploadUrl = useMutation(api.storage.generateProjectImageUploadUrl);
 
-  // Form state
-  const [name, setName] = useState('');
-  const [gender, setGender] = useState('male');
-  const [age, setAge] = useState('');
-  const [location, setLocation] = useState('');
-  const [bio, setBio] = useState({ ar: '', fr: '', en: '' });
-  const [monthlyPrice, setMonthlyPrice] = useState(''); // MAD (displayed), stored as cents
-  const [bioTab, setBioTab] = useState('ar');
-  const [photo, setPhoto] = useState(null); // File object
-  const [photoPreview, setPhotoPreview] = useState(null); // preview URL
-  const [existingPhoto, setExistingPhoto] = useState(null); // storageId from DB
-  const [saving, setSaving] = useState(false);
+  // ── Form state ────────────────────────────────────────────────────────────
+  const [name, setName]           = useState('');
+  const [gender, setGender]       = useState('male');
+  const [age, setAge]             = useState('');
+  const [location, setLocation]   = useState('');
+  const [bio, setBio]             = useState({ ar: '', fr: '', en: '' });
+  const [bioTab, setBioTab]       = useState('ar');
+  const [needsEdu, setNeedsEdu]   = useState('120');
+  const [needsFood, setNeedsFood] = useState('100');
+  const [needsHealth, setNeedsHealth] = useState('80');
+  const [photo, setPhoto]         = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [existingPhoto, setExistingPhoto] = useState(null);
+  const [saving, setSaving]       = useState(false);
   const fileRef = useRef();
 
-  // Pre-fill form when editing
+  const totalMAD = (parseInt(needsEdu) || 0) + (parseInt(needsFood) || 0) + (parseInt(needsHealth) || 0);
+
+  // Pre-fill when editing
   useEffect(() => {
     if (existingKafala && isEdit) {
       setName(existingKafala.name || '');
@@ -50,7 +71,11 @@ export default function AdminKafalaForm() {
       setAge(String(existingKafala.age || ''));
       setLocation(existingKafala.location || '');
       setBio(existingKafala.bio || { ar: '', fr: '', en: '' });
-      setMonthlyPrice(String(Math.round(existingKafala.monthlyPrice / 100)));
+      const totalMadFromDB = Math.round(existingKafala.monthlyPrice / 100);
+      // distribute existing total equally across needs buckets
+      setNeedsEdu(String(Math.round(totalMadFromDB * 0.4)));
+      setNeedsFood(String(Math.round(totalMadFromDB * 0.33)));
+      setNeedsHealth(String(totalMadFromDB - Math.round(totalMadFromDB * 0.4) - Math.round(totalMadFromDB * 0.33)));
       setExistingPhoto(existingKafala.photo || null);
     }
   }, [existingKafala, isEdit]);
@@ -62,45 +87,34 @@ export default function AdminKafalaForm() {
     setPhotoPreview(URL.createObjectURL(file));
   };
 
-  const validate = () => {
-    if (!name.trim()) { showToast?.('الاسم مطلوب', 'error'); return false; }
-    if (!age || isNaN(Number(age)) || Number(age) < 1) {
-      showToast?.('العمر يجب أن يكون رقماً صحيحاً', 'error'); return false;
-    }
-    if (!location.trim()) { showToast?.('المدينة مطلوبة', 'error'); return false; }
-    if (!bio.ar.trim()) { showToast?.('النبذة بالعربية مطلوبة', 'error'); return false; }
-    if (!monthlyPrice || isNaN(Number(monthlyPrice)) || Number(monthlyPrice) < 1) {
-      showToast?.('السعر الشهري مطلوب', 'error'); return false;
-    }
-    return true;
-  };
-
   const uploadPhoto = async () => {
-    if (!photo) return existingPhoto; // keep existing if no new file
+    if (!photo) return existingPhoto;
     const uploadUrl = await generateUploadUrl();
     const res = await fetch(uploadUrl, { method: 'POST', body: photo, headers: { 'Content-Type': photo.type } });
     const { storageId } = await res.json();
     return storageId;
   };
 
-  const handleSave = async (publish = false) => {
-    if (!validate()) return;
-    if (saving) return;
-    setSaving(true);
+  const validate = () => {
+    if (!name.trim())     { showToast?.('الاسم مطلوب', 'error'); return false; }
+    if (!age || isNaN(Number(age)) || Number(age) < 1) { showToast?.('العمر يجب أن يكون رقماً صحيحاً', 'error'); return false; }
+    if (!location.trim()) { showToast?.('المدينة مطلوبة', 'error'); return false; }
+    if (!bio.ar.trim())   { showToast?.('القصة بالعربية مطلوبة', 'error'); return false; }
+    if (totalMAD < 1)     { showToast?.('السعر الشهري مطلوب', 'error'); return false; }
+    return true;
+  };
 
+  const handleSave = async (publish = false) => {
+    if (!validate() || saving) return;
+    setSaving(true);
     try {
       const photoStorageId = await uploadPhoto();
-      const priceInCents = Math.round(Number(monthlyPrice) * 100);
+      const priceInCents   = totalMAD * 100;
 
       if (isEdit) {
         await updateKafala({
-          kafalaId: id,
-          name,
-          gender,
-          age: Number(age),
-          location,
-          bio,
-          photo: photoStorageId || undefined,
+          kafalaId: id, name, gender, age: Number(age),
+          location, bio, photo: photoStorageId || undefined,
           monthlyPrice: priceInCents,
           ...(publish ? { status: 'active' } : {}),
         });
@@ -108,23 +122,8 @@ export default function AdminKafalaForm() {
       } else {
         const adminId = adminUser?.id;
         if (!adminId) throw new Error('لم يتم التعرف على الأدمن');
-        await createKafala({
-          adminId,
-          name,
-          gender,
-          age: Number(age),
-          location,
-          bio,
-          photo: photoStorageId || undefined,
-          monthlyPrice: priceInCents,
-        });
-        if (publish) {
-          // createKafala always creates as draft; publish separately after getting the ID
-          // We handle this by navigating to admin list
-          showToast?.('تم إنشاء الكفالة. انشرها من قائمة الكفالات', 'success');
-        } else {
-          showToast?.('تم حفظ الكفالة كمسودة', 'success');
-        }
+        await createKafala({ adminId, name, gender, age: Number(age), location, bio, photo: photoStorageId || undefined, monthlyPrice: priceInCents });
+        showToast?.(publish ? 'تم إنشاء الكفالة. انشرها من قائمة الكفالات' : 'تم حفظ الكفالة كمسودة', 'success');
       }
       navigate('/admin/kafala');
     } catch (e) {
@@ -134,190 +133,151 @@ export default function AdminKafalaForm() {
     }
   };
 
-  const currentPhotoUrl = photoPreview
-    || (existingPhoto ? convexFileUrl(existingPhoto) : null);
+  const currentPhotoUrl = photoPreview || (existingPhoto ? convexFileUrl(existingPhoto) : null);
 
   if (isEdit && existingKafala === undefined) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'Tajawal, sans-serif' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>🤲</div>
+          <p style={{ color: TEXTM }}>جاري التحميل...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6" dir="rtl">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <button onClick={() => navigate('/admin/kafala')} className="text-text-secondary hover:text-primary">
-          <span className="material-symbols-outlined text-2xl">arrow_forward</span>
-        </button>
-        <div>
-          <h1 className="text-xl font-bold text-text-primary dark:text-white">
-            {isEdit ? 'تعديل الكفالة' : 'إضافة يتيم جديد'}
-          </h1>
-          <p className="text-text-secondary text-sm">{isEdit ? 'تعديل ملف اليتيم' : 'إنشاء ملف كفالة جديد'}</p>
-        </div>
-      </div>
+    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: 24, paddingBottom: 100, maxWidth: 800 }} dir="rtl">
 
-      <div className="space-y-6">
-        {/* Photo upload */}
-        <div className="bg-white dark:bg-bg-dark-card rounded-2xl p-6 shadow-sm border border-border-light dark:border-white/10">
-          <h2 className="text-sm font-bold text-text-secondary mb-4 uppercase tracking-wide">صورة اليتيم (اختياري)</h2>
-          <div className="flex items-center gap-5">
-            <KafalaAvatar
-              gender={gender}
-              photoUrl={currentPhotoUrl}
-              size={80}
-              className="ring-2 ring-border-light dark:ring-white/20"
-            />
-            <div>
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-xl text-sm font-semibold hover:bg-primary/20 transition-colors"
-              >
-                <span className="material-symbols-outlined text-lg">upload</span>
-                {currentPhotoUrl ? 'تغيير الصورة' : 'رفع صورة'}
-              </button>
-              <p className="text-xs text-text-muted mt-1">JPG، PNG — إذا لم ترفع صورة سيظهر رمز الجنس</p>
-              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
-            </div>
-          </div>
-        </div>
-
-        {/* Basic info */}
-        <div className="bg-white dark:bg-bg-dark-card rounded-2xl p-6 shadow-sm border border-border-light dark:border-white/10 space-y-4">
-          <h2 className="text-sm font-bold text-text-secondary uppercase tracking-wide">المعلومات الأساسية</h2>
+      {/* ── Section 1: Personal Info ── */}
+      <Section icon="👦" title="المعلومات الشخصية">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
 
           {/* Name */}
           <div>
-            <label className="block text-sm font-semibold text-text-secondary mb-1">الاسم *</label>
-            <input
-              type="text"
-              placeholder="اسم اليتيم"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              className="w-full border border-border-light dark:border-white/20 rounded-xl px-4 py-3 bg-bg-light dark:bg-bg-dark text-text-primary dark:text-white placeholder:text-text-muted focus:outline-none focus:border-primary"
-            />
+            <div style={fieldLabel}>الاسم الأول <span style={{ color: '#ef4444' }}>*</span></div>
+            <input style={fieldInput} type="text" value={name} onChange={e => setName(e.target.value)} placeholder="اسم اليتيم"
+              onFocus={e => e.target.style.borderColor = KDARK} onBlur={e => e.target.style.borderColor = BORDER} />
           </div>
 
           {/* Gender */}
           <div>
-            <label className="block text-sm font-semibold text-text-secondary mb-2">الجنس *</label>
-            <div className="flex gap-4">
-              {[
-                { value: 'male', label: 'ذكر', icon: 'male' },
-                { value: 'female', label: 'أنثى', icon: 'female' },
-              ].map((g) => (
-                <button
-                  key={g.value}
-                  type="button"
-                  onClick={() => setGender(g.value)}
-                  className={`flex items-center gap-2 px-5 py-3 rounded-xl border font-semibold text-sm transition-all ${
-                    gender === g.value
-                      ? 'border-primary bg-primary/5 text-primary'
-                      : 'border-border-light dark:border-white/20 text-text-secondary hover:border-primary/40'
-                  }`}
-                >
-                  <span className="material-symbols-outlined">{g.icon}</span>
-                  {g.label}
+            <div style={fieldLabel}>الجنس <span style={{ color: '#ef4444' }}>*</span></div>
+            <select value={gender} onChange={e => setGender(e.target.value)} style={{ ...fieldInput, cursor: 'pointer' }}>
+              <option value="male">👦 ذكر</option>
+              <option value="female">👧 أنثى</option>
+            </select>
+          </div>
+
+          {/* Age */}
+          <div>
+            <div style={fieldLabel}>العمر (سنوات) <span style={{ color: '#ef4444' }}>*</span></div>
+            <input style={{ ...fieldInput, direction: 'ltr', fontFamily: 'Inter, sans-serif' }} type="number" min="1" max="18" value={age} onChange={e => setAge(e.target.value)} placeholder="مثال: 9"
+              onFocus={e => e.target.style.borderColor = KDARK} onBlur={e => e.target.style.borderColor = BORDER} />
+          </div>
+
+          {/* Location */}
+          <div>
+            <div style={fieldLabel}>المنطقة / المدينة <span style={{ color: '#ef4444' }}>*</span></div>
+            <input style={fieldInput} type="text" value={location} onChange={e => setLocation(e.target.value)} placeholder="مثال: درعة تافيلالت"
+              onFocus={e => e.target.style.borderColor = KDARK} onBlur={e => e.target.style.borderColor = BORDER} />
+          </div>
+
+          {/* Bio – full width with tabs */}
+          <div style={{ gridColumn: '1/-1' }}>
+            <div style={fieldLabel}>القصة <span style={{ color: '#ef4444' }}>*</span></div>
+            {/* Language tabs */}
+            <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+              {['ar', 'fr', 'en'].map(l => (
+                <button key={l} type="button" onClick={() => setBioTab(l)}
+                  style={{ height: 28, padding: '0 12px', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif', border: `1.5px solid ${bioTab === l ? KDARK : BORDER}`, background: bioTab === l ? KDARK : 'white', color: bioTab === l ? 'white' : TEXT2 }}>
+                  {l.toUpperCase()}
                 </button>
               ))}
             </div>
-          </div>
-
-          {/* Age + Location */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-text-secondary mb-1">العمر *</label>
-              <input
-                type="number"
-                min="1"
-                placeholder="مثال: 8"
-                value={age}
-                onChange={e => setAge(e.target.value)}
-                className="w-full border border-border-light dark:border-white/20 rounded-xl px-4 py-3 bg-bg-light dark:bg-bg-dark text-text-primary dark:text-white placeholder:text-text-muted focus:outline-none focus:border-primary"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-text-secondary mb-1">المدينة *</label>
-              <input
-                type="text"
-                placeholder="مثال: مراكش"
-                value={location}
-                onChange={e => setLocation(e.target.value)}
-                className="w-full border border-border-light dark:border-white/20 rounded-xl px-4 py-3 bg-bg-light dark:bg-bg-dark text-text-primary dark:text-white placeholder:text-text-muted focus:outline-none focus:border-primary"
-              />
-            </div>
-          </div>
-
-          {/* Monthly price */}
-          <div>
-            <label className="block text-sm font-semibold text-text-secondary mb-1">الكفالة الشهرية (درهم) *</label>
-            <div className="relative">
-              <input
-                type="number"
-                min="1"
-                placeholder="مثال: 300"
-                value={monthlyPrice}
-                onChange={e => setMonthlyPrice(e.target.value)}
-                className="w-full border border-border-light dark:border-white/20 rounded-xl px-4 py-3 pl-16 bg-bg-light dark:bg-bg-dark text-text-primary dark:text-white placeholder:text-text-muted focus:outline-none focus:border-primary"
-                dir="ltr"
-              />
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-sm font-medium">MAD</span>
-            </div>
-            <p className="text-xs text-text-muted mt-1">هذا المبلغ ثابت — لن يتمكن المتبرع من تغييره</p>
+            <textarea
+              value={bio[bioTab]}
+              onChange={e => setBio(prev => ({ ...prev, [bioTab]: e.target.value }))}
+              rows={4}
+              placeholder="قصة اليتيم وظروفه..."
+              style={{ width: '100%', minHeight: 100, border: `1.5px solid ${BORDER}`, borderRadius: 12, padding: '12px 14px', fontSize: 14, fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', outline: 'none', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' }}
+              onFocus={e => e.target.style.borderColor = KDARK}
+              onBlur={e => e.target.style.borderColor = BORDER}
+            />
           </div>
         </div>
+      </Section>
 
-        {/* Bio (multilingual) */}
-        <div className="bg-white dark:bg-bg-dark-card rounded-2xl p-6 shadow-sm border border-border-light dark:border-white/10">
-          <h2 className="text-sm font-bold text-text-secondary uppercase tracking-wide mb-4">قصة اليتيم *</h2>
-
-          {/* Language tabs */}
-          <div className="flex gap-1 mb-4 bg-gray-100 dark:bg-white/10 p-1 rounded-xl w-fit">
-            {TABS.map((t) => (
-              <button
-                key={t}
-                onClick={() => setBioTab(t)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                  bioTab === t ? 'bg-white dark:bg-bg-dark-card text-primary shadow-sm' : 'text-text-muted'
-                }`}
-              >
-                {TAB_LABELS[t]}
+      {/* ── Section 2: Photo ── */}
+      <Section icon="📸" title="صورة اليتيم">
+        {currentPhotoUrl ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <img src={currentPhotoUrl} alt="photo" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${K100}` }} />
+            <div>
+              <button type="button" onClick={() => fileRef.current?.click()}
+                style={{ height: 38, padding: '0 16px', background: KBG, color: KDARK, border: `1px solid ${K100}`, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+                تغيير الصورة
               </button>
-            ))}
+              <div style={{ fontSize: 11, color: TEXTM, marginTop: 6 }}>JPG أو PNG — إذا لم ترفع صورة سيظهر رمز الجنس</div>
+            </div>
           </div>
+        ) : (
+          <div
+            onClick={() => fileRef.current?.click()}
+            style={{ border: `2px dashed ${K100}`, borderRadius: 14, padding: 28, textAlign: 'center', cursor: 'pointer', background: KBG, transition: 'border-color .2s' }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = KDARK}
+            onMouseLeave={e => e.currentTarget.style.borderColor = K100}
+          >
+            <div style={{ fontSize: 36, marginBottom: 8 }}>📷</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: KDARK, marginBottom: 4 }}>أضف صورة اليتيم</div>
+            <div style={{ fontSize: 12, color: TEXTM }}>الصورة لا تُنشر عامةً — تُستخدم للكافلين فقط</div>
+          </div>
+        )}
+        <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
+      </Section>
 
-          <textarea
-            rows={5}
-            placeholder={bioTab === 'ar' ? 'اكتب نبذة عن اليتيم وظروفه...' : bioTab === 'fr' ? 'Rédigez une description...' : 'Write a short description...'}
-            value={bio[bioTab]}
-            onChange={e => setBio(prev => ({ ...prev, [bioTab]: e.target.value }))}
-            dir={bioTab === 'ar' ? 'rtl' : 'ltr'}
-            className="w-full border border-border-light dark:border-white/20 rounded-xl px-4 py-3 bg-bg-light dark:bg-bg-dark text-text-primary dark:text-white placeholder:text-text-muted focus:outline-none focus:border-primary resize-none"
-          />
-          {bioTab === 'ar' && !bio.ar.trim() && (
-            <p className="text-xs text-red-400 mt-1">النبذة بالعربية مطلوبة</p>
-          )}
+      {/* ── Section 3: Needs breakdown ── */}
+      <Section icon="💰" title="احتياجات الكفالة الشهرية">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+          {[
+            { icon: '📚', label: 'التعليم (درهم/شهر)', val: needsEdu, set: setNeedsEdu },
+            { icon: '🍞', label: 'الغذاء (درهم/شهر)',  val: needsFood, set: setNeedsFood },
+            { icon: '🏥', label: 'الصحة (درهم/شهر)',   val: needsHealth, set: setNeedsHealth },
+          ].map(({ icon, label, val, set }) => (
+            <div key={label} style={{ background: KBG, borderRadius: 12, padding: 14, border: `1px solid ${K100}` }}>
+              <div style={{ fontSize: 20, marginBottom: 6 }}>{icon}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: KDARK, marginBottom: 8 }}>{label}</div>
+              <input
+                type="number" min="0" value={val} onChange={e => set(e.target.value)}
+                style={{ ...fieldInput, height: 40, direction: 'ltr', fontFamily: 'Inter, sans-serif', fontSize: 15 }}
+                onFocus={e => e.target.style.borderColor = KDARK}
+                onBlur={e => e.target.style.borderColor = BORDER}
+              />
+            </div>
+          ))}
         </div>
 
-        {/* Action buttons */}
-        <div className="flex gap-3 pb-6">
-          <button
-            onClick={() => handleSave(false)}
-            disabled={saving}
-            className="flex-1 py-3.5 rounded-xl border border-border-light dark:border-white/20 text-text-secondary font-bold text-sm hover:bg-gray-50 dark:hover:bg-white/5 disabled:opacity-50 transition-colors"
-          >
-            {saving ? 'جاري الحفظ...' : 'حفظ كمسودة'}
+        {/* Total */}
+        <div style={{ background: KBG, borderRadius: 12, padding: 14, marginTop: 14, border: `1px solid ${K100}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: KDARK }}>إجمالي الكفالة الشهرية:</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: KDARK, fontFamily: 'Inter, sans-serif' }}>{totalMAD} درهم/شهر</div>
+        </div>
+      </Section>
+
+      {/* ── Sticky action bar ── */}
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'white', borderTop: `1px solid ${BORDER}`, padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 50, fontFamily: 'Tajawal, sans-serif' }}>
+        <button type="button" onClick={() => navigate('/admin/kafala')}
+          style={{ height: 44, padding: '0 20px', border: `1.5px solid ${BORDER}`, borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', background: 'white', color: TEXT2 }}>
+          ← إلغاء
+        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button type="button" onClick={() => handleSave(false)} disabled={saving}
+            style={{ height: 44, padding: '0 20px', border: `1.5px solid ${BORDER}`, borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', background: 'white', color: TEXT2, opacity: saving ? 0.6 : 1 }}>
+            {saving ? '...' : '💾 حفظ كمسودة'}
           </button>
-          <button
-            onClick={() => handleSave(true)}
-            disabled={saving}
-            className="flex-1 py-3.5 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-primary"
-          >
-            {saving ? 'جاري الحفظ...' : isEdit ? 'حفظ ونشر' : 'إنشاء ونشر'}
+          <button type="button" onClick={() => handleSave(true)} disabled={saving}
+            style={{ height: 44, padding: '0 24px', background: KDARK, color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: SHADOW_K, opacity: saving ? 0.6 : 1 }}>
+            {saving ? '...' : '🤲 نشر للكفالة'}
           </button>
         </div>
       </div>

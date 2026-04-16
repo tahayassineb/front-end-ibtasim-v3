@@ -1,284 +1,133 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
-import Card from '../components/Card';
-import Button from '../components/Button';
 
-// ============================================
-// CONVEX STORAGE UTILITIES
-// ============================================
-
-/**
- * Upload a file to Convex storage and return the storageId.
- * @param {File} file - The file to upload
- * @param {Function} getUploadUrlMutation - The mutation function from useMutation(api.storage.generateProjectImageUploadUrl)
- * @returns {Promise<string>} - The storageId of the uploaded file
- */
+// ─── Convex storage helpers ───────────────────────────────────────────────────
 const uploadFileToConvex = async (file, getUploadUrlMutation) => {
-  // 1. Get a signed upload URL from Convex
   const uploadUrl = await getUploadUrlMutation();
-
-  // 2. Upload the file to the signed URL
   const response = await fetch(uploadUrl, {
     method: 'POST',
     headers: { 'Content-Type': file.type },
     body: file,
   });
-
-  if (!response.ok) {
-    throw new Error(`Upload failed: ${response.statusText}`);
-  }
-
-  // 3. Parse the response to get the storageId
+  if (!response.ok) throw new Error(`Upload failed: ${response.statusText}`);
   const result = await response.json();
-  
-  // Convex returns the storageId in the response
   return result.storageId;
 };
 
-/**
- * Get the URL for displaying a Convex stored image.
- * Supports both standard and regional Convex deployments.
- * The HTTP route in convex/http.ts serves files at /storage/<storageId>.
- * @param {string} storageId - The Convex storageId
- * @returns {string|null} - The URL to display the image
- */
 const convexFileUrl = (storageId) => {
   if (!storageId) return null;
-  if (storageId.startsWith('http://') || storageId.startsWith('https://') || storageId.startsWith('data:')) {
-    return storageId;
-  }
-
-  // Prefer the explicit site URL env var (VITE_CONVEX_SITE_URL)
-  const convexSiteUrl = import.meta.env.VITE_CONVEX_SITE_URL;
-  if (convexSiteUrl) {
-    return `${convexSiteUrl.replace(/\/$/, '')}/storage/${storageId}`;
-  }
-
-  // Fallback: derive site URL from cloud URL
-  const convexUrl = import.meta.env.VITE_CONVEX_URL;
-  if (!convexUrl) return null;
-  const siteUrl = convexUrl.replace('.convex.cloud', '.convex.site');
-  if (!siteUrl.includes('.convex.site')) return null;
-  return `${siteUrl.replace(/\/$/, '')}/storage/${storageId}`;
+  if (storageId.startsWith('http') || storageId.startsWith('data:')) return storageId;
+  const siteUrl = import.meta.env.VITE_CONVEX_SITE_URL;
+  if (siteUrl) return `${siteUrl.replace(/\/$/, '')}/storage/${storageId}`;
+  const cloudUrl = import.meta.env.VITE_CONVEX_URL;
+  if (!cloudUrl) return null;
+  const derived = cloudUrl.replace('.convex.cloud', '.convex.site');
+  if (!derived.includes('.convex.site')) return null;
+  return `${derived.replace(/\/$/, '')}/storage/${storageId}`;
 };
 
-// ============================================
+// ─── Reusable field components ────────────────────────────────────────────────
+const BORDER = '#E5E9EB';
+const PRIMARY = '#0d7477';
+const TEXT2 = '#64748b';
+const TEXTM = '#94a3b8';
+const SHADOW = '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)';
+const SHADOW_PRIMARY = '0 4px 14px rgba(13,116,119,.25)';
 
-// ============================================
-// ADMIN PROJECT FORM PAGE - Create/Edit Projects
-// With Simple Text Inputs, Gallery Management, Featured Toggle
-// ============================================
+const fieldInput = {
+  width: '100%', height: 48, border: `1.5px solid ${BORDER}`, borderRadius: 12,
+  padding: '0 14px', fontSize: 14, fontFamily: 'Tajawal, sans-serif',
+  color: '#0e1a1b', outline: 'none', background: 'white', boxSizing: 'border-box',
+};
+const fieldTextarea = {
+  width: '100%', minHeight: 100, border: `1.5px solid ${BORDER}`, borderRadius: 12,
+  padding: '12px 14px', fontSize: 14, fontFamily: 'Tajawal, sans-serif',
+  color: '#0e1a1b', outline: 'none', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box',
+};
+const fieldLabel = { fontSize: 12, fontWeight: 700, color: TEXT2, marginBottom: 7, display: 'flex', alignItems: 'center', gap: 4 };
+const fieldHint = { fontSize: 11, color: TEXTM, marginTop: 5 };
 
-const AdminProjectForm = () => {
+const Section = ({ icon, title, children }) => (
+  <div style={{ background: 'white', borderRadius: 16, border: `1px solid ${BORDER}`, boxShadow: SHADOW, marginBottom: 20, overflow: 'hidden' }}>
+    <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+      <span style={{ fontSize: 18 }}>{icon}</span>
+      <span style={{ fontSize: 15, fontWeight: 700 }}>{title}</span>
+    </div>
+    <div style={{ padding: 20 }}>{children}</div>
+  </div>
+);
+
+const ToggleRow = ({ title, desc, checked, onChange, last }) => (
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: last ? 'none' : `1px solid ${BORDER}` }}>
+    <div>
+      <div style={{ fontSize: 14, fontWeight: 600 }}>{title}</div>
+      <div style={{ fontSize: 12, color: TEXT2, marginTop: 2 }}>{desc}</div>
+    </div>
+    <div
+      onClick={onChange}
+      style={{ width: 44, height: 24, background: checked ? PRIMARY : BORDER, borderRadius: 100, position: 'relative', cursor: 'pointer', flexShrink: 0, transition: 'background .2s' }}
+    >
+      <div style={{ width: 20, height: 20, background: 'white', borderRadius: '50%', position: 'absolute', top: 2, left: checked ? 22 : 2, boxShadow: '0 1px 3px rgba(0,0,0,.2)', transition: 'left .2s' }} />
+    </div>
+  </div>
+);
+
+// ─── Main component ────────────────────────────────────────────────────────────
+export default function AdminProjectForm() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentLanguage, isDarkMode, showToast, user } = useApp();
+  const { showToast, user } = useApp();
   const isEditMode = Boolean(id);
-  const [activeTab, setActiveTab] = useState('en');
-  const [progress, setProgress] = useState(65);
+
+  const [activeTab, setActiveTab] = useState('ar');
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [draggedItem, setDraggedItem] = useState(null);
   const fileInputRef = useRef(null);
   const galleryInputRef = useRef(null);
-  
-  // Convex hooks
+
+  // ── Convex ────────────────────────────────────────────────────────────────
   const existingProject = useQuery(api.projects.getProjectById, isEditMode ? { projectId: id } : 'skip');
   const createProjectMutation = useMutation(api.projects.createProject);
   const updateProjectMutation = useMutation(api.projects.updateProject);
   const getUploadUrlMutation = useMutation(api.storage.generateProjectImageUploadUrl);
   const deleteImageMutation = useMutation(api.storage.deleteProjectImage);
 
-  // Upload progress tracking
-  const [uploadProgress, setUploadProgress] = useState({ mainImage: 0, gallery: {} });
-
-  // Translations
-  const translations = {
-    ar: {
-      createTitle: 'إنشاء مشروع جديد',
-      editTitle: 'تعديل المشروع',
-      basicInfo: 'المعلومات الأساسية',
-      financialSettings: 'الإعدادات المالية',
-      mediaGallery: 'معرض الوسائط',
-      description: 'الوصف التفصيلي',
-      projectTitle: 'عنوان المشروع',
-      shortDescription: 'وصف قصير',
-      goalAmount: 'المبلغ المستهدف',
-      currency: 'العملة',
-      visibility: 'الرؤية',
-      public: 'عام',
-      private: 'خاص',
-      featured: 'مشروع مميز',
-      featuredDesc: 'يظهر على الصفحة الرئيسية',
-      saveDraft: 'حفظ كمسودة',
-      publish: 'نشر المشروع',
-      preview: 'معاينة',
-      help: 'مساعدة',
-      completionProgress: 'تقدم الإكمال',
-      maxFiles: 'الحد الأقصى 10 ملفات. الصيغ المدعومة: JPG, PNG.',
-      addImage: 'إضافة صورة',
-      dragToReorder: 'اسحب لإعادة الترتيب',
-      mainImage: 'الصورة الرئيسية',
-      changeImage: 'تغيير الصورة',
-      uploadImage: 'رفع صورة',
-      remove: 'حذف',
-      loading: 'جاري التحميل...',
-      imageUploaded: 'تم رفع الصورة',
-      errorUpload: 'خطأ في رفع الصورة',
-      impact: 'التأثير',
-      impactDesc: 'وصف التأثير المتوقع للمشروع',
-      impactMetrics: 'مؤشرات التأثير',
-      metricLabel: 'المؤشر',
-      metricValue: 'القيمة المستهدفة',
-      addMetric: 'إضافة مؤشر',
-      updates: 'التحديثات',
-      addUpdate: 'إضافة تحديث',
-      updateTitle: 'عنوان التحديث',
-      updateContent: 'محتوى التحديث',
-      noUpdates: 'لا توجد تحديثات بعد',
-    },
-    fr: {
-      createTitle: 'Créer un Nouveau Projet',
-      editTitle: 'Modifier le Projet',
-      basicInfo: 'Informations de Base',
-      financialSettings: 'Paramètres Financiers',
-      mediaGallery: 'Galerie Média',
-      description: 'Description Détaillée',
-      projectTitle: 'Titre du Projet',
-      shortDescription: 'Description Courte',
-      goalAmount: 'Montant Objectif',
-      currency: 'Devise',
-      visibility: 'Visibilité',
-      public: 'Public',
-      private: 'Privé',
-      featured: 'Projet en Vedette',
-      featuredDesc: 'Apparaît sur la page d\'accueil',
-      saveDraft: 'Enregistrer Brouillon',
-      publish: 'Publier le Projet',
-      preview: 'Aperçu',
-      help: 'Aide',
-      completionProgress: 'Progression',
-      maxFiles: 'Maximum 10 fichiers. Formats supportés: JPG, PNG.',
-      addImage: 'Ajouter une Image',
-      dragToReorder: 'Glisser pour réorganiser',
-      mainImage: 'Image Principale',
-      changeImage: 'Changer l\'image',
-      uploadImage: 'Télécharger une image',
-      remove: 'Supprimer',
-      loading: 'Chargement...',
-      imageUploaded: 'Image téléchargée',
-      errorUpload: 'Erreur de téléchargement',
-      impact: 'Impact',
-      impactDesc: 'Description de l\'impact attendu du projet',
-      impactMetrics: 'Indicateurs d\'Impact',
-      metricLabel: 'Indicateur',
-      metricValue: 'Valeur Cible',
-      addMetric: 'Ajouter un Indicateur',
-      updates: 'Mises à Jour',
-      addUpdate: 'Ajouter une Mise à Jour',
-      updateTitle: 'Titre de la Mise à Jour',
-      updateContent: 'Contenu de la Mise à Jour',
-      noUpdates: 'Aucune mise à jour pour l\'instant',
-    },
-    en: {
-      createTitle: 'Create New Project',
-      editTitle: 'Edit Project',
-      basicInfo: 'Basic Information',
-      financialSettings: 'Financial Settings',
-      mediaGallery: 'Media Gallery',
-      description: 'Detailed Description',
-      projectTitle: 'Project Title',
-      shortDescription: 'Short Description',
-      goalAmount: 'Goal Amount',
-      currency: 'Currency',
-      visibility: 'Visibility',
-      public: 'Public',
-      private: 'Private',
-      featured: 'Featured Project',
-      featuredDesc: 'Appears on homepage',
-      saveDraft: 'Save Draft',
-      publish: 'Publish Project',
-      preview: 'Preview',
-      help: 'Help',
-      completionProgress: 'Completion Progress',
-      maxFiles: 'Maximum 10 files. Supported formats: JPG, PNG.',
-      addImage: 'Add Image',
-      dragToReorder: 'Drag to reorder',
-      mainImage: 'Main Image',
-      changeImage: 'Change Image',
-      uploadImage: 'Upload Image',
-      remove: 'Remove',
-      loading: 'Loading...',
-      imageUploaded: 'Image uploaded',
-      errorUpload: 'Upload error',
-      impact: 'Impact',
-      impactDesc: 'Description of the project\'s expected impact',
-      impactMetrics: 'Impact Metrics',
-      metricLabel: 'Metric',
-      metricValue: 'Target Value',
-      addMetric: 'Add Metric',
-      updates: 'Updates',
-      addUpdate: 'Add Update',
-      updateTitle: 'Update Title',
-      updateContent: 'Update Content',
-      noUpdates: 'No updates yet',
-    },
-  };
-
-  const t = translations[currentLanguage?.code] || translations.en;
-
-  // Form state - start blank for new projects (edit mode loads from Convex below)
+  // ── Form state ────────────────────────────────────────────────────────────
   const [formData, setFormData] = useState({
-    title: {
-      en: '',
-      fr: '',
-      ar: '',
-    },
-    shortDescription: {
-      en: '',
-      fr: '',
-      ar: '',
-    },
-    description: {
-      en: '',
-      fr: '',
-      ar: '',
-    },
+    title: { ar: '', fr: '', en: '' },
+    shortDescription: { ar: '', fr: '', en: '' },
+    description: { ar: '', fr: '', en: '' },
+    impact: { ar: '', fr: '', en: '' },
     goal: '',
-    category: 'orphan_care',
-    status: 'draft',
+    category: 'education',
     location: '',
     beneficiaries: '',
     currency: 'MAD',
-    visibility: 'public',
+    status: 'draft',
     featured: false,
-    // Storage IDs for Convex file storage (separate from preview URLs)
-    mainImageStorageId: null,
-    galleryStorageIds: [],
-    // Preview URLs for display (set only after actual upload)
+    showDonors: true,
+    allowAnonymous: true,
     mainImage: '',
+    mainImageStorageId: null,
     gallery: [],
-    impact: {
-      en: '',
-      fr: '',
-      ar: '',
-    },
+    galleryStorageIds: [],
     impactMetrics: [],
     updates: [],
     transformationStage: '',
   });
 
-  const [draggedItem, setDraggedItem] = useState(null);
-
-  // Load project data from Convex when in edit mode
+  // Load existing project in edit mode
   useEffect(() => {
     if (isEditMode && existingProject) {
       setFormData(prev => ({
         ...prev,
         title: existingProject.title || prev.title,
         description: existingProject.description || prev.description,
+        shortDescription: existingProject.shortDescription || prev.shortDescription,
         category: existingProject.category || prev.category,
         goal: existingProject.goalAmount ? Math.round(existingProject.goalAmount / 100) : prev.goal,
         featured: existingProject.isFeatured ?? prev.featured,
@@ -292,277 +141,89 @@ const AdminProjectForm = () => {
     }
   }, [isEditMode, existingProject]);
 
-  const handleInputChange = (field, value, lang = null) => {
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  const set = (field, value, lang = null) => {
     if (lang) {
-      setFormData(prev => ({
-        ...prev,
-        [field]: { ...prev[field], [lang]: value },
-      }));
+      setFormData(prev => ({ ...prev, [field]: { ...prev[field], [lang]: value } }));
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
     }
   };
 
-  // Handle rich text editor change
-  const handleDescriptionChange = (value) => {
-    setFormData(prev => ({
-      ...prev,
-      description: { ...prev.description, [activeTab]: value },
-    }));
-  };
-
-  // Handle main image upload to Convex storage
   const handleMainImageUpload = async (e) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      showToast(t.errorUpload, 'error');
-      return;
-    }
-
+    if (!file || !file.type.startsWith('image/')) return;
     setIsUploading(true);
-    setUploadProgress(prev => ({ ...prev, mainImage: 0 }));
-
     try {
-      // Create a preview URL for immediate display
       const previewUrl = URL.createObjectURL(file);
       setFormData(prev => ({ ...prev, mainImage: previewUrl }));
-
-      // Upload to Convex storage
       const storageId = await uploadFileToConvex(file, getUploadUrlMutation);
-
-      // Update form data with storageId
-      setFormData(prev => ({
-        ...prev,
-        mainImage: previewUrl,
-        mainImageStorageId: storageId
-      }));
-
-      setUploadProgress(prev => ({ ...prev, mainImage: 100 }));
-      showToast(t.imageUploaded, 'success');
-    } catch (error) {
-      console.error('Main image upload error:', error);
-      showToast(t.errorUpload, 'error');
-      // Revert to default if upload fails
-      setFormData(prev => ({
-        ...prev,
-        mainImage: 'https://images.unsplash.com/photo-1538300342682-cf57afb97285?w=800',
-        mainImageStorageId: null
-      }));
+      setFormData(prev => ({ ...prev, mainImage: previewUrl, mainImageStorageId: storageId }));
+      showToast('تم رفع الصورة', 'success');
+    } catch {
+      showToast('خطأ في رفع الصورة', 'error');
+      setFormData(prev => ({ ...prev, mainImage: '', mainImageStorageId: null }));
     } finally {
       setIsUploading(false);
     }
   };
 
-  // Handle gallery image upload to Convex storage
   const handleGalleryUpload = async (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
-
-    const validFiles = files.filter(file => file.type.startsWith('image/'));
-    
-    if (formData.gallery.length + validFiles.length > 10) {
-      showToast(t.maxFiles, 'error');
-      return;
-    }
-
+    const files = Array.from(e.target.files).filter(f => f.type.startsWith('image/'));
+    if (!files.length) return;
+    if (formData.gallery.length + files.length > 10) { showToast('الحد الأقصى 10 صور', 'error'); return; }
     setIsUploading(true);
-
     try {
-      // Create preview URLs for immediate display
-      const previewUrls = validFiles.map(file => URL.createObjectURL(file));
-      
-      // Add preview URLs to gallery immediately
-      setFormData(prev => ({
-        ...prev,
-        gallery: [...prev.gallery, ...previewUrls],
-        galleryStorageIds: [...(prev.galleryStorageIds || []), ...Array(validFiles.length).fill(null)],
+      const previews = files.map(f => URL.createObjectURL(f));
+      setFormData(prev => ({ ...prev, gallery: [...prev.gallery, ...previews], galleryStorageIds: [...prev.galleryStorageIds, ...Array(files.length).fill(null)] }));
+      const results = await Promise.all(files.map(async (file, i) => {
+        try { return { i, id: await uploadFileToConvex(file, getUploadUrlMutation) }; }
+        catch { return { i, id: null }; }
       }));
-
-      // Upload each file to Convex storage
-      const uploadPromises = validFiles.map(async (file, index) => {
-        try {
-          const storageId = await uploadFileToConvex(file, getUploadUrlMutation);
-          return { index, storageId, success: true };
-        } catch (error) {
-          console.error(`Gallery upload error for file ${index}:`, error);
-          return { index, storageId: null, success: false };
-        }
-      });
-
-      const results = await Promise.all(uploadPromises);
-
-      // Update storage IDs
       setFormData(prev => {
-        const newStorageIds = [...(prev.galleryStorageIds || [])];
-        results.forEach(({ index, storageId }) => {
-          const actualIndex = prev.gallery.length - validFiles.length + index;
-          newStorageIds[actualIndex] = storageId;
-        });
-        return { ...prev, galleryStorageIds: newStorageIds };
+        const ids = [...prev.galleryStorageIds];
+        results.forEach(({ i, id }) => { ids[prev.gallery.length - files.length + i] = id; });
+        return { ...prev, galleryStorageIds: ids };
       });
-
-      const successCount = results.filter(r => r.success).length;
-      if (successCount > 0) {
-        showToast(`${successCount} ${t.imageUploaded}`, 'success');
-      }
-      if (successCount < validFiles.length) {
-        showToast(`${validFiles.length - successCount} uploads failed`, 'error');
-      }
-    } catch (error) {
-      console.error('Gallery upload error:', error);
-      showToast(t.errorUpload, 'error');
-    } finally {
-      setIsUploading(false);
-    }
+    } catch { showToast('خطأ في الرفع', 'error'); } finally { setIsUploading(false); }
   };
 
-  // Handle gallery image removal
   const removeGalleryImage = async (index) => {
     const storageId = formData.galleryStorageIds?.[index];
-    
-    // Try to delete from Convex storage if it exists
-    if (storageId) {
-      try {
-        await deleteImageMutation({ storageId });
-      } catch (error) {
-        console.error('Failed to delete image from storage:', error);
-        // Continue with removal from UI even if deletion fails
-      }
-    }
-    
+    if (storageId) { try { await deleteImageMutation({ storageId }); } catch {} }
     setFormData(prev => ({
       ...prev,
       gallery: prev.gallery.filter((_, i) => i !== index),
-      galleryStorageIds: prev.galleryStorageIds?.filter((_, i) => i !== index) || [],
+      galleryStorageIds: prev.galleryStorageIds.filter((_, i) => i !== index),
     }));
   };
 
-  // Drag and drop handlers for gallery reordering
-  const handleDragStart = (index) => {
-    setDraggedItem(index);
-  };
-
-  const handleDragOver = (e, index) => {
+  const handleDragStart = (i) => setDraggedItem(i);
+  const handleDragOver = (e, i) => {
     e.preventDefault();
-    if (draggedItem === null || draggedItem === index) return;
-
-    const newGallery = [...formData.gallery];
-    const item = newGallery[draggedItem];
-    newGallery.splice(draggedItem, 1);
-    newGallery.splice(index, 0, item);
-    
-    setFormData(prev => ({ ...prev, gallery: newGallery }));
-    setDraggedItem(index);
+    if (draggedItem === null || draggedItem === i) return;
+    setFormData(prev => {
+      const g = [...prev.gallery]; const ids = [...prev.galleryStorageIds];
+      const [gi, si] = [g.splice(draggedItem, 1)[0], ids.splice(draggedItem, 1)[0]];
+      g.splice(i, 0, gi); ids.splice(i, 0, si);
+      return { ...prev, gallery: g, galleryStorageIds: ids };
+    });
+    setDraggedItem(i);
   };
+  const handleDragEnd = () => setDraggedItem(null);
 
-  const handleDragEnd = () => {
-    setDraggedItem(null);
-  };
-
-  // Handle impact description change
-  const handleImpactChange = (value) => {
-    setFormData(prev => ({
-      ...prev,
-      impact: { ...prev.impact, [activeTab]: value },
-    }));
-  };
-
-  // Handle impact metrics
-  const handleAddMetric = () => {
-    setFormData(prev => ({
-      ...prev,
-      impactMetrics: [...prev.impactMetrics, { label: '', value: '' }],
-    }));
-  };
-
-  const handleRemoveMetric = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      impactMetrics: prev.impactMetrics.filter((_, i) => i !== index),
-    }));
-  };
-
-  const handleMetricChange = (index, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      impactMetrics: prev.impactMetrics.map((m, i) =>
-        i === index ? { ...m, [field]: value } : m
-      ),
-    }));
-  };
-
-  // Handle updates
-  const handleAddUpdate = () => {
-    setFormData(prev => ({
-      ...prev,
-      updates: [
-        ...prev.updates,
-        {
-          id: Date.now(),
-          title: { en: '', fr: '', ar: '' },
-          content: { en: '', fr: '', ar: '' },
-          date: new Date().toISOString().split('T')[0],
-        }
-      ],
-    }));
-  };
-
-  const handleRemoveUpdate = (updateId) => {
-    setFormData(prev => ({
-      ...prev,
-      updates: prev.updates.filter(u => u.id !== updateId),
-    }));
-  };
-
-  const handleUpdateChange = (updateId, field, value, lang = null) => {
-    setFormData(prev => ({
-      ...prev,
-      updates: prev.updates.map(u => {
-        if (u.id !== updateId) return u;
-        if (lang) {
-          return { ...u, [field]: { ...u[field], [lang]: value } };
-        }
-        return { ...u, [field]: value };
-      }),
-    }));
-  };
-
-  // Handle preview
-  const handlePreview = () => {
-    // Store current form data in sessionStorage for preview
-    sessionStorage.setItem('projectPreview', JSON.stringify(formData));
-    window.open(`/projects/preview-${isEditMode ? id : 'new'}`, '_blank');
-  };
-
-  // statusOverride: 'draft' for Save Draft button, 'active' for Publish button
-  const handleSubmit = async (e, statusOverride) => {
-    if (e && typeof e.preventDefault === 'function') e.preventDefault();
-
+  const handleSubmit = async (statusOverride) => {
     setIsLoading(true);
-
     try {
-      // Validate required fields
       if (!formData.title?.ar && !formData.title?.fr && !formData.title?.en) {
-        showToast('يرجى إدخال عنوان المشروع / Please enter a project title', 'error');
-        setIsLoading(false);
-        return;
+        showToast('يرجى إدخال عنوان المشروع', 'error'); setIsLoading(false); return;
       }
       if (!formData.mainImageStorageId) {
-        showToast('يرجى رفع الصورة الرئيسية / Please upload a main image', 'error');
-        setIsLoading(false);
-        return;
+        showToast('يرجى رفع الصورة الرئيسية', 'error'); setIsLoading(false); return;
       }
-
-      const submitStatus = statusOverride || formData.status || 'draft';
-      const submitIsFeatured = formData.featured;
-
-      // Filter out null storage IDs from gallery
-      const validGalleryStorageIds = (formData.galleryStorageIds || []).filter(id => id !== null);
-
+      const status = statusOverride || formData.status || 'draft';
+      const validGalleryIds = (formData.galleryStorageIds || []).filter(Boolean);
       if (isEditMode) {
-        // Update existing project
         await updateProjectMutation({
           projectId: id,
           updates: {
@@ -571,563 +232,313 @@ const AdminProjectForm = () => {
             category: formData.category,
             goalAmount: Math.round((parseFloat(formData.goal) || 0) * 100),
             mainImageStorageId: formData.mainImageStorageId,
-            galleryStorageIds: validGalleryStorageIds,
-            status: submitStatus,
-            isFeatured: submitIsFeatured,
+            galleryStorageIds: validGalleryIds,
+            status,
+            isFeatured: formData.featured,
             location: formData.location,
             beneficiaries: parseInt(formData.beneficiaries) || 0,
             ...(formData.transformationStage ? { transformationStage: formData.transformationStage } : {}),
-          }
+          },
         });
-        showToast(submitStatus === 'active' ? 'Project published!' : 'Draft saved', 'success');
       } else {
-        // Create new project - get admin ID from auth context
         const adminId = user?.id;
-        if (!adminId) {
-          showToast('Session expired. Please log in again.', 'error');
-          setIsLoading(false);
-          return;
-        }
+        if (!adminId) { showToast('انتهت الجلسة، يرجى تسجيل الدخول', 'error'); setIsLoading(false); return; }
         await createProjectMutation({
           title: formData.title,
           description: formData.description,
           category: formData.category,
           goalAmount: Math.round((parseFloat(formData.goal) || 0) * 100),
           mainImageStorageId: formData.mainImageStorageId,
-          galleryStorageIds: validGalleryStorageIds,
-          status: submitStatus,
+          galleryStorageIds: validGalleryIds,
+          status,
           location: formData.location,
           beneficiaries: parseInt(formData.beneficiaries) || 0,
-          isFeatured: submitIsFeatured,
+          isFeatured: formData.featured,
           createdBy: adminId,
           ...(formData.transformationStage ? { transformationStage: formData.transformationStage } : {}),
         });
-        showToast(submitStatus === 'active' ? 'Project published!' : 'Draft saved', 'success');
       }
+      showToast(status === 'active' ? 'تم نشر المشروع' : 'تم حفظ المسودة', 'success');
       navigate('/admin/projects');
-    } catch (error) {
-      console.error('Submit error:', error);
-      showToast(isEditMode ? 'Failed to update project' : 'Failed to create project', 'error');
+    } catch {
+      showToast('حدث خطأ أثناء الحفظ', 'error');
     } finally {
       setIsLoading(false);
     }
   };
 
+  if (isEditMode && existingProject === undefined) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'Tajawal, sans-serif' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>📁</div>
+          <p style={{ color: TEXTM }}>جاري التحميل...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Language tab ─────────────────────────────────────────────────────────
+  const LangTabs = () => (
+    <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
+      {['ar', 'fr', 'en'].map(l => (
+        <button key={l} type="button" onClick={() => setActiveTab(l)}
+          style={{ height: 28, padding: '0 12px', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif', border: `1.5px solid ${activeTab === l ? PRIMARY : BORDER}`, background: activeTab === l ? PRIMARY : 'white', color: activeTab === l ? 'white' : TEXT2 }}>
+          {l.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
-    <div className="max-w-5xl mx-auto pb-32">
-      {/* Header */}
-      <header className="sticky top-0 z-20 bg-white/80 dark:bg-bg-dark-card/80 backdrop-blur-md border-b border-border-light dark:border-white/10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate('/admin/projects')}
-              className="text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
-            >
-              <span className="material-symbols-outlined">close</span>
-            </button>
-            <h2 className="text-lg font-bold leading-tight tracking-tight text-text-primary dark:text-white">
-              {isEditMode ? t.editTitle : t.createTitle}
-            </h2>
-          </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handlePreview}
-              className="text-primary text-sm font-bold cursor-pointer hover:opacity-80"
-            >
-              {t.preview}
-            </button>
-            <button 
-              onClick={() => showToast('Help - coming soon', 'info')}
-              className="text-primary text-sm font-bold cursor-pointer hover:opacity-80"
-            >
-              {t.help}
-            </button>
-          </div>
-        </div>
+    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: 24, paddingBottom: 100 }} dir="rtl">
 
-        {/* Progress Bar */}
-        <div className="mt-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.05em]">{t.completionProgress}</span>
-            <span className="text-xs font-bold text-primary">{progress}%</span>
-          </div>
-          <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-            <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
-          </div>
-        </div>
-      </header>
+      {/* ── Section 1: Basic Info ── */}
+      <Section icon="📝" title="المعلومات الأساسية">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Information */}
-        <Card padding="lg" className="dark:bg-bg-dark-card dark:border-white/10">
-          <div className="flex items-center gap-2 mb-5">
-            <span className="material-symbols-outlined text-primary text-xl">info</span>
-            <h3 className="font-bold text-base tracking-tight text-text-primary dark:text-white">{t.basicInfo}</h3>
-          </div>
-
-          <div className="space-y-5">
-            {/* Main Image Upload */}
-            <div>
-              <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.mainImage}</label>
-              <div className="relative group">
-                {formData.mainImage ? (
-                  <div className="aspect-video w-full rounded-xl border border-border-light dark:border-white/10 overflow-hidden relative">
-                    <img
-                      src={convexFileUrl(formData.mainImageStorageId) || formData.mainImage}
-                      alt="Main project"
-                      className="w-full h-full object-cover"
-                    />
-                    {isUploading && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity gap-3">
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploading}
-                        className="flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-lg font-medium hover:bg-gray-100 transition-colors"
-                      >
-                        <span className="material-symbols-outlined">upload</span>
-                        {isUploading ? t.loading : t.changeImage}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
-                    className="aspect-video w-full rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 flex flex-col items-center justify-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-4xl text-slate-400">add_photo_alternate</span>
-                    <span className="text-sm font-medium text-slate-500">{t.uploadImage}</span>
-                  </button>
-                )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleMainImageUpload}
-                  className="hidden"
-                />
-              </div>
-            </div>
-
-            {/* Title with Language Tabs */}
-            <div>
-              <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.projectTitle}</label>
-              <div className="flex gap-1 p-1 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-lg mb-3">
-                {['en', 'fr', 'ar'].map((lang) => (
-                  <button
-                    key={lang}
-                    type="button"
-                    onClick={() => setActiveTab(lang)}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${
-                      activeTab === lang
-                        ? 'bg-white text-primary shadow-sm border border-slate-100 dark:bg-slate-700 dark:border-slate-600 dark:text-white'
-                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-                    }`}
-                  >
-                    {lang.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-              <input
-                type="text"
-                value={formData.title[activeTab]}
-                onChange={(e) => handleInputChange('title', e.target.value, activeTab)}
-                className="w-full bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-
-            {/* Short Description */}
-            <div>
-              <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.shortDescription}</label>
-              <textarea
-                value={formData.shortDescription[activeTab]}
-                onChange={(e) => handleInputChange('shortDescription', e.target.value, activeTab)}
-                rows={2}
-                className="w-full bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
-              />
-            </div>
-
-            {/* Description - Simple Textarea */}
-            <div>
-              <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.description}</label>
-              <textarea
-                value={formData.description[activeTab]}
-                onChange={(e) => handleDescriptionChange(e.target.value)}
-                placeholder="Enter description here..."
-                rows={8}
-                className="w-full bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 resize-y"
-              />
-            </div>
-          </div>
-        </Card>
-
-        {/* Financial Settings */}
-        <Card padding="lg" className="dark:bg-bg-dark-card dark:border-white/10">
-          <div className="flex items-center gap-2 mb-5">
-            <span className="material-symbols-outlined text-primary text-xl">payments</span>
-            <h3 className="font-bold text-base tracking-tight text-text-primary dark:text-white">{t.financialSettings}</h3>
-          </div>
-
-          <div className="space-y-5">
-            {/* Goal Amount */}
-            <div>
-              <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.goalAmount}</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <span className="text-slate-400 text-sm">
-                    {formData.currency === 'MAD' ? 'DH' : formData.currency === 'EUR' ? '€' : '$'}
-                  </span>
-                </div>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={formData.goal}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    // Only allow numeric input
-                    if (value === '' || /^\d*$/.test(value)) {
-                      handleInputChange('goal', value === '' ? '' : parseInt(value, 10) || 0);
-                    }
-                  }}
-                  className="w-full pl-10 bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">Category / التصنيف</label>
-              <select
-                value={formData.category}
-                onChange={(e) => handleInputChange('category', e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
-              >
-                <option value="education">Education / التعليم</option>
-                <option value="health">Health / الصحة</option>
-                <option value="housing">Housing / السكن</option>
-                <option value="emergency">Emergency / الطوارئ</option>
-                <option value="food">Food / الغذاء</option>
-                <option value="water">Water / المياه</option>
-                <option value="orphan_care">Orphan Care / رعاية الأيتام</option>
-              </select>
-            </div>
-
-            {/* Transformation Stage — orphan_care only */}
-            {formData.category === 'orphan_care' && (
-              <div>
-                <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">
-                  مرحلة التحول / Transformation Stage
-                </label>
-                <select
-                  value={formData.transformationStage}
-                  onChange={(e) => handleInputChange('transformationStage', e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="">— لا ينطبق —</option>
-                  <option value="early_care">الرعاية المبكرة</option>
-                  <option value="education">التعليم</option>
-                  <option value="integration">الاندماج</option>
-                </select>
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-4">
-              {/* Currency */}
-              <div>
-                <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.currency}</label>
-                <select
-                  value={formData.currency}
-                  onChange={(e) => handleInputChange('currency', e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="USD">USD - US Dollar</option>
-                  <option value="MAD">MAD - Moroccan Dirham</option>
-                  <option value="EUR">EUR - Euro</option>
-                </select>
-              </div>
-
-              {/* Visibility */}
-              <div>
-                <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.visibility}</label>
-                <div className="flex items-center h-[46px] px-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
-                  <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{formData.visibility === 'public' ? t.public : t.private}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleInputChange('visibility', formData.visibility === 'public' ? 'private' : 'public')}
-                    className={`ml-auto w-9 h-5 rounded-full relative cursor-pointer transition-colors ${
-                      formData.visibility === 'public' ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'
-                    }`}
-                  >
-                    <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${
-                      formData.visibility === 'public' ? 'right-0.5' : 'left-0.5'
-                    }`} />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Featured Toggle */}
-            <div>
-              <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.featured}</label>
-              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
-                <div>
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{t.featured}</p>
-                  <p className="text-xs text-slate-400">{t.featuredDesc}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleInputChange('featured', !formData.featured)}
-                  className={`w-11 h-6 rounded-full relative cursor-pointer transition-colors ${
-                    formData.featured ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'
-                  }`}
-                >
-                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${
-                    formData.featured ? 'right-1' : 'left-1'
-                  }`} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Media Gallery */}
-        <Card padding="lg" className="dark:bg-bg-dark-card dark:border-white/10">
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary text-xl">perm_media</span>
-              <h3 className="font-bold text-base tracking-tight text-text-primary dark:text-white">{t.mediaGallery}</h3>
-            </div>
-            <button
-              type="button"
-              onClick={() => galleryInputRef.current?.click()}
-              disabled={isUploading || formData.gallery.length >= 10}
-              className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors disabled:opacity-50"
-            >
-              <span className="material-symbols-outlined text-sm">add</span>
-              {t.addImage}
-            </button>
+          {/* Title – full width */}
+          <div style={{ gridColumn: '1/-1' }}>
+            <div style={fieldLabel}>اسم المشروع <span style={{ color: '#ef4444' }}>*</span></div>
+            <LangTabs />
             <input
-              ref={galleryInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleGalleryUpload}
-              className="hidden"
+              style={fieldInput}
+              type="text"
+              value={formData.title[activeTab]}
+              onChange={e => set('title', e.target.value, activeTab)}
+              placeholder="أدخل اسم المشروع..."
+              onFocus={e => e.target.style.borderColor = PRIMARY}
+              onBlur={e => e.target.style.borderColor = BORDER}
             />
           </div>
 
-          {/* Gallery Grid with Drag & Drop */}
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-            {/* Upload Button */}
+          {/* Category */}
+          <div>
+            <div style={fieldLabel}>الفئة <span style={{ color: '#ef4444' }}>*</span></div>
+            <select
+              value={formData.category}
+              onChange={e => set('category', e.target.value)}
+              style={{ ...fieldInput, cursor: 'pointer' }}
+            >
+              <option value="education">🎓 التعليم</option>
+              <option value="water">💧 الماء</option>
+              <option value="health">🏥 الصحة</option>
+              <option value="food">🍞 الغذاء</option>
+              <option value="housing">🏠 السكن</option>
+              <option value="orphan_care">🕌 الكفالة</option>
+              <option value="emergency">⚡ الطوارئ</option>
+            </select>
+          </div>
+
+          {/* Location */}
+          <div>
+            <div style={fieldLabel}>الموقع الجغرافي</div>
+            <input
+              style={fieldInput}
+              type="text"
+              value={formData.location}
+              onChange={e => set('location', e.target.value)}
+              placeholder="مثال: درعة تافيلالت، المغرب"
+              onFocus={e => e.target.style.borderColor = PRIMARY}
+              onBlur={e => e.target.style.borderColor = BORDER}
+            />
+          </div>
+
+          {/* Transformation stage – orphan_care only */}
+          {formData.category === 'orphan_care' && (
+            <div style={{ gridColumn: '1/-1' }}>
+              <div style={fieldLabel}>مرحلة التحول</div>
+              <select value={formData.transformationStage} onChange={e => set('transformationStage', e.target.value)} style={{ ...fieldInput, cursor: 'pointer' }}>
+                <option value="">— لا ينطبق —</option>
+                <option value="early_care">الرعاية المبكرة</option>
+                <option value="education">التعليم</option>
+                <option value="integration">الاندماج</option>
+              </select>
+            </div>
+          )}
+
+          {/* Short description – full width */}
+          <div style={{ gridColumn: '1/-1' }}>
+            <div style={fieldLabel}>الوصف المختصر <span style={{ color: '#ef4444' }}>*</span></div>
+            <textarea
+              style={{ ...fieldTextarea, minHeight: 80 }}
+              rows={3}
+              value={formData.shortDescription[activeTab]}
+              onChange={e => set('shortDescription', e.target.value, activeTab)}
+              placeholder="وصف مختصر يظهر في قائمة المشاريع..."
+              onFocus={e => e.target.style.borderColor = PRIMARY}
+              onBlur={e => e.target.style.borderColor = BORDER}
+            />
+          </div>
+
+          {/* Detailed description – full width */}
+          <div style={{ gridColumn: '1/-1' }}>
+            <div style={fieldLabel}>الوصف التفصيلي</div>
+            <textarea
+              style={{ ...fieldTextarea, minHeight: 140 }}
+              rows={5}
+              value={formData.description[activeTab]}
+              onChange={e => set('description', e.target.value, activeTab)}
+              placeholder="أضف وصفاً مفصلاً للمشروع، أهدافه، والفئة المستفيدة..."
+              onFocus={e => e.target.style.borderColor = PRIMARY}
+              onBlur={e => e.target.style.borderColor = BORDER}
+            />
+          </div>
+        </div>
+      </Section>
+
+      {/* ── Section 2: Financial ── */}
+      <Section icon="💰" title="المعلومات المالية">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+
+          {/* Goal */}
+          <div>
+            <div style={fieldLabel}>المبلغ المستهدف (درهم) <span style={{ color: '#ef4444' }}>*</span></div>
+            <input
+              style={{ ...fieldInput, direction: 'ltr', textAlign: 'right', fontFamily: 'Inter, sans-serif' }}
+              type="number"
+              value={formData.goal}
+              onChange={e => set('goal', e.target.value === '' ? '' : parseInt(e.target.value, 10) || 0)}
+              placeholder="0"
+              onFocus={e => e.target.style.borderColor = PRIMARY}
+              onBlur={e => e.target.style.borderColor = BORDER}
+            />
+          </div>
+
+          {/* Beneficiaries */}
+          <div>
+            <div style={fieldLabel}>عدد المستفيدين</div>
+            <input
+              style={{ ...fieldInput, direction: 'ltr', textAlign: 'right', fontFamily: 'Inter, sans-serif' }}
+              type="number"
+              value={formData.beneficiaries}
+              onChange={e => set('beneficiaries', e.target.value)}
+              placeholder="0"
+              onFocus={e => e.target.style.borderColor = PRIMARY}
+              onBlur={e => e.target.style.borderColor = BORDER}
+            />
+            <div style={fieldHint}>عدد الأشخاص المستفيدين من المشروع</div>
+          </div>
+        </div>
+      </Section>
+
+      {/* ── Section 3: Media ── */}
+      <Section icon="🖼️" title="الصور والوسائط">
+        <div style={fieldLabel}>صورة الغلاف الرئيسية <span style={{ color: '#ef4444' }}>*</span></div>
+
+        {formData.mainImage ? (
+          <div style={{ position: 'relative', borderRadius: 14, overflow: 'hidden', marginBottom: 16 }}>
+            <img
+              src={convexFileUrl(formData.mainImageStorageId) || formData.mainImage}
+              alt="main"
+              style={{ width: '100%', maxHeight: 260, objectFit: 'cover', display: 'block' }}
+            />
+            {isUploading && (
+              <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ color: 'white', fontWeight: 700, fontSize: 14 }}>جاري الرفع...</div>
+              </div>
+            )}
             <button
               type="button"
-              onClick={() => galleryInputRef.current?.click()}
-              disabled={isUploading || formData.gallery.length >= 10}
-              className="aspect-square rounded-xl bg-slate-50 dark:bg-slate-800 flex flex-col items-center justify-center border-2 border-dashed border-slate-300 dark:border-slate-600 text-slate-400 hover:border-primary/50 hover:text-primary transition-all cursor-pointer disabled:opacity-50"
-            >
-              <span className="material-symbols-outlined text-2xl">add_photo_alternate</span>
-              <span className="text-[10px] font-bold uppercase mt-1">{t.addImage}</span>
+              onClick={() => fileInputRef.current?.click()}
+              style={{ position: 'absolute', bottom: 12, left: 12, height: 34, padding: '0 14px', background: 'white', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+              تغيير الصورة
             </button>
-            
-            {/* Gallery Images */}
-            {formData.gallery.map((image, index) => (
-              <div
-                key={index}
-                draggable
-                onDragStart={() => handleDragStart(index)}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDragEnd={handleDragEnd}
-                className={`aspect-square rounded-xl border-2 overflow-hidden relative group cursor-move transition-all ${
-                  draggedItem === index
-                    ? 'border-primary opacity-50'
-                    : 'border-transparent hover:border-primary/50'
-                }`}
-              >
-                <img
-                  src={convexFileUrl(formData.galleryStorageIds?.[index]) || image}
-                  alt={`Gallery ${index + 1}`}
-                  className="w-full h-full object-cover"
-                  draggable={false}
-                />
-                {!formData.galleryStorageIds?.[index] && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => removeGalleryImage(index)}
-                    className="p-2 bg-error text-white rounded-lg hover:bg-error-600 transition-colors"
-                    title={t.remove}
-                  >
-                    <span className="material-symbols-outlined text-sm">delete</span>
+          </div>
+        ) : (
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            style={{ border: '2px dashed #E5E9EB', borderRadius: 14, padding: 32, textAlign: 'center', cursor: 'pointer', background: '#f6f8f8', marginBottom: 16, transition: 'all .2s' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#33C0C0'; e.currentTarget.style.background = '#E6F4F4'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#E5E9EB'; e.currentTarget.style.background = '#f6f8f8'; }}
+          >
+            <div style={{ fontSize: 36, marginBottom: 8 }}>🖼️</div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>اسحب وأفلت أو انقر للاختيار</div>
+            <div style={{ fontSize: 12, color: TEXTM }}>PNG أو JPG · 1200×600px مُفضَّل · حتى 5 ميغابايت</div>
+          </div>
+        )}
+
+        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleMainImageUpload} style={{ display: 'none' }} />
+
+        {/* Gallery */}
+        {formData.gallery.length > 0 && (
+          <>
+            <div style={{ ...fieldLabel, marginTop: 12 }}>معرض الصور ({formData.gallery.length}/10)</div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              {formData.gallery.map((img, i) => (
+                <div
+                  key={i}
+                  draggable
+                  onDragStart={() => handleDragStart(i)}
+                  onDragOver={e => handleDragOver(e, i)}
+                  onDragEnd={handleDragEnd}
+                  style={{ position: 'relative', width: 80, height: 80, borderRadius: 10, overflow: 'hidden', opacity: draggedItem === i ? 0.5 : 1, cursor: 'move' }}
+                >
+                  <img src={convexFileUrl(formData.galleryStorageIds?.[i]) || img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <button type="button" onClick={() => removeGalleryImage(i)}
+                    style={{ position: 'absolute', top: 4, left: 4, width: 20, height: 20, background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
+                    ×
                   </button>
                 </div>
-                <div className="absolute top-1 left-1 w-6 h-6 bg-primary/80 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                  {index + 1}
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          <div className="mt-4 flex items-center justify-between">
-            <p className="text-[11px] text-slate-500">{t.maxFiles}</p>
-            <p className="text-[11px] text-slate-400">{formData.gallery.length}/10 {t.dragToReorder}</p>
-          </div>
-        </Card>
-
-        {/* Impact Section */}
-        <Card padding="lg" className="dark:bg-bg-dark-card dark:border-white/10">
-          <div className="flex items-center gap-2 mb-5">
-            <span className="material-symbols-outlined text-primary text-xl">eco</span>
-            <h3 className="font-bold text-base tracking-tight text-text-primary dark:text-white">{t.impact}</h3>
-          </div>
-
-          <div className="space-y-5">
-            {/* Impact Description - Simple Textarea */}
-            <div>
-              <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.impactDesc}</label>
-              <textarea
-                value={formData.impact[activeTab]}
-                onChange={(e) => handleImpactChange(e.target.value)}
-                placeholder="Describe the impact..."
-                rows={5}
-                className="w-full bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 resize-y"
-              />
-            </div>
-
-            {/* Impact Metrics */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">{t.impactMetrics}</label>
-                <button
-                  type="button"
-                  onClick={handleAddMetric}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors"
-                >
-                  <span className="material-symbols-outlined text-sm">add</span>
-                  {t.addMetric}
+              ))}
+              {formData.gallery.length < 10 && (
+                <button type="button" onClick={() => galleryInputRef.current?.click()}
+                  style={{ width: 80, height: 80, borderRadius: 10, border: '2px dashed #E5E9EB', background: '#f6f8f8', cursor: 'pointer', fontSize: 22, color: TEXTM }}>
+                  +
                 </button>
-              </div>
-              <div className="space-y-3">
-                {formData.impactMetrics.map((metric, index) => (
-                  <div key={index} className="flex gap-3 items-center">
-                    <input
-                      type="text"
-                      value={metric.label}
-                      onChange={(e) => handleMetricChange(index, 'label', e.target.value)}
-                      placeholder={t.metricLabel}
-                      className="flex-1 bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    />
-                    <input
-                      type="text"
-                      value={metric.value}
-                      onChange={(e) => handleMetricChange(index, 'value', e.target.value)}
-                      placeholder={t.metricValue}
-                      className="w-32 bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveMetric(index)}
-                      className="p-2.5 text-slate-400 hover:text-error hover:bg-error/10 rounded-lg transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-sm">delete</span>
-                    </button>
-                  </div>
-                ))}
-              </div>
+              )}
             </div>
-          </div>
-        </Card>
+          </>
+        )}
+        {formData.gallery.length === 0 && (
+          <button type="button" onClick={() => galleryInputRef.current?.click()}
+            style={{ height: 38, padding: '0 16px', border: `1.5px solid ${BORDER}`, borderRadius: 10, background: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', color: TEXT2, marginTop: 4 }}>
+            + إضافة صور للمعرض
+          </button>
+        )}
+        <input ref={galleryInputRef} type="file" accept="image/*" multiple onChange={handleGalleryUpload} style={{ display: 'none' }} />
+      </Section>
 
-        {/* Updates Section */}
-        <Card padding="lg" className="dark:bg-bg-dark-card dark:border-white/10">
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary text-xl">update</span>
-              <h3 className="font-bold text-base tracking-tight text-text-primary dark:text-white">{t.updates}</h3>
-            </div>
-            <button
-              type="button"
-              onClick={handleAddUpdate}
-              className="flex items-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors"
-            >
-              <span className="material-symbols-outlined text-sm">add</span>
-              {t.addUpdate}
-            </button>
-          </div>
+      {/* ── Section 4: Settings ── */}
+      <Section icon="⚙️" title="إعدادات المشروع">
+        <ToggleRow
+          title="عرض قائمة المتبرعين"
+          desc="إظهار أسماء المتبرعين في صفحة المشروع"
+          checked={formData.showDonors}
+          onChange={() => set('showDonors', !formData.showDonors)}
+        />
+        <ToggleRow
+          title="السماح بالتبرع المجهول"
+          desc="يمكن للمتبرعين اختيار إخفاء هويتهم"
+          checked={formData.allowAnonymous}
+          onChange={() => set('allowAnonymous', !formData.allowAnonymous)}
+        />
+        <ToggleRow
+          title="مشروع مميز"
+          desc="يظهر في أعلى قائمة المشاريع والرئيسية"
+          checked={formData.featured}
+          onChange={() => set('featured', !formData.featured)}
+          last
+        />
+      </Section>
 
-          <div className="space-y-4">
-            {formData.updates.length === 0 ? (
-              <p className="text-center text-slate-400 py-8">{t.noUpdates}</p>
-            ) : (
-              formData.updates.map((update) => (
-                <div key={update.id} className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <div className="flex items-center justify-between mb-3">
-                    <input
-                      type="date"
-                      value={update.date}
-                      onChange={(e) => handleUpdateChange(update.id, 'date', e.target.value)}
-                      className="bg-white dark:bg-slate-700 rounded-lg text-sm py-2 px-3 border border-slate-200 dark:border-slate-600 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveUpdate(update.id)}
-                      className="p-2 text-slate-400 hover:text-error hover:bg-error/10 rounded-lg transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-sm">delete</span>
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    value={update.title[activeTab]}
-                    onChange={(e) => handleUpdateChange(update.id, 'title', e.target.value, activeTab)}
-                    placeholder={t.updateTitle}
-                    className="w-full mb-3 bg-white dark:bg-slate-700 rounded-lg text-sm py-2 px-3 border border-slate-200 dark:border-slate-600 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                  <textarea
-                    value={update.content[activeTab]}
-                    onChange={(e) => handleUpdateChange(update.id, 'content', e.target.value, activeTab)}
-                    placeholder={t.updateContent}
-                    rows={3}
-                    className="w-full bg-white dark:bg-slate-700 rounded-lg text-sm py-2 px-3 border border-slate-200 dark:border-slate-600 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
-                  />
-                </div>
-              ))
-            )}
-          </div>
-        </Card>
-      </form>
-
-      {/* Footer Actions */}
-      <footer className="fixed bottom-0 left-0 right-0 lg:left-64 p-4 pb-8 bg-white/95 dark:bg-bg-dark-card/95 backdrop-blur-lg border-t border-border-light dark:border-white/10 flex gap-4 z-30">
-        <button
-          type="button"
-          onClick={(e) => handleSubmit(e, 'draft')}
-          disabled={isLoading}
-          className="flex-1 py-3.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold text-sm text-slate-600 dark:text-slate-300 active:scale-95 transition-transform disabled:opacity-50"
-        >
-          {isLoading ? '...' : t.saveDraft}
+      {/* ── Sticky action bar ── */}
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'white', borderTop: `1px solid ${BORDER}`, padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 50, fontFamily: 'Tajawal, sans-serif' }}>
+        <button type="button" onClick={() => navigate('/admin/projects')}
+          style={{ height: 44, padding: '0 20px', border: `1.5px solid ${BORDER}`, borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', background: 'white', color: '#64748b' }}>
+          ← إلغاء
         </button>
-        <button
-          type="button"
-          onClick={(e) => handleSubmit(e, 'active')}
-          disabled={isLoading}
-          className="flex-[1.5] py-3.5 px-4 rounded-xl bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20 active:scale-95 transition-transform disabled:opacity-50"
-        >
-          {isLoading ? 'Publishing...' : t.publish}
-        </button>
-      </footer>
-
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button type="button" onClick={() => handleSubmit('draft')} disabled={isLoading}
+            style={{ height: 44, padding: '0 28px', background: PRIMARY, color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: isLoading ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: SHADOW_PRIMARY, opacity: isLoading ? 0.6 : 1 }}>
+            {isLoading ? '...' : '💾 حفظ كمسودة'}
+          </button>
+          <button type="button" onClick={() => handleSubmit('active')} disabled={isLoading}
+            style={{ height: 44, padding: '0 28px', background: '#16a34a', color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: isLoading ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', opacity: isLoading ? 0.6 : 1 }}>
+            {isLoading ? '...' : '✅ نشر المشروع'}
+          </button>
+        </div>
+      </div>
     </div>
   );
-};
-
-export default AdminProjectForm;
+}

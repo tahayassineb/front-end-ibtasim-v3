@@ -3,123 +3,101 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
-import Button from '../components/Button';
 import CountryCodeSelector, { validatePhoneByCountry, formatPhoneForDisplay } from '../components/CountryCodeSelector';
 
 // ============================================
 // LOGIN PAGE - Phone + Password Authentication
-// Matching DonationFlow auth design
 // ============================================
-
-// Header Component - matching DonationFlow
-const Header = ({ navigate, isRTL }) => {
-  return (
-    <div className="flex items-center p-4 pb-2 justify-between sticky top-0 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md z-10">
-      <button
-        onClick={() => navigate('/')}
-        className="text-gray-900 dark:text-white flex size-10 shrink-0 items-center justify-center cursor-pointer active:scale-90 transition-transform"
-      >
-        <span className="material-symbols-outlined">
-          {isRTL ? 'chevron_right' : 'chevron_left'}
-        </span>
-      </button>
-      <h2 className="text-gray-900 dark:text-white text-lg font-bold leading-tight flex-1 text-center mr-[-40px]">
-        {/* Empty title or could add login title */}
-      </h2>
-      <div className="size-10"></div>
-    </div>
-  );
-};
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, currentLanguage, login, showToast } = useApp();
-  
-  // Convex mutation for login
+
   const loginWithPassword = useMutation(api.auth.loginWithPassword);
-  
+
   const [phone, setPhone] = useState('');
   const [countryCode, setCountryCode] = useState('+212');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  
+
   const phoneInputRef = useRef(null);
   const cursorPositionRef = useRef(0);
-  
+
   const isRTL = currentLanguage.dir === 'rtl';
   const lang = currentLanguage.code;
-  
-  // Get return URL from location state or default to home
+
   const returnUrl = location.state?.returnUrl || '/';
-  
-  // Translations
+
   const translations = {
     ar: {
-      welcome: 'مرحباً بك',
-      subtitle: 'سجل الدخول للمتابعة',
+      welcome: 'مرحباً بعودتك 👋',
+      subtitle: 'سجّل دخولك للمتابعة ومتابعة تبرعاتك',
       phoneLabel: 'رقم الهاتف',
-      phonePlaceholder: '6XXXXXXXX',
+      phonePlaceholder: '6 XX XX XX XX',
       passwordLabel: 'كلمة المرور',
       passwordPlaceholder: '••••••••',
       loginButton: 'تسجيل الدخول',
       noAccount: 'ليس لديك حساب؟',
-      registerNow: 'سجل الآن',
+      registerNow: 'إنشاء حساب جديد',
       forgotPassword: 'نسيت كلمة المرور؟',
+      rememberMe: 'تذكرني',
+      or: 'أو',
       phoneError: 'رقم هاتف غير صحيح',
       passwordError: 'كلمة المرور مطلوبة',
       loginError: 'رقم الهاتف أو كلمة المرور غير صحيحة',
-      continueAsGuest: 'المتابعة كزائر',
+      socialProof: '+4,200 متبرع',
+      socialProofText: 'انضم إلى',
+      socialProofSuffix: 'يثقون بنا',
     },
     fr: {
-      welcome: 'Bienvenue',
+      welcome: 'Bienvenue 👋',
       subtitle: 'Connectez-vous pour continuer',
       phoneLabel: 'Numéro de téléphone',
-      phonePlaceholder: '6XXXXXXXX',
+      phonePlaceholder: '6 XX XX XX XX',
       passwordLabel: 'Mot de passe',
       passwordPlaceholder: '••••••••',
       loginButton: 'Connexion',
-      noAccount: 'Vous n\'avez pas de compte?',
-      registerNow: 'Inscrivez-vous',
+      noAccount: "Vous n'avez pas de compte?",
+      registerNow: "Créer un compte",
       forgotPassword: 'Mot de passe oublié?',
+      rememberMe: 'Se souvenir',
+      or: 'ou',
       phoneError: 'Numéro invalide',
       passwordError: 'Mot de passe requis',
       loginError: 'Numéro ou mot de passe incorrect',
-      continueAsGuest: 'Continuer en invité',
+      socialProof: '+4 200 donateurs',
+      socialProofText: 'Rejoignez',
+      socialProofSuffix: 'qui nous font confiance',
     },
     en: {
-      welcome: 'Welcome',
-      subtitle: 'Login to continue',
+      welcome: 'Welcome Back 👋',
+      subtitle: 'Sign in to continue',
       phoneLabel: 'Phone Number',
-      phonePlaceholder: '6XXXXXXXX',
+      phonePlaceholder: '6 XX XX XX XX',
       passwordLabel: 'Password',
       passwordPlaceholder: '••••••••',
       loginButton: 'Login',
-      noAccount: 'Don\'t have an account?',
-      registerNow: 'Register now',
+      noAccount: "Don't have an account?",
+      registerNow: 'Create account',
       forgotPassword: 'Forgot password?',
+      rememberMe: 'Remember me',
+      or: 'or',
       phoneError: 'Invalid phone number',
       passwordError: 'Password required',
       loginError: 'Invalid phone or password',
-      continueAsGuest: 'Continue as Guest',
+      socialProof: '+4,200 donors',
+      socialProofText: 'Join',
+      socialProofSuffix: 'who trust us',
     },
   };
-  
-  const tx = translations[currentLanguage.code] || translations.fr;
-  
-  // Validate phone number using CountryCodeSelector validation
-  const validatePhone = (phone) => {
-    return validatePhoneByCountry(phone, countryCode);
-  };
-  
-  // Format phone for display using CountryCodeSelector formatter
-  const formatPhoneDisplay = (phone) => {
-    return formatPhoneForDisplay(phone, countryCode);
-  };
-  
-  // Handle phone input with cursor position fix
+
+  const tx = translations[lang] || translations.ar;
+
+  const validatePhone = (phone) => validatePhoneByCountry(phone, countryCode);
+
   const handlePhoneChange = (e) => {
     const input = e.target;
     const cursorPosition = input.selectionStart;
@@ -128,51 +106,32 @@ const Login = () => {
     const diff = previousValue.length - rawValue.length;
     cursorPositionRef.current = Math.max(0, cursorPosition - diff);
     setPhone(rawValue);
-    if (errors.phone) setErrors(prev => ({ ...prev, phone: null }));
+    if (errors.phone) setErrors((prev) => ({ ...prev, phone: null }));
   };
-  
-  // Restore cursor position
+
   useEffect(() => {
     if (phoneInputRef.current) {
       phoneInputRef.current.setSelectionRange(cursorPositionRef.current, cursorPositionRef.current);
     }
   }, [phone]);
-  
-  // Handle password change
+
   const handlePasswordChange = (e) => {
     setPassword(e.target.value);
-    if (errors.password) setErrors(prev => ({ ...prev, password: null }));
+    if (errors.password) setErrors((prev) => ({ ...prev, password: null }));
   };
-  
-  // Handle form submission
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     const newErrors = {};
-    if (!validatePhone(phone)) {
-      newErrors.phone = tx.phoneError;
-    }
-    if (!password || password.length < 6) {
-      newErrors.password = tx.passwordError;
-    }
-    
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-    
+    if (!validatePhone(phone)) newErrors.phone = tx.phoneError;
+    if (!password || password.length < 6) newErrors.password = tx.passwordError;
+    if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
+
     setIsLoading(true);
-    
     try {
-      // Call Convex API for login
       const fullPhoneNumber = countryCode + phone;
-      const result = await loginWithPassword({
-        phoneNumber: fullPhoneNumber,
-        password
-      });
-      
+      const result = await loginWithPassword({ phoneNumber: fullPhoneNumber, password });
       if (result.success && result.user) {
-        // Login successful
         const userData = {
           id: result.user._id,
           name: result.user.fullName,
@@ -181,12 +140,10 @@ const Login = () => {
           preferredLanguage: result.user.preferredLanguage,
           isVerified: result.user.isVerified,
         };
-        
         login(userData);
         showToast(lang === 'ar' ? 'تم تسجيل الدخول' : lang === 'fr' ? 'Connecté' : 'Logged in', 'success');
         navigate(returnUrl, { replace: true });
       } else {
-        // Login failed
         setErrors({ password: result.message || tx.loginError });
         showToast(result.message || tx.loginError, 'error');
       }
@@ -198,29 +155,39 @@ const Login = () => {
       setIsLoading(false);
     }
   };
-  
+
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark">
-      <div className="relative flex h-full min-h-screen w-full max-w-[430px] mx-auto flex-col bg-background-light dark:bg-background-dark shadow-2xl overflow-hidden">
-        {/* Header */}
-        <Header navigate={navigate} isRTL={isRTL} />
-        
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col px-6 pt-6 pb-8">
-          <h1 className="text-gray-900 dark:text-white text-2xl font-bold text-center mb-2">
-            {tx.welcome}
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
-            {tx.subtitle}
-          </p>
-          
-          <form className="space-y-4 flex-1">
-            {/* Phone Input with CountryCodeSelector */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {tx.phoneLabel}
-              </label>
-              <div className="flex gap-2">
+    <div style={{ minHeight: '100vh', background: '#F0F7F7', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 20px', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b' }}>
+      <div style={{ width: '100%', maxWidth: 390, display: 'flex', flexDirection: 'column' }}>
+
+        {/* Top bar */}
+        <div style={{ height: 52, display: 'flex', alignItems: 'center', padding: '0 4px', justifyContent: 'space-between', marginBottom: 4 }}>
+          <button
+            onClick={() => navigate('/')}
+            style={{ width: 36, height: 36, borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,.05)', border: 'none' }}
+          >
+            ←
+          </button>
+          <div style={{ fontSize: 13, color: '#0d7477', fontWeight: 600 }}>تحتاج مساعدة؟</div>
+        </div>
+
+        {/* Logo section */}
+        <div style={{ textAlign: 'center', padding: '24px 20px 20px' }}>
+          <div style={{ width: 60, height: 60, background: '#0d7477', borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: 26, margin: '0 auto 12px', boxShadow: '0 4px 14px rgba(13,116,119,.25)' }}>ا</div>
+          <div style={{ fontSize: 22, fontWeight: 900 }}>ابتسام</div>
+          <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>جمعية خيرية معتمدة</div>
+        </div>
+
+        {/* Auth card */}
+        <div style={{ margin: '0 4px', background: 'white', borderRadius: 24, padding: 24, boxShadow: '0 10px 15px rgba(0,0,0,.10)' }}>
+          <h1 style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>{tx.welcome}</h1>
+          <p style={{ fontSize: 13, color: '#64748b', marginBottom: 24, lineHeight: 1.6 }}>{tx.subtitle}</p>
+
+          <form onSubmit={handleSubmit}>
+            {/* Phone */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 7 }}>{tx.phoneLabel}</label>
+              <div style={{ display: 'flex', height: 52, border: `1.5px solid ${errors.phone ? '#ef4444' : '#33C0C0'}`, borderRadius: 12, overflow: 'hidden' }}>
                 <CountryCodeSelector
                   value={countryCode}
                   onChange={setCountryCode}
@@ -232,82 +199,80 @@ const Login = () => {
                   type="tel"
                   value={phone}
                   onChange={handlePhoneChange}
-                  placeholder={countryCode === '+212' ? tx.phonePlaceholder : 'Phone number'}
+                  placeholder={tx.phonePlaceholder}
                   maxLength={15}
-                  className="flex-1 h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
-                  dir="ltr"
+                  style={{ flex: 1, border: 'none', outline: 'none', padding: '0 12px', fontFamily: 'Tajawal, sans-serif', fontSize: 14, background: 'transparent', direction: 'ltr' }}
                   inputMode="numeric"
                   pattern="[0-9]*"
                 />
               </div>
-              {errors.phone && <p className="text-error text-xs mt-1">{errors.phone}</p>}
+              {errors.phone && <p style={{ color: '#ef4444', fontSize: 12, marginTop: 4 }}>{errors.phone}</p>}
             </div>
-            
-            {/* Password Input */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {tx.passwordLabel}
-              </label>
-              <div className="relative">
+
+            {/* Password */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 7 }}>{tx.passwordLabel}</label>
+              <div style={{ position: 'relative' }}>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={handlePasswordChange}
                   placeholder={tx.passwordPlaceholder}
-                  className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 pr-12 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
+                  style={{ width: '100%', height: 52, padding: '0 48px 0 16px', border: `1.5px solid ${errors.password ? '#ef4444' : '#E5E9EB'}`, borderRadius: 12, fontFamily: 'Tajawal, sans-serif', fontSize: 14, color: '#0e1a1b', outline: 'none', background: 'white' }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', cursor: 'pointer', background: 'none', border: 'none', fontSize: 18 }}
                 >
-                  <span className="material-symbols-outlined">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                  {showPassword ? '🙈' : '👁'}
                 </button>
               </div>
-              {errors.password && <p className="text-error text-xs mt-1">{errors.password}</p>}
+              {errors.password && <p style={{ color: '#ef4444', fontSize: 12, marginTop: 4 }}>{errors.password}</p>}
             </div>
-            
-            {/* Forgot Password */}
-            <div className="text-right">
-              <Link to="/forgot-password" className="text-primary text-sm font-medium hover:underline">
-                {tx.forgotPassword}
-              </Link>
+
+            {/* Forgot / Remember row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#64748b' }}>
+                <input type="checkbox" style={{ accentColor: '#0d7477' }} /> {tx.rememberMe}
+              </label>
+              <Link to="/forgot-password" style={{ fontSize: 13, color: '#0d7477', fontWeight: 600 }}>{tx.forgotPassword}</Link>
+            </div>
+
+            <button
+              type="submit"
+              disabled={!phone || !password || isLoading}
+              style={{ width: '100%', height: 52, background: '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: isLoading ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'Tajawal, sans-serif', marginBottom: 16, opacity: isLoading ? 0.7 : 1 }}
+            >
+              {isLoading ? '...' : tx.loginButton}
+            </button>
+
+            {/* Divider */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <div style={{ flex: 1, height: 1, background: '#E5E9EB' }} />
+              <div style={{ fontSize: 12, color: '#94a3b8' }}>{tx.or}</div>
+              <div style={{ flex: 1, height: 1, background: '#E5E9EB' }} />
+            </div>
+
+            <div style={{ textAlign: 'center', fontSize: 14, color: '#64748b' }}>
+              {tx.noAccount}{' '}
+              <Link to="/register" state={{ returnUrl }} style={{ color: '#0d7477', fontWeight: 700 }}>{tx.registerNow}</Link>
             </div>
           </form>
         </div>
-        
-        {/* Bottom Action - Matching DonationFlow */}
-        <div className="p-6 pb-10 bg-white/50 dark:bg-gray-800/50 backdrop-blur-md">
-          <Button
-            onClick={handleSubmit}
-            disabled={!phone || !password || isLoading}
-            fullWidth
-            size="xl"
-            loading={isLoading}
-          >
-            {tx.loginButton}
-          </Button>
-          
-          {/* Register Link */}
-          <div className="mt-4 text-center">
-            <span className="text-gray-500 dark:text-gray-400 text-sm">{tx.noAccount} </span>
-            <Link 
-              to="/register" 
-              state={{ returnUrl }}
-              className="text-primary text-sm font-bold hover:underline"
-            >
-              {tx.registerNow}
-            </Link>
+
+        {/* Trust section */}
+        <div style={{ padding: 20, textAlign: 'center' }}>
+          <div style={{ fontSize: 13, color: '#64748b', marginBottom: 12 }}>
+            {tx.socialProofText} <strong style={{ color: '#0A5F62' }}>{tx.socialProof}</strong> {tx.socialProofSuffix}
           </div>
-          
-          {/* Continue as Guest */}
-          <button
-            type="button"
-            onClick={() => navigate('/', { replace: true })}
-            className="w-full mt-4 text-primary text-sm font-medium hover:underline"
-          >
-            {tx.continueAsGuest}
-          </button>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
+            {[['🔒', 'SSL محمي'], ['✓', 'معتمد رسمياً'], ['💬', 'دعم 24/7']].map(([icon, label]) => (
+              <span key={label} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 12px', background: 'white', border: '1px solid #E5E9EB', borderRadius: 100, fontSize: 11, fontWeight: 600, color: '#64748b', boxShadow: '0 2px 4px rgba(0,0,0,.03)' }}>
+                {icon} {label}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </div>

@@ -3,273 +3,176 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
-import Button from '../components/Button';
-import Input from '../components/Input';
 
 // ============================================
-// ADMIN LOGIN PAGE - Secure authentication
+// ADMIN LOGIN — Split layout: dark teal left + white form right
 // ============================================
 
-const AdminLogin = () => {
-  const { login, currentLanguage, isDarkMode } = useApp();
+export default function AdminLogin() {
+  const { login } = useApp();
   const navigate = useNavigate();
   const loginAdmin = useMutation(api.auth.loginAdmin);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    rememberMe: false,
-  });
+
+  const [formData, setFormData] = useState({ email: '', password: '', rememberMe: false });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Translations
-  const translations = {
-    ar: {
-      title: 'Association Espoir',
-      subtitle: 'مصادقة آمنة لأعضاء الفريق',
-      emailLabel: 'البريد الإلكتروني للمشرف',
-      emailPlaceholder: 'name@espoir.org',
-      passwordLabel: 'كلمة المرور',
-      passwordPlaceholder: '••••••••',
-      rememberMe: 'تذكرني',
-      forgotPassword: 'نسيت كلمة المرور؟',
-      loginButton: 'تسجيل الدخول الآمن',
-      backButton: 'العودة للموقع',
-      encrypted: 'اتصال مشفر',
-      encryptionType: 'تشفير AES 256-bit',
-      errorInvalid: 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
-      errorRequired: 'جميع الحقول مطلوبة',
-    },
-    fr: {
-      title: 'Association Espoir',
-      subtitle: 'Authentification sécurisée pour le personnel',
-      emailLabel: 'Email Admin',
-      emailPlaceholder: 'nom@espoir.org',
-      passwordLabel: 'Mot de passe',
-      passwordPlaceholder: '••••••••',
-      rememberMe: 'Se souvenir de moi',
-      forgotPassword: 'Mot de passe oublié ?',
-      loginButton: 'Connexion Sécurisée',
-      backButton: 'Retour au site',
-      encrypted: 'Connexion Chiffrée',
-      encryptionType: 'Chiffrement AES 256-bit',
-      errorInvalid: 'Email ou mot de passe invalide',
-      errorRequired: 'Tous les champs sont obligatoires',
-    },
-    en: {
-      title: 'Association Espoir',
-      subtitle: 'Secure authentication for staff members',
-      emailLabel: 'Admin Email',
-      emailPlaceholder: 'name@espoir.org',
-      passwordLabel: 'Password',
-      passwordPlaceholder: '••••••••',
-      rememberMe: 'Remember me',
-      forgotPassword: 'Forgot password?',
-      loginButton: 'Secure Login',
-      backButton: 'Back to Website',
-      encrypted: 'Encrypted Connection',
-      encryptionType: '256-bit AES Encryption',
-      errorInvalid: 'Invalid email or password',
-      errorRequired: 'All fields are required',
-    },
-  };
-
-  const t = translations[currentLanguage?.code] || translations.en;
-
-  const handleInputChange = (e) => {
+  const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!formData.email || !formData.password) {
-      setError(t.errorRequired);
+      setError('جميع الحقول مطلوبة');
       return;
     }
-
     setLoading(true);
-
     try {
       const result = await loginAdmin({ email: formData.email, password: formData.password });
       if (result.success) {
-        login({
-          id: result.adminId,
-          userId: result.userId,
-          email: result.email,
-          name: 'Admin',
-          role: 'admin',
-        });
+        login({ id: result.adminId, userId: result.userId, email: result.email, name: 'Admin', role: 'admin' });
         navigate('/admin');
       } else {
-        setError(result.message || t.errorInvalid);
+        setError(result.message || 'البريد الإلكتروني أو كلمة المرور غير صحيحة');
       }
-    } catch (err) {
-      setError(t.errorInvalid);
+    } catch {
+      setError('البريد الإلكتروني أو كلمة المرور غير صحيحة');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-bg-light dark:bg-bg-dark flex flex-col">
-      {/* Header */}
-      <div className="flex items-center p-4 pb-2 justify-between">
-        <Link 
-          to="/" 
-          className="text-primary flex size-12 shrink-0 items-center cursor-pointer hover:bg-primary/10 rounded-lg transition-colors"
-        >
-          <span className="material-symbols-outlined">arrow_back</span>
-        </Link>
-        <h2 className="text-text-primary dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12">
-          Admin Portal
-        </h2>
-      </div>
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b' }} dir="rtl">
 
-      {/* Main Content */}
-      <div className="flex flex-1 flex-col items-center justify-center px-6 py-8">
-        {/* Glassmorphism Card */}
-        <div className="w-full max-w-[400px] rounded-xl p-8 shadow-2xl flex flex-col bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/30 dark:border-white/10">
-          {/* Shield Icon */}
-          <div className="flex justify-center mb-8">
-            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
-              <span className="material-symbols-outlined text-primary text-5xl">shield_person</span>
-            </div>
-          </div>
+      {/* Left decorative panel */}
+      <div style={{ flex: 1, background: 'linear-gradient(160deg,#010C0D,#0A5F62,#0d7477)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 60, position: 'relative', overflow: 'hidden' }}>
+        {/* Decorative circles */}
+        <div style={{ position: 'absolute', top: -80, right: -80, width: 320, height: 320, borderRadius: '50%', background: 'rgba(255,255,255,.04)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: -100, left: -60, width: 280, height: 280, borderRadius: '50%', background: 'rgba(255,255,255,.03)', pointerEvents: 'none' }} />
 
-          {/* Title */}
-          <div className="mb-8 text-center">
-            <h1 className="text-text-primary dark:text-white text-2xl font-bold leading-tight mb-2">
-              {t.title}
-            </h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm">{t.subtitle}</p>
-          </div>
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 48, position: 'relative', zIndex: 1 }}>
+          <div style={{ width: 52, height: 52, background: 'white', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 900, color: '#0A5F62' }}>ا</div>
+          <div style={{ fontSize: 26, fontWeight: 900, color: 'white' }}>ابتسام · إدارة</div>
+        </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email Field */}
-            <div className="flex flex-col gap-2">
-              <label className="text-text-primary dark:text-white text-sm font-semibold px-1">
-                {t.emailLabel}
-              </label>
-              <div className="relative">
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder={t.emailPlaceholder}
-                  className="flex w-full rounded-lg text-text-primary dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 h-14 placeholder:text-slate-400 p-4 pl-12 text-base"
-                />
-                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                  mail
-                </span>
+        {/* Heading */}
+        <h1 style={{ fontSize: 36, fontWeight: 900, color: 'white', lineHeight: 1.3, marginBottom: 12, position: 'relative', zIndex: 1 }}>
+          لوحة التحكم<br />لجمعية ابتسام
+        </h1>
+        <p style={{ fontSize: 16, color: 'rgba(255,255,255,.65)', lineHeight: 1.8, marginBottom: 40, position: 'relative', zIndex: 1 }}>
+          إدارة المشاريع، المتبرعين،<br />الكفالات، والتحقق من التحويلات
+        </p>
+
+        {/* Stat chips */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'relative', zIndex: 1 }}>
+          {[
+            { icon: '📋', num: '1,247', label: 'تبرع في انتظار التحقق' },
+            { icon: '🤲', num: '89', label: 'كفالة نشطة هذا الشهر' },
+            { icon: '💰', num: '124,500', label: 'درهم محصّل هذا الشهر' },
+          ].map((s, i) => (
+            <div key={i} style={{ background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)', borderRadius: 14, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ fontSize: 24 }}>{s.icon}</div>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: 'white', fontFamily: 'Inter, sans-serif' }}>{s.num}</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,.65)' }}>{s.label}</div>
               </div>
             </div>
-
-            {/* Password Field */}
-            <div className="flex flex-col gap-2">
-              <label className="text-text-primary dark:text-white text-sm font-semibold px-1">
-                {t.passwordLabel}
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  placeholder={t.passwordPlaceholder}
-                  className="flex w-full rounded-lg text-text-primary dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 h-14 placeholder:text-slate-400 p-4 pl-12 pr-12 text-base"
-                />
-                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                  lock
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
-                >
-                  <span className="material-symbols-outlined">
-                    {showPassword ? 'visibility_off' : 'visibility'}
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            {/* Remember Me & Forgot Password */}
-            <div className="flex items-center justify-between px-1">
-              <label className="flex items-center gap-2 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  name="rememberMe"
-                  checked={formData.rememberMe}
-                  onChange={handleInputChange}
-                  className="w-5 h-5 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary"
-                />
-                <span className="text-sm text-slate-600 dark:text-slate-400 group-hover:text-primary transition-colors">
-                  {t.rememberMe}
-                </span>
-              </label>
-              <Link to="/forgot-password" className="text-sm font-semibold text-primary hover:underline">
-                {t.forgotPassword}
-              </Link>
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <div className="text-error text-sm text-center bg-error/10 rounded-lg p-3">
-                {error}
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <div className="pt-4">
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                fullWidth
-                loading={loading}
-                icon="login"
-                className="shadow-lg shadow-primary/30"
-              >
-                {t.loginButton}
-              </Button>
-            </div>
-          </form>
-
-          {/* Encryption Badge */}
-          <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700 text-center">
-            <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold">
-              {t.encrypted}
-            </p>
-            <div className="flex justify-center gap-2 mt-2">
-              <span className="material-symbols-outlined text-[16px] text-green-500">verified_user</span>
-              <span className="text-[10px] text-slate-400 dark:text-slate-500">{t.encryptionType}</span>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="mt-auto p-8 text-center">
-        <div className="mx-auto w-full max-w-[300px] h-[120px] bg-center bg-no-repeat bg-contain opacity-20"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%230D7377' fill-opacity='1' d='M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E")`
-          }}
-        />
-        <p className="text-slate-400 dark:text-slate-600 text-xs mt-4">
-          © 2024 Association Espoir. All rights reserved.
-        </p>
+      {/* Right form panel */}
+      <div style={{ width: 480, background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 48px', flexShrink: 0 }}>
+        {/* Badge */}
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#E6F4F4', color: '#0A5F62', padding: '5px 14px', borderRadius: 100, fontSize: 12, fontWeight: 700, marginBottom: 24 }}>
+          🔐 لوحة الإدارة
+        </div>
+
+        <h2 style={{ fontSize: 28, fontWeight: 900, marginBottom: 8, width: '100%', textAlign: 'right' }}>مرحباً بك</h2>
+        <p style={{ fontSize: 14, color: '#64748b', marginBottom: 32, width: '100%', textAlign: 'right' }}>أدخل بياناتك للوصول إلى لوحة التحكم</p>
+
+        <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+          {/* Email field */}
+          <div style={{ marginBottom: 18 }}>
+            <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 7, display: 'block' }}>البريد الإلكتروني</label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="name@ibtasim.org"
+              style={{ width: '100%', height: 52, border: '1.5px solid #E5E9EB', borderRadius: 14, padding: '0 16px', fontSize: 15, fontFamily: 'Inter, sans-serif', color: '#0e1a1b', outline: 'none', direction: 'ltr', textAlign: 'left' }}
+              onFocus={(e) => { e.target.style.borderColor = '#0d7477'; e.target.style.boxShadow = '0 0 0 3px rgba(13,116,119,.1)'; }}
+              onBlur={(e) => { e.target.style.borderColor = '#E5E9EB'; e.target.style.boxShadow = 'none'; }}
+              dir="ltr"
+            />
+          </div>
+
+          {/* Password field */}
+          <div style={{ marginBottom: 18 }}>
+            <label style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 7, display: 'block' }}>كلمة المرور</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="••••••••••"
+                style={{ width: '100%', height: 52, border: '1.5px solid #E5E9EB', borderRadius: 14, padding: '0 16px', fontSize: 16, fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', outline: 'none', direction: 'ltr', textAlign: 'left' }}
+                onFocus={(e) => { e.target.style.borderColor = '#0d7477'; e.target.style.boxShadow = '0 0 0 3px rgba(13,116,119,.1)'; }}
+                onBlur={(e) => { e.target.style.borderColor = '#E5E9EB'; e.target.style.boxShadow = 'none'; }}
+                dir="ltr"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(v => !v)}
+                style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#94a3b8', padding: 0 }}
+              >
+                {showPassword ? '🙈' : '👁'}
+              </button>
+            </div>
+            <button type="button" style={{ fontSize: 12, color: '#0d7477', background: 'none', border: 'none', padding: 0, cursor: 'pointer', marginTop: 6, display: 'block', fontFamily: 'Tajawal, sans-serif' }}>
+              نسيت كلمة المرور؟
+            </button>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div style={{ background: '#FEF2F2', border: '1px solid #fecaca', borderRadius: 12, padding: '10px 14px', fontSize: 13, color: '#dc2626', marginBottom: 14, textAlign: 'center' }}>
+              {error}
+            </div>
+          )}
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{ width: '100%', height: 52, background: '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'Tajawal, sans-serif', marginTop: 4, opacity: loading ? 0.7 : 1 }}
+          >
+            {loading ? '⏳ جاري الدخول...' : 'دخول لوحة التحكم'}
+          </button>
+        </form>
+
+        {/* Security badges */}
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 24, justifyContent: 'center' }}>
+          {['🔒 SSL 256-bit', '🛡️ دخول آمن', '📋 سجل الأنشطة مفعّل'].map((b, i, arr) => (
+            <React.Fragment key={b}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#94a3b8', fontFamily: 'Inter, sans-serif' }}>{b}</span>
+              {i < arr.length - 1 && <span style={{ color: '#94a3b8', fontSize: 11 }}>·</span>}
+            </React.Fragment>
+          ))}
+        </div>
+
+        <Link to="/" style={{ marginTop: 20, fontSize: 13, color: '#94a3b8', textDecoration: 'none' }}>
+          ← العودة للموقع
+        </Link>
       </div>
     </div>
   );
-};
-
-export default AdminLogin;
+}

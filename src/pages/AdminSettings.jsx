@@ -1,93 +1,129 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import Card from '../components/Card';
-import Button from '../components/Button';
-import Badge from '../components/Badge';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { QRCodeSVG } from 'qrcode.react';
 
-// ============================================
-// ADMIN SETTINGS PAGE - System Configuration (Arabic)
-// ============================================
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const BORDER    = '#E5E9EB';
+const PRIMARY   = '#0d7477';
+const P600      = '#0A5F62';
+const P100      = '#CCF0F0';
+const P400      = '#33C0C0';
+const TEXT2     = '#64748b';
+const TEXTM     = '#94a3b8';
+const SHADOW    = '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)';
+const SHADOW_P  = '0 4px 14px rgba(13,116,119,.25)';
+const TEAL_WASH = '#F0F7F7';
 
+// ─── Shared sub-components ────────────────────────────────────────────────────
+const SettingsCard = ({ icon, title, children }) => (
+  <div style={{ background: 'white', borderRadius: 16, border: `1px solid ${BORDER}`, boxShadow: SHADOW, overflow: 'hidden', marginBottom: 16 }}>
+    <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER}`, fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <span style={{ fontSize: 18 }}>{icon}</span><span>{title}</span>
+    </div>
+    <div style={{ padding: 20 }}>{children}</div>
+  </div>
+);
+
+const fieldInput = {
+  width: '100%', height: 48, border: `1.5px solid ${BORDER}`, borderRadius: 12,
+  padding: '0 14px', fontSize: 14, fontFamily: 'Tajawal, sans-serif',
+  color: '#0e1a1b', outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s',
+};
+
+const FieldLabel = ({ children }) => (
+  <label style={{ fontSize: 12, fontWeight: 700, color: TEXT2, marginBottom: 7, display: 'block' }}>{children}</label>
+);
+
+const SaveBtn = ({ onClick, loading, children, fullWidth }) => (
+  <button onClick={onClick} disabled={loading}
+    style={{ height: 44, padding: '0 28px', background: PRIMARY, color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: SHADOW_P, opacity: loading ? 0.7 : 1, width: fullWidth ? '100%' : 'auto' }}>
+    {loading ? 'جاري الحفظ...' : children}
+  </button>
+);
+
+const ToggleRow = ({ title, desc, value, onChange, isLast }) => (
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: isLast ? 'none' : `1px solid ${BORDER}` }}>
+    <div>
+      <div style={{ fontSize: 14, fontWeight: 600 }}>{title}</div>
+      {desc && <div style={{ fontSize: 12, color: TEXT2, marginTop: 2 }}>{desc}</div>}
+    </div>
+    <div onClick={() => onChange(!value)}
+      style={{ width: 44, height: 24, background: value ? PRIMARY : BORDER, borderRadius: 100, position: 'relative', cursor: 'pointer', flexShrink: 0, transition: 'background .2s' }}>
+      <div style={{ width: 20, height: 20, background: 'white', borderRadius: '50%', position: 'absolute', top: 2, left: value ? 22 : 2, boxShadow: '0 1px 3px rgba(0,0,0,.2)', transition: 'left .2s' }} />
+    </div>
+  </div>
+);
+
+const TABS = [
+  { id: 'bank',          icon: '🏦', label: 'البنك' },
+  { id: 'whatsapp',      icon: '💬', label: 'واتساب' },
+  { id: 'team',          icon: '👥', label: 'الفريق' },
+  { id: 'profile',       icon: '👤', label: 'حسابي' },
+  { id: 'notifications', icon: '🔔', label: 'الإشعارات' },
+];
+
+// ─── Component ────────────────────────────────────────────────────────────────
 const AdminSettings = () => {
-  const { currentLanguage, isDarkMode, toggleDarkMode, showToast, user } = useApp();
+  const { showToast, user } = useApp();
   const [activeTab, setActiveTab] = useState('bank');
 
-  // Convex queries for loading settings
-  const bankInfoData = useQuery(api.config.getConfig, { key: 'bank_info' });
+  // ── Convex queries ────────────────────────────────────────────────────────
+  const bankInfoData        = useQuery(api.config.getConfig, { key: 'bank_info' });
   const whatsappSettingsData = useQuery(api.config.getConfig, { key: 'whatsapp_settings' });
-  const teamMembersData = useQuery(api.config.getConfig, { key: 'team_members' });
-  const orgProfileData = useQuery(api.config.getConfig, { key: 'org_profile' });
-  const notificationsData = useQuery(api.config.getConfig, { key: 'notifications' });
+  const teamMembersData     = useQuery(api.config.getConfig, { key: 'team_members' });
+  const orgProfileData      = useQuery(api.config.getConfig, { key: 'org_profile' });
+  const notificationsData   = useQuery(api.config.getConfig, { key: 'notifications' });
+  const setConfig           = useMutation(api.config.setConfig);
 
-  // Convex mutation for saving settings
-  const setConfig = useMutation(api.config.setConfig);
-
-  // WhatsApp session actions
-  const createAndConnectSession = useAction(api.whatsapp.createAndConnectSession);
-  const disconnectSessionAction = useAction(api.whatsapp.disconnectSession);
-  const refreshQrCodeAction = useAction(api.whatsapp.refreshQrCode);
-  const syncSessionStatusAction = useAction(api.whatsapp.syncSessionStatus);
-  const deleteSessionAction = useAction(api.whatsapp.deleteSession);
-  const resyncApiKeyAction = useAction(api.whatsapp.resyncApiKey);
-  const listWaSenderSessionsAction = useAction(api.whatsapp.listWaSenderSessions);
+  // ── WhatsApp session actions ───────────────────────────────────────────────
+  const createAndConnectSession      = useAction(api.whatsapp.createAndConnectSession);
+  const disconnectSessionAction      = useAction(api.whatsapp.disconnectSession);
+  const refreshQrCodeAction          = useAction(api.whatsapp.refreshQrCode);
+  const syncSessionStatusAction      = useAction(api.whatsapp.syncSessionStatus);
+  const deleteSessionAction          = useAction(api.whatsapp.deleteSession);
+  const resyncApiKeyAction           = useAction(api.whatsapp.resyncApiKey);
+  const listWaSenderSessionsAction   = useAction(api.whatsapp.listWaSenderSessions);
   const selectSessionForSendingAction = useAction(api.whatsapp.selectSessionForSending);
 
-  // Admin invitation mutation
+  // ── Admin invitation ───────────────────────────────────────────────────────
   const createAdminInvitation = useMutation(api.admin.createAdminInvitation);
 
-  // Loading states for save operations
-  const [isSavingBank, setIsSavingBank] = useState(false);
-  const [ribCopied, setRibCopied] = useState(false);
-  const [isSavingWhatsapp, setIsSavingWhatsapp] = useState(false);
-  const [isSavingTeam, setIsSavingTeam] = useState(false);
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  // ── Loading states ────────────────────────────────────────────────────────
+  const [isSavingBank,          setIsSavingBank]          = useState(false);
+  const [isSavingProfile,       setIsSavingProfile]       = useState(false);
   const [isSavingNotifications, setIsSavingNotifications] = useState(false);
-  const [waSessionsList, setWaSessionsList] = useState(null); // null = not loaded, [] = loaded
-  const [waSessionsLoading, setWaSessionsLoading] = useState(false);
+  const [isSavingTeam,          setIsSavingTeam]          = useState(false);
+  const [ribCopied,             setRibCopied]             = useState(false);
+  const [waSessionsList,        setWaSessionsList]        = useState(null);
+  const [waSessionsLoading,     setWaSessionsLoading]     = useState(false);
 
-  // Check if any data is loading
-  const isLoading = 
-    bankInfoData === undefined || 
-    whatsappSettingsData === undefined || 
-    teamMembersData === undefined || 
+  const isLoading =
+    bankInfoData === undefined ||
+    whatsappSettingsData === undefined ||
+    teamMembersData === undefined ||
     orgProfileData === undefined ||
     notificationsData === undefined;
 
-  // WhatsApp Session State
+  // ── WhatsApp session state ────────────────────────────────────────────────
   const [whatsappSession, setWhatsappSession] = useState({
-    isConnected: false,
-    phoneNumber: '',
-    sessionId: null,
-    qrCode: null,
-    lastConnected: null,
-    messagesSent: 0,
-    messagesReceived: 0,
-    isLoading: false,
+    isConnected: false, phoneNumber: '', sessionId: null,
+    qrCode: null, lastConnected: null, messagesSent: 0,
+    messagesReceived: 0, isLoading: false,
   });
-
-  // Whether the QR is being manually refreshed
   const [isRefreshingQr, setIsRefreshingQr] = useState(false);
 
-  // Load WhatsApp settings from Convex
   useEffect(() => {
     if (whatsappSettingsData) {
       try {
         const parsed = JSON.parse(whatsappSettingsData);
-        setWhatsappSession(prev => ({
-          ...prev,
-          ...parsed,
-          isLoading: false,
-        }));
-      } catch (e) {
-        console.error('Failed to parse WhatsApp settings:', e);
-      }
+        setWhatsappSession(prev => ({ ...prev, ...parsed, isLoading: false }));
+      } catch (e) { console.error('Failed to parse WhatsApp settings:', e); }
     }
   }, [whatsappSettingsData]);
 
-  // Auto-refresh QR every 20 seconds while QR is shown and not yet connected
+  // Auto-refresh QR every 20 s while QR shown + not yet connected
   const autoRefreshTimerRef = useRef(null);
   useEffect(() => {
     if (!whatsappSession.qrCode || whatsappSession.isConnected) {
@@ -97,15 +133,13 @@ const AdminSettings = () => {
     autoRefreshTimerRef.current = setInterval(async () => {
       try {
         const result = await refreshQrCodeAction({});
-        if (result.qrCode) {
-          setWhatsappSession(prev => ({ ...prev, qrCode: result.qrCode }));
-        }
-      } catch (_) { /* silent — user can manually refresh */ }
+        if (result.qrCode) setWhatsappSession(prev => ({ ...prev, qrCode: result.qrCode }));
+      } catch (_) { /* silent */ }
     }, 20000);
     return () => clearInterval(autoRefreshTimerRef.current);
   }, [whatsappSession.qrCode, whatsappSession.isConnected]);
 
-  // Poll session status every 5 seconds while QR is visible (detect scan success)
+  // Poll status every 5 s while QR visible (detect scan success)
   const statusPollRef = useRef(null);
   useEffect(() => {
     if (!whatsappSession.instanceId || whatsappSession.isConnected || !whatsappSession.qrCode) {
@@ -124,279 +158,106 @@ const AdminSettings = () => {
     return () => clearInterval(statusPollRef.current);
   }, [whatsappSession.instanceId, whatsappSession.isConnected, whatsappSession.qrCode]);
 
-  // Arabic Translations Only
-  const t = {
-    // Header
-    title: 'إعدادات النظام',
-    
-    // Settings Navigation
-    settingsNav: 'التنقل في الإعدادات',
-    bankManagement: 'إدارة البنك',
-    associationProfile: 'ملف الجمعية',
-    adminAccess: 'وصول المشرف',
-    notificationRules: 'قواعد الإشعارات',
-    paymentMethods: 'طرق الدفع',
-    whatsappManagement: 'إدارة الواتساب',
-    teamMembers: 'فريق العمل',
-    
-    // General Settings
-    generalSettings: 'إعدادات عامة',
-    darkMode: 'الوضع الداكن',
-    language: 'اللغة',
-    notifications: 'الإشعارات',
-    emailNotifications: 'إشعارات البريد الإلكتروني',
-    smsNotifications: 'إشعارات الرسائل القصيرة',
-    
-    // Bank Management
-    bankDescription: 'تكوين تفاصيل RIB الآمنة لمعالجة التبرعات.',
-    accountHolder: 'اسم صاحب الحساب',
-    rib: 'RIB',
-    ribHint: 'رقم الحساب البنكي المغربي القياسي المكون من 24 رقماً',
-    bankName: 'اسم البنك',
-    securityNote: 'تتطلب التغييرات المصادقة متعددة العوامل. سيتم إرسال تنبيهات الإشعارات إلى دائرة المشرفين.',
-    saveChanges: 'حفظ التغييرات',
-    saving: 'جاري الحفظ...',
-    
-    // WhatsApp Management
-    whatsappDescription: 'إدارة جلسة الواتساب لإرسال الإشعارات والتواصل مع المتبرعين.',
-    sessionStatus: 'حالة الجلسة',
-    connected: 'متصل',
-    disconnected: 'غير متصل',
-    qrCode: 'رمز الاستجابة السريعة',
-    scanQrCode: 'امسح رمز QR باستخدام تطبيق الواتساب',
-    createSession: 'إنشاء جلسة',
-    disconnect: 'قطع الاتصال',
-    changePhoneNumber: 'تغيير رقم الهاتف',
-    newPhoneNumber: 'رقم الهاتف الجديد',
-    phoneNumberPlaceholder: '+212 6XX-XXXXXX',
-    updatePhone: 'تحديث الرقم',
-    sessionStats: 'إحصائيات الجلسة',
-    messagesSent: 'الرسائل المرسلة',
-    messagesReceived: 'الرسائل المستلمة',
-    lastConnected: 'آخر اتصال',
-    sessionActive: 'الجلسة نشطة',
-    sessionInactive: 'الجلسة غير نشطة',
-    createSessionSuccess: 'تم إنشاء الجلسة بنجاح',
-    disconnectSuccess: 'تم قطع الاتصال بنجاح',
-    phoneUpdated: 'تم تحديث رقم الهاتف بنجاح',
-    
-    // Team Members
-    addMember: 'إضافة عضو',
-    memberName: 'اسم العضو',
-    memberEmail: 'البريد الإلكتروني',
-    memberRole: 'الدور الوظيفي',
-    memberPhone: 'رقم الهاتف',
-    saveMember: 'حفظ العضو',
-    cancel: 'إلغاء',
-    superAdmin: 'مدير عام',
-    manager: 'مدير',
-    viewer: 'مشاهد',
-    actions: 'الإجراءات',
-    delete: 'حذف',
-    edit: 'تعديل',
-    
-    // Profile
-    organizationName: 'اسم المنظمة',
-    email: 'البريد الإلكتروني',
-    phone: 'الهاتف',
-    address: 'العنوان',
-    description: 'الوصف',
-    
-    // Notifications
-    donationAlerts: 'تنبيهات التبرعات',
-    newDonation: 'تبرع جديد',
-    donationVerified: 'تم التحقق من التبرع',
-    weeklyReports: 'التقارير الأسبوعية',
-    monthlyReports: 'التقارير الشهرية',
-  };
-
-  // Default form state
+  // ── Form state ────────────────────────────────────────────────────────────
   const defaultFormData = {
-    accountHolder: 'جمعية ابتسم',
-    rib: '',
-    bankName: 'Attijariwafa Bank',
-    emailNotifications: true,
-    smsNotifications: false,
-    organizationName: 'جمعية ابتسم',
-    email: 'contact@ibtasam.org',
-    phone: '+212 5XX-XXXXXX',
-    address: 'الدار البيضاء، المغرب',
+    accountHolder: 'جمعية ابتسم', rib: '', bankName: 'Attijariwafa Bank',
+    organizationName: 'جمعية ابتسم', email: 'contact@ibtasam.org',
+    phone: '+212 5XX-XXXXXX', address: 'الدار البيضاء، المغرب',
     description: 'جمعية خيرية تعمل على رعاية الأيتام',
-    newDonation: true,
-    donationVerified: true,
-    weeklyReports: false,
-    monthlyReports: true,
+    newDonation: true, donationVerified: true, weeklyReports: false, monthlyReports: true,
   };
-
-  // Form state
   const [formData, setFormData] = useState(defaultFormData);
 
-  // Load bank info from Convex
+  const handleInputChange = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
+
   useEffect(() => {
     if (bankInfoData) {
       try {
-        const parsed = JSON.parse(bankInfoData);
-        setFormData(prev => ({
-          ...prev,
-          accountHolder: parsed.accountHolder || defaultFormData.accountHolder,
-          rib: parsed.rib || defaultFormData.rib,
-          bankName: parsed.bankName || defaultFormData.bankName,
-        }));
-      } catch (e) {
-        console.error('Failed to parse bank info:', e);
-      }
+        const p = JSON.parse(bankInfoData);
+        setFormData(prev => ({ ...prev, accountHolder: p.accountHolder || prev.accountHolder, rib: p.rib || prev.rib, bankName: p.bankName || prev.bankName }));
+      } catch (e) { console.error('Failed to parse bank info:', e); }
     }
   }, [bankInfoData]);
 
-  // Load org profile from Convex
   useEffect(() => {
     if (orgProfileData) {
       try {
-        const parsed = JSON.parse(orgProfileData);
-        setFormData(prev => ({
-          ...prev,
-          organizationName: parsed.organizationName || defaultFormData.organizationName,
-          email: parsed.email || defaultFormData.email,
-          phone: parsed.phone || defaultFormData.phone,
-          address: parsed.address || defaultFormData.address,
-          description: parsed.description || defaultFormData.description,
-        }));
-      } catch (e) {
-        console.error('Failed to parse org profile:', e);
-      }
+        const p = JSON.parse(orgProfileData);
+        setFormData(prev => ({ ...prev, organizationName: p.organizationName || prev.organizationName, email: p.email || prev.email, phone: p.phone || prev.phone, address: p.address || prev.address, description: p.description || prev.description }));
+      } catch (e) { console.error('Failed to parse org profile:', e); }
     }
   }, [orgProfileData]);
 
-  // Load notifications from Convex
   useEffect(() => {
     if (notificationsData) {
       try {
-        const parsed = JSON.parse(notificationsData);
-        setFormData(prev => ({
-          ...prev,
-          newDonation: parsed.newDonation ?? defaultFormData.newDonation,
-          donationVerified: parsed.donationVerified ?? defaultFormData.donationVerified,
-          weeklyReports: parsed.weeklyReports ?? defaultFormData.weeklyReports,
-          monthlyReports: parsed.monthlyReports ?? defaultFormData.monthlyReports,
-        }));
-      } catch (e) {
-        console.error('Failed to parse notifications:', e);
-      }
+        const p = JSON.parse(notificationsData);
+        setFormData(prev => ({ ...prev, newDonation: p.newDonation ?? prev.newDonation, donationVerified: p.donationVerified ?? prev.donationVerified, weeklyReports: p.weeklyReports ?? prev.weeklyReports, monthlyReports: p.monthlyReports ?? prev.monthlyReports }));
+      } catch (e) { console.error('Failed to parse notifications:', e); }
     }
   }, [notificationsData]);
 
-  // Default team members
+  // ── Team state ────────────────────────────────────────────────────────────
   const defaultTeamMembers = [
-    { id: 1, name: 'مدير النظام', email: 'admin@ibtasam.org', role: 'superAdmin', phone: '+212 6XX-XXXXXX' },
-    { id: 2, name: 'مدير المشاريع', email: 'manager@ibtasam.org', role: 'manager', phone: '+212 6XX-XXXXXX' },
-    { id: 3, name: 'مساعد إداري', email: 'viewer@ibtasam.org', role: 'viewer', phone: '+212 6XX-XXXXXX' },
+    { id: 1, name: 'مدير النظام',   email: 'admin@ibtasam.org',   role: 'superAdmin', phone: '+212 6XX-XXXXXX' },
+    { id: 2, name: 'مدير المشاريع', email: 'manager@ibtasam.org', role: 'manager',    phone: '+212 6XX-XXXXXX' },
+    { id: 3, name: 'مساعد إداري',   email: 'viewer@ibtasam.org',  role: 'viewer',     phone: '+212 6XX-XXXXXX' },
   ];
-
-  // Team members state
   const [teamMembers, setTeamMembers] = useState(defaultTeamMembers);
 
-  // Load team members from Convex
   useEffect(() => {
     if (teamMembersData) {
       try {
-        const parsed = JSON.parse(teamMembersData);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setTeamMembers(parsed);
-        }
-      } catch (e) {
-        console.error('Failed to parse team members:', e);
-      }
+        const p = JSON.parse(teamMembersData);
+        if (Array.isArray(p) && p.length > 0) setTeamMembers(p);
+      } catch (e) { console.error('Failed to parse team members:', e); }
     }
   }, [teamMembersData]);
 
-  const [showAddMember, setShowAddMember] = useState(false);
-  const [newMember, setNewMember] = useState({
-    name: '',
-    email: '',
-    role: 'viewer',
-    phone: '',
-  });
-
-  // Invitation state
   const [inviteEmail, setInviteEmail] = useState('');
   const [invitePhone, setInvitePhone] = useState('');
   const [isSendingInvite, setIsSendingInvite] = useState(false);
   const [inviteLink, setInviteLink] = useState('');
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  // Save Bank Info to Convex
+  // ── Save handlers ─────────────────────────────────────────────────────────
   const handleSaveBank = async () => {
     setIsSavingBank(true);
     try {
-      const bankInfo = {
-        accountHolder: formData.accountHolder,
-        rib: formData.rib,
-        bankName: formData.bankName,
-      };
-      await setConfig({ key: 'bank_info', value: JSON.stringify(bankInfo) });
+      await setConfig({ key: 'bank_info', value: JSON.stringify({ accountHolder: formData.accountHolder, rib: formData.rib, bankName: formData.bankName }) });
       showToast('تم حفظ معلومات البنك بنجاح', 'success');
     } catch (error) {
       console.error('Failed to save bank info:', error);
       showToast('فشل حفظ معلومات البنك', 'error');
-    } finally {
-      setIsSavingBank(false);
-    }
+    } finally { setIsSavingBank(false); }
   };
 
-  // Save Organization Profile to Convex
   const handleSaveProfile = async () => {
     setIsSavingProfile(true);
     try {
-      const orgProfile = {
-        organizationName: formData.organizationName,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-        description: formData.description,
-      };
-      await setConfig({ key: 'org_profile', value: JSON.stringify(orgProfile) });
+      await setConfig({ key: 'org_profile', value: JSON.stringify({ organizationName: formData.organizationName, email: formData.email, phone: formData.phone, address: formData.address, description: formData.description }) });
       showToast('تم حفظ ملف الجمعية بنجاح', 'success');
     } catch (error) {
       console.error('Failed to save org profile:', error);
       showToast('فشل حفظ ملف الجمعية', 'error');
-    } finally {
-      setIsSavingProfile(false);
-    }
+    } finally { setIsSavingProfile(false); }
   };
 
-  // Save Notifications to Convex
   const handleSaveNotifications = async () => {
     setIsSavingNotifications(true);
     try {
-      const notifications = {
-        newDonation: formData.newDonation,
-        donationVerified: formData.donationVerified,
-        weeklyReports: formData.weeklyReports,
-        monthlyReports: formData.monthlyReports,
-      };
-      await setConfig({ key: 'notifications', value: JSON.stringify(notifications) });
+      await setConfig({ key: 'notifications', value: JSON.stringify({ newDonation: formData.newDonation, donationVerified: formData.donationVerified, weeklyReports: formData.weeklyReports, monthlyReports: formData.monthlyReports }) });
       showToast('تم حفظ إعدادات الإشعارات بنجاح', 'success');
     } catch (error) {
       console.error('Failed to save notifications:', error);
       showToast('فشل حفظ إعدادات الإشعارات', 'error');
-    } finally {
-      setIsSavingNotifications(false);
-    }
+    } finally { setIsSavingNotifications(false); }
   };
 
-  // WhatsApp Session Management
-
-  // Connect (no existing session) — requires phone number
+  // ── WhatsApp handlers ─────────────────────────────────────────────────────
   const handleConnect = async () => {
     let phoneNumber = (whatsappSession.phoneNumber || '').replace(/[\s\-\(\)\.]/g, '');
-    if (/^0[67]\d{8}$/.test(phoneNumber)) {
-      phoneNumber = '+212' + phoneNumber.slice(1);
-    } else if (/^\d+$/.test(phoneNumber)) {
-      phoneNumber = '+' + phoneNumber;
-    }
+    if (/^0[67]\d{8}$/.test(phoneNumber)) phoneNumber = '+212' + phoneNumber.slice(1);
+    else if (/^\d+$/.test(phoneNumber))   phoneNumber = '+' + phoneNumber;
     if (!phoneNumber || phoneNumber.length < 12) {
       showToast('يرجى إدخال رقم هاتف صحيح بالتنسيق الدولي (مثال: 212632730020 أو 0632730020)', 'error');
       return;
@@ -406,17 +267,10 @@ const AdminSettings = () => {
       const result = await createAndConnectSession({ phoneNumber });
       if (result.success) {
         setWhatsappSession(prev => ({ ...prev, isLoading: false, qrCode: result.qrCode || null }));
-        if (result.qrCode) {
-          showToast(t.createSessionSuccess, 'success');
-        } else {
-          showToast('تم إنشاء الجلسة. لم يُعد رمز QR — يرجى المحاولة مرة أخرى.', 'warning');
-        }
+        showToast(result.qrCode ? 'تم إنشاء الجلسة بنجاح' : 'تم إنشاء الجلسة. لم يُعد رمز QR — يرجى المحاولة مرة أخرى.', result.qrCode ? 'success' : 'warning');
       } else {
         setWhatsappSession(prev => ({ ...prev, isLoading: false }));
-        const errMsg = result.error?.includes('not configured')
-          ? 'مفتاح Wasender غير مضبوط. يرجى إضافة WASENDER_MASTER_TOKEN في لوحة Convex Dashboard.'
-          : result.error || 'فشل إنشاء الجلسة';
-        showToast(errMsg, 'error', 6000);
+        showToast(result.error?.includes('not configured') ? 'مفتاح Wasender غير مضبوط. يرجى إضافة WASENDER_MASTER_TOKEN في لوحة Convex Dashboard.' : result.error || 'فشل إنشاء الجلسة', 'error', 6000);
       }
     } catch (error) {
       setWhatsappSession(prev => ({ ...prev, isLoading: false }));
@@ -424,18 +278,13 @@ const AdminSettings = () => {
     }
   };
 
-  // Reconnect (existing session) — fetches a fresh QR without creating a new session
   const handleReconnect = async () => {
     setWhatsappSession(prev => ({ ...prev, isLoading: true, qrCode: null }));
     try {
       const result = await refreshQrCodeAction({});
       if (result.success) {
         setWhatsappSession(prev => ({ ...prev, isLoading: false, qrCode: result.qrCode || null }));
-        if (result.qrCode) {
-          showToast('تم تجديد رمز QR بنجاح', 'success');
-        } else {
-          showToast('لم يُعد رمز QR — يرجى المحاولة مرة أخرى.', 'warning');
-        }
+        showToast(result.qrCode ? 'تم تجديد رمز QR بنجاح' : 'لم يُعد رمز QR — يرجى المحاولة مرة أخرى.', result.qrCode ? 'success' : 'warning');
       } else {
         setWhatsappSession(prev => ({ ...prev, isLoading: false }));
         showToast(result.error || 'فشل إعادة الاتصال', 'error');
@@ -446,7 +295,6 @@ const AdminSettings = () => {
     }
   };
 
-  // Manual QR refresh (user-initiated)
   const handleRefreshQr = async () => {
     setIsRefreshingQr(true);
     try {
@@ -459,9 +307,7 @@ const AdminSettings = () => {
       }
     } catch (error) {
       showToast(error.message || 'فشل تجديد رمز QR', 'error');
-    } finally {
-      setIsRefreshingQr(false);
-    }
+    } finally { setIsRefreshingQr(false); }
   };
 
   const handleDisconnect = async () => {
@@ -469,13 +315,8 @@ const AdminSettings = () => {
     try {
       const result = await disconnectSessionAction({});
       if (result.success) {
-        setWhatsappSession(prev => ({
-          ...prev,
-          isConnected: false,
-          qrCode: null,
-          isLoading: false,
-        }));
-        showToast(t.disconnectSuccess, 'success');
+        setWhatsappSession(prev => ({ ...prev, isConnected: false, qrCode: null, isLoading: false }));
+        showToast('تم قطع الاتصال بنجاح', 'success');
       } else {
         setWhatsappSession(prev => ({ ...prev, isLoading: false }));
         showToast(result.error || 'فشل قطع الاتصال', 'error');
@@ -491,12 +332,7 @@ const AdminSettings = () => {
     try {
       const result = await syncSessionStatusAction({});
       if (result.success) {
-        setWhatsappSession(prev => ({
-          ...prev,
-          isConnected: result.isConnected,
-          qrCode: result.isConnected ? null : prev.qrCode,
-          isLoading: false,
-        }));
+        setWhatsappSession(prev => ({ ...prev, isConnected: result.isConnected, qrCode: result.isConnected ? null : prev.qrCode, isLoading: false }));
         showToast(result.isConnected ? 'الجلسة متصلة ✓' : 'الجلسة غير متصلة', result.isConnected ? 'success' : 'warning');
       } else {
         setWhatsappSession(prev => ({ ...prev, isLoading: false }));
@@ -512,32 +348,22 @@ const AdminSettings = () => {
     setWhatsappSession(prev => ({ ...prev, isLoading: true }));
     try {
       const result = await resyncApiKeyAction({});
-      if (result.success) {
-        showToast('تم تحديث مفتاح الجلسة بنجاح ✓', 'success');
-      } else {
-        showToast(result.error || 'فشل تحديث مفتاح الجلسة', 'error');
-      }
+      if (result.success) showToast('تم تحديث مفتاح الجلسة بنجاح ✓', 'success');
+      else showToast(result.error || 'فشل تحديث مفتاح الجلسة', 'error');
     } catch (error) {
       showToast(error.message || 'فشل تحديث مفتاح الجلسة', 'error');
-    } finally {
-      setWhatsappSession(prev => ({ ...prev, isLoading: false }));
-    }
+    } finally { setWhatsappSession(prev => ({ ...prev, isLoading: false })); }
   };
 
   const handleListWaSenderSessions = async () => {
     setWaSessionsLoading(true);
     try {
       const result = await listWaSenderSessionsAction({});
-      if (result.success) {
-        setWaSessionsList(result.sessions || []);
-      } else {
-        showToast(result.error || 'فشل جلب الجلسات', 'error');
-      }
+      if (result.success) setWaSessionsList(result.sessions || []);
+      else showToast(result.error || 'فشل جلب الجلسات', 'error');
     } catch (error) {
       showToast(error.message || 'فشل جلب الجلسات', 'error');
-    } finally {
-      setWaSessionsLoading(false);
-    }
+    } finally { setWaSessionsLoading(false); }
   };
 
   const handleSelectSession = async (sessionId) => {
@@ -546,20 +372,15 @@ const AdminSettings = () => {
       const result = await selectSessionForSendingAction({ sessionId });
       if (result.success) {
         showToast('✓ تم تحديد الجلسة بنجاح — كل الرسائل ستُرسل من هذه الجلسة', 'success');
-        setWaSessionsList(null); // close list
-        // Re-sync status to update UI
+        setWaSessionsList(null);
         const sync = await syncSessionStatusAction({});
-        if (sync.success) {
-          setWhatsappSession(prev => ({ ...prev, isConnected: sync.isConnected }));
-        }
+        if (sync.success) setWhatsappSession(prev => ({ ...prev, isConnected: sync.isConnected }));
       } else {
         showToast(result.error || 'فشل تحديد الجلسة', 'error');
       }
     } catch (error) {
       showToast(error.message || 'فشل تحديد الجلسة', 'error');
-    } finally {
-      setWaSessionsLoading(false);
-    }
+    } finally { setWaSessionsLoading(false); }
   };
 
   const handleDeleteSession = async () => {
@@ -568,18 +389,7 @@ const AdminSettings = () => {
     try {
       const result = await deleteSessionAction({});
       if (result.success) {
-        setWhatsappSession({
-          isConnected: false,
-          phoneNumber: '',
-          sessionId: null,
-          instanceId: null,
-          apiKey: null,
-          qrCode: null,
-          isLoading: false,
-          messagesSent: 0,
-          messagesReceived: 0,
-          lastConnected: null,
-        });
+        setWhatsappSession({ isConnected: false, phoneNumber: '', sessionId: null, instanceId: null, apiKey: null, qrCode: null, isLoading: false, messagesSent: 0, messagesReceived: 0, lastConnected: null });
         showToast('تم حذف الجلسة بنجاح', 'success');
       } else {
         setWhatsappSession(prev => ({ ...prev, isLoading: false }));
@@ -593,803 +403,407 @@ const AdminSettings = () => {
 
   const handlePhoneChange = async () => {
     try {
-      await setConfig({
-        key: 'whatsapp_settings',
-        value: JSON.stringify({
-          ...whatsappSession,
-          phoneNumber: whatsappSession.phoneNumber,
-        })
-      });
-      showToast(t.phoneUpdated, 'success');
+      await setConfig({ key: 'whatsapp_settings', value: JSON.stringify({ ...whatsappSession, phoneNumber: whatsappSession.phoneNumber }) });
+      showToast('تم تحديث رقم الهاتف بنجاح', 'success');
     } catch (error) {
       console.error('Failed to save phone number:', error);
       showToast('فشل تحديث رقم الهاتف', 'error');
     }
   };
 
-  // Team Members Management
-  const handleAddMember = async () => {
-    if (newMember.name && newMember.email) {
-      setIsSavingTeam(true);
-      try {
-        const updatedMembers = [...teamMembers, { ...newMember, id: Date.now() }];
-        await setConfig({ key: 'team_members', value: JSON.stringify(updatedMembers) });
-        setTeamMembers(updatedMembers);
-        setNewMember({ name: '', email: '', role: 'viewer', phone: '' });
-        setShowAddMember(false);
-        showToast('تم إضافة العضو بنجاح', 'success');
-      } catch (error) {
-        console.error('Failed to add member:', error);
-        showToast('فشل إضافة العضو', 'error');
-      } finally {
-        setIsSavingTeam(false);
-      }
-    }
-  };
-
+  // ── Team handlers ─────────────────────────────────────────────────────────
   const handleDeleteMember = async (id) => {
     setIsSavingTeam(true);
     try {
-      const updatedMembers = teamMembers.filter(m => m.id !== id);
-      await setConfig({ key: 'team_members', value: JSON.stringify(updatedMembers) });
-      setTeamMembers(updatedMembers);
+      const updated = teamMembers.filter(m => m.id !== id);
+      await setConfig({ key: 'team_members', value: JSON.stringify(updated) });
+      setTeamMembers(updated);
       showToast('تم حذف العضو بنجاح', 'success');
     } catch (error) {
       console.error('Failed to delete member:', error);
       showToast('فشل حذف العضو', 'error');
-    } finally {
-      setIsSavingTeam(false);
-    }
+    } finally { setIsSavingTeam(false); }
   };
 
-  const getRoleBadge = (role) => {
-    const roles = {
-      superAdmin: { variant: 'success', label: t.superAdmin },
-      manager: { variant: 'primary', label: t.manager },
-      viewer: { variant: 'neutral', label: t.viewer },
-    };
-    const config = roles[role] || roles.viewer;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+  const initials = (name) => {
+    if (!name) return '?';
+    const parts = name.trim().split(' ');
+    return parts.length >= 2 ? parts[0][0] + parts[1][0] : parts[0][0];
   };
 
-  const settingsTabs = [
-    { id: 'bank', icon: 'account_balance', label: t.bankManagement },
-    { id: 'whatsapp', icon: 'chat', label: t.whatsappManagement },
-    { id: 'team', icon: 'groups', label: t.teamMembers },
-    { id: 'profile', icon: 'corporate_fare', label: t.associationProfile },
-    { id: 'notifications', icon: 'notifications_active', label: t.notificationRules },
-  ];
+  const ROLE_CFG = {
+    superAdmin: { label: '🔑 مدير عام', bg: '#FEF3C7', color: '#b45309' },
+    admin:      { label: 'admin',       bg: '#E6F4F4', color: P600 },
+    manager:    { label: 'مدير',        bg: '#E6F4F4', color: P600 },
+    viewer:     { label: 'مراجع',       bg: '#F1F5F9', color: '#475569' },
+  };
 
-  // Loading Spinner Component
-  const LoadingSpinner = () => (
-    <div className="flex items-center justify-center p-8">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-    </div>
-  );
-
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="max-w-4xl mx-auto space-y-6" dir="rtl">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-bold text-text-primary dark:text-white">{t.title}</h1>
+    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: 24 }} dir="rtl">
+
+      {/* ── Tab bar ── */}
+      <div style={{ display: 'flex', gap: 4, background: 'white', borderRadius: 14, border: `1px solid ${BORDER}`, padding: 6, marginBottom: 20, boxShadow: SHADOW }}>
+        {TABS.map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            style={{ flex: 1, height: 36, borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', background: activeTab === tab.id ? PRIMARY : 'none', color: activeTab === tab.id ? 'white' : TEXT2, fontFamily: 'Tajawal, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: activeTab === tab.id ? SHADOW_P : 'none', transition: 'all .15s' }}>
+            {tab.icon} {tab.label}
+          </button>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Sidebar - Navigation */}
-        <div className="lg:col-span-1">
-          <Card padding="none" className="overflow-hidden">
-            <nav className="flex flex-col">
-              {settingsTabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-4 px-6 py-5 transition-colors ${
-                    activeTab === tab.id
-                      ? 'bg-primary/10 text-primary'
-                      : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
-                  } ${tab.id !== 'bank' ? 'border-t border-slate-100 dark:border-slate-800' : ''}`}
-                >
-                  <div className={`p-2 rounded-lg ${activeTab === tab.id ? 'bg-primary/20' : 'bg-slate-100 dark:bg-slate-700'}`}>
-                    <span className={`material-symbols-outlined text-[22px] ${activeTab === tab.id ? 'text-primary' : 'text-slate-500'}`}>
-                      {tab.icon}
-                    </span>
-                  </div>
-                  <span className="flex-1 font-semibold text-[15px] text-right">{tab.label}</span>
-                  <span className={`material-symbols-outlined text-[20px] ${activeTab === tab.id ? 'text-primary' : 'text-slate-300'}`}>
-                    chevron_left
-                  </span>
-                </button>
-              ))}
-            </nav>
-          </Card>
+      {/* ── Loading ── */}
+      {isLoading && (
+        <div style={{ textAlign: 'center', padding: 60, color: TEXTM, fontSize: 15 }}>⏳ جاري التحميل...</div>
+      )}
 
-          {/* Quick Settings */}
-          <Card padding="lg" className="mt-4">
-            <h3 className="font-semibold text-text-primary dark:text-white mb-4">{t.generalSettings}</h3>
-            <div className="space-y-4">
-              {/* Dark Mode Toggle */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600 dark:text-slate-400">{t.darkMode}</span>
-                <button
-                  onClick={toggleDarkMode}
-                  className={`w-11 h-6 rounded-full relative transition-colors ${
-                    isDarkMode ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'
-                  }`}
-                >
-                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all ${
-                    isDarkMode ? 'left-0.5' : 'right-0.5'
-                  }`} />
-                </button>
+      {!isLoading && (
+        <>
+          {/* ══ BANK TAB ══ */}
+          {activeTab === 'bank' && (
+            <SettingsCard icon="🏦" title="إعدادات التحويل البنكي">
+              {/* RIB display box */}
+              <div style={{ background: TEAL_WASH, borderRadius: 12, padding: 16, border: `1px solid ${P100}`, textAlign: 'center', marginBottom: 14 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: TEXTM, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 6 }}>
+                  رقم الحساب الحالي (RIB)
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 900, color: P600, fontFamily: 'Inter, sans-serif', letterSpacing: '.06em' }}>
+                  {formData.rib || '—'}
+                </div>
               </div>
-              
-              {/* Language Selector - Display only (Arabic default) */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600 dark:text-slate-400">{t.language}</span>
-                <span className="text-sm font-medium text-primary">العربية</span>
-              </div>
-            </div>
-          </Card>
-        </div>
 
-        {/* Right Content */}
-        <div className="lg:col-span-2">
-          {isLoading ? (
-            <Card padding="lg">
-              <LoadingSpinner />
-            </Card>
-          ) : (
-            <>
-              {activeTab === 'bank' && (
-                <Card padding="lg" className="card-warm">
-                  <div className="flex flex-col gap-1 mb-6">
-                    <h3 className="text-text-primary dark:text-white text-2xl font-bold font-serif">{t.bankManagement}</h3>
-                    <p className="text-slate-500 text-sm font-medium">{t.bankDescription}</p>
+              {/* Form grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div>
+                  <FieldLabel>اسم البنك</FieldLabel>
+                  <input style={fieldInput} type="text" value={formData.bankName}
+                    onChange={e => handleInputChange('bankName', e.target.value)}
+                    onFocus={e => e.target.style.borderColor = PRIMARY}
+                    onBlur={e => e.target.style.borderColor = BORDER} />
+                </div>
+                <div>
+                  <FieldLabel>اسم الحساب (المستفيد)</FieldLabel>
+                  <input style={fieldInput} type="text" value={formData.accountHolder}
+                    onChange={e => handleInputChange('accountHolder', e.target.value)}
+                    onFocus={e => e.target.style.borderColor = PRIMARY}
+                    onBlur={e => e.target.style.borderColor = BORDER} />
+                </div>
+                <div style={{ gridColumn: '1/-1' }}>
+                  <FieldLabel>رقم RIB (24 خانة)</FieldLabel>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      style={{ ...fieldInput, flex: 1, direction: 'ltr', fontFamily: 'Inter, sans-serif', letterSpacing: '.04em' }}
+                      type="text" value={formData.rib} placeholder="000 000 0000000000000000 00"
+                      onChange={e => handleInputChange('rib', e.target.value)}
+                      onFocus={e => e.target.style.borderColor = PRIMARY}
+                      onBlur={e => e.target.style.borderColor = BORDER} />
+                    <button type="button" title="نسخ RIB"
+                      onClick={() => { if (formData.rib) { navigator.clipboard.writeText(formData.rib); setRibCopied(true); setTimeout(() => setRibCopied(false), 2000); } }}
+                      style={{ width: 48, height: 48, border: `1.5px solid ${BORDER}`, borderRadius: 12, background: 'white', cursor: 'pointer', fontSize: 16, flexShrink: 0 }}>
+                      {ribCopied ? '✓' : '📋'}
+                    </button>
                   </div>
+                </div>
+              </div>
 
-                  {/* Warning when RIB is empty */}
-                  {!formData.rib && (
-                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-2xl flex gap-3 items-start mb-4">
-                      <span className="material-symbols-outlined text-amber-500 text-xl shrink-0 mt-0.5">warning</span>
-                      <p className="text-sm text-amber-700 dark:text-amber-300 font-medium leading-snug">
-                        ⚠️ Bank RIB is empty. Please enter your real bank RIB before accepting donations — donors will see this information on payment pages.
-                      </p>
+              <div style={{ marginTop: 16 }}>
+                <SaveBtn onClick={handleSaveBank} loading={isSavingBank}>💾 حفظ إعدادات البنك</SaveBtn>
+              </div>
+            </SettingsCard>
+          )}
+
+          {/* ══ WHATSAPP TAB ══ */}
+          {activeTab === 'whatsapp' && (
+            <SettingsCard icon="💬" title="إعدادات واتساب (WaSender)">
+
+              {/* Status indicator */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 14, background: TEAL_WASH, borderRadius: 12, marginBottom: 16, border: `1px solid ${P100}` }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: whatsappSession.isConnected ? '#22c55e' : '#ef4444', flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700 }}>
+                    {whatsappSession.isConnected ? `✓ متصل${whatsappSession.phoneNumber ? ` — ${whatsappSession.phoneNumber}` : ''}` : 'غير متصل'}
+                  </div>
+                  {whatsappSession.lastConnected && (
+                    <div style={{ fontSize: 12, color: TEXT2 }}>
+                      آخر تحديث: {new Date(whatsappSession.lastConnected).toLocaleString('ar-MA')}
                     </div>
                   )}
+                </div>
+              </div>
 
-                  <div className="space-y-5">
-                    {/* Account Holder */}
-                    <label className="flex flex-col gap-1.5">
-                      <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mr-1">
-                        {t.accountHolder}
-                      </span>
-                      <input
-                        type="text"
-                        value={formData.accountHolder}
-                        onChange={(e) => handleInputChange('accountHolder', e.target.value)}
-                        className="w-full rounded-2xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-300 text-text-primary dark:text-white shadow-sm"
-                        placeholder="جمعية ابتسم"
-                      />
-                    </label>
-
-                    {/* RIB */}
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mr-1">
-                        {t.rib}
-                      </span>
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <input
-                            type="text"
-                            value={formData.rib}
-                            onChange={(e) => handleInputChange('rib', e.target.value)}
-                            className="w-full rounded-2xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-300 font-mono text-text-primary dark:text-white shadow-sm pl-12"
-                            placeholder="000 000 0000000000000000 00"
-                          />
-                          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary/40 text-xl">lock</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (formData.rib) {
-                              navigator.clipboard.writeText(formData.rib);
-                              setRibCopied(true);
-                              setTimeout(() => setRibCopied(false), 2000);
-                            }
-                          }}
-                          title="نسخ RIB"
-                          className="flex items-center justify-center w-14 shrink-0 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-primary hover:border-primary/50 transition-colors shadow-sm"
-                        >
-                          <span className="material-symbols-outlined text-xl">
-                            {ribCopied ? 'check' : 'content_copy'}
-                          </span>
-                        </button>
-                      </div>
-                      <p className="text-[10px] text-slate-400 mt-1 mr-1">{t.ribHint}</p>
-                    </div>
-
-                    {/* Bank Name */}
-                    <label className="flex flex-col gap-1.5">
-                      <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mr-1">
-                        {t.bankName}
-                      </span>
-                      <input
-                        type="text"
-                        value={formData.bankName}
-                        onChange={(e) => handleInputChange('bankName', e.target.value)}
-                        className="w-full rounded-2xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-300 text-text-primary dark:text-white shadow-sm"
-                        placeholder="اسم البنك"
-                      />
-                    </label>
-
-                    {/* Security Note */}
-                    <div className="bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-2xl p-4 flex gap-4 items-center shadow-sm">
-                      <div className="bg-primary/10 dark:bg-primary/20 p-2 rounded-xl shrink-0">
-                        <span className="material-symbols-outlined text-primary text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>verified_user</span>
-                      </div>
-                      <p className="text-[13px] text-slate-600 dark:text-slate-300 leading-tight font-medium">
-                        {t.securityNote}
-                      </p>
-                    </div>
-
-                    {/* Save Button */}
-                    <Button
-                      variant="primary"
-                      size="lg"
-                      fullWidth
-                      onClick={handleSaveBank}
-                      loading={isSavingBank}
-                      className="shadow-lg shadow-primary/20 mt-2"
-                    >
-                      {isSavingBank ? t.saving : t.saveChanges}
-                    </Button>
+              {/* QR Code */}
+              {!whatsappSession.isConnected && whatsappSession.qrCode && (
+                <div style={{ textAlign: 'center', padding: '16px 0', marginBottom: 16 }}>
+                  <div style={{ fontSize: 13, color: TEXT2, marginBottom: 12 }}>امسح رمز QR باستخدام تطبيق الواتساب</div>
+                  <div style={{ display: 'inline-block', padding: 8, borderRadius: 16, border: `2px solid ${P400}` }}>
+                    {whatsappSession.qrCode.startsWith('data:') || whatsappSession.qrCode.startsWith('http') ? (
+                      <img src={whatsappSession.qrCode} alt="QR Code" style={{ width: 240, height: 240, borderRadius: 12 }} />
+                    ) : (
+                      <QRCodeSVG value={whatsappSession.qrCode} size={240} bgColor="#ffffff" fgColor="#000000" level="M" style={{ borderRadius: 12 }} />
+                    )}
                   </div>
-                </Card>
+                  <div style={{ marginTop: 10 }}>
+                    <button onClick={handleRefreshQr} disabled={isRefreshingQr}
+                      style={{ fontSize: 12, color: TEXT2, background: 'none', border: 'none', cursor: isRefreshingQr ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: 'Tajawal, sans-serif' }}>
+                      🔄 {isRefreshingQr ? 'جارٍ التجديد...' : 'تجديد رمز QR'}
+                    </button>
+                  </div>
+                  <div style={{ fontSize: 11, color: TEXTM, marginTop: 4 }}>يتجدد تلقائياً كل 20 ثانية • سيتصل تلقائياً بعد المسح</div>
+                </div>
               )}
 
-              {activeTab === 'whatsapp' && (
-                <Card padding="lg" className="card-warm">
-                  <div className="flex flex-col gap-1 mb-6">
-                    <h3 className="text-text-primary dark:text-white text-2xl font-bold font-serif">{t.whatsappManagement}</h3>
-                    <p className="text-slate-500 text-sm font-medium">{t.whatsappDescription}</p>
-                  </div>
-
-                  <div className="space-y-6">
-                    {/* Session Status */}
-                    <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${whatsappSession.isConnected ? 'bg-green-100 dark:bg-green-900/30' : 'bg-slate-200 dark:bg-slate-700'}`}>
-                          <span className={`material-symbols-outlined ${whatsappSession.isConnected ? 'text-green-600' : 'text-slate-500'}`}>
-                            {whatsappSession.isConnected ? 'check_circle' : 'chat_bubble'}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-medium text-text-primary dark:text-white">{t.sessionStatus}</p>
-                          <p className={`text-sm ${whatsappSession.isConnected ? 'text-green-600' : 'text-slate-500'}`}>
-                            {whatsappSession.isConnected ? t.connected : t.disconnected}
-                          </p>
-                        </div>
-                      </div>
-                      <Badge variant={whatsappSession.isConnected ? 'success' : 'neutral'}>
-                        {whatsappSession.isConnected ? t.sessionActive : t.sessionInactive}
-                      </Badge>
-                    </div>
-
-                    {/* QR Code Display — shown only when disconnected and QR is available */}
-                    {!whatsappSession.isConnected && whatsappSession.qrCode && (
-                      <div className="text-center p-6 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">{t.scanQrCode}</p>
-
-                        {/* QR Code — rendered client-side to avoid encoding issues */}
-                        <div className="flex justify-center">
-                          <div className="p-2 rounded-2xl ring-2 ring-[#C9A84C] ring-offset-2 ring-offset-white dark:ring-offset-slate-800 inline-block">
-                            {whatsappSession.qrCode.startsWith('data:') || whatsappSession.qrCode.startsWith('http') ? (
-                              <img
-                                src={whatsappSession.qrCode}
-                                alt="QR Code"
-                                className="w-64 h-64 rounded-xl"
-                              />
-                            ) : (
-                              <QRCodeSVG
-                                value={whatsappSession.qrCode}
-                                size={256}
-                                bgColor="#ffffff"
-                                fgColor="#000000"
-                                level="M"
-                                style={{ borderRadius: '0.75rem' }}
-                              />
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Manual Refresh QR button */}
-                        <button
-                          onClick={handleRefreshQr}
-                          disabled={isRefreshingQr}
-                          className="mt-4 flex items-center gap-1.5 mx-auto text-xs text-slate-500 hover:text-primary transition-colors disabled:opacity-50"
-                        >
-                          {isRefreshingQr
-                            ? <><div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" /> جارٍ التجديد...</>
-                            : <><span className="material-symbols-outlined text-[14px]">refresh</span> تجديد رمز QR</>
-                          }
-                        </button>
-
-                        <p className="text-xs text-slate-400 mt-2">يتجدد تلقائياً كل 20 ثانية • سيتصل تلقائياً بعد المسح</p>
-                      </div>
-                    )}
-
-                    {/* Phone number input — only when no session exists */}
-                    {!whatsappSession.instanceId && !whatsappSession.isConnected && (
-                      <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                          {t.newPhoneNumber}
-                        </label>
-                        <input
-                          type="tel"
-                          value={whatsappSession.phoneNumber || ''}
-                          onChange={(e) => setWhatsappSession(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                          placeholder={t.phoneNumberPlaceholder}
-                          className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-text-primary dark:text-white"
-                        />
-                      </div>
-                    )}
-
-                    {/* Connect button — no session exists */}
-                    {!whatsappSession.instanceId && !whatsappSession.isConnected && (
-                      <Button
-                        variant="primary"
-                        size="lg"
-                        fullWidth
-                        onClick={handleConnect}
-                        loading={whatsappSession.isLoading}
-                        className="shadow-lg shadow-primary/20"
-                      >
-                        <span className="material-symbols-outlined ml-2">qr_code</span>
-                        اتصال
-                      </Button>
-                    )}
-
-                    {/* Reconnect button — session exists but not connected */}
-                    {whatsappSession.instanceId && !whatsappSession.isConnected && (
-                      <Button
-                        variant="primary"
-                        size="lg"
-                        fullWidth
-                        onClick={handleReconnect}
-                        loading={whatsappSession.isLoading}
-                        className="shadow-lg shadow-primary/20"
-                      >
-                        <span className="material-symbols-outlined ml-2">qr_code</span>
-                        إعادة الاتصال
-                      </Button>
-                    )}
-
-                    {/* Disconnect button — connected state */}
-                    {whatsappSession.isConnected && (
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        fullWidth
-                        onClick={handleDisconnect}
-                        loading={whatsappSession.isLoading}
-                        className="border-red-300 text-red-600 hover:bg-red-50"
-                      >
-                        <span className="material-symbols-outlined ml-2">logout</span>
-                        {t.disconnect}
-                      </Button>
-                    )}
-
-                    {/* Sync Status button — visible whenever a session exists */}
-                    {(whatsappSession.instanceId || whatsappSession.isConnected) && (
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        fullWidth
-                        onClick={handleSyncStatus}
-                        loading={whatsappSession.isLoading}
-                        className="border-blue-300 text-blue-600 hover:bg-blue-50"
-                      >
-                        <span className="material-symbols-outlined ml-2">sync</span>
-                        مزامنة الحالة
-                      </Button>
-                    )}
-
-                    {/* Select Sending Session — pick the correct WaSender session */}
-                    <div className="border border-orange-200 rounded-xl p-4 bg-orange-50">
-                      <p className="text-sm text-orange-700 mb-3 font-medium">
-                        📡 تحديد جلسة الإرسال — اختر الجلسة الصحيحة من حساب WaSender
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        fullWidth
-                        onClick={handleListWaSenderSessions}
-                        loading={waSessionsLoading}
-                        className="border-orange-300 text-orange-700 hover:bg-orange-100 mb-3"
-                      >
-                        <span className="material-symbols-outlined ml-2" style={{fontSize:'18px'}}>list</span>
-                        {waSessionsList === null ? 'عرض جلسات WaSender' : 'تحديث القائمة'}
-                      </Button>
-
-                      {waSessionsList !== null && (
-                        waSessionsList.length === 0 ? (
-                          <p className="text-sm text-slate-500 text-center py-2">لا توجد جلسات</p>
-                        ) : (
-                          <div className="space-y-2">
-                            {waSessionsList.map(session => {
-                              const isConnected = session.status === 'connected' || session.status === 'open';
-                              return (
-                                <div key={session.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-orange-100">
-                                  <div className="flex-1 min-w-0 mr-2">
-                                    <p className="font-medium text-sm text-slate-800 truncate">{session.name}</p>
-                                    {session.phoneNumber && <p className="text-xs text-slate-500">{session.phoneNumber}</p>}
-                                    <span className={`text-xs font-semibold ${isConnected ? 'text-green-600' : 'text-red-500'}`}>
-                                      {isConnected ? '● متصل' : '○ غير متصل'}
-                                    </span>
-                                  </div>
-                                  <button
-                                    onClick={() => handleSelectSession(session.id)}
-                                    disabled={waSessionsLoading || !session.apiKey}
-                                    className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
-                                      session.apiKey
-                                        ? 'bg-orange-500 text-white hover:bg-orange-600'
-                                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                                    }`}
-                                  >
-                                    {session.apiKey ? 'استخدام هذه' : 'لا يوجد مفتاح'}
-                                  </button>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )
-                      )}
-                    </div>
-
-                    {/* Delete Session button — visible whenever a session record exists */}
-                    {(whatsappSession.instanceId || whatsappSession.isConnected) && (
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        fullWidth
-                        onClick={handleDeleteSession}
-                        loading={whatsappSession.isLoading}
-                        className="border-red-400 text-red-700 hover:bg-red-50"
-                      >
-                        <span className="material-symbols-outlined ml-2">delete_forever</span>
-                        حذف الجلسة نهائياً
-                      </Button>
-                    )}
-
-                    {/* Change Phone Number */}
-                    <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
-                      <h4 className="font-semibold text-text-primary dark:text-white mb-4">{t.changePhoneNumber}</h4>
-                      <div className="flex gap-3">
-                        <input
-                          type="tel"
-                          value={whatsappSession.phoneNumber}
-                          onChange={(e) => setWhatsappSession(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                          className="flex-1 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-text-primary dark:text-white"
-                          placeholder={t.phoneNumberPlaceholder}
-                        />
-                        <Button variant="outline" onClick={handlePhoneChange}>
-                          {t.updatePhone}
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Session Stats */}
-                    {whatsappSession.isConnected && (
-                      <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
-                        <h4 className="font-semibold text-text-primary dark:text-white mb-4">{t.sessionStats}</h4>
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="text-center p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                            <p className="text-2xl font-bold text-primary">{whatsappSession.messagesSent}</p>
-                            <p className="text-xs text-slate-500">{t.messagesSent}</p>
-                          </div>
-                          <div className="text-center p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                            <p className="text-2xl font-bold text-primary">{whatsappSession.messagesReceived}</p>
-                            <p className="text-xs text-slate-500">{t.messagesReceived}</p>
-                          </div>
-                          <div className="text-center p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                            <p className="text-lg font-bold text-primary">
-                              {whatsappSession.lastConnected ? new Date(whatsappSession.lastConnected).toLocaleDateString('ar-MA') : '-'}
-                            </p>
-                            <p className="text-xs text-slate-500">{t.lastConnected}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </Card>
+              {/* Phone input — only when no session */}
+              {!whatsappSession.instanceId && !whatsappSession.isConnected && (
+                <div style={{ marginBottom: 12 }}>
+                  <FieldLabel>رقم الهاتف</FieldLabel>
+                  <input style={{ ...fieldInput, direction: 'ltr', fontFamily: 'Inter, sans-serif' }} type="tel"
+                    value={whatsappSession.phoneNumber || ''}
+                    onChange={e => setWhatsappSession(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                    placeholder="+212 6XX-XXXXXX"
+                    onFocus={e => e.target.style.borderColor = PRIMARY}
+                    onBlur={e => e.target.style.borderColor = BORDER} />
+                </div>
               )}
 
-              {activeTab === 'team' && (
-                <Card padding="lg" className="card-warm">
-                  <div className="flex flex-col gap-1 mb-6">
-                    <h3 className="text-text-primary dark:text-white text-2xl font-bold font-serif">{t.teamMembers}</h3>
-                    <p className="text-slate-500 text-sm">أرسل دعوة عبر الواتساب لإضافة عضو جديد للفريق</p>
-                  </div>
+              {/* Primary action buttons */}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                {/* Connect — no session */}
+                {!whatsappSession.instanceId && !whatsappSession.isConnected && (
+                  <button onClick={handleConnect} disabled={whatsappSession.isLoading}
+                    style={{ flex: 1, height: 38, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: whatsappSession.isLoading ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', border: 'none', background: PRIMARY, color: 'white', boxShadow: SHADOW_P, opacity: whatsappSession.isLoading ? 0.7 : 1 }}>
+                    {whatsappSession.isLoading ? '...' : '📱 اتصال'}
+                  </button>
+                )}
+                {/* Reconnect — session exists, not connected */}
+                {whatsappSession.instanceId && !whatsappSession.isConnected && (
+                  <button onClick={handleReconnect} disabled={whatsappSession.isLoading}
+                    style={{ flex: 1, height: 38, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: whatsappSession.isLoading ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', border: 'none', background: PRIMARY, color: 'white', boxShadow: SHADOW_P, opacity: whatsappSession.isLoading ? 0.7 : 1 }}>
+                    {whatsappSession.isLoading ? '...' : '🔄 إعادة الاتصال'}
+                  </button>
+                )}
+                {/* Sync status — any session */}
+                {(whatsappSession.instanceId || whatsappSession.isConnected) && (
+                  <button onClick={handleSyncStatus} disabled={whatsappSession.isLoading}
+                    style={{ flex: 1, height: 38, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: whatsappSession.isLoading ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', background: TEAL_WASH, color: P600, border: `1px solid ${P100}`, opacity: whatsappSession.isLoading ? 0.7 : 1 }}>
+                    🔄 مزامنة الحالة
+                  </button>
+                )}
+                {/* Disconnect — connected */}
+                {whatsappSession.isConnected && (
+                  <button onClick={handleDisconnect} disabled={whatsappSession.isLoading}
+                    style={{ flex: 1, height: 38, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: whatsappSession.isLoading ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', border: 'none', background: '#FEE2E2', color: '#dc2626', opacity: whatsappSession.isLoading ? 0.7 : 1 }}>
+                    ⊘ قطع الاتصال
+                  </button>
+                )}
+              </div>
 
-                  {/* Invitation Form */}
-                  <div className="mb-6 p-5 bg-slate-50 dark:bg-slate-800 rounded-xl space-y-4">
-                    <h4 className="font-semibold text-text-primary dark:text-white">إرسال دعوة تسجيل</h4>
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">{t.memberEmail}</label>
-                      <input
-                        type="email"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        placeholder="name@example.com"
-                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-text-primary dark:text-white"
-                        dir="ltr"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">{t.memberPhone} (واتساب)</label>
-                      <input
-                        type="tel"
-                        value={invitePhone}
-                        onChange={(e) => setInvitePhone(e.target.value)}
-                        placeholder="+212 6XXXXXXXX"
-                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-text-primary dark:text-white"
-                        dir="ltr"
-                      />
-                    </div>
-                    <Button
-                      variant="primary"
-                      fullWidth
-                      loading={isSendingInvite}
-                      onClick={async () => {
-                        if (!inviteEmail || !invitePhone) {
-                          showToast('يرجى إدخال البريد الإلكتروني ورقم الواتساب', 'error');
-                          return;
-                        }
-                        if (!user?.id) {
-                          showToast('يرجى تسجيل الدخول أولاً', 'error');
-                          return;
-                        }
-                        setIsSendingInvite(true);
-                        try {
-                          const result = await createAdminInvitation({
-                            email: inviteEmail.trim(),
-                            phone: invitePhone.trim(),
-                            invitedBy: user.id,
-                            siteUrl: window.location.origin,
-                          });
-                          const link = `${window.location.origin}/admin/register/${result.token}`;
-                          setInviteLink(link);
-                          setInviteEmail('');
-                          setInvitePhone('');
-                          showToast('تم إرسال الدعوة بنجاح عبر الواتساب', 'success');
-                        } catch (err) {
-                          showToast(err.message || 'فشل إرسال الدعوة', 'error');
-                        } finally {
-                          setIsSendingInvite(false);
-                        }
-                      }}
-                    >
-                      <span className="material-symbols-outlined ml-2">send</span>
-                      إرسال الدعوة عبر الواتساب
-                    </Button>
-
-                    {/* Invite link fallback */}
-                    {inviteLink && (
-                      <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-xl">
-                        <p className="text-xs text-green-700 dark:text-green-300 font-medium mb-2">رابط التسجيل (احتياطي):</p>
-                        <div className="flex items-center gap-2">
-                          <input
-                            readOnly
-                            value={inviteLink}
-                            className="flex-1 text-xs bg-transparent border-none outline-none text-green-800 dark:text-green-200 font-mono"
-                            dir="ltr"
-                          />
-                          <button
-                            onClick={() => { navigator.clipboard.writeText(inviteLink); showToast('تم النسخ', 'success'); }}
-                            className="p-1 text-green-600 hover:text-green-800"
-                          >
-                            <span className="material-symbols-outlined text-base">content_copy</span>
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Team Members List */}
-                  <div className="space-y-3">
-                    {teamMembers.map((member) => (
-                      <div key={member.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                            <span className="material-symbols-outlined text-primary">person</span>
+              {/* WaSender sessions list */}
+              <div style={{ background: '#FFF7ED', borderRadius: 12, padding: 14, border: '1px solid #fed7aa', marginBottom: 12 }}>
+                <div style={{ fontSize: 13, color: '#92400e', fontWeight: 600, marginBottom: 10 }}>📡 تحديد جلسة الإرسال — اختر الجلسة الصحيحة من حساب WaSender</div>
+                <button onClick={handleListWaSenderSessions} disabled={waSessionsLoading}
+                  style={{ height: 34, padding: '0 14px', border: '1.5px solid #fed7aa', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: waSessionsLoading ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', background: 'white', color: '#92400e', marginBottom: waSessionsList !== null ? 10 : 0, opacity: waSessionsLoading ? 0.7 : 1 }}>
+                  {waSessionsList === null ? 'عرض جلسات WaSender' : 'تحديث القائمة'}
+                </button>
+                {waSessionsList !== null && (
+                  waSessionsList.length === 0 ? (
+                    <div style={{ fontSize: 13, color: TEXTM, textAlign: 'center', padding: '8px 0' }}>لا توجد جلسات</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {waSessionsList.map(session => {
+                        const isConn = session.status === 'connected' || session.status === 'open';
+                        return (
+                          <div key={session.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'white', borderRadius: 8, padding: '10px 12px', border: '1px solid #fed7aa' }}>
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 700 }}>{session.name}</div>
+                              {session.phoneNumber && <div style={{ fontSize: 11, color: TEXT2, fontFamily: 'Inter, sans-serif' }}>{session.phoneNumber}</div>}
+                              <div style={{ fontSize: 11, fontWeight: 600, color: isConn ? '#16a34a' : '#ef4444' }}>{isConn ? '● متصل' : '○ غير متصل'}</div>
+                            </div>
+                            <button onClick={() => handleSelectSession(session.id)} disabled={waSessionsLoading || !session.apiKey}
+                              style={{ height: 28, padding: '0 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: (waSessionsLoading || !session.apiKey) ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', background: session.apiKey ? '#f97316' : '#e2e8f0', color: session.apiKey ? 'white' : TEXTM, border: 'none' }}>
+                              {session.apiKey ? 'استخدام هذه' : 'لا يوجد مفتاح'}
+                            </button>
                           </div>
-                          <div>
-                            <p className="font-medium text-text-primary dark:text-white">{member.name}</p>
-                            <p className="text-sm text-slate-500">{member.email}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {getRoleBadge(member.role)}
-                          <button
-                            onClick={() => handleDeleteMember(member.id)}
-                            className="p-2 text-slate-400 hover:text-red-500 transition-colors"
-                            disabled={isSavingTeam}
-                          >
-                            <span className="material-symbols-outlined">delete</span>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              )}
-
-              {activeTab === 'profile' && (
-                <Card padding="lg" className="card-warm">
-                  <h3 className="text-text-primary dark:text-white text-2xl font-bold mb-6">{t.associationProfile}</h3>
-                  <div className="space-y-5">
-                    <label className="flex flex-col gap-1.5">
-                      <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mr-1">
-                        {t.organizationName}
-                      </span>
-                      <input
-                        type="text"
-                        value={formData.organizationName}
-                        onChange={(e) => handleInputChange('organizationName', e.target.value)}
-                        className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base text-text-primary dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1.5">
-                      <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mr-1">
-                        {t.email}
-                      </span>
-                      <input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
-                        className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base text-text-primary dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1.5">
-                      <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mr-1">
-                        {t.phone}
-                      </span>
-                      <input
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => handleInputChange('phone', e.target.value)}
-                        className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base text-text-primary dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1.5">
-                      <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mr-1">
-                        {t.address}
-                      </span>
-                      <input
-                        type="text"
-                        value={formData.address}
-                        onChange={(e) => handleInputChange('address', e.target.value)}
-                        className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base text-text-primary dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1.5">
-                      <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mr-1">
-                        {t.description}
-                      </span>
-                      <textarea
-                        value={formData.description}
-                        onChange={(e) => handleInputChange('description', e.target.value)}
-                        rows={3}
-                        className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base text-text-primary dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none"
-                      />
-                    </label>
-                    <Button 
-                      variant="primary" 
-                      size="lg" 
-                      fullWidth 
-                      onClick={handleSaveProfile}
-                      loading={isSavingProfile}
-                    >
-                      {isSavingProfile ? t.saving : t.saveChanges}
-                    </Button>
-                  </div>
-                </Card>
-              )}
-
-              {activeTab === 'notifications' && (
-                <Card padding="lg" className="card-warm">
-                  <h3 className="text-text-primary dark:text-white text-2xl font-bold mb-6">{t.notificationRules}</h3>
-                  <div className="space-y-4">
-                    <div className="border-b border-slate-200 dark:border-slate-700 pb-4">
-                      <h4 className="font-semibold text-text-primary dark:text-white mb-3">{t.donationAlerts}</h4>
-                      
-                      <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl mb-3">
-                        <div className="flex items-center gap-3">
-                          <span className="material-symbols-outlined text-slate-500">notifications</span>
-                          <span className="text-text-primary dark:text-white">{t.newDonation}</span>
-                        </div>
-                        <button
-                          onClick={() => handleInputChange('newDonation', !formData.newDonation)}
-                          className={`w-11 h-6 rounded-full relative transition-colors ${
-                            formData.newDonation ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'
-                          }`}
-                        >
-                          <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all ${
-                            formData.newDonation ? 'left-0.5' : 'right-0.5'
-                          }`} />
-                        </button>
-                      </div>
-
-                      <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                        <div className="flex items-center gap-3">
-                          <span className="material-symbols-outlined text-slate-500">verified</span>
-                          <span className="text-text-primary dark:text-white">{t.donationVerified}</span>
-                        </div>
-                        <button
-                          onClick={() => handleInputChange('donationVerified', !formData.donationVerified)}
-                          className={`w-11 h-6 rounded-full relative transition-colors ${
-                            formData.donationVerified ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'
-                          }`}
-                        >
-                          <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all ${
-                            formData.donationVerified ? 'left-0.5' : 'right-0.5'
-                          }`} />
-                        </button>
-                      </div>
+                        );
+                      })}
                     </div>
+                  )
+                )}
+              </div>
 
-                    <div>
-                      <h4 className="font-semibold text-text-primary dark:text-white mb-3">{t.emailNotifications}</h4>
-                      <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl mb-3">
-                        <div className="flex items-center gap-3">
-                          <span className="material-symbols-outlined text-slate-500">email</span>
-                          <span className="text-text-primary dark:text-white">{t.weeklyReports}</span>
-                        </div>
-                        <button
-                          onClick={() => handleInputChange('weeklyReports', !formData.weeklyReports)}
-                          className={`w-11 h-6 rounded-full relative transition-colors ${
-                            formData.weeklyReports ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'
-                          }`}
-                        >
-                          <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all ${
-                            formData.weeklyReports ? 'left-0.5' : 'right-0.5'
-                          }`} />
-                        </button>
-                      </div>
-
-                      <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                        <div className="flex items-center gap-3">
-                          <span className="material-symbols-outlined text-slate-500">calendar_month</span>
-                          <span className="text-text-primary dark:text-white">{t.monthlyReports}</span>
-                        </div>
-                        <button
-                          onClick={() => handleInputChange('monthlyReports', !formData.monthlyReports)}
-                          className={`w-11 h-6 rounded-full relative transition-colors ${
-                            formData.monthlyReports ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'
-                          }`}
-                        >
-                          <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all ${
-                            formData.monthlyReports ? 'left-0.5' : 'right-0.5'
-                          }`} />
-                        </button>
-                      </div>
-                    </div>
-
-                    <Button 
-                      variant="primary" 
-                      size="lg" 
-                      fullWidth 
-                      onClick={handleSaveNotifications}
-                      loading={isSavingNotifications}
-                    >
-                      {isSavingNotifications ? t.saving : t.saveChanges}
-                    </Button>
-                  </div>
-                </Card>
+              {/* Resync API key */}
+              {(whatsappSession.instanceId || whatsappSession.isConnected) && (
+                <button onClick={handleResyncApiKey} disabled={whatsappSession.isLoading}
+                  style={{ width: '100%', height: 36, borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: whatsappSession.isLoading ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', border: `1.5px solid ${BORDER}`, background: 'white', color: TEXT2, marginBottom: 8, opacity: whatsappSession.isLoading ? 0.7 : 1 }}>
+                  🔑 إعادة مزامنة مفتاح API
+                </button>
               )}
+
+              {/* Delete session */}
+              {(whatsappSession.instanceId || whatsappSession.isConnected) && (
+                <button onClick={handleDeleteSession} disabled={whatsappSession.isLoading}
+                  style={{ width: '100%', height: 38, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: whatsappSession.isLoading ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', border: '1.5px solid #fca5a5', background: 'white', color: '#dc2626', marginBottom: 16, opacity: whatsappSession.isLoading ? 0.7 : 1 }}>
+                  🗑 حذف الجلسة نهائياً
+                </button>
+              )}
+
+              {/* Change phone */}
+              <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>تغيير رقم الهاتف</div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input style={{ ...fieldInput, flex: 1, direction: 'ltr', fontFamily: 'Inter, sans-serif' }} type="tel"
+                    value={whatsappSession.phoneNumber || ''}
+                    onChange={e => setWhatsappSession(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                    placeholder="+212 6XX-XXXXXX"
+                    onFocus={e => e.target.style.borderColor = PRIMARY}
+                    onBlur={e => e.target.style.borderColor = BORDER} />
+                  <button onClick={handlePhoneChange}
+                    style={{ height: 48, padding: '0 16px', border: `1.5px solid ${BORDER}`, borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', background: 'white', color: TEXT2, flexShrink: 0 }}>
+                    تحديث
+                  </button>
+                </div>
+              </div>
+
+              {/* Session stats */}
+              {whatsappSession.isConnected && (
+                <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                  {[
+                    { label: 'الرسائل المرسلة',  value: whatsappSession.messagesSent || 0 },
+                    { label: 'الرسائل المستلمة', value: whatsappSession.messagesReceived || 0 },
+                    { label: 'آخر اتصال', value: whatsappSession.lastConnected ? new Date(whatsappSession.lastConnected).toLocaleDateString('ar-MA') : '—' },
+                  ].map(({ label, value }) => (
+                    <div key={label} style={{ textAlign: 'center', padding: 12, background: TEAL_WASH, borderRadius: 12 }}>
+                      <div style={{ fontSize: 20, fontWeight: 900, color: PRIMARY, fontFamily: 'Inter, sans-serif' }}>{value}</div>
+                      <div style={{ fontSize: 11, color: TEXTM, marginTop: 4 }}>{label}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </SettingsCard>
+          )}
+
+          {/* ══ TEAM TAB ══ */}
+          {activeTab === 'team' && (
+            <>
+              {/* Invitation card */}
+              <SettingsCard icon="✉️" title="إرسال دعوة تسجيل">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div>
+                    <FieldLabel>البريد الإلكتروني</FieldLabel>
+                    <input style={{ ...fieldInput, direction: 'ltr', fontFamily: 'Inter, sans-serif' }} type="email"
+                      value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
+                      placeholder="name@example.com"
+                      onFocus={e => e.target.style.borderColor = PRIMARY}
+                      onBlur={e => e.target.style.borderColor = BORDER} />
+                  </div>
+                  <div>
+                    <FieldLabel>رقم الهاتف (واتساب)</FieldLabel>
+                    <input style={{ ...fieldInput, direction: 'ltr', fontFamily: 'Inter, sans-serif' }} type="tel"
+                      value={invitePhone} onChange={e => setInvitePhone(e.target.value)}
+                      placeholder="+212 6XXXXXXXX"
+                      onFocus={e => e.target.style.borderColor = PRIMARY}
+                      onBlur={e => e.target.style.borderColor = BORDER} />
+                  </div>
+                  <button disabled={isSendingInvite}
+                    onClick={async () => {
+                      if (!inviteEmail || !invitePhone) { showToast('يرجى إدخال البريد الإلكتروني ورقم الواتساب', 'error'); return; }
+                      if (!user?.id) { showToast('يرجى تسجيل الدخول أولاً', 'error'); return; }
+                      setIsSendingInvite(true);
+                      try {
+                        const result = await createAdminInvitation({ email: inviteEmail.trim(), phone: invitePhone.trim(), invitedBy: user.id, siteUrl: window.location.origin });
+                        setInviteLink(`${window.location.origin}/admin/register/${result.token}`);
+                        setInviteEmail(''); setInvitePhone('');
+                        showToast('تم إرسال الدعوة بنجاح عبر الواتساب', 'success');
+                      } catch (err) { showToast(err.message || 'فشل إرسال الدعوة', 'error'); }
+                      finally { setIsSendingInvite(false); }
+                    }}
+                    style={{ height: 44, background: PRIMARY, color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: isSendingInvite ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: SHADOW_P, opacity: isSendingInvite ? 0.7 : 1 }}>
+                    {isSendingInvite ? '...' : '📤 إرسال الدعوة عبر الواتساب'}
+                  </button>
+                  {inviteLink && (
+                    <div style={{ background: '#F0FDF4', borderRadius: 10, padding: '10px 14px', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input readOnly value={inviteLink}
+                        style={{ flex: 1, fontSize: 12, border: 'none', outline: 'none', background: 'transparent', color: '#16a34a', fontFamily: 'Inter, sans-serif', direction: 'ltr' }} />
+                      <button onClick={() => { navigator.clipboard.writeText(inviteLink); showToast('تم النسخ', 'success'); }}
+                        style={{ fontSize: 18, background: 'none', border: 'none', cursor: 'pointer' }}>📋</button>
+                    </div>
+                  )}
+                </div>
+              </SettingsCard>
+
+              {/* Team members list */}
+              <SettingsCard icon="👥" title="أعضاء الفريق">
+                {teamMembers.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '20px 0', color: TEXTM, fontSize: 14 }}>لا يوجد أعضاء بعد</div>
+                ) : (
+                  teamMembers.map((member, i) => {
+                    const rc = ROLE_CFG[member.role] || ROLE_CFG.viewer;
+                    return (
+                      <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: i < teamMembers.length - 1 ? `1px solid ${BORDER}` : 'none' }}>
+                        <div style={{ width: 40, height: 40, borderRadius: '50%', background: `linear-gradient(135deg,${P600},${P400})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: 'white', fontWeight: 700, flexShrink: 0 }}>
+                          {initials(member.name)}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 14, fontWeight: 700 }}>{member.name}</div>
+                          <div style={{ fontSize: 12, color: TEXTM }}>{member.phone || member.email}</div>
+                        </div>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 100, fontSize: 11, fontWeight: 700, background: rc.bg, color: rc.color }}>{rc.label}</span>
+                        <button onClick={() => handleDeleteMember(member.id)} disabled={isSavingTeam}
+                          style={{ width: 28, height: 28, border: `1px solid ${BORDER}`, borderRadius: 8, fontSize: 13, cursor: isSavingTeam ? 'not-allowed' : 'pointer', background: 'white', color: TEXT2 }}>
+                          🗑
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </SettingsCard>
             </>
           )}
-        </div>
-      </div>
+
+          {/* ══ PROFILE TAB ══ */}
+          {activeTab === 'profile' && (
+            <SettingsCard icon="👤" title="ملف الجمعية">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {[
+                  { label: 'اسم المنظمة',         field: 'organizationName', type: 'text' },
+                  { label: 'البريد الإلكتروني',    field: 'email',            type: 'email' },
+                  { label: 'الهاتف',              field: 'phone',            type: 'tel' },
+                  { label: 'العنوان',             field: 'address',          type: 'text' },
+                ].map(({ label, field, type }) => (
+                  <div key={field}>
+                    <FieldLabel>{label}</FieldLabel>
+                    <input style={fieldInput} type={type} value={formData[field] || ''}
+                      onChange={e => handleInputChange(field, e.target.value)}
+                      onFocus={e => e.target.style.borderColor = PRIMARY}
+                      onBlur={e => e.target.style.borderColor = BORDER} />
+                  </div>
+                ))}
+                <div>
+                  <FieldLabel>الوصف</FieldLabel>
+                  <textarea value={formData.description || ''} onChange={e => handleInputChange('description', e.target.value)} rows={3}
+                    style={{ ...fieldInput, height: 'auto', padding: '12px 14px', resize: 'none', lineHeight: 1.6 }}
+                    onFocus={e => e.target.style.borderColor = PRIMARY}
+                    onBlur={e => e.target.style.borderColor = BORDER} />
+                </div>
+                <SaveBtn onClick={handleSaveProfile} loading={isSavingProfile}>💾 حفظ ملف الجمعية</SaveBtn>
+              </div>
+            </SettingsCard>
+          )}
+
+          {/* ══ NOTIFICATIONS TAB ══ */}
+          {activeTab === 'notifications' && (
+            <SettingsCard icon="🔔" title="إعدادات الإشعارات">
+              <ToggleRow title="إشعار عند تبرع جديد" desc="واتساب للمدير عند كل تبرع جديد" value={!!formData.newDonation} onChange={v => handleInputChange('newDonation', v)} />
+              <ToggleRow title="تأكيد للمتبرع تلقائياً" desc="رسالة واتساب تلقائية عند قبول التبرع" value={!!formData.donationVerified} onChange={v => handleInputChange('donationVerified', v)} />
+              <ToggleRow title="تقارير أسبوعية" desc="ملخص أسبوعي للتبرعات والنشاط" value={!!formData.weeklyReports} onChange={v => handleInputChange('weeklyReports', v)} />
+              <ToggleRow title="تذكير تجديد الكفالة" desc="تذكير للكافل 3 أيام قبل موعد التجديد" value={!!formData.monthlyReports} onChange={v => handleInputChange('monthlyReports', v)} isLast />
+              <div style={{ marginTop: 16 }}>
+                <SaveBtn onClick={handleSaveNotifications} loading={isSavingNotifications}>💾 حفظ إعدادات الإشعارات</SaveBtn>
+              </div>
+            </SettingsCard>
+          )}
+        </>
+      )}
     </div>
   );
 };

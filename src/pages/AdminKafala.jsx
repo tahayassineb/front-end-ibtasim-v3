@@ -1,56 +1,49 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import { convexFileUrl } from '../lib/convex';
 import KafalaAvatar from '../components/kafala/KafalaAvatar';
 
-// ============================================
-// ADMIN KAFALA PAGE — Manage orphan sponsorship profiles
-// ============================================
+// ─── Kafala design tokens ─────────────────────────────────────────────────────
+const K    = '#C4A882';
+const KDARK = '#8B6914';
+const KBG   = '#F5EBD9';
+const K100  = '#E8D4B0';
+const BORDER = '#E5E9EB';
+const TEXT2  = '#64748b';
+const TEXTM  = '#94a3b8';
+const SHADOW = '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)';
 
-const STATUS_COLORS = {
-  draft:     'bg-gray-100 text-gray-600',
-  active:    'bg-emerald-100 text-emerald-700',
-  sponsored: 'bg-blue-100 text-blue-700',
-  inactive:  'bg-red-100 text-red-600',
-};
-
-const STATUS_LABELS = {
-  ar:    { draft: 'مسودة', active: 'متاح', sponsored: 'مكفول', inactive: 'غير نشط' },
-  fr:    { draft: 'Brouillon', active: 'Disponible', sponsored: 'Parrainé', inactive: 'Inactif' },
-  en:    { draft: 'Draft', active: 'Active', sponsored: 'Sponsored', inactive: 'Inactive' },
+const STATUS_CFG = {
+  draft:     { label: '○ مسودة',  bg: '#F0F7F7',  color: TEXTM },
+  active:    { label: '⏳ متاح',  bg: KBG,        color: KDARK },
+  sponsored: { label: '✓ مكفول', bg: '#D1FAE5',  color: '#16a34a' },
+  inactive:  { label: '✗ غير نشط', bg: '#FEE2E2', color: '#dc2626' },
 };
 
 export default function AdminKafala() {
   const navigate = useNavigate();
-  const { showToast, user: adminUser } = useApp();
-  const lang = 'ar'; // Admin UI is Arabic
+  const { showToast } = useApp();
 
-  const kafalaList = useQuery(api.kafala.getKafalaList, {});
-  const deleteMutation = useMutation(api.kafala.deleteKafala);
-  const publishMutation = useMutation(api.kafala.publishKafala);
-  const resetMutation = useMutation(api.kafala.resetKafala);
-
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [resetConfirm, setResetConfirm] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [resetConfirm, setResetConfirm] = useState(null);
 
-  const filtered = (kafalaList || []).filter((k) => {
-    if (statusFilter !== 'all' && k.status !== statusFilter) return false;
-    if (search && !k.name.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
+  // ── Convex ────────────────────────────────────────────────────────────────
+  const kafalaList    = useQuery(api.kafala.getKafalaList, {});
+  const deleteMutation  = useMutation(api.kafala.deleteKafala);
+  const publishMutation = useMutation(api.kafala.publishKafala);
+  const resetMutation   = useMutation(api.kafala.resetKafala);
 
+  // ── Handlers ──────────────────────────────────────────────────────────────
   const handleDelete = async (kafalaId) => {
     try {
       await deleteMutation({ kafalaId });
       showToast?.('تم حذف الكفالة', 'success');
-    } catch (e) {
-      showToast?.(e?.message || 'حدث خطأ', 'error');
-    }
+    } catch (e) { showToast?.(e?.message || 'حدث خطأ', 'error'); }
     setDeleteConfirm(null);
   };
 
@@ -58,176 +51,185 @@ export default function AdminKafala() {
     try {
       await publishMutation({ kafalaId });
       showToast?.('تم نشر الكفالة', 'success');
-    } catch (e) {
-      showToast?.(e?.message || 'حدث خطأ', 'error');
-    }
+    } catch (e) { showToast?.(e?.message || 'حدث خطأ', 'error'); }
   };
 
   const handleReset = async (kafalaId) => {
     try {
       await resetMutation({ kafalaId });
       showToast?.('تم إعادة فتح كفالة اليتيم', 'success');
-    } catch (e) {
-      showToast?.(e?.message || 'حدث خطأ', 'error');
-    }
+    } catch (e) { showToast?.(e?.message || 'حدث خطأ', 'error'); }
     setResetConfirm(null);
   };
 
+  // ── Derived ───────────────────────────────────────────────────────────────
+  const list = kafalaList || [];
+  const sponsored = list.filter(k => k.status === 'sponsored');
+  const available  = list.filter(k => k.status === 'active');
+  const monthlyRevenue = sponsored.reduce((s, k) => s + (k.monthlyPrice || 0), 0) / 100;
+
+  const filtered = list.filter(k => {
+    if (statusFilter !== 'all' && k.status !== statusFilter) return false;
+    if (search && !k.name?.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
   return (
-    <div className="p-6 max-w-6xl mx-auto" dir="rtl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text-primary dark:text-white">إدارة الكفالات</h1>
-          <p className="text-text-secondary text-sm mt-1">{kafalaList?.length ?? '—'} كفالة إجمالاً</p>
-        </div>
-        <Link
-          to="/admin/kafala/new"
-          className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-bold hover:bg-primary/90 transition-colors text-sm"
-        >
-          <span className="material-symbols-outlined text-lg">add</span>
-          إضافة يتيم جديد
+    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: 24 }} dir="rtl">
+
+      {/* ── KPIs ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 20 }}>
+        {[
+          { num: list.length, label: 'إجمالي الأيتام', color: KDARK },
+          { num: sponsored.length, label: 'مكفولون حالياً', color: '#16a34a' },
+          { num: available.length, label: 'ينتظرون كافلاً', color: KDARK },
+          { num: monthlyRevenue.toLocaleString('fr-MA'), label: 'درهم/شهر محصّل', color: KDARK },
+        ].map(({ num, label, color }) => (
+          <div key={label} style={{ background: 'white', borderRadius: 14, border: `1px solid ${BORDER}`, boxShadow: SHADOW, padding: 16 }}>
+            <div style={{ fontSize: 24, fontWeight: 900, fontFamily: 'Inter, sans-serif', color }}>{num}</div>
+            <div style={{ fontSize: 12, color: TEXT2, marginTop: 4 }}>{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Filter bar ── */}
+      <div style={{ background: 'white', borderRadius: 14, border: `1px solid ${BORDER}`, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="ابحث عن يتيم..."
+          style={{ flex: 1, minWidth: 200, height: 38, padding: '0 16px', border: `1.5px solid ${BORDER}`, borderRadius: 10, fontSize: 14, fontFamily: 'Tajawal, sans-serif', outline: 'none' }}
+          onFocus={e => e.target.style.borderColor = KDARK}
+          onBlur={e => e.target.style.borderColor = BORDER}
+        />
+        {[
+          ['all', `الكل (${list.length})`],
+          ['sponsored', `✓ مكفول (${sponsored.length})`],
+          ['active', `⏳ متاح (${available.length})`],
+          ['draft', 'مسودة'],
+        ].map(([val, label]) => (
+          <button key={val} onClick={() => setStatusFilter(val)}
+            style={{ height: 34, padding: '0 14px', borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: `1.5px solid ${statusFilter === val ? KDARK : BORDER}`, background: statusFilter === val ? KDARK : 'white', color: statusFilter === val ? 'white' : TEXT2, fontFamily: 'Tajawal, sans-serif' }}>
+            {label}
+          </button>
+        ))}
+        <Link to="/admin/kafala/new"
+          style={{ height: 38, padding: '0 18px', background: KDARK, color: 'white', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', textDecoration: 'none', display: 'flex', alignItems: 'center', marginRight: 'auto' }}>
+          + إضافة يتيم
         </Link>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-6">
-        <input
-          type="text"
-          placeholder="بحث بالاسم..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="border border-border-light dark:border-white/20 rounded-xl px-4 py-2 bg-white dark:bg-bg-dark-card text-text-primary dark:text-white placeholder:text-text-muted focus:outline-none focus:border-primary text-sm"
-        />
-        <div className="flex gap-2">
-          {['all', 'draft', 'active', 'sponsored', 'inactive'].map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                statusFilter === s ? 'bg-primary text-white' : 'bg-white dark:bg-bg-dark-card text-text-secondary border border-border-light dark:border-white/10 hover:border-primary/30'
-              }`}
-            >
-              {s === 'all' ? 'الكل' : STATUS_LABELS.ar[s]}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Loading */}
+      {/* ── Loading / Empty ── */}
       {kafalaList === undefined && (
-        <div className="flex items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: TEXTM }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🤲</div>
+          <p>جاري التحميل...</p>
         </div>
       )}
 
-      {/* Empty */}
       {kafalaList !== undefined && filtered.length === 0 && (
-        <div className="text-center py-20 text-text-muted">
-          <span className="material-symbols-outlined text-5xl mb-4 block opacity-30">child_care</span>
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: TEXTM }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🤲</div>
           <p>لا توجد كفالات تطابق البحث</p>
         </div>
       )}
 
-      {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filtered.map((kafala) => {
+      {/* ── Cards grid ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
+        {filtered.map(kafala => {
           const photoUrl = kafala.photo ? (convexFileUrl(kafala.photo) || kafala.photo) : null;
+          const isSponsored = kafala.status === 'sponsored';
+          const priceMAD = (kafala.monthlyPrice || 0) / 100;
+          const st = STATUS_CFG[kafala.status] || STATUS_CFG.active;
           const nextRenewal = kafala.sponsorship?.nextRenewalDate
-            ? new Date(kafala.sponsorship.nextRenewalDate).toLocaleDateString('ar-MA')
+            ? new Date(kafala.sponsorship.nextRenewalDate).toLocaleDateString('fr-MA')
             : null;
 
           return (
-            <div
-              key={kafala._id}
-              className="bg-white dark:bg-bg-dark-card rounded-2xl shadow-card border border-border-light dark:border-white/10 overflow-hidden"
+            <div key={kafala._id}
+              style={{ background: 'white', borderRadius: 16, border: `1.5px solid ${isSponsored ? '#BBF7D0' : K100}`, boxShadow: SHADOW, overflow: 'hidden', cursor: 'default', transition: 'box-shadow .15s' }}
+              onMouseEnter={e => e.currentTarget.style.boxShadow = '0 8px 24px rgba(196,168,130,.25)'}
+              onMouseLeave={e => e.currentTarget.style.boxShadow = SHADOW}
             >
-              {/* Top */}
-              <div className="p-5 flex items-center gap-4">
-                <KafalaAvatar
-                  gender={kafala.gender}
-                  photo={kafala.photo}
-                  photoUrl={photoUrl}
-                  size={56}
-                />
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-text-primary dark:text-white truncate">{kafala.name}</h3>
-                  <p className="text-text-secondary text-xs">{kafala.age} سنة — {kafala.location}</p>
-                </div>
-                <span className={`px-2.5 py-1 rounded-full text-xs font-bold shrink-0 ${STATUS_COLORS[kafala.status]}`}>
-                  {STATUS_LABELS.ar[kafala.status]}
+              {/* Avatar header */}
+              <div style={{ height: 100, background: isSponsored ? 'linear-gradient(135deg,#166534,#16a34a)' : 'linear-gradient(135deg,#3D2506,#8B6914)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, position: 'relative' }}>
+                {photoUrl ? (
+                  <img src={photoUrl} alt={kafala.name} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
+                ) : (
+                  <KafalaAvatar gender={kafala.gender} photo={kafala.photo} photoUrl={null} size={56} />
+                )}
+                <span style={{ position: 'absolute', top: 8, right: 8, padding: '3px 8px', borderRadius: 100, fontSize: 10, fontWeight: 700, background: st.bg, color: st.color }}>
+                  {st.label.replace(/[○✓⏳✗] /, '')}
                 </span>
               </div>
 
-              {/* Info row */}
-              <div className="px-5 pb-3 flex items-center justify-between text-sm border-b border-border-light dark:border-white/10">
-                <span className="text-text-muted">الكفالة الشهرية</span>
-                <span className="font-bold text-primary">{(kafala.monthlyPrice / 100).toLocaleString('fr-MA')} MAD</span>
-              </div>
-
-              {/* Renewal info (if sponsored) */}
-              {kafala.status === 'sponsored' && nextRenewal && (
-                <div className="px-5 py-2 bg-blue-50 dark:bg-blue-900/10 text-xs text-blue-600 dark:text-blue-300 border-b border-border-light dark:border-white/10">
-                  <span className="material-symbols-outlined text-sm align-text-bottom ml-1">calendar_month</span>
-                  التجديد القادم: {nextRenewal}
+              {/* Card body */}
+              <div style={{ padding: 14 }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: KDARK, marginBottom: 4 }}>{kafala.name}</div>
+                <div style={{ fontSize: 12, color: TEXT2 }}>
+                  {kafala.age && <span>🎂 {kafala.age} سنة</span>}
+                  {kafala.age && kafala.location && ' · '}
+                  {kafala.location && <span>📍 {kafala.location}</span>}
                 </div>
-              )}
+                <div style={{ marginTop: 8 }}>
+                  <span style={{ fontSize: 16, fontWeight: 800, color: KDARK, fontFamily: 'Inter, sans-serif' }}>{priceMAD}</span>
+                  <span style={{ fontSize: 11, color: TEXTM }}> درهم/شهر</span>
+                </div>
 
-              {/* Actions */}
-              <div className="p-4 flex flex-wrap gap-2">
-                <button
-                  onClick={() => navigate(`/admin/kafala/${kafala._id}/edit`)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-white/10 text-text-secondary hover:text-primary rounded-lg text-xs font-semibold transition-colors"
-                >
-                  <span className="material-symbols-outlined text-sm">edit</span>
-                  تعديل
-                </button>
-
-                {kafala.status === 'draft' && (
-                  <button
-                    onClick={() => handlePublish(kafala._id)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded-lg text-xs font-semibold transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-sm">publish</span>
-                    نشر
-                  </button>
+                {/* Sponsor info */}
+                {isSponsored && kafala.sponsorship && (
+                  <div style={{ fontSize: 12, color: TEXT2, marginTop: 6, paddingTop: 8, borderTop: `1px solid ${K100}` }}>
+                    🤲 {kafala.sponsorship.sponsorName || 'كافل'} {nextRenewal && `· تجديد ${nextRenewal}`}
+                  </div>
                 )}
 
-                {kafala.status === 'sponsored' && (
-                  <button
-                    onClick={() => setResetConfirm(kafala._id)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-700 hover:bg-amber-200 rounded-lg text-xs font-semibold transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-sm">lock_open</span>
-                    إعادة فتح
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+                  <button onClick={() => navigate(`/admin/kafala/${kafala._id}/edit`)}
+                    style={{ flex: 1, height: 32, borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', border: 'none', background: KBG, color: KDARK }}>
+                    ✏️ تعديل
                   </button>
-                )}
-
-                <button
-                  onClick={() => setDeleteConfirm(kafala._id)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg text-xs font-semibold transition-colors"
-                >
-                  <span className="material-symbols-outlined text-sm">delete</span>
-                  حذف
-                </button>
+                  <button onClick={() => navigate(`/admin/kafala/${kafala._id}`)}
+                    style={{ flex: 1, height: 32, borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', border: 'none', background: '#E6F4F4', color: '#0A5F62' }}>
+                    👁 عرض
+                  </button>
+                  {kafala.status === 'draft' && (
+                    <button onClick={() => handlePublish(kafala._id)}
+                      style={{ flex: 1, height: 32, borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', border: 'none', background: '#D1FAE5', color: '#16a34a' }}>
+                      ▶ نشر
+                    </button>
+                  )}
+                  {kafala.status === 'sponsored' && (
+                    <button onClick={() => setResetConfirm(kafala._id)}
+                      style={{ height: 32, width: 32, borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', border: 'none', background: '#FFFBEB', color: '#92400e' }}>
+                      🔓
+                    </button>
+                  )}
+                  <button onClick={() => setDeleteConfirm(kafala._id)}
+                    style={{ height: 32, width: 32, borderRadius: 8, fontSize: 12, cursor: 'pointer', border: 'none', background: '#FEE2E2', color: '#dc2626' }}>
+                    🗑
+                  </button>
+                </div>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Delete confirm modal */}
+      {/* ── Delete confirm modal ── */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-bg-dark-card rounded-2xl p-6 max-w-sm w-full shadow-xl" dir="rtl">
-            <span className="material-symbols-outlined text-red-500 text-4xl mb-3 block">warning</span>
-            <h3 className="font-bold text-text-primary dark:text-white mb-2">تأكيد الحذف</h3>
-            <p className="text-text-secondary text-sm mb-5">سيتم حذف الكفالة وجميع بياناتها نهائياً. هل أنت متأكد؟</p>
-            <div className="flex gap-3">
-              <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-2.5 rounded-xl border border-border-light dark:border-white/20 text-text-secondary font-semibold text-sm">
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: 'white', borderRadius: 20, padding: 24, maxWidth: 380, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,.2)', fontFamily: 'Tajawal, sans-serif' }} dir="rtl">
+            <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
+            <h3 style={{ fontWeight: 700, marginBottom: 8 }}>تأكيد الحذف</h3>
+            <p style={{ fontSize: 14, color: TEXT2, marginBottom: 20 }}>سيتم حذف الكفالة وجميع بياناتها نهائياً. هل أنت متأكد؟</p>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button onClick={() => setDeleteConfirm(null)}
+                style={{ flex: 1, height: 44, borderRadius: 12, border: `1.5px solid ${BORDER}`, background: 'white', fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', color: TEXT2 }}>
                 إلغاء
               </button>
-              <button onClick={() => handleDelete(deleteConfirm)} className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-bold text-sm">
+              <button onClick={() => handleDelete(deleteConfirm)}
+                style={{ flex: 1, height: 44, borderRadius: 12, background: '#ef4444', color: 'white', border: 'none', fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
                 حذف نهائياً
               </button>
             </div>
@@ -235,18 +237,20 @@ export default function AdminKafala() {
         </div>
       )}
 
-      {/* Reset confirm modal */}
+      {/* ── Reset confirm modal ── */}
       {resetConfirm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-bg-dark-card rounded-2xl p-6 max-w-sm w-full shadow-xl" dir="rtl">
-            <span className="material-symbols-outlined text-amber-500 text-4xl mb-3 block">lock_open</span>
-            <h3 className="font-bold text-text-primary dark:text-white mb-2">إعادة فتح الكفالة</h3>
-            <p className="text-text-secondary text-sm mb-5">سيتم إنهاء الاشتراك الحالي وإعادة فتح الكفالة للتبرع. هل تريد المتابعة؟</p>
-            <div className="flex gap-3">
-              <button onClick={() => setResetConfirm(null)} className="flex-1 py-2.5 rounded-xl border border-border-light dark:border-white/20 text-text-secondary font-semibold text-sm">
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: 'white', borderRadius: 20, padding: 24, maxWidth: 380, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,.2)', fontFamily: 'Tajawal, sans-serif' }} dir="rtl">
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🔓</div>
+            <h3 style={{ fontWeight: 700, marginBottom: 8 }}>إعادة فتح الكفالة</h3>
+            <p style={{ fontSize: 14, color: TEXT2, marginBottom: 20 }}>سيتم إنهاء الاشتراك الحالي وإعادة فتح الكفالة للتبرع. هل تريد المتابعة؟</p>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button onClick={() => setResetConfirm(null)}
+                style={{ flex: 1, height: 44, borderRadius: 12, border: `1.5px solid ${BORDER}`, background: 'white', fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', color: TEXT2 }}>
                 إلغاء
               </button>
-              <button onClick={() => handleReset(resetConfirm)} className="flex-1 py-2.5 rounded-xl bg-amber-500 text-white font-bold text-sm">
+              <button onClick={() => handleReset(resetConfirm)}
+                style={{ flex: 1, height: 44, borderRadius: 12, background: '#f59e0b', color: 'white', border: 'none', fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
                 تأكيد
               </button>
             </div>

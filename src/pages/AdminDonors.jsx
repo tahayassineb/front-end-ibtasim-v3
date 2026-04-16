@@ -1,327 +1,223 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
-import Card from '../components/Card';
-import Badge from '../components/Badge';
 
-// ============================================
-// ADMIN DONORS PAGE - Donor Directory & CRM
-// ============================================
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const BORDER = '#E5E9EB';
+const PRIMARY = '#0d7477';
+const P600 = '#0A5F62';
+const TEXT2 = '#64748b';
+const TEXTM = '#94a3b8';
+const SHADOW = '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)';
+const SHADOW_P = '0 4px 14px rgba(13,116,119,.25)';
 
-const AdminDonors = () => {
-  const { currentLanguage } = useApp();
-  const [viewMode, setViewMode] = useState('grid');
-  const [searchQuery, setSearchQuery] = useState('');
+// Tier thresholds (amounts stored as centimes ×100)
+const getTier = (totalDonated, donationCount) => {
+  if (totalDonated >= 500000) return 'gold';   // ≥ 5000 MAD
+  if (totalDonated >= 100000) return 'silver';  // ≥ 1000 MAD
+  if (donationCount <= 1 && totalDonated < 50000) return 'new'; // first donation
+  return 'bronze';
+};
+
+const TIER_CFG = {
+  gold:   { label: '🥇 ذهبي',  bg: '#FEF3C7', color: '#92400e' },
+  silver: { label: '🥈 فضي',   bg: '#F1F5F9', color: '#475569' },
+  bronze: { label: '🥉 برونزي', bg: '#FFF7ED', color: '#9a3412' },
+  new:    { label: '✨ جديد',  bg: '#E6F4F4', color: P600 },
+};
+
+const PER_PAGE = 10;
+
+const initials = (name) => {
+  if (!name) return '؟';
+  const parts = name.trim().split(' ');
+  return parts.length >= 2 ? parts[0][0] + parts[1][0] : parts[0][0];
+};
+
+const AVATAR_GRADS = [
+  'linear-gradient(135deg,#0A5F62,#33C0C0)',
+  'linear-gradient(135deg,#0d7477,#0A5F62)',
+  'linear-gradient(135deg,#374151,#6B7280)',
+  'linear-gradient(135deg,#8B6914,#C4A882)',
+  'linear-gradient(135deg,#1e40af,#3b82f6)',
+];
+
+export default function AdminDonors() {
+  const navigate = useNavigate();
+  const { showToast } = useApp();
+
+  const [search, setSearch] = useState('');
   const [tierFilter, setTierFilter] = useState('all');
-  
-  // Convex hooks
-  const donorsData = useQuery(api.admin.getDonors, { search: searchQuery || undefined, limit: 50 });
-  
-  // Transform Convex data to match component structure
-  const donors = donorsData?.donors ? donorsData.donors.map(d => ({
-    id: d._id,
-    name: d.fullName,
-    email: d.email,
-    avatar: null, // Could be added to schema later
-    tier: d.totalDonated > 20000 ? 'gold' : d.totalDonated > 5000 ? 'silver' : 'bronze',
-    totalDonated: d.totalDonated,
-    donationsCount: d.donationCount,
-    lastActive: d.lastLoginAt ? new Date(d.lastLoginAt).toLocaleDateString() : 'Never',
-  })) : [];
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Translations
-  const translations = {
-    ar: {
-      title: 'دليل المتبرعين',
-      search: 'البحث بالاسم أو البريد الإلكتروني...',
-      allDonors: 'جميع المتبرعين',
-      goldTier: 'الفئة الذهبية',
-      silverTier: 'الفئة الفضية',
-      bronzeTier: 'الفئة البرونزية',
-      donorDetails: 'تفاصيل المتبرع',
-      contribution: 'المساهمة',
-      totalDonated: 'إجمالي التبرعات',
-      donations: 'تبرعات',
-      lastActive: 'آخر نشاط',
-      view: 'عرض',
-      noDonors: 'لا يوجد متبرعون',
-    },
-    fr: {
-      title: 'Annuaire des Donateurs',
-      search: 'Rechercher par nom ou email...',
-      allDonors: 'Tous les Donateurs',
-      goldTier: 'Niveau Or',
-      silverTier: 'Niveau Argent',
-      bronzeTier: 'Niveau Bronze',
-      donorDetails: 'Détails du Donateur',
-      contribution: 'Contribution',
-      totalDonated: 'Total Donné',
-      donations: 'Dons',
-      lastActive: 'Dernière Activité',
-      view: 'Voir',
-      noDonors: 'Aucun donateur trouvé',
-    },
-    en: {
-      title: 'Donors Directory',
-      search: 'Search by name or email...',
-      allDonors: 'All Donors',
-      goldTier: 'Gold Tier',
-      silverTier: 'Silver Tier',
-      bronzeTier: 'Bronze Tier',
-      donorDetails: 'Donor Details',
-      contribution: 'Contribution',
-      totalDonated: 'Total Donated',
-      donations: 'Donations',
-      lastActive: 'Last Active',
-      view: 'View',
-      noDonors: 'No donors found',
-    },
-  };
+  // ── Convex ────────────────────────────────────────────────────────────────
+  const donorsData = useQuery(api.admin.getDonors, { search: search || undefined, limit: 200 });
+  const donors = donorsData?.donors ?? [];
 
-  const t = translations[currentLanguage?.code] || translations.en;
+  // ── Derived ───────────────────────────────────────────────────────────────
+  const enriched = donors.map((d, i) => ({
+    ...d,
+    tier: getTier(d.totalDonated, d.donationCount),
+    avatarGrad: AVATAR_GRADS[i % AVATAR_GRADS.length],
+    totalMAD: (d.totalDonated || 0) / 100,
+  }));
 
-  // Mock donors data as fallback
-  const mockDonors = [
-    {
-      id: 1,
-      name: 'Ahmed Mansouri',
-      email: 'ahmed.m@email.com',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
-      tier: 'gold',
-      totalDonated: 25000,
-      donationsCount: 12,
-      lastActive: '2 days ago',
-    },
-    {
-      id: 2,
-      name: 'Fatima Zahra',
-      email: 'f.zahra@email.com',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
-      tier: 'silver',
-      totalDonated: 8500,
-      donationsCount: 5,
-      lastActive: 'Oct 12, 2023',
-    },
-    {
-      id: 3,
-      name: 'Omar Berrada',
-      email: 'o.berrada@email.com',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100',
-      tier: 'bronze',
-      totalDonated: 1200,
-      donationsCount: 1,
-      lastActive: 'Sept 05, 2023',
-    },
-    {
-      id: 4,
-      name: 'Leila Benani',
-      email: 'leila.b@email.com',
-      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100',
-      tier: 'gold',
-      totalDonated: 15000,
-      donationsCount: 8,
-      lastActive: '1 week ago',
-    },
-    {
-      id: 5,
-      name: 'Karim Idrissi',
-      email: 'karim.i@email.com',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100',
-      tier: 'silver',
-      totalDonated: 5200,
-      donationsCount: 3,
-      lastActive: '3 days ago',
-    },
-    {
-      id: 6,
-      name: 'Samira Tazi',
-      email: 'samira.t@email.com',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
-      tier: 'bronze',
-      totalDonated: 800,
-      donationsCount: 2,
-      lastActive: '1 month ago',
-    },
-  ];
+  const now = Date.now();
+  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+  const goldCount   = enriched.filter(d => d.tier === 'gold').length;
+  const newCount    = enriched.filter(d => now - (d.lastLoginAt || 0) < thirtyDays).length;
 
-  const filteredDonors = donors.filter(donor => {
-    const matchesSearch = donor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         donor.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTier = tierFilter === 'all' || donor.tier === tierFilter;
-    return matchesSearch && matchesTier;
+  const filtered = enriched.filter(d => {
+    if (tierFilter !== 'all' && d.tier !== tierFilter) return false;
+    return true; // search is handled server-side
   });
 
-  const getTierBadge = (tier) => {
-    const tierConfig = {
-      gold: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-800/50', label: t.goldTier },
-      silver: { bg: 'bg-slate-100 dark:bg-slate-700', text: 'text-slate-600 dark:text-slate-300', border: 'border-slate-200 dark:border-slate-600', label: t.silverTier },
-      bronze: { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700 dark:text-orange-400', border: 'border-orange-200 dark:border-orange-800/50', label: t.bronzeTier },
-    };
-    const config = tierConfig[tier] || tierConfig.bronze;
-    return (
-      <span className={`${config.bg} ${config.text} ${config.border} text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-widest border`}>
-        {config.label}
-      </span>
-    );
-  };
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const page = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl font-bold text-text-primary dark:text-white">{t.title}</h1>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setViewMode('grid')}
-            className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-primary text-white' : 'text-slate-500 hover:text-primary hover:bg-primary/10'}`}
-          >
-            <span className="material-symbols-outlined">grid_view</span>
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-primary text-white' : 'text-slate-500 hover:text-primary hover:bg-primary/10'}`}
-          >
-            <span className="material-symbols-outlined">view_list</span>
-          </button>
-        </div>
-      </div>
+    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: 24 }} dir="rtl">
 
-      {/* Search + Tier Filters — consolidated horizontal bar */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
-          <div className="flex w-full items-stretch rounded-xl h-12 shadow-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-            <div className="text-primary flex items-center justify-center pr-3 pl-4">
-              <span className="material-symbols-outlined text-[20px]">search</span>
-            </div>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t.search}
-              className="w-full border-none bg-transparent focus:ring-0 text-sm text-text-primary dark:text-white placeholder:text-slate-400 pl-1 pr-4"
-            />
+      {/* ── KPIs ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 20 }}>
+        {[
+          { num: enriched.length.toLocaleString('fr-MA'), label: 'إجمالي المتبرعين', color: P600 },
+          { num: `🥇 ${goldCount}`, label: 'متبرعون ذهبيون (+5,000 د.م)', color: '#92400e' },
+          { num: enriched.filter(d => d.tier === 'silver').length, label: 'متبرعون فضيون', color: '#475569' },
+          { num: newCount, label: 'متبرع جديد هذا الشهر', color: P600 },
+        ].map(({ num, label, color }) => (
+          <div key={label} style={{ background: 'white', borderRadius: 14, border: `1px solid ${BORDER}`, boxShadow: SHADOW, padding: 16 }}>
+            <div style={{ fontSize: 24, fontWeight: 900, fontFamily: 'Inter, sans-serif', color }}>{num}</div>
+            <div style={{ fontSize: 12, color: TEXT2, marginTop: 4 }}>{label}</div>
           </div>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          {[
-            { key: 'all', label: t.allDonors },
-            { key: 'gold', label: t.goldTier },
-            { key: 'silver', label: t.silverTier },
-            { key: 'bronze', label: t.bronzeTier },
-          ].map((filter) => (
-            <button
-              key={filter.key}
-              onClick={() => setTierFilter(filter.key)}
-              className={`flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full px-4 text-sm font-medium transition-colors ${
-                tierFilter === filter.key
-                  ? 'bg-primary text-white shadow-md'
-                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-primary/50 hover:text-primary'
-              }`}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Column Headers (List View Only) */}
-      {viewMode === 'list' && (
-        <div className="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider px-2">
-          <div className="flex items-center gap-1">
-            <span>{t.donorDetails}</span>
-            <span className="material-symbols-outlined text-[14px]">arrow_downward</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span>{t.contribution}</span>
-            <span className="material-symbols-outlined text-[14px]">unfold_more</span>
-          </div>
-        </div>
-      )}
-
-      {/* Donors Grid/List */}
-      <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'flex flex-col gap-3'}>
-        {filteredDonors.map((donor) => (
-          <Card key={donor.id} padding="lg" className="flex flex-col gap-3">
-            {/* Header */}
-            <div className="flex justify-between items-start">
-              <div className="flex items-center gap-3">
-                <div className="bg-primary/10 rounded-full h-12 w-12 flex items-center justify-center overflow-hidden">
-                  {donor.avatar ? (
-                    <img src={donor.avatar} alt={donor.name} className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="material-symbols-outlined text-primary">person</span>
-                  )}
-                </div>
-                <div>
-                  <p className="text-text-primary dark:text-white font-bold text-base">{donor.name}</p>
-                  <p className="text-slate-500 text-xs flex items-center gap-1">
-                    <span className="material-symbols-outlined text-xs">mail</span>
-                    {donor.email}
-                  </p>
-                </div>
-              </div>
-              {getTierBadge(donor.tier)}
-            </div>
-
-            {/* Stats */}
-            <div className="flex justify-between items-center pt-3 border-t border-slate-50 dark:border-slate-700/50">
-              <div className="space-y-0.5">
-                <p className="text-[10px] text-slate-400 uppercase font-bold">{t.totalDonated}</p>
-                <p className="text-primary font-bold">{donor.totalDonated.toLocaleString()} DH</p>
-              </div>
-              <div className="text-right space-y-0.5">
-                <p className="text-[10px] text-slate-400 uppercase font-bold">{t.donations}</p>
-                <p className="text-slate-700 dark:text-slate-200 font-medium">{donor.donationsCount} Gifts</p>
-              </div>
-              <Link
-                to={`/admin/donors/${donor.id}`}
-                className="flex gap-2"
-              >
-                <button className="p-2 text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors">
-                  <span className="material-symbols-outlined text-xl">visibility</span>
-                </button>
-              </Link>
-            </div>
-
-            {/* Last Active */}
-            <div className="flex items-center justify-between mt-1">
-              <span className="text-[11px] text-slate-400 italic">{t.lastActive}: {donor.lastActive}</span>
-            </div>
-          </Card>
         ))}
       </div>
 
-      {/* Empty State */}
-      {filteredDonors.length === 0 && (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="material-symbols-outlined text-3xl text-slate-400">person_off</span>
-          </div>
-          <h3 className="text-lg font-medium text-text-primary dark:text-white mb-2">{t.noDonors}</h3>
-          <p className="text-slate-500">Try adjusting your search or filters</p>
-        </div>
-      )}
-
-      {/* Pagination */}
-      <div className="flex justify-end">
-        <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-2 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
-          <button className="p-2 text-slate-400 hover:text-primary transition-colors disabled:opacity-30" disabled>
-            <span className="material-symbols-outlined">chevron_left</span>
+      {/* ── Filter bar ── */}
+      <div style={{ background: 'white', borderRadius: 14, border: `1px solid ${BORDER}`, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+        <input
+          value={search}
+          onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
+          placeholder="ابحث بالاسم أو رقم الهاتف..."
+          style={{ flex: 1, minWidth: 200, height: 38, padding: '0 16px', border: `1.5px solid ${BORDER}`, borderRadius: 10, fontSize: 14, fontFamily: 'Tajawal, sans-serif', outline: 'none' }}
+          onFocus={e => e.target.style.borderColor = PRIMARY}
+          onBlur={e => e.target.style.borderColor = BORDER}
+        />
+        {[
+          ['all', 'الكل'],
+          ['gold', '🥇 ذهبي'],
+          ['silver', '🥈 فضي'],
+          ['bronze', '🥉 برونزي'],
+          ['new', '✨ جديد'],
+        ].map(([val, label]) => (
+          <button key={val} onClick={() => { setTierFilter(val); setCurrentPage(1); }}
+            style={{ height: 34, padding: '0 14px', borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: `1.5px solid ${tierFilter === val ? PRIMARY : BORDER}`, background: tierFilter === val ? PRIMARY : 'white', color: tierFilter === val ? 'white' : TEXT2, fontFamily: 'Tajawal, sans-serif' }}>
+            {label}
           </button>
-          <div className="flex items-center gap-1 px-2">
-            <span className="text-sm font-bold text-primary">1</span>
-            <span className="text-sm text-slate-400">/</span>
-            <span className="text-sm text-slate-400">12</span>
+        ))}
+        <button
+          onClick={() => showToast('تصدير CSV — قريباً', 'info')}
+          style={{ height: 38, padding: '0 16px', border: `1.5px solid ${BORDER}`, borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', background: 'white', color: TEXT2, marginRight: 'auto' }}>
+          📋 تصدير CSV
+        </button>
+      </div>
+
+      {/* ── Table ── */}
+      <div style={{ background: 'white', borderRadius: 16, border: `1px solid ${BORDER}`, boxShadow: SHADOW, overflow: 'hidden' }}>
+        {/* Head */}
+        <div style={{ display: 'grid', gridTemplateColumns: '2.5fr 1fr 1fr 1fr 1fr 80px', background: '#F0F7F7', borderBottom: `1px solid ${BORDER}` }}>
+          {['المتبرع', 'إجمالي التبرعات', 'عدد التبرعات', 'آخر نشاط', 'التصنيف', 'ملف'].map(h => (
+            <div key={h} style={{ padding: '12px 16px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: TEXTM, fontFamily: 'Inter, sans-serif' }}>{h}</div>
+          ))}
+        </div>
+
+        {/* Rows */}
+        {donorsData === undefined ? (
+          <div style={{ padding: '60px 20px', textAlign: 'center', color: TEXTM }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>👥</div>
+            <p>جاري التحميل...</p>
           </div>
-          <button className="p-2 text-primary hover:bg-primary/5 rounded-lg transition-colors">
-            <span className="material-symbols-outlined">chevron_right</span>
+        ) : page.length === 0 ? (
+          <div style={{ padding: '60px 20px', textAlign: 'center', color: TEXTM }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>👥</div>
+            <p>لا يوجد متبرعون</p>
+          </div>
+        ) : page.map((d, i) => {
+          const tier = TIER_CFG[d.tier] || TIER_CFG.new;
+          const lastDate = d.lastLoginAt ? new Date(d.lastLoginAt).toLocaleDateString('fr-MA') : '—';
+          return (
+            <div key={d._id}
+              style={{ display: 'grid', gridTemplateColumns: '2.5fr 1fr 1fr 1fr 1fr 80px', borderBottom: i < page.length - 1 ? `1px solid ${BORDER}` : 'none', alignItems: 'center', background: i % 2 === 1 ? '#fafbfc' : 'white', transition: 'background .15s', cursor: 'default' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#E6F4F4'}
+              onMouseLeave={e => e.currentTarget.style.background = i % 2 === 1 ? '#fafbfc' : 'white'}
+            >
+              {/* Donor cell */}
+              <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: d.avatarGrad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: 'white', fontWeight: 700, flexShrink: 0 }}>
+                  {initials(d.fullName)}
+                </div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700 }}>{d.fullName}</div>
+                  <div style={{ fontSize: 11, color: TEXTM, fontFamily: 'Inter, sans-serif' }}>{d.phoneNumber || d.email}</div>
+                </div>
+              </div>
+
+              {/* Total */}
+              <div style={{ padding: '12px 16px', fontSize: 13, fontWeight: 800, color: P600, fontFamily: 'Inter, sans-serif' }}>
+                {d.totalMAD.toLocaleString('fr-MA')} د.م
+              </div>
+
+              {/* Count */}
+              <div style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif' }}>
+                {d.donationCount}
+              </div>
+
+              {/* Last active */}
+              <div style={{ padding: '12px 16px', fontSize: 13, color: TEXTM, fontFamily: 'Inter, sans-serif' }}>
+                {lastDate}
+              </div>
+
+              {/* Tier badge */}
+              <div style={{ padding: '12px 16px' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 100, fontSize: 11, fontWeight: 700, background: tier.bg, color: tier.color }}>
+                  {tier.label}
+                </span>
+              </div>
+
+              {/* View button */}
+              <div style={{ padding: '12px 16px' }}>
+                <button onClick={() => navigate(`/admin/donors/${d._id}`)}
+                  style={{ height: 28, padding: '0 10px', borderRadius: 8, border: `1px solid ${BORDER}`, background: 'white', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', color: TEXT2 }}>
+                  عرض
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── Pagination ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, fontSize: 13, color: TEXT2 }}>
+        <span>عرض {filtered.length === 0 ? 0 : (currentPage - 1) * PER_PAGE + 1}–{Math.min(currentPage * PER_PAGE, filtered.length)} من {filtered.length.toLocaleString('fr-MA')} متبرع</span>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}
+            style={{ height: 32, padding: '0 12px', border: `1px solid ${BORDER}`, borderRadius: 8, background: 'white', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', opacity: currentPage === 1 ? 0.5 : 1, fontSize: 13 }}>
+            ‹ السابق
+          </button>
+          {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(n => (
+            <button key={n} onClick={() => setCurrentPage(n)}
+              style={{ height: 32, width: 32, border: `1px solid ${currentPage === n ? PRIMARY : BORDER}`, borderRadius: 8, background: currentPage === n ? PRIMARY : 'white', color: currentPage === n ? 'white' : 'inherit', cursor: 'pointer', fontWeight: currentPage === n ? 700 : 400, fontSize: 13 }}>
+              {n}
+            </button>
+          ))}
+          <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0}
+            style={{ height: 32, padding: '0 12px', border: `1px solid ${BORDER}`, borderRadius: 8, background: 'white', cursor: (currentPage === totalPages || totalPages === 0) ? 'not-allowed' : 'pointer', opacity: (currentPage === totalPages || totalPages === 0) ? 0.5 : 1, fontSize: 13 }}>
+            التالي ›
           </button>
         </div>
       </div>
     </div>
   );
-};
-
-export default AdminDonors;
+}

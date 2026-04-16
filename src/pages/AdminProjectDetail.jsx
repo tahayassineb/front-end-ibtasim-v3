@@ -1,379 +1,244 @@
 import React from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import { convexFileUrl } from '../lib/convex';
-import Card from '../components/Card';
-import Badge from '../components/Badge';
-import Button from '../components/Button';
 
-// ============================================
-// ADMIN PROJECT DETAIL PAGE - Project Overview
-// Connected to Convex backend
-// ============================================
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const BORDER = '#E5E9EB';
+const PRIMARY = '#0d7477';
+const P600 = '#0A5F62';
+const TEXT2 = '#64748b';
+const TEXTM = '#94a3b8';
+const SHADOW = '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)';
+const SHADOW_P = '0 4px 14px rgba(13,116,119,.25)';
 
-const AdminProjectDetail = () => {
+const getStr = (val, lang = 'ar') => {
+  if (!val) return '';
+  if (typeof val === 'string') return val;
+  return val[lang] || val.ar || val.en || val.fr || '';
+};
+
+const STATUS_CFG = {
+  active:    { label: '● نشط',   bg: '#D1FAE5', color: '#16a34a' },
+  draft:     { label: '○ مسودة',  bg: '#F0F7F7', color: TEXTM },
+  completed: { label: '✓ منتهي', bg: '#FEE2E2', color: '#dc2626' },
+  paused:    { label: '⏸ موقوف', bg: '#FFFBEB', color: '#92400e' },
+};
+
+const DONATION_STATUS = {
+  verified:               { label: '✓ مؤكد',  bg: '#D1FAE5', color: '#16a34a' },
+  awaiting_verification:  { label: '⏳ انتظار', bg: '#FEF3C7', color: '#b45309' },
+  awaiting_receipt:       { label: '⏳ انتظار', bg: '#FEF3C7', color: '#b45309' },
+  pending:                { label: '⏳ انتظار', bg: '#FEF3C7', color: '#b45309' },
+  rejected:               { label: '✕ مرفوض', bg: '#FEE2E2', color: '#dc2626' },
+};
+
+export default function AdminProjectDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentLanguage, formatCurrency } = useApp();
+  const { currentLanguage } = useApp();
+  const lang = currentLanguage?.code || 'ar';
 
-  // Convex queries
-  const project = useQuery(api.projects.getProjectById, id ? { projectId: id } : 'skip');
+  // ── Convex ────────────────────────────────────────────────────────────────
+  const project          = useQuery(api.projects.getProjectById, id ? { projectId: id } : 'skip');
   const projectDonations = useQuery(api.donations.getDonationsByProject, id ? { projectId: id } : 'skip');
   const deleteProjectMutation = useMutation(api.projects.deleteProject);
 
-  // Translations
-  const translations = {
-    ar: {
-      back: 'العودة للمشاريع',
-      edit: 'تعديل المشروع',
-      delete: 'حذف المشروع',
-      overview: 'نظرة عامة',
-      donations: 'التبرعات',
-      gallery: 'معرض الصور',
-      status: 'الحالة',
-      category: 'التصنيف',
-      goal: 'الهدف',
-      raised: 'تم جمعه',
-      donors: 'المتبرعون',
-      daysLeft: 'الأيام المتبقية',
-      description: 'الوصف',
-      recentDonations: 'أحدث التبرعات',
-      donor: 'المتبرع',
-      amount: 'المبلغ',
-      date: 'التاريخ',
-      noDonations: 'لا توجد تبرعات بعد',
-      noGallery: 'لا توجد صور بعد',
-      confirmDelete: 'هل أنت متأكد من حذف هذا المشروع؟',
-      anonymous: 'متبرع مجهول',
-      loading: 'جار التحميل...',
-      notFound: 'المشروع غير موجود',
-    },
-    fr: {
-      back: 'Retour aux Projets',
-      edit: 'Modifier le Projet',
-      delete: 'Supprimer le Projet',
-      overview: 'Aperçu',
-      donations: 'Dons',
-      gallery: 'Galerie',
-      status: 'Statut',
-      category: 'Catégorie',
-      goal: 'Objectif',
-      raised: 'Collecté',
-      donors: 'Donateurs',
-      daysLeft: 'Jours Restants',
-      description: 'Description',
-      recentDonations: 'Dons Récents',
-      donor: 'Donateur',
-      amount: 'Montant',
-      date: 'Date',
-      noDonations: 'Aucun don pour l\'instant',
-      noGallery: 'Aucune image pour l\'instant',
-      confirmDelete: 'Êtes-vous sûr de vouloir supprimer ce projet ?',
-      anonymous: 'Donateur Anonyme',
-      loading: 'Chargement...',
-      notFound: 'Projet introuvable',
-    },
-    en: {
-      back: 'Back to Projects',
-      edit: 'Edit Project',
-      delete: 'Delete Project',
-      overview: 'Overview',
-      donations: 'Donations',
-      gallery: 'Gallery',
-      status: 'Status',
-      category: 'Category',
-      goal: 'Goal',
-      raised: 'Raised',
-      donors: 'Donors',
-      daysLeft: 'Days Left',
-      description: 'Description',
-      recentDonations: 'Recent Donations',
-      donor: 'Donor',
-      amount: 'Amount',
-      date: 'Date',
-      noDonations: 'No donations yet',
-      noGallery: 'No gallery images yet',
-      confirmDelete: 'Are you sure you want to delete this project?',
-      anonymous: 'Anonymous Donor',
-      loading: 'Loading...',
-      notFound: 'Project not found',
-    },
-  };
-
-  const t = translations[currentLanguage?.code] || translations.en;
-
-  const getContent = (field) => {
-    if (typeof field === 'object' && field !== null) {
-      return field[currentLanguage?.code] || field.en || '';
-    }
-    return field || '';
-  };
-
   const handleDelete = async () => {
-    if (window.confirm(t.confirmDelete)) {
+    if (window.confirm('هل أنت متأكد من حذف هذا المشروع؟')) {
       await deleteProjectMutation({ projectId: id });
       navigate('/admin/projects');
     }
   };
 
-  // Loading state
+  // ── Loading / not-found ────────────────────────────────────────────────────
   if (project === undefined) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <span className="material-symbols-outlined text-5xl text-slate-300 animate-spin">progress_activity</span>
-          <p className="text-slate-500 mt-3">{t.loading}</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'Tajawal, sans-serif' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>📁</div>
+          <p style={{ color: TEXTM }}>جاري التحميل...</p>
         </div>
       </div>
     );
   }
 
-  // Not found
-  if (project === null) {
+  if (!project) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <span className="material-symbols-outlined text-5xl text-slate-300">folder_off</span>
-          <p className="text-slate-500 mt-3 mb-4">{t.notFound}</p>
-          <Link to="/admin/projects">
-            <Button variant="primary" icon="arrow_back">{t.back}</Button>
-          </Link>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'Tajawal, sans-serif' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>❌</div>
+          <p style={{ color: TEXTM, marginBottom: 16 }}>المشروع غير موجود</p>
+          <button onClick={() => navigate('/admin/projects')}
+            style={{ height: 40, padding: '0 20px', background: PRIMARY, color: 'white', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+            ← المشاريع
+          </button>
         </div>
       </div>
     );
   }
 
-  // Computed values
-  const goalMAD = project.goalAmount / 100;
-  const raisedMAD = project.raisedAmount / 100;
-  const progress = goalMAD > 0 ? Math.min((raisedMAD / goalMAD) * 100, 100) : 0;
-  const donorCount = projectDonations?.length || 0;
+  // ── Computed ──────────────────────────────────────────────────────────────
+  const title     = getStr(project.title, lang);
+  const goalMAD   = (project.goalAmount || 0) / 100;
+  const raisedMAD = (project.raisedAmount || 0) / 100;
+  const pct       = goalMAD > 0 ? Math.min(Math.round(raisedMAD / goalMAD * 100), 100) : 0;
+  const donorCount = projectDonations?.filter(d => ['verified', 'awaiting_verification'].includes(d.status)).length || 0;
+  const avgDonation = donorCount > 0 ? Math.round(raisedMAD / donorCount) : 0;
   const daysLeft = project.endDate
     ? Math.max(0, Math.ceil((project.endDate - Date.now()) / (1000 * 60 * 60 * 24)))
     : '—';
   const imageUrl = convexFileUrl(project.mainImage) || project.mainImage;
-  const galleryUrls = (project.gallery || []).map(storageId => convexFileUrl(storageId) || storageId);
+  const st = STATUS_CFG[project.status] || STATUS_CFG.draft;
+
+  const ICONS = ['🎓', '💧', '🏥', '🌱', '📚', '🤝', '🕌', '⚡'];
+  const icon = ICONS[Math.abs([...String(id)].reduce((a, c) => a + c.charCodeAt(0), 0)) % ICONS.length];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Link
-            to="/admin/projects"
-            className="p-2 rounded-lg text-slate-500 hover:text-primary hover:bg-primary/10 transition-colors"
-          >
-            <span className="material-symbols-outlined">arrow_back</span>
-          </Link>
-          <h1 className="text-2xl font-bold text-text-primary dark:text-white">
-            {getContent(project.title)}
-          </h1>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="md"
-            icon="edit"
-            onClick={() => navigate(`/admin/projects/${id}/edit`)}
-          >
-            {t.edit}
-          </Button>
-          <Button
-            variant="danger"
-            size="md"
-            icon="delete"
-            onClick={handleDelete}
-          >
-            {t.delete}
-          </Button>
+    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: 24 }} dir="rtl">
+
+      {/* ── Action row ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div style={{ fontSize: 18, fontWeight: 800 }}>📁 {title}</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => navigate('/admin/projects')}
+            style={{ height: 38, padding: '0 16px', border: `1.5px solid ${BORDER}`, borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', background: 'white', color: TEXT2 }}>
+            ← المشاريع
+          </button>
+          <button onClick={() => navigate(`/admin/projects/${id}/edit`)}
+            style={{ height: 38, padding: '0 18px', background: PRIMARY, color: 'white', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: SHADOW_P }}>
+            ✏️ تعديل
+          </button>
+          <button onClick={handleDelete}
+            style={{ height: 38, padding: '0 16px', background: '#FEE2E2', color: '#dc2626', border: '1px solid #FCA5A5', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+            🗑️ حذف
+          </button>
         </div>
       </div>
 
-      {/* Project Main Image */}
-      <div className="relative h-64 md:h-80 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800">
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={getContent(project.title)}
-            className="w-full h-full object-cover"
-            onError={(e) => { e.target.style.display = 'none'; }}
-          />
+      {/* ── Project hero card ── */}
+      <div style={{ background: 'white', borderRadius: 16, border: `1px solid ${BORDER}`, boxShadow: SHADOW, overflow: 'hidden', marginBottom: 20 }}>
+        {/* Image or gradient */}
+        <div style={{ height: 200, position: 'relative', background: imageUrl ? undefined : 'linear-gradient(135deg,#0A5F62,#33C0C0)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64 }}>
+          {imageUrl ? (
+            <img src={imageUrl} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
+          ) : (
+            <span>{icon}</span>
+          )}
+          <span style={{ position: 'absolute', top: 16, right: 16, padding: '5px 14px', borderRadius: 100, fontSize: 12, fontWeight: 700, background: st.bg, color: st.color }}>
+            {st.label}
+          </span>
+          {project.isFeatured && (
+            <span style={{ position: 'absolute', top: 16, left: 16, padding: '5px 14px', borderRadius: 100, fontSize: 12, fontWeight: 700, background: '#FEF3C7', color: '#92400e' }}>
+              ⭐ مميز
+            </span>
+          )}
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: 20 }}>
+          <div style={{ fontSize: 22, fontWeight: 900, marginBottom: 8 }}>{title}</div>
+          <div style={{ display: 'flex', gap: 16, fontSize: 13, color: TEXT2, marginBottom: 16, flexWrap: 'wrap' }}>
+            {project.location && <span>📍 {project.location}</span>}
+            {project.category && <span>🎓 {getStr(project.category, lang)}</span>}
+            {project.beneficiaries > 0 && <span>👥 {project.beneficiaries.toLocaleString('fr-MA')} مستفيد</span>}
+          </div>
+
+          {/* Progress */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ flexShrink: 0 }}>
+              <div style={{ fontSize: 28, fontWeight: 900, color: P600, fontFamily: 'Inter, sans-serif' }}>
+                {raisedMAD.toLocaleString('fr-MA')}
+              </div>
+              <div style={{ fontSize: 14, color: TEXTM }}>من {goalMAD.toLocaleString('fr-MA')} درهم</div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ height: 10, background: BORDER, borderRadius: 100, overflow: 'hidden' }}>
+                <div style={{ height: '100%', background: PRIMARY, borderRadius: 100, width: `${pct}%`, transition: 'width .4s' }} />
+              </div>
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: P600, fontFamily: 'Inter, sans-serif', flexShrink: 0 }}>
+              {pct}%
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Stats grid ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 20 }}>
+        {[
+          { num: donorCount.toLocaleString('fr-MA'), label: 'عدد المتبرعين' },
+          { num: raisedMAD.toLocaleString('fr-MA'), label: 'درهم محصّل' },
+          { num: avgDonation.toLocaleString('fr-MA'), label: 'درهم متوسط التبرع' },
+          { num: typeof daysLeft === 'number' ? daysLeft : '—', label: 'يوم متبقي' },
+        ].map(({ num, label }) => (
+          <div key={label} style={{ background: 'white', borderRadius: 14, border: `1px solid ${BORDER}`, boxShadow: SHADOW, padding: 16, textAlign: 'center' }}>
+            <div style={{ fontSize: 24, fontWeight: 900, fontFamily: 'Inter, sans-serif', color: P600 }}>{num}</div>
+            <div style={{ fontSize: 12, color: TEXT2, marginTop: 4 }}>{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Recent donations table ── */}
+      <div style={{ background: 'white', borderRadius: 16, border: `1px solid ${BORDER}`, boxShadow: SHADOW, overflow: 'hidden', marginBottom: 20 }}>
+        <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 15, fontWeight: 700 }}>💰 آخر التبرعات</span>
+          <button onClick={() => navigate('/admin/donations')}
+            style={{ fontSize: 12, color: PRIMARY, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+            عرض الكل ←
+          </button>
+        </div>
+
+        {/* Table head */}
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', background: '#F0F7F7', borderBottom: `1px solid ${BORDER}` }}>
+          {['المتبرع', 'المبلغ', 'التاريخ', 'الحالة'].map(h => (
+            <div key={h} style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: TEXTM, fontFamily: 'Inter, sans-serif' }}>{h}</div>
+          ))}
+        </div>
+
+        {/* Rows */}
+        {projectDonations === undefined ? (
+          <div style={{ padding: '40px 20px', textAlign: 'center', color: TEXTM }}>جاري التحميل...</div>
+        ) : (projectDonations || []).length === 0 ? (
+          <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+            <div style={{ fontSize: 36, marginBottom: 8 }}>💰</div>
+            <p style={{ color: TEXTM }}>لا توجد تبرعات بعد</p>
+          </div>
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="material-symbols-outlined text-6xl text-slate-300">image</span>
-          </div>
+          projectDonations.slice(0, 10).map((d, i) => {
+            const ds = DONATION_STATUS[d.status] || DONATION_STATUS.pending;
+            const donorName = d.isAnonymous ? 'مجهول الهوية' : (d.donorName || getStr(d.name, lang) || 'متبرع');
+            const amtMAD = ((d.amount || 0) / 100).toLocaleString('fr-MA');
+            const dateStr = d.createdAt ? new Date(d.createdAt).toLocaleDateString('fr-MA') : '—';
+            return (
+              <div key={d._id}
+                style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: i < Math.min(projectDonations.length, 10) - 1 ? `1px solid ${BORDER}` : 'none', alignItems: 'center', background: d.status === 'pending' || d.status === 'awaiting_verification' ? '#FFFBEB' : 'white', borderRight: (d.status === 'pending' || d.status === 'awaiting_verification') ? '4px solid #f59e0b' : '4px solid transparent' }}>
+                <div style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600 }}>{donorName}</div>
+                <div style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, color: P600, fontFamily: 'Inter, sans-serif' }}>{amtMAD} د.م</div>
+                <div style={{ padding: '12px 16px', fontSize: 13, color: TEXTM, fontFamily: 'Inter, sans-serif' }}>{dateStr}</div>
+                <div style={{ padding: '12px 16px' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 100, fontSize: 11, fontWeight: 700, background: ds.bg, color: ds.color }}>
+                    {ds.label}
+                  </span>
+                </div>
+              </div>
+            );
+          })
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        <div className="absolute bottom-4 left-4 right-4">
-          <div className="flex items-center gap-2">
-            <Badge variant={project.status === 'active' ? 'success' : 'neutral'} size="lg">
-              {project.status}
-            </Badge>
-            {project.isFeatured && (
-              <Badge variant="primary" size="lg">
-                <span className="material-symbols-outlined text-sm mr-1">star</span>
-                Featured
-              </Badge>
-            )}
+      </div>
+
+      {/* ── Description ── */}
+      {project.description && (
+        <div style={{ background: 'white', borderRadius: 16, border: `1px solid ${BORDER}`, boxShadow: SHADOW, overflow: 'hidden' }}>
+          <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER}` }}>
+            <span style={{ fontSize: 15, fontWeight: 700 }}>📄 الوصف</span>
           </div>
-          <h2 className="text-white text-xl font-bold mt-2 drop-shadow-lg">
-            {getContent(project.title)}
-          </h2>
-          <p className="text-white/80 text-sm mt-1 drop-shadow capitalize">
-            {project.category} · {project.location || '—'}
-          </p>
+          <div style={{ padding: 20, fontSize: 14, lineHeight: 1.8, color: '#334155' }}
+            dangerouslySetInnerHTML={{ __html: getStr(project.description, lang) || '' }} />
         </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card padding="lg">
-          <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">{t.goal}</p>
-          <p className="text-2xl font-bold text-text-primary dark:text-white">
-            {goalMAD.toLocaleString()} DH
-          </p>
-        </Card>
-        <Card padding="lg">
-          <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">{t.raised}</p>
-          <p className="text-2xl font-bold text-primary">
-            {raisedMAD.toLocaleString()} DH
-          </p>
-        </Card>
-        <Card padding="lg">
-          <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">{t.donors}</p>
-          <p className="text-2xl font-bold text-text-primary dark:text-white">{donorCount}</p>
-        </Card>
-        <Card padding="lg">
-          <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">{t.daysLeft}</p>
-          <p className="text-2xl font-bold text-text-primary dark:text-white">{daysLeft}</p>
-        </Card>
-      </div>
-
-      {/* Progress Bar */}
-      <Card padding="lg">
-        <div className="flex justify-between mb-2">
-          <span className="text-sm font-medium text-text-primary dark:text-white">
-            {Math.round(progress)}% {t.raised}
-          </span>
-          <span className="text-sm text-slate-500">
-            {t.goal}: {goalMAD.toLocaleString()} DH
-          </span>
-        </div>
-        <div className="h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-primary rounded-full transition-all"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Description & Gallery */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Description */}
-          <Card padding="lg" className="dark:bg-bg-dark-card dark:border-white/10">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="material-symbols-outlined text-primary">description</span>
-              <h2 className="text-lg font-bold text-text-primary dark:text-white">{t.description}</h2>
-            </div>
-            <div
-              className="text-slate-600 dark:text-slate-300 leading-relaxed prose dark:prose-invert max-w-none"
-              dangerouslySetInnerHTML={{ __html: getContent(project.description) }}
-            />
-            {project.beneficiaries && (
-              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center gap-2 text-sm text-slate-500">
-                <span className="material-symbols-outlined text-base">group</span>
-                <span>{project.beneficiaries.toLocaleString()} beneficiaries</span>
-              </div>
-            )}
-          </Card>
-
-          {/* Gallery */}
-          <Card padding="lg" className="dark:bg-bg-dark-card dark:border-white/10">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="material-symbols-outlined text-primary">photo_library</span>
-              <h2 className="text-lg font-bold text-text-primary dark:text-white">{t.gallery}</h2>
-              <span className="text-sm text-slate-400 ml-auto">{galleryUrls.length} images</span>
-            </div>
-            {galleryUrls.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {galleryUrls.map((url, index) => (
-                  <div key={index} className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800">
-                    {url ? (
-                      <img
-                        src={url}
-                        alt={`Gallery ${index + 1}`}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                        onError={(e) => { e.target.style.display = 'none'; }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <span className="material-symbols-outlined text-3xl text-slate-300">image</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">photo_library</span>
-                <p className="text-slate-500">{t.noGallery}</p>
-              </div>
-            )}
-          </Card>
-        </div>
-
-        {/* Right Column - Donations */}
-        <div>
-          <Card padding="lg" className="dark:bg-bg-dark-card dark:border-white/10">
-            <h2 className="text-lg font-bold text-text-primary dark:text-white mb-4">{t.recentDonations}</h2>
-            {projectDonations === undefined ? (
-              <div className="text-center py-8">
-                <span className="material-symbols-outlined text-3xl text-slate-300 animate-spin">progress_activity</span>
-              </div>
-            ) : projectDonations.length > 0 ? (
-              <div className="space-y-4">
-                {projectDonations.slice(0, 10).map((donation) => (
-                  <div
-                    key={donation._id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50"
-                  >
-                    <div>
-                      <p className="font-medium text-text-primary dark:text-white text-sm">
-                        {donation.isAnonymous ? t.anonymous : t.donor}
-                      </p>
-                      <p className="text-xs text-slate-400">
-                        {new Date(donation.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-primary text-sm">
-                        {formatCurrency(donation.amount)}
-                      </p>
-                      <Badge
-                        variant={donation.status === 'completed' ? 'success' : donation.status === 'pending' ? 'warning' : 'neutral'}
-                        size="sm"
-                        className="text-[10px]"
-                      >
-                        {donation.status}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">volunteer_activism</span>
-                <p className="text-slate-500">{t.noDonations}</p>
-              </div>
-            )}
-          </Card>
-        </div>
-      </div>
+      )}
     </div>
   );
-};
-
-export default AdminProjectDetail;
+}
