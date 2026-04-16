@@ -1,6 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const h = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  return isMobile;
+};
 
 // ============================================
 // ABOUT PAGE - Mission, Vision & Team
@@ -8,6 +18,7 @@ import { useApp } from '../context/AppContext';
 
 const About = () => {
   const { t, language } = useApp();
+  const isMobile = useIsMobile();
 
   const getLocalizedText = (obj) => {
     if (typeof obj === 'string') return obj;
@@ -53,19 +64,19 @@ const About = () => {
     { icon: '🏆', name: 'جائزة التميز الخيري', desc: 'وزارة التضامن 2024' },
   ];
 
-  const sectionStyle = { padding: '72px 0' };
-  const innerStyle = { maxWidth: 1200, margin: '0 auto', padding: '0 28px' };
+  const sectionStyle = { padding: isMobile ? '40px 0' : '72px 0' };
+  const innerStyle = { maxWidth: 1200, margin: '0 auto', padding: isMobile ? '0 16px' : '0 28px' };
 
   return (
     <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b' }}>
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(160deg,#021718,#052E2F 60%,#0d7477)', padding: '80px 0', textAlign: 'center' }}>
-        <div style={{ maxWidth: 700, margin: '0 auto', padding: '0 28px' }}>
+      <div style={{ background: 'linear-gradient(160deg,#021718,#052E2F 60%,#0d7477)', padding: isMobile ? '48px 20px' : '80px 0', textAlign: 'center' }}>
+        <div style={{ maxWidth: 700, margin: '0 auto', padding: isMobile ? '0' : '0 28px' }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#33C0C0', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>
             ABOUT US · من نحن
           </div>
-          <h1 style={{ fontSize: 44, fontWeight: 900, color: 'white', lineHeight: 1.15, marginBottom: 16 }}>
+          <h1 style={{ fontSize: isMobile ? 32 : 44, fontWeight: 900, color: 'white', lineHeight: 1.15, marginBottom: 16 }}>
             نحن أداةٌ للخير<br />في أيدي المحسنين
           </h1>
           <p style={{ fontSize: 17, color: 'rgba(255,255,255,.7)', lineHeight: 1.8, marginBottom: 28 }}>
@@ -78,8 +89,8 @@ const About = () => {
       </div>
 
       {/* Stats band */}
-      <div style={{ background: '#0A5F62', padding: '32px 0' }}>
-        <div style={{ ...innerStyle, display: 'grid', gridTemplateColumns: 'repeat(5,1fr)' }}>
+      <div style={{ background: '#0A5F62', padding: isMobile ? '24px 0' : '32px 0' }}>
+        <div style={{ ...innerStyle, display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3,1fr)' : 'repeat(5,1fr)', rowGap: isMobile ? 20 : 0 }}>
           {stats.map((s, i) => (
             <div key={i} style={{ textAlign: 'center', padding: '0 16px', borderLeft: i < stats.length - 1 ? '1px solid rgba(255,255,255,.15)' : 'none' }}>
               <div style={{ fontSize: 34, fontWeight: 900, color: 'white', fontFamily: 'Inter, sans-serif' }}>{s.num}</div>
@@ -97,7 +108,7 @@ const About = () => {
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>MISSION & VISION</div>
             <h2 style={{ fontSize: 34, fontWeight: 800, lineHeight: 1.2 }}>رسالتنا ورؤيتنا</h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 16 : 32 }}>
             <div style={{ padding: 32, borderRadius: 20, background: 'linear-gradient(135deg,#F0F7F7,#E6F4F4)' }}>
               <div style={{ fontSize: 32, marginBottom: 16 }}>🎯</div>
               <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 12 }}>رسالتنا</div>
@@ -120,7 +131,7 @@ const About = () => {
             <h2 style={{ fontSize: 34, fontWeight: 800, lineHeight: 1.2, marginBottom: 12 }}>قيمنا الأساسية</h2>
             <p style={{ fontSize: 16, color: '#64748b', lineHeight: 1.7, maxWidth: 560, margin: '0 auto' }}>هذه القيم تحكم كل قرار نتخذه وكل مشروع نطلقه</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: isMobile ? 12 : 24 }}>
             {values.map((v, i) => (
               <div key={i} style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', padding: 24, textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
                 <div style={{ width: 56, height: 56, borderRadius: 14, background: '#E6F4F4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, margin: '0 auto 14px' }}>{v.icon}</div>
@@ -140,13 +151,13 @@ const About = () => {
             <h2 style={{ fontSize: 34, fontWeight: 800, lineHeight: 1.2, marginBottom: 12 }}>فريق العمل</h2>
             <p style={{ fontSize: 16, color: '#64748b', lineHeight: 1.7, maxWidth: 560, margin: '0 auto' }}>متطوعون وموظفون شغوفون يعملون من أجل خدمة المجتمع</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: isMobile ? 12 : 24 }}>
             {team.map((m, i) => (
-              <div key={i} style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', padding: 24, textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
-                <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg,#CCF0F0,#E6F4F4)', margin: '0 auto 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34 }}>{m.avatar}</div>
-                <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{m.name}</div>
-                <div style={{ fontSize: 13, color: '#0A5F62', fontWeight: 600, marginBottom: 8 }}>{m.role}</div>
-                <div style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.6 }}>{m.bio}</div>
+              <div key={i} style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', padding: isMobile ? 16 : 24, textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
+                <div style={{ width: isMobile ? 60 : 80, height: isMobile ? 60 : 80, borderRadius: '50%', background: 'linear-gradient(135deg,#CCF0F0,#E6F4F4)', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? 26 : 34 }}>{m.avatar}</div>
+                <div style={{ fontSize: isMobile ? 13 : 16, fontWeight: 700, marginBottom: 4 }}>{m.name}</div>
+                <div style={{ fontSize: 12, color: '#0A5F62', fontWeight: 600, marginBottom: 6 }}>{m.role}</div>
+                <div style={{ fontSize: 11, color: '#94a3b8', lineHeight: 1.5 }}>{m.bio}</div>
               </div>
             ))}
           </div>
@@ -156,7 +167,7 @@ const About = () => {
       {/* Timeline + Certifications */}
       <div style={sectionStyle}>
         <div style={innerStyle}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 40 : 60, alignItems: 'start' }}>
             {/* Timeline */}
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>OUR JOURNEY</div>
@@ -178,7 +189,7 @@ const About = () => {
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>CERTIFICATIONS</div>
               <h2 style={{ fontSize: 34, fontWeight: 800, marginBottom: 28 }}>شهاداتنا واعتماداتنا</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: isMobile ? 12 : 20 }}>
                 {certs.map((c, i) => (
                   <div key={i} style={{ background: 'white', borderRadius: 14, border: '1px solid #E5E9EB', padding: 20, display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
                     <div style={{ width: 44, height: 44, borderRadius: 10, background: '#E6F4F4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{c.icon}</div>

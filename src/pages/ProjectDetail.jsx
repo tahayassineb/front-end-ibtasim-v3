@@ -1,4 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
+
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const h = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  return isMobile;
+};
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
@@ -30,6 +40,7 @@ const ProjectDetail = ({ preview = false }) => {
   const navigate = useNavigate();
   const [previewData, setPreviewData] = useState(null);
   const [copied, setCopied] = useState(false);
+  const isMobile = useIsMobile();
 
   // Fetch project from Convex backend — PRESERVED
   const convexProject = useQuery(api.projects.getProjectById, { projectId: id });
@@ -136,7 +147,7 @@ const ProjectDetail = ({ preview = false }) => {
       )}
 
       {/* ── PROJECT HERO ── */}
-      <div style={{ position: 'relative', height: 420, ...heroStyle, display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
+      <div style={{ position: 'relative', height: isMobile ? 280 : 420, ...heroStyle, display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,.75) 0%,rgba(0,0,0,.2) 50%,transparent 100%)' }} />
         {/* Back button */}
         <button
@@ -145,11 +156,11 @@ const ProjectDetail = ({ preview = false }) => {
         >
           ←
         </button>
-        <div style={{ position: 'relative', zIndex: 2, maxWidth: 1200, width: '100%', margin: '0 auto', padding: '0 28px 32px' }}>
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 1200, width: '100%', margin: '0 auto', padding: isMobile ? '0 16px 24px' : '0 28px 32px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)', color: 'white', borderRadius: 100, padding: '5px 14px', fontSize: 12, fontWeight: 600, marginBottom: 12 }}>
             {cat.icon} {cat.label}
           </div>
-          <h1 style={{ fontSize: 32, fontWeight: 900, color: 'white', marginBottom: 8 }}>
+          <h1 style={{ fontSize: isMobile ? 22 : 32, fontWeight: 900, color: 'white', marginBottom: 8 }}>
             {getLocalizedText(project.title, language)}
           </h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 13, color: 'rgba(255,255,255,0.7)', flexWrap: 'wrap' }}>
@@ -160,9 +171,9 @@ const ProjectDetail = ({ preview = false }) => {
         </div>
       </div>
 
-      {/* ── STICKY FUNDING BAR ── */}
-      <div style={{ position: 'sticky', top: 64, zIndex: 40, background: 'white', borderBottom: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03), 0 4px 6px rgba(0,0,0,.05)' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '12px 28px', display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+      {/* ── STICKY FUNDING BAR (desktop only — avoid covering mobile screen) ── */}
+      <div style={{ position: isMobile ? 'relative' : 'sticky', top: isMobile ? 'auto' : 64, zIndex: 40, background: 'white', borderBottom: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03), 0 4px 6px rgba(0,0,0,.05)' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '12px 16px' : '12px 28px', display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 24, flexWrap: 'wrap' }}>
           <div style={{ fontSize: 22, fontWeight: 900, color: '#0A5F62', whiteSpace: 'nowrap', fontFamily: 'Inter, sans-serif' }}>
             {project.raised.toLocaleString('en-US')} د.م
           </div>
@@ -181,7 +192,7 @@ const ProjectDetail = ({ preview = false }) => {
 
       {/* ── MAIN CONTENT ── */}
       <div>
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px]" style={{ gap: 40, alignItems: 'start', maxWidth: 1200, margin: '0 auto', padding: '40px 28px' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px]" style={{ gap: 40, alignItems: 'start', maxWidth: 1200, margin: '0 auto', padding: isMobile ? '24px 16px 48px' : '40px 28px' }}>
 
           {/* ── LEFT: Description & Donors ── */}
           <div>

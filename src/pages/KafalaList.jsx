@@ -1,10 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import { convexFileUrl } from '../lib/convex';
 import KafalaAvatar from '../components/kafala/KafalaAvatar';
+
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const h = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  return isMobile;
+};
 
 // ============================================
 // KAFALA LIST PAGE — Public orphan sponsorship listing
@@ -14,6 +24,7 @@ export default function KafalaList() {
   const { currentLanguage } = useApp();
   const lang = currentLanguage?.code || 'ar';
   const [filter, setFilter] = useState('all');
+  const isMobile = useIsMobile();
 
   const kafalaList = useQuery(api.kafala.getPublicKafalaList, {});
 
@@ -105,8 +116,8 @@ export default function KafalaList() {
     <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b' }}>
 
       {/* Kafala Hero — warm sand, NOT teal */}
-      <div style={{ background: 'linear-gradient(160deg,#3D2506,#6B4F12,#C4A882)', padding: '68px 0', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ maxWidth: 640, margin: '0 auto', padding: '0 28px', position: 'relative', zIndex: 1 }}>
+      <div style={{ background: 'linear-gradient(160deg,#3D2506,#6B4F12,#C4A882)', padding: isMobile ? '48px 20px' : '68px 0', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ maxWidth: 640, margin: '0 auto', padding: isMobile ? '0' : '0 28px', position: 'relative', zIndex: 1 }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.18em', color: '#E8D4B0', marginBottom: 12, fontFamily: 'Inter, sans-serif' }}>
             KAFALA PROGRAM · برنامج الكفالة
           </div>
@@ -122,10 +133,10 @@ export default function KafalaList() {
           >
             🤲 ابدأ الكفالة الآن
           </button>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 40, marginTop: 32 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: isMobile ? 24 : 40, marginTop: 32, flexWrap: 'wrap' }}>
             {[
-              { num: sponsoredCount || 48, label: 'يتيم تحت الرعاية' },
-              { num: availableCount || 12, label: 'متاح للكفالة' },
+              { num: sponsoredCount, label: 'يتيم تحت الرعاية' },
+              { num: availableCount, label: 'متاح للكفالة' },
               { num: '300 د.م', label: 'فقط شهرياً' },
             ].map((s, i) => (
               <div key={i} style={{ textAlign: 'center' }}>
@@ -139,7 +150,7 @@ export default function KafalaList() {
 
       {/* Filters */}
       <div style={{ background: 'white', borderBottom: '1px solid #E5E9EB', position: 'sticky', top: 64, zIndex: 40, boxShadow: '0 2px 4px rgba(0,0,0,.03)' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '14px 28px', display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '10px 16px' : '14px 28px', display: 'flex', alignItems: 'center', gap: 10, overflowX: 'auto' }}>
           {[
             { id: 'all', label: `الكل (${total})` },
             { id: 'available', label: `متاح للكفالة (${availableCount})` },
@@ -166,7 +177,7 @@ export default function KafalaList() {
       </div>
 
       {/* Grid */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '36px 28px' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '24px 16px' : '36px 28px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <span style={{ fontSize: 14, fontWeight: 700, color: '#64748b' }}>
             الأيتام المتاحون للكفالة{' '}
@@ -182,7 +193,7 @@ export default function KafalaList() {
             <p>{tx.empty}</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(auto-fill,minmax(260px,1fr))', gap: isMobile ? 14 : 24 }}>
             {filtered.map((kafala) => {
               const isSponsored = kafala.status === 'sponsored';
               const photoUrl = getPhotoUrl(kafala);
