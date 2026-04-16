@@ -423,6 +423,24 @@ export default defineSchema({
     .index("by_status", ["status"]),
 
   // ============================================
+  // STORIES TABLE (Impact Stories)
+  // ============================================
+  stories: defineTable({
+    title: v.string(),
+    excerpt: v.string(),
+    category: v.string(),
+    gradient: v.string(),
+    badgeIcon: v.string(),
+    badgeText: v.string(),
+    catLabel: v.string(),
+    catColor: v.string(),
+    isPublished: v.boolean(),
+    isFeatured: v.optional(v.boolean()),
+    publishedAt: v.optional(v.number()),
+    adminId: v.string(),
+  }).index('by_published', ['isPublished']),
+
+  // ============================================
   // ACTIVITY LOG TABLE (Audit Trail)
   // ============================================
   activities: defineTable({

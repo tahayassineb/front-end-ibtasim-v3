@@ -38,6 +38,7 @@ const AdminLayout = () => {
       items: [
         { path: '/admin/projects', label: 'المشاريع', icon: '📁' },
         { path: '/admin/kafala', label: 'الكفالة', icon: '🤲' },
+        { path: '/admin/stories', label: 'القصص', icon: '📖' },
       ],
     },
     {

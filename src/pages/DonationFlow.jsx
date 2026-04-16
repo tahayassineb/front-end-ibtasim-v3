@@ -13,7 +13,7 @@ import CountryCodeSelector, { validatePhoneByCountry, formatPhoneForDisplay } fr
 
 const DONATION_AMOUNTS = [100, 200, 500, 1000, 2000, 5000];
 
-const DEFAULT_BANK_INFO = { name: '—', rib: '—', bank: '—' };
+const DEFAULT_BANK_INFO = { accountHolder: '—', rib: '—', bankName: '—' };
 
 const STEP_LABELS = [
   'الخطوة 1 من 6 — تسجيل الدخول',
@@ -294,13 +294,14 @@ const Step2Payment = ({ donationData, setDonationData, bankInfo, showToast, lang
   };
 
   const METHODS = [
-    { id: 'bank', icon: '🏦', title: 'تحويل بنكي', desc: 'حوّل المبلغ وأرفق وصل التحويل', badge: 'الأكثر استخداماً' },
-    { id: 'cash', icon: '💵', title: 'وكالة النقد', desc: 'Wafacash، Cash Plus، موني غرام', badge: null },
+    { id: 'transfer', icon: '🏦', title: 'تحويل بنكي أو وكالة نقد', desc: 'حوّل وأرفق وصل الإيداع', badge: 'الأكثر استخداماً' },
     { id: 'card', icon: '💳', title: 'بطاقة بنكية', desc: 'فيزا، ماستركارد — مباشر وآمن', badge: 'متاح' },
   ];
 
+  const transferType = donationData.transferType || 'bank';
+
   return (
-    <div style={{ flex: 1, padding: '16px', overflowY: 'auto' }}>
+    <div style={{ flex: 1, padding: '16px', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
       <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>كيف تريد الدفع؟</div>
       <div style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>اختر طريقة الدفع المناسبة لك</div>
 
@@ -321,34 +322,71 @@ const Step2Payment = ({ donationData, setDonationData, bankInfo, showToast, lang
               </div>
             </div>
 
-            {/* Expanded bank details */}
-            {sel && m.id === 'bank' && (
-              <div style={{ marginTop: 14, padding: 14, background: 'white', borderRadius: 12, border: '1px solid #CCF0F0' }}>
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>البنك</div>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>{bankInfo.bank || 'بنك التجاري وفا بنك'}</div>
-                </div>
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>رقم الحساب (RIB)</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: '#0A5F62', fontFamily: 'Inter, sans-serif', letterSpacing: '.08em', margin: '2px 0' }} dir="ltr">{bankInfo.rib || '—'}</div>
-                  <button onClick={e => { e.stopPropagation(); copyToClipboard((bankInfo.rib || '').replace(/\s/g, '')); }}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#0d7477', background: '#E6F4F4', padding: '3px 10px', borderRadius: 100, cursor: 'pointer', border: 'none', fontFamily: 'Tajawal, sans-serif', marginTop: 4 }}>
-                    📋 نسخ الرقم
-                  </button>
-                </div>
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>اسم المستفيد</div>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>{bankInfo.name || 'جمعية ابتسام للأعمال الخيرية'}</div>
-                </div>
-                <div style={{ background: '#F0F7F7', borderRadius: 10, padding: 12, marginTop: 4 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#0A5F62', marginBottom: 6 }}>📋 خطوات التحويل:</div>
-                  {['حوّل المبلغ عبر تطبيق بنكك', 'احتفظ بوصل التحويل', 'ارفع الوصل في الخطوة التالية'].map((s, i) => (
-                    <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12, color: '#64748b', marginBottom: 4 }}>
-                      <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#0d7477', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{i + 1}</div>
-                      <span>{s}</span>
-                    </div>
+            {/* Expanded transfer details with sub-toggle */}
+            {sel && m.id === 'transfer' && (
+              <div style={{ marginTop: 14 }}>
+                {/* Sub-toggle */}
+                <div style={{ display: 'flex', background: '#F0F7F7', borderRadius: 10, padding: 4, marginBottom: 14, border: '1px solid #CCF0F0' }}>
+                  {[{ id: 'bank', label: '🏦 تحويل بنكي' }, { id: 'cash', label: '💳 Wafacash · Cash Plus' }].map(t => (
+                    <button key={t.id} onClick={e => { e.stopPropagation(); setDonationData(p => ({ ...p, transferType: t.id })); }}
+                      style={{ flex: 1, height: 34, borderRadius: 8, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif',
+                        background: transferType === t.id ? 'white' : 'transparent',
+                        color: transferType === t.id ? '#0A5F62' : '#64748b',
+                        boxShadow: transferType === t.id ? '0 1px 3px rgba(0,0,0,.1)' : 'none',
+                        transition: 'all .15s' }}>
+                      {t.label}
+                    </button>
                   ))}
                 </div>
+
+                {/* Bank transfer details */}
+                {transferType === 'bank' && (
+                  <div style={{ padding: 14, background: 'white', borderRadius: 12, border: '1px solid #CCF0F0' }}>
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>البنك</div>
+                      <div style={{ fontSize: 14, fontWeight: 700 }}>{bankInfo.bankName || 'بنك التجاري وفا بنك'}</div>
+                    </div>
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>رقم الحساب (RIB)</div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: '#0A5F62', fontFamily: 'Inter, sans-serif', letterSpacing: '.08em', margin: '2px 0' }} dir="ltr">{bankInfo.rib || '—'}</div>
+                      <button onClick={e => { e.stopPropagation(); copyToClipboard((bankInfo.rib || '').replace(/\s/g, '')); }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#0d7477', background: '#E6F4F4', padding: '3px 10px', borderRadius: 100, cursor: 'pointer', border: 'none', fontFamily: 'Tajawal, sans-serif', marginTop: 4 }}>
+                        📋 نسخ الرقم
+                      </button>
+                    </div>
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>اسم المستفيد</div>
+                      <div style={{ fontSize: 14, fontWeight: 700 }}>{bankInfo.accountHolder || 'جمعية ابتسام للأعمال الخيرية'}</div>
+                    </div>
+                    <div style={{ background: '#F0F7F7', borderRadius: 10, padding: 12, marginTop: 4 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#0A5F62', marginBottom: 6 }}>📋 خطوات التحويل:</div>
+                      {['حوّل المبلغ عبر تطبيق بنكك', 'احتفظ بوصل التحويل', 'ارفع الوصل في الخطوة التالية'].map((s, i) => (
+                        <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12, color: '#64748b', marginBottom: 4 }}>
+                          <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#0d7477', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{i + 1}</div>
+                          <span>{s}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Cash agency details */}
+                {transferType === 'cash' && (
+                  <div style={{ padding: 14, background: 'white', borderRadius: 12, border: '1px solid #CCF0F0' }}>
+                    <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7, marginBottom: 12 }}>
+                      حوّل المبلغ عبر <strong>Wafacash</strong> أو <strong>Cash Plus</strong> — في خانة المستفيد أدخل رقم هاتف الجمعية
+                    </div>
+                    <div style={{ background: '#F0F7F7', borderRadius: 10, padding: 12 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#0A5F62', marginBottom: 6 }}>📋 خطوات الإيداع:</div>
+                      {['توجه لأقرب وكالة Wafacash أو Cash Plus', 'أدخل رقم هاتف الجمعية في خانة المستفيد', 'احتفظ بوصل الإيداع', 'ارفع الوصل في الخطوة التالية'].map((s, i) => (
+                        <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12, color: '#64748b', marginBottom: 4 }}>
+                          <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#0d7477', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{i + 1}</div>
+                          <span>{s}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -488,7 +526,9 @@ const Step4Info = ({ donationData, setDonationData, lang }) => {
 
 // ─── Step 5: Review ───────────────────────────────────────────────────────────
 const Step5Review = ({ donationData, project, uploadedFile, amount, agreedTerms, setAgreedTerms, setStep }) => {
-  const paymentLabel = donationData.paymentMethod === 'bank' ? '🏦 تحويل بنكي' : donationData.paymentMethod === 'cash' ? '💵 وكالة نقد' : '💳 بطاقة بنكية';
+  const paymentLabel = donationData.paymentMethod === 'transfer'
+    ? (donationData.transferType === 'cash' ? '💵 وكالة نقد (Wafacash / Cash Plus)' : '🏦 تحويل بنكي')
+    : '💳 بطاقة بنكية';
 
   return (
     <div style={{ flex: 1, padding: '16px', overflowY: 'auto' }}>
@@ -671,6 +711,7 @@ export default function DonationFlow() {
     amount: donationState?.amount || 200,
     customAmount: '',
     paymentMethod: donationState?.paymentMethod || null,
+    transferType: 'bank',
     coverFees: false,
     donorName: user?.name || '',
     donorPhone: (user?.phone || '').replace('+212', '').replace(/\s/g, ''),
@@ -831,7 +872,7 @@ export default function DonationFlow() {
         userId: user?.userId || user?.id,
         projectId,
         amount: calculateTotal(),
-        paymentMethod: donationData.paymentMethod === 'cash' ? 'cash_agency' : 'bank_transfer',
+        paymentMethod: donationData.paymentMethod === 'transfer' ? (donationData.transferType === 'cash' ? 'cash_agency' : 'bank_transfer') : 'bank_transfer',
         coversFees: donationData.coverFees,
         isAnonymous: donationData.isAnonymous,
         message: donationData.dedication || donationData.message || '',
@@ -925,8 +966,8 @@ export default function DonationFlow() {
 
   // ── Render ──
   return (
-    <div style={{ minHeight: '100vh', background: '#F0F7F7', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', display: 'flex', justifyContent: 'center', padding: '0' }}>
-      <div style={{ width: '100%', maxWidth: 430, minHeight: '100vh', background: 'white', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+    <div style={{ height: '100dvh', background: '#F0F7F7', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', display: 'flex', justifyContent: 'center', overflow: 'hidden' }}>
+      <div style={{ width: '100%', maxWidth: 430, height: '100%', background: 'white', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
 
         {/* Top bar */}
         {step < 6 && <TopBar onBack={handleBack} />}

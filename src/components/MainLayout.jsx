@@ -155,6 +155,12 @@ const MainLayout = ({ children }) => {
                     <span className="material-symbols-outlined" style={{ fontSize: 16 }}>person_outline</span>
                     الملف الشخصي
                   </Link>
+                  {user?.role === 'admin' && (
+                    <Link to="/admin" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', fontSize: 13, color: '#0d7477', textDecoration: 'none', fontWeight: 600 }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 16 }}>admin_panel_settings</span>
+                      لوحة الإدارة
+                    </Link>
+                  )}
                   <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 16px', fontSize: 13, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
                     <span className="material-symbols-outlined" style={{ fontSize: 16 }}>logout</span>
                     تسجيل الخروج
@@ -228,9 +234,16 @@ const MainLayout = ({ children }) => {
                     </Link>
                   </>
                 ) : (
-                  <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', borderRadius: 10, fontSize: 15, fontWeight: 500, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', width: '100%' }}>
-                    تسجيل الخروج
-                  </button>
+                  <>
+                    {user?.role === 'admin' && (
+                      <Link to="/admin" style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', borderRadius: 10, fontSize: 15, fontWeight: 600, color: '#0d7477', background: '#E6F4F4', textDecoration: 'none', marginBottom: 2 }}>
+                        ⚙️ لوحة الإدارة
+                      </Link>
+                    )}
+                    <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', borderRadius: 10, fontSize: 15, fontWeight: 500, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', width: '100%' }}>
+                      تسجيل الخروج
+                    </button>
+                  </>
                 )}
                 <Link
                   to="/projects"
@@ -309,7 +322,10 @@ const MainLayout = ({ children }) => {
           {/* Bottom Bar */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: 'rgba(255,255,255,0.4)', flexWrap: 'wrap', gap: 8 }}>
             <span>© 2026 جمعية ابتسام — جميع الحقوق محفوظة</span>
-            <span>🔒 محمي بتشفير SSL · معتمد HTTPS</span>
+            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+              <span>🔒 محمي بتشفير SSL · معتمد HTTPS</span>
+              <Link to="/admin/login" style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', textDecoration: 'none' }}>🔐 إدارة</Link>
+            </div>
           </div>
         </div>
       </footer>

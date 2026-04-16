@@ -52,16 +52,21 @@ export default function AdminKafalaForm() {
   const [location, setLocation]   = useState('');
   const [bio, setBio]             = useState({ ar: '', fr: '', en: '' });
   const [bioTab, setBioTab]       = useState('ar');
-  const [needsEdu, setNeedsEdu]   = useState('120');
-  const [needsFood, setNeedsFood] = useState('100');
-  const [needsHealth, setNeedsHealth] = useState('80');
+  const [needs, setNeeds] = useState([
+    { id: 1, icon: '📚', label: 'التعليم', price: '120' },
+    { id: 2, icon: '🍞', label: 'الغذاء',  price: '100' },
+    { id: 3, icon: '🏥', label: 'الصحة',   price: '80'  },
+  ]);
   const [photo, setPhoto]         = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [existingPhoto, setExistingPhoto] = useState(null);
   const [saving, setSaving]       = useState(false);
   const fileRef = useRef();
 
-  const totalMAD = (parseInt(needsEdu) || 0) + (parseInt(needsFood) || 0) + (parseInt(needsHealth) || 0);
+  const totalMAD = needs.reduce((s, n) => s + (parseInt(n.price) || 0), 0);
+  const addNeed = () => setNeeds(p => [...p, { id: Date.now(), icon: '✏️', label: '', price: '0' }]);
+  const removeNeed = (id) => setNeeds(p => p.filter(n => n.id !== id));
+  const updateNeed = (id, field, val) => setNeeds(p => p.map(n => n.id === id ? { ...n, [field]: val } : n));
 
   // Pre-fill when editing
   useEffect(() => {
@@ -72,10 +77,11 @@ export default function AdminKafalaForm() {
       setLocation(existingKafala.location || '');
       setBio(existingKafala.bio || { ar: '', fr: '', en: '' });
       const totalMadFromDB = Math.round(existingKafala.monthlyPrice / 100);
-      // distribute existing total equally across needs buckets
-      setNeedsEdu(String(Math.round(totalMadFromDB * 0.4)));
-      setNeedsFood(String(Math.round(totalMadFromDB * 0.33)));
-      setNeedsHealth(String(totalMadFromDB - Math.round(totalMadFromDB * 0.4) - Math.round(totalMadFromDB * 0.33)));
+      setNeeds([
+        { id: 1, icon: '📚', label: 'التعليم', price: String(Math.round(totalMadFromDB * 0.4)) },
+        { id: 2, icon: '🍞', label: 'الغذاء',  price: String(Math.round(totalMadFromDB * 0.33)) },
+        { id: 3, icon: '🏥', label: 'الصحة',   price: String(totalMadFromDB - Math.round(totalMadFromDB * 0.4) - Math.round(totalMadFromDB * 0.33)) },
+      ]);
       setExistingPhoto(existingKafala.photo || null);
     }
   }, [existingKafala, isEdit]);
@@ -100,7 +106,8 @@ export default function AdminKafalaForm() {
     if (!age || isNaN(Number(age)) || Number(age) < 1) { showToast?.('العمر يجب أن يكون رقماً صحيحاً', 'error'); return false; }
     if (!location.trim()) { showToast?.('المدينة مطلوبة', 'error'); return false; }
     if (!bio.ar.trim())   { showToast?.('القصة بالعربية مطلوبة', 'error'); return false; }
-    if (totalMAD < 1)     { showToast?.('السعر الشهري مطلوب', 'error'); return false; }
+    if (needs.length === 0)  { showToast?.('أضف احتياجاً واحداً على الأقل', 'error'); return false; }
+    if (totalMAD < 1)        { showToast?.('السعر الشهري مطلوب', 'error'); return false; }
     return true;
   };
 
@@ -236,26 +243,45 @@ export default function AdminKafalaForm() {
         <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
       </Section>
 
-      {/* ── Section 3: Needs breakdown ── */}
+      {/* ── Section 3: Needs breakdown — dynamic ── */}
       <Section icon="💰" title="احتياجات الكفالة الشهرية">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
-          {[
-            { icon: '📚', label: 'التعليم (درهم/شهر)', val: needsEdu, set: setNeedsEdu },
-            { icon: '🍞', label: 'الغذاء (درهم/شهر)',  val: needsFood, set: setNeedsFood },
-            { icon: '🏥', label: 'الصحة (درهم/شهر)',   val: needsHealth, set: setNeedsHealth },
-          ].map(({ icon, label, val, set }) => (
-            <div key={label} style={{ background: KBG, borderRadius: 12, padding: 14, border: `1px solid ${K100}` }}>
-              <div style={{ fontSize: 20, marginBottom: 6 }}>{icon}</div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: KDARK, marginBottom: 8 }}>{label}</div>
-              <input
-                type="number" min="0" value={val} onChange={e => set(e.target.value)}
-                style={{ ...fieldInput, height: 40, direction: 'ltr', fontFamily: 'Inter, sans-serif', fontSize: 15 }}
-                onFocus={e => e.target.style.borderColor = KDARK}
-                onBlur={e => e.target.style.borderColor = BORDER}
-              />
-            </div>
-          ))}
-        </div>
+        {/* Dynamic needs list */}
+        {needs.map((need) => (
+          <div key={need.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            {/* Icon input */}
+            <input
+              type="text" value={need.icon}
+              onChange={e => updateNeed(need.id, 'icon', e.target.value)}
+              style={{ ...fieldInput, width: 48, height: 44, textAlign: 'center', fontSize: 18, padding: '0 4px', flexShrink: 0 }}
+              maxLength={2}
+            />
+            {/* Label input */}
+            <input
+              type="text" value={need.label}
+              onChange={e => updateNeed(need.id, 'label', e.target.value)}
+              placeholder="اسم الاحتياج"
+              style={{ ...fieldInput, flex: 1, height: 44 }}
+            />
+            {/* Price input */}
+            <input
+              type="number" min="0" value={need.price}
+              onChange={e => updateNeed(need.id, 'price', e.target.value)}
+              style={{ ...fieldInput, width: 90, height: 44, direction: 'ltr', fontFamily: 'Inter, sans-serif', flexShrink: 0 }}
+            />
+            <span style={{ fontSize: 12, color: TEXTM, whiteSpace: 'nowrap', flexShrink: 0 }}>د.م</span>
+            {/* Delete button */}
+            <button type="button" onClick={() => removeNeed(need.id)}
+              style={{ width: 36, height: 36, background: '#FEE2E2', color: '#dc2626', border: 'none', borderRadius: 10, fontSize: 16, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              ×
+            </button>
+          </div>
+        ))}
+
+        {/* Add need button */}
+        <button type="button" onClick={addNeed}
+          style={{ width: '100%', height: 44, border: `2px dashed ${K100}`, borderRadius: 12, background: KBG, color: KDARK, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', marginTop: 4 }}>
+          + إضافة احتياج
+        </button>
 
         {/* Total */}
         <div style={{ background: KBG, borderRadius: 12, padding: 14, marginTop: 14, border: `1px solid ${K100}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

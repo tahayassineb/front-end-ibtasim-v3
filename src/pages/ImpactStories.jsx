@@ -1,14 +1,28 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 
 // ============================================
 // IMPACT STORIES PAGE - Success Stories
 // ============================================
 
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  return isMobile;
+};
+
 const ImpactStories = () => {
   const { t, language } = useApp();
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const isMobile = useIsMobile();
+
+  const convexStories = useQuery(api.stories.getPublishedStories);
 
   const filters = [
     { id: 'all', label: 'الكل (24)', icon: '' },
@@ -18,7 +32,7 @@ const ImpactStories = () => {
     { id: 'kafala', label: 'الكفالة (7)', icon: '🤲' },
   ];
 
-  const stories = [
+  const STATIC_STORIES = [
     {
       id: 1,
       category: 'kafala',
@@ -105,6 +119,11 @@ const ImpactStories = () => {
     },
   ];
 
+  // Use Convex stories if available, fallback to static
+  const stories = (convexStories && convexStories.length > 0)
+    ? convexStories.map(s => ({ ...s, id: s._id, date: s.publishedAt ? new Date(s.publishedAt).toLocaleDateString('ar-MA', { year: 'numeric', month: 'long', day: 'numeric' }) : '' }))
+    : STATIC_STORIES;
+
   const filteredStories = selectedFilter === 'all'
     ? stories
     : stories.filter((s) => s.category === selectedFilter);
@@ -113,8 +132,8 @@ const ImpactStories = () => {
     <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b' }}>
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg,#052E2F,#0A5F62,#0d7477)', padding: '60px 0' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px', textAlign: 'center' }}>
+      <div style={{ background: 'linear-gradient(135deg,#052E2F,#0A5F62,#0d7477)', padding: isMobile ? '40px 20px' : '60px 0' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '0' : '0 28px', textAlign: 'center' }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#33C0C0', marginBottom: 12, fontFamily: 'Inter, sans-serif' }}>
             SUCCESS STORIES · قصص ملهمة
           </div>
@@ -150,13 +169,13 @@ const ImpactStories = () => {
       </div>
 
       {/* Featured Story */}
-      <div style={{ maxWidth: 1200, margin: '48px auto 0', padding: '0 28px' }}>
+      <div style={{ maxWidth: 1200, margin: isMobile ? '28px auto 0' : '48px auto 0', padding: isMobile ? '0 16px' : '0 28px' }}>
         <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 16, fontFamily: 'Inter, sans-serif' }}>
           STORY OF THE MONTH · قصة الشهر
         </div>
-        <div style={{ background: 'white', borderRadius: 20, overflow: 'hidden', boxShadow: '0 10px 15px rgba(0,0,0,.10)', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+        <div style={{ background: 'white', borderRadius: 20, overflow: 'hidden', boxShadow: '0 10px 15px rgba(0,0,0,.10)', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
           {/* Image side */}
-          <div style={{ background: 'linear-gradient(160deg,#052E2F,#0d7477,#33C0C0)', minHeight: 360, position: 'relative', display: 'flex', alignItems: 'flex-end', padding: 32 }}>
+          <div style={{ background: 'linear-gradient(160deg,#052E2F,#0d7477,#33C0C0)', minHeight: isMobile ? 220 : 360, position: 'relative', display: 'flex', alignItems: 'flex-end', padding: 32 }}>
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,.6),transparent)' }} />
             <span style={{ position: 'relative', zIndex: 1, display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,.15)', backdropFilter: 'blur(8px)', color: 'white', padding: '6px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600 }}>
               🎓 التعليم
@@ -190,13 +209,13 @@ const ImpactStories = () => {
       </div>
 
       {/* Stories Grid */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 28px 60px' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '28px 16px 48px' : '40px 28px 60px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
           <h2 style={{ fontSize: 22, fontWeight: 700 }}>جميع القصص</h2>
           <div style={{ fontSize: 13, color: '#94a3b8' }}>{filteredStories.length} قصة</div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${isMobile ? '100%' : '300px'}, 1fr))`, gap: isMobile ? 16 : 24 }}>
           {filteredStories.map((story) => (
             <div
               key={story.id}
@@ -219,7 +238,7 @@ const ImpactStories = () => {
               }}
             >
               {/* Image */}
-              <div style={{ height: 200, background: story.gradient, position: 'relative' }}>
+              <div style={{ height: isMobile ? 160 : 200, background: story.gradient, position: 'relative' }}>
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,.5),transparent)' }} />
                 <div style={{ position: 'absolute', bottom: 14, right: 14, zIndex: 1 }}>
                   <span style={{ background: story.badgeBg, color: story.badgeColor, fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 100 }}>
