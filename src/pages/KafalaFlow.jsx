@@ -200,8 +200,15 @@ export default function KafalaFlow() {
         await uploadKafalaReceipt({ donationId: result.donationId, receiptUrl: storageId, bankName, transactionReference: reference || undefined });
       }
 
-      if (paymentMethod === 'cash_agency' && reference) {
-        await uploadKafalaReceipt({ donationId: result.donationId, receiptUrl: '', transactionReference: reference, bankName: bankName || 'cash_agency' });
+      if (paymentMethod === 'cash_agency') {
+        let storageId = '';
+        if (receipt) {
+          const uploadUrl = await generateUploadUrl();
+          const uploadRes = await fetch(uploadUrl, { method: 'POST', body: receipt, headers: { 'Content-Type': receipt.type } });
+          const uploadData = await uploadRes.json();
+          storageId = uploadData.storageId;
+        }
+        await uploadKafalaReceipt({ donationId: result.donationId, receiptUrl: storageId, transactionReference: reference || undefined, bankName: bankName || 'cash_agency' });
       }
 
       setDone(true);
@@ -539,12 +546,20 @@ export default function KafalaFlow() {
                       </div>
                     )}
 
-                    {/* Cash agency: reference input */}
+                    {/* Cash agency: receipt upload + reference input */}
                     {paymentMethod === 'cash_agency' && (
                       <div>
                         <div style={{ fontSize: 12, color: '#64748b', marginBottom: 10, lineHeight: 1.6 }}>
-                          حوّل المبلغ عبر أي وكالة نقد (Wafacash، Cash Plus...) ثم أدخل رقم الوصل أدناه.
+                          حوّل المبلغ عبر أي وكالة نقد (Wafacash، Cash Plus...) ثم ارفع وصل الدفع أدناه.
                         </div>
+                        <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 6 }}>رفع وصل الدفع</div>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
+                          style={{ width: '100%', border: `2px dashed ${K.k100}`, borderRadius: 12, padding: '14px', textAlign: 'center', background: 'white', cursor: 'pointer', fontSize: 13, color: receipt ? '#16a34a' : '#64748b', fontFamily: 'Tajawal, sans-serif', marginBottom: 10 }}
+                        >
+                          {receipt ? `✓ ${receipt.name}` : '📷 اختر ملف الوصل (اختياري)'}
+                        </button>
                         <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>رقم الوصل / المرجع</div>
                         <input
                           type="text" placeholder="أدخل رقم الوصل من الوكالة" value={reference}

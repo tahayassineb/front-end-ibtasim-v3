@@ -185,8 +185,8 @@ const ProjectsList = () => {
         </div>
       </div>
 
-      {/* ── FILTERS BAR (sticky) ── */}
-      <div style={{ background: 'white', borderBottom: '1px solid #E5E9EB', position: 'sticky', top: 64, zIndex: 40, boxShadow: '0 2px 4px rgba(0,0,0,.03), 0 4px 6px rgba(0,0,0,.05)' }}>
+      {/* ── FILTERS BAR ── */}
+      <div style={{ background: 'white', borderBottom: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03), 0 4px 6px rgba(0,0,0,.05)' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '14px 28px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
           {/* Search */}
           <div style={{ position: 'relative', flex: 1, maxWidth: 340 }}>
