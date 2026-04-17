@@ -111,6 +111,24 @@ export default function KafalaDetail() {
         </div>
       </div>
 
+      {/* Sticky CTA bar (mirrors ProjectDetail sticky funding bar) */}
+      {!isSponsored && (
+        <div style={{ position: isMobile ? 'relative' : 'sticky', top: isMobile ? 'auto' : 64, zIndex: 40, background: 'white', borderBottom: '1px solid #E8D4B0', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
+          <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '12px 16px' : '12px 28px', display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 24 }}>
+            <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 900, color: '#8B6914', whiteSpace: 'nowrap', fontFamily: 'Inter, sans-serif' }}>
+              {monthlyAmount} <span style={{ fontSize: 13, fontWeight: 500, color: '#94a3b8' }}>درهم/شهر</span>
+            </div>
+            <div style={{ flex: 1 }} />
+            <button
+              onClick={() => navigate(`/kafala/${kafala._id}/sponsor`)}
+              style={{ height: 44, padding: '0 22px', background: '#8B6914', color: 'white', border: 'none', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: '0 4px 14px rgba(196,168,130,.35)', flexShrink: 0 }}
+            >
+              🤲 اكفله الآن
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Success banner */}
       {justSponsored && (
         <div style={{ maxWidth: 1200, margin: '20px auto 0', padding: '0 28px' }}>
@@ -172,6 +190,22 @@ export default function KafalaDetail() {
               <div style={{ height: '100%', width: '100%', background: '#8B6914', borderRadius: 100 }} />
             </div>
           </div>
+
+          {/* Mid-page sponsor CTA */}
+          {!isSponsored && (
+            <div style={{ margin: '24px 0', background: '#F5EBD9', borderRadius: 18, padding: '20px 24px', border: '1.5px solid #E8D4B0', textAlign: 'center' }}>
+              <div style={{ fontSize: 13, color: '#8B6914', fontWeight: 600, marginBottom: 12 }}>
+                🤲 كفالتك الشهرية تغطي تعليم {kafala.name} وغذاءه وصحته
+              </div>
+              <button
+                onClick={() => navigate(`/kafala/${kafala._id}/sponsor`)}
+                style={{ width: '100%', height: 52, background: '#8B6914', color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: '0 4px 14px rgba(196,168,130,.35)', marginBottom: 8 }}
+              >
+                اكفل {kafala.name} بـ {monthlyAmount} درهم/شهر
+              </button>
+              <div style={{ fontSize: 12, color: '#94a3b8' }}>بدون التزام طويل المدى · يمكنك الإلغاء متى شئت</div>
+            </div>
+          )}
 
           <div style={{ height: 1, background: '#E5E9EB', margin: '24px 0' }} />
 

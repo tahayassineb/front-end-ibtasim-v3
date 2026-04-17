@@ -75,8 +75,9 @@ export default function KafalaFlow() {
   const phoneInputRef = useRef();
   const otpRefs = [useRef(), useRef(), useRef(), useRef()];
 
-  // ── Payment state (preserved exactly) ──
+  // ── Payment state ──
   const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
+  const [paymentCategory, setPaymentCategory] = useState('bank_agency'); // 'card' | 'bank_agency'
   const [planType, setPlanType] = useState('monthly'); // monthly or annual
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [receipt, setReceipt] = useState(null);
@@ -433,33 +434,129 @@ export default function KafalaFlow() {
             </div>
           )}
 
-          {/* ── STEP 2: Payment method ── */}
+          {/* ── STEP 2: Payment method (2 options) ── */}
           {step === 2 && (
             <div style={{ paddingTop: 16 }}>
               <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>طريقة الدفع</div>
               <div style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>اختر الطريقة المناسبة لك</div>
-              {[
-                { id: 'bank_transfer', icon: '🏦', title: 'تحويل بنكي', desc: 'تحويل يدوي + رفع وصل الدفع' },
-                { id: 'card_whop', icon: '💳', title: 'بطاقة بنكية (اشتراك تلقائي)', desc: 'Visa، Mastercard — يتجدد تلقائياً كل شهر' },
-                { id: 'cash_agency', icon: '💵', title: 'وكالة النقد', desc: 'Wafacash، Cash Plus' },
-              ].map(m => {
-                const sel = paymentMethod === m.id;
-                return (
-                  <div key={m.id} onClick={() => setPaymentMethod(m.id)}
-                    style={{ border: `2px solid ${sel ? K.kdark : '#E5E9EB'}`, borderRadius: 18, padding: 18, marginBottom: 12, cursor: 'pointer', background: sel ? K.kbg : 'white', boxShadow: sel ? `0 0 0 3px rgba(139,105,20,.08)` : 'none', transition: 'all .15s' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ width: 20, height: 20, borderRadius: '50%', border: `2px solid ${sel ? K.kdark : '#E5E9EB'}`, background: sel ? K.kdark : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        {sel && <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'white' }} />}
-                      </div>
-                      <div style={{ fontSize: 22 }}>{m.icon}</div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 15, fontWeight: 700 }}>{m.title}</div>
-                        <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{m.desc}</div>
-                      </div>
-                    </div>
+
+              {/* Option 1: Card */}
+              <div
+                onClick={() => { setPaymentCategory('card'); setPaymentMethod('card_whop'); }}
+                style={{ border: `2px solid ${paymentCategory === 'card' ? K.kdark : '#E5E9EB'}`, borderRadius: 18, padding: 18, marginBottom: 12, cursor: 'pointer', background: paymentCategory === 'card' ? K.kbg : 'white', boxShadow: paymentCategory === 'card' ? `0 0 0 3px rgba(139,105,20,.08)` : 'none', transition: 'all .15s' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 20, height: 20, borderRadius: '50%', border: `2px solid ${paymentCategory === 'card' ? K.kdark : '#E5E9EB'}`, background: paymentCategory === 'card' ? K.kdark : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {paymentCategory === 'card' && <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'white' }} />}
                   </div>
-                );
-              })}
+                  <div style={{ fontSize: 22 }}>💳</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700 }}>بطاقة بنكية</div>
+                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>Visa، Mastercard — اشتراك تلقائي شهري</div>
+                  </div>
+                </div>
+                {paymentCategory === 'card' && (
+                  <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${K.k100}`, fontSize: 12, color: '#64748b', lineHeight: 1.7 }}>
+                    ستُوجَّه إلى صفحة دفع آمنة عبر Whop. يتجدد الاشتراك تلقائياً كل شهر ويمكنك الإلغاء في أي وقت.
+                  </div>
+                )}
+              </div>
+
+              {/* Option 2: Bank / Agency */}
+              <div
+                onClick={() => { setPaymentCategory('bank_agency'); if (paymentMethod === 'card_whop') setPaymentMethod('bank_transfer'); }}
+                style={{ border: `2px solid ${paymentCategory === 'bank_agency' ? K.kdark : '#E5E9EB'}`, borderRadius: 18, padding: 18, marginBottom: 12, cursor: 'pointer', background: paymentCategory === 'bank_agency' ? K.kbg : 'white', boxShadow: paymentCategory === 'bank_agency' ? `0 0 0 3px rgba(139,105,20,.08)` : 'none', transition: 'all .15s' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 20, height: 20, borderRadius: '50%', border: `2px solid ${paymentCategory === 'bank_agency' ? K.kdark : '#E5E9EB'}`, background: paymentCategory === 'bank_agency' ? K.kdark : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {paymentCategory === 'bank_agency' && <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'white' }} />}
+                  </div>
+                  <div style={{ fontSize: 22 }}>🏦</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700 }}>تحويل بنكي أو وكالة</div>
+                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>بنك · Wafacash · Cash Plus</div>
+                  </div>
+                </div>
+
+                {paymentCategory === 'bank_agency' && (
+                  <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${K.k100}` }}>
+                    {/* Bank account details */}
+                    <div style={{ background: 'white', borderRadius: 12, padding: 14, marginBottom: 14, border: `1px solid ${K.k100}` }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: K.kdark, marginBottom: 10 }}>🏦 بيانات الحساب البنكي</div>
+                      <div style={{ marginBottom: 10 }}>
+                        <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 3 }}>صاحب الحساب</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: '#0e1a1b' }}>{bankInfo.name}</div>
+                      </div>
+                      <div style={{ marginBottom: 10 }}>
+                        <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>رقم الحساب (RIB)</div>
+                        <div style={{ fontSize: 15, fontWeight: 800, color: K.kdark, fontFamily: 'Inter, sans-serif', letterSpacing: '.04em' }} dir="ltr">{bankInfo.rib}</div>
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText((bankInfo.rib || '').replace(/\s/g, '')); showToast('تم نسخ الرقم', 'success'); }}
+                        style={{ fontSize: 11, background: K.kbg, color: K.kdark, border: `1px solid ${K.k100}`, padding: '4px 14px', borderRadius: 100, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}
+                      >
+                        📋 نسخ رقم الحساب
+                      </button>
+                    </div>
+
+                    {/* Sub-method toggle */}
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                      {[
+                        { id: 'bank_transfer', label: '🏦 تحويل بنكي' },
+                        { id: 'cash_agency', label: '💵 وكالة نقد' },
+                      ].map(sub => (
+                        <button
+                          key={sub.id}
+                          onClick={(e) => { e.stopPropagation(); setPaymentMethod(sub.id); }}
+                          style={{ flex: 1, height: 38, borderRadius: 10, fontSize: 12, fontWeight: 700, border: `1.5px solid ${paymentMethod === sub.id ? K.kdark : K.k100}`, background: paymentMethod === sub.id ? K.kdark : 'white', color: paymentMethod === sub.id ? 'white' : '#64748b', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', transition: 'all .15s' }}
+                        >
+                          {sub.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Bank transfer: receipt upload */}
+                    {paymentMethod === 'bank_transfer' && (
+                      <div>
+                        <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 6 }}>رفع وصل الدفع</div>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
+                          style={{ width: '100%', border: `2px dashed ${K.k100}`, borderRadius: 12, padding: '14px', textAlign: 'center', background: 'white', cursor: 'pointer', fontSize: 13, color: receipt ? '#16a34a' : '#64748b', fontFamily: 'Tajawal, sans-serif' }}
+                        >
+                          {receipt ? `✓ ${receipt.name}` : '📷 اختر ملف الوصل (اختياري)'}
+                        </button>
+                        <input ref={fileRef} type="file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={e => setReceipt(e.target.files?.[0] || null)} />
+                        <div style={{ marginTop: 10 }}>
+                          <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>رقم المرجع (اختياري)</div>
+                          <input
+                            type="text" placeholder="رقم الوصل من البنك" value={reference}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={e => setReference(e.target.value)}
+                            style={{ ...inputStyle, height: 44, borderColor: K.k100 }} dir="ltr"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Cash agency: reference input */}
+                    {paymentMethod === 'cash_agency' && (
+                      <div>
+                        <div style={{ fontSize: 12, color: '#64748b', marginBottom: 10, lineHeight: 1.6 }}>
+                          حوّل المبلغ عبر أي وكالة نقد (Wafacash، Cash Plus...) ثم أدخل رقم الوصل أدناه.
+                        </div>
+                        <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>رقم الوصل / المرجع</div>
+                        <input
+                          type="text" placeholder="أدخل رقم الوصل من الوكالة" value={reference}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={e => setReference(e.target.value)}
+                          style={{ ...inputStyle, height: 44, borderColor: K.k100 }} dir="ltr"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -507,52 +604,10 @@ export default function KafalaFlow() {
                 <div style={{ fontSize: 14, fontWeight: 700 }}>التبرع باسم مجهول</div>
               </div>
 
-              {/* Bank details for bank transfer */}
-              {paymentMethod === 'bank_transfer' && (
-                <div style={{ background: K.kbg, borderRadius: 16, padding: 16, border: `1px solid ${K.k100}`, marginBottom: 14 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: K.kdark, marginBottom: 12 }}>🏦 بيانات التحويل البنكي</div>
-                  <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 2, fontFamily: 'Inter, sans-serif' }}>رقم الحساب (RIB)</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: K.kdark, fontFamily: 'Inter, sans-serif', letterSpacing: '.05em' }} dir="ltr">{bankInfo.rib}</div>
-                    <button onClick={() => { navigator.clipboard.writeText((bankInfo.rib || '').replace(/\s/g, '')); showToast('تم النسخ', 'success'); }}
-                      style={{ fontSize: 11, background: 'white', color: K.kdark, border: `1px solid ${K.k100}`, padding: '3px 10px', borderRadius: 100, cursor: 'pointer', marginTop: 6, fontFamily: 'Tajawal, sans-serif' }}>
-                      📋 نسخ الرقم
-                    </button>
-                  </div>
-                  <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 2 }}>الوصل</div>
-                    <button type="button" onClick={() => fileRef.current?.click()}
-                      style={{ width: '100%', border: `2px dashed ${K.k100}`, borderRadius: 12, padding: '16px', textAlign: 'center', background: 'white', cursor: 'pointer', fontSize: 13, color: receipt ? '#16a34a' : '#64748b', fontFamily: 'Tajawal, sans-serif' }}>
-                      {receipt ? `✓ ${receipt.name}` : '📷 اختر ملف الوصل'}
-                    </button>
-                    <input ref={fileRef} type="file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={e => setReceipt(e.target.files?.[0] || null)} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>رقم المرجع (اختياري)</div>
-                    <input type="text" placeholder="رقم الوصل من البنك" value={reference} onChange={e => setReference(e.target.value)}
-                      style={{ ...inputStyle, height: 44, borderColor: K.k100 }} dir="ltr" />
-                  </div>
-                </div>
-              )}
-
-              {/* Cash agency */}
-              {paymentMethod === 'cash_agency' && (
-                <div style={{ background: K.kbg, borderRadius: 16, padding: 16, border: `1px solid ${K.k100}`, marginBottom: 14 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: K.kdark, marginBottom: 8 }}>💵 وكالة النقد</div>
-                  <div style={{ fontSize: 13, color: '#64748b', marginBottom: 12 }}>Wafacash، Cash Plus، موني غرام</div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>رقم المرجع / الوصل</div>
-                  <input type="text" placeholder="أدخل رقم الوصل من الوكالة" value={reference} onChange={e => setReference(e.target.value)}
-                    style={{ ...inputStyle, height: 44, borderColor: K.k100 }} dir="ltr" />
-                </div>
-              )}
-
-              {/* Card info */}
-              {paymentMethod === 'card_whop' && (
-                <div style={{ background: K.kbg, borderRadius: 16, padding: 16, border: `1px solid ${K.k100}`, marginBottom: 14 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: K.kdark, marginBottom: 8 }}>💳 الدفع بالبطاقة</div>
-                  <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.7 }}>ستُوجَّه إلى صفحة دفع آمنة. يتجدد الاشتراك تلقائياً كل شهر ويمكنك الإلغاء في أي وقت.</div>
-                </div>
-              )}
+              {/* Trust note */}
+              <div style={{ background: K.kbg, borderRadius: 12, padding: '10px 14px', border: `1px solid ${K.k100}`, marginBottom: 14, fontSize: 12, color: '#64748b', lineHeight: 1.6 }}>
+                🔒 بياناتك محمية · يمكنك الإلغاء في أي وقت · جمعية معتمدة رسمياً
+              </div>
             </div>
           )}
         </div>
