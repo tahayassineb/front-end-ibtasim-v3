@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>26 — التبرعات · ibtasim Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--p500:#0d7477;--p600:#0A5F62;--p400:#33C0C0;--p50:#E6F4F4;--p100:#CCF0F0;--surface:#f6f8f8;--teal-wash:#F0F7F7;--text:#0e1a1b;--text2:#64748b;--textm:#94a3b8;--border:#E5E9EB;--shadow-card:0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05);--shadow-primary:0 4px 14px rgba(13,116,119,.25);--warn:#f59e0b;--warn50:#FFFBEB;--warn100:#FEF3C7;}
+body{font-family:'Tajawal',sans-serif;background:var(--surface);color:var(--text);}
+a{text-decoration:none;color:inherit;}
+.back-nav{padding:12px 20px;background:white;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px;}
+.admin-shell{display:flex;min-height:calc(100vh - 45px);}
+.sidebar{width:240px;background:white;border-left:1px solid var(--border);flex-shrink:0;}
+.sidebar-logo{padding:20px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.sidebar-logo-mark{width:38px;height:38px;background:var(--p500);border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:16px;}
+.sidebar-logo-name{font-size:16px;font-weight:800;}
+.sidebar-section{padding:16px 12px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--textm);font-family:'Inter';}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;margin:2px 8px;font-size:14px;font-weight:500;color:var(--text2);cursor:pointer;}
+.sidebar-item-active{background:var(--p500);color:white;font-weight:700;box-shadow:var(--shadow-primary);}
+.sidebar-item-icon{font-size:16px;width:20px;text-align:center;}
+.badge-red{display:inline-flex;align-items:center;justify-content:center;background:#ef4444;color:white;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;margin-right:auto;}
+.admin-topbar{height:56px;background:white;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;}
+.topbar-title{font-size:18px;font-weight:800;flex:1;}
+.btn-secondary{height:38px;padding:0 16px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Tajawal';background:white;}
+.main-content{flex:1;padding:24px;}
+
+/* Summary KPIs -->
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.kpi-card{background:white;border-radius:14px;border:1px solid var(--border);box-shadow:var(--shadow-card);padding:16px;}
+.kpi-num{font-size:24px;font-weight:900;font-family:'Inter';color:var(--p600);}
+.kpi-label{font-size:12px;color:var(--text2);margin-top:4px;}
+.kpi-sub{font-size:11px;color:var(--textm);margin-top:2px;}
+
+/* Filter bar */
+.filter-bar{background:white;border-radius:14px;border:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.filter-search{flex:1;min-width:200px;height:38px;padding:0 16px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:'Tajawal';outline:none;}
+.filter-chip{height:34px;padding:0 14px;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:white;color:var(--text2);font-family:'Tajawal';}
+.filter-chip-active{background:var(--p500);color:white;border-color:var(--p500);}
+.filter-chip-warn{background:var(--warn100);color:#92400e;border-color:var(--warn);}
+
+/* Table */
+.table-card{background:white;border-radius:16px;border:1px solid var(--border);box-shadow:var(--shadow-card);overflow:hidden;}
+.table-head{display:grid;grid-template-columns:40px 2fr 1.5fr 1fr 1fr 1fr 100px;background:var(--teal-wash);border-bottom:1px solid var(--border);}
+.th{padding:12px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--textm);font-family:'Inter';}
+.table-row{display:grid;grid-template-columns:40px 2fr 1.5fr 1fr 1fr 1fr 100px;border-bottom:1px solid var(--border);align-items:center;}
+.table-row:last-child{border-bottom:none;}
+
+/* PENDING ROWS: warning-500 left border on right side (RTL) */
+.table-row-pending{border-right:4px solid var(--warn);background:var(--warn50);}
+.table-row:nth-child(even):not(.table-row-pending){background:#fafbfc;}
+
+.td{padding:12px 14px;font-size:13px;}
+.checkbox{width:16px;height:16px;accent-color:var(--p500);}
+.donor-cell{display:flex;align-items:center;gap:8px;}
+.donor-avatar{width:32px;height:32px;border-radius:50%;background:var(--teal-wash);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.donor-name{font-size:13px;font-weight:600;}
+.donor-ref{font-size:11px;color:var(--textm);font-family:'Inter';}
+.status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;}
+.status-verified{background:#D1FAE5;color:#16a34a;}
+.status-pending{background:var(--warn100);color:#92400e;}
+.status-rejected{background:#FEE2E2;color:#dc2626;}
+.row-btn{height:28px;padding:0 10px;border-radius:8px;border:1px solid var(--p500);color:var(--p500);background:white;font-size:11px;font-weight:700;cursor:pointer;font-family:'Tajawal';}
+</style>
+</head>
+<body>
+<div class="back-nav"><a href="../../index.html">← فهرس التصميم</a><span>/</span><span>26 — إدارة التبرعات</span><span style="margin-right:auto;background:var(--p50);color:var(--p600);font-size:10px;font-weight:700;padding:2px 10px;border-radius:100px;">DESKTOP 1440px · Admin</span></div>
+<div class="admin-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-mark">ا</div>
+      <div class="sidebar-logo-name">ابتسام · إدارة</div>
+    </div>
+    <div class="sidebar-section">الرئيسية</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">📊</span>لوحة التحكم</div>
+    <div class="sidebar-section">المحتوى</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">📁</span>المشاريع</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">🤲</span>الكفالة</div>
+    <div class="sidebar-section">المالية</div>
+    <div class="sidebar-item sidebar-item-active"><span class="sidebar-item-icon">💰</span>التبرعات</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">✅</span>التحقق <span class="badge-red">7</span></div>
+    <div class="sidebar-section">المستخدمون</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">👥</span>المتبرعون</div>
+    <div class="sidebar-section">النظام</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">⚙️</span>الإعدادات</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">🔴</span>سجل الأخطاء <span class="badge-red">3</span></div>
+  </aside>
+
+  <div style="flex:1;display:flex;flex-direction:column;">
+    <div class="admin-topbar">
+      <div class="topbar-title">💰 التبرعات</div>
+      <button class="btn-secondary">📋 تصدير CSV</button>
+    </div>
+
+    <div class="main-content">
+      <!-- KPIs -->
+      <div class="kpi-row">
+        <div class="kpi-card"><div class="kpi-num">1,247</div><div class="kpi-label">إجمالي التبرعات</div></div>
+        <div class="kpi-card"><div class="kpi-num" style="color:#16a34a;">1,198</div><div class="kpi-label">مؤكدة</div></div>
+        <div class="kpi-card"><div class="kpi-num" style="color:var(--warn);">42</div><div class="kpi-label">في انتظار التحقق</div></div>
+        <div class="kpi-card"><div class="kpi-num" style="color:#ef4444;">7</div><div class="kpi-label">مرفوضة</div></div>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="filter-bar">
+        <input class="filter-search" placeholder="ابحث بالاسم، رقم المرجع...">
+        <button class="filter-chip filter-chip-active">الكل</button>
+        <button class="filter-chip">✅ مؤكد</button>
+        <button class="filter-chip filter-chip-warn">⏳ انتظار (42)</button>
+        <button class="filter-chip">❌ مرفوض</button>
+        <select style="height:34px;border:1.5px solid var(--border);border-radius:100px;padding:0 12px;font-size:13px;font-family:'Tajawal';outline:none;">
+          <option>كل المشاريع</option>
+          <option>مدرسة تافيلالت</option>
+          <option>بئر الماء</option>
+        </select>
+      </div>
+
+      <!-- Table -->
+      <div class="table-card">
+        <div class="table-head">
+          <div class="th"><input type="checkbox" class="checkbox"></div>
+          <div class="th">المتبرع</div>
+          <div class="th">المشروع</div>
+          <div class="th">المبلغ</div>
+          <div class="th">التاريخ</div>
+          <div class="th">الحالة</div>
+          <div class="th">إجراء</div>
+        </div>
+
+        <!-- Pending row (warning highlight) -->
+        <div class="table-row table-row-pending">
+          <div class="td"><input type="checkbox" class="checkbox"></div>
+          <div class="td"><div class="donor-cell"><div class="donor-avatar">👤</div><div><div class="donor-name">أحمد الإدريسي</div><div class="donor-ref">#IB-2024-00847</div></div></div></div>
+          <div class="td" style="font-weight:600;">مدرسة تافيلالت</div>
+          <div class="td" style="font-family:'Inter';font-weight:800;color:var(--p600);">500 د.م</div>
+          <div class="td" style="color:var(--textm);font-family:'Inter';">2025-01-29</div>
+          <div class="td"><span class="status-badge status-pending">⏳ انتظار</span></div>
+          <div class="td"><button class="row-btn">راجع</button></div>
+        </div>
+
+        <!-- Pending row -->
+        <div class="table-row table-row-pending">
+          <div class="td"><input type="checkbox" class="checkbox"></div>
+          <div class="td"><div class="donor-cell"><div class="donor-avatar">👤</div><div><div class="donor-name">فاطمة العلوي</div><div class="donor-ref">#IB-2024-00846</div></div></div></div>
+          <div class="td" style="font-weight:600;">بئر الماء — أيت باها</div>
+          <div class="td" style="font-family:'Inter';font-weight:800;color:var(--p600);">1,000 د.م</div>
+          <div class="td" style="color:var(--textm);font-family:'Inter';">2025-01-29</div>
+          <div class="td"><span class="status-badge status-pending">⏳ انتظار</span></div>
+          <div class="td"><button class="row-btn">راجع</button></div>
+        </div>
+
+        <!-- Verified row -->
+        <div class="table-row">
+          <div class="td"><input type="checkbox" class="checkbox"></div>
+          <div class="td"><div class="donor-cell"><div class="donor-avatar">👤</div><div><div class="donor-name">محمد الكريمي</div><div class="donor-ref">#IB-2024-00845</div></div></div></div>
+          <div class="td" style="font-weight:600;">مدرسة تافيلالت</div>
+          <div class="td" style="font-family:'Inter';font-weight:800;color:var(--p600);">200 د.م</div>
+          <div class="td" style="color:var(--textm);font-family:'Inter';">2025-01-28</div>
+          <div class="td"><span class="status-badge status-verified">✓ مؤكد</span></div>
+          <div class="td"><button class="row-btn" style="border-color:var(--border);color:var(--text2);">عرض</button></div>
+        </div>
+
+        <!-- Verified row -->
+        <div class="table-row">
+          <div class="td"><input type="checkbox" class="checkbox"></div>
+          <div class="td"><div class="donor-cell"><div class="donor-avatar">👤</div><div><div class="donor-name">مجهول الهوية</div><div class="donor-ref">#IB-2024-00844</div></div></div></div>
+          <div class="td" style="font-weight:600;">عيادة صحة الأم</div>
+          <div class="td" style="font-family:'Inter';font-weight:800;color:var(--p600);">2,000 د.م</div>
+          <div class="td" style="color:var(--textm);font-family:'Inter';">2025-01-27</div>
+          <div class="td"><span class="status-badge status-verified">✓ مؤكد</span></div>
+          <div class="td"><button class="row-btn" style="border-color:var(--border);color:var(--text2);">عرض</button></div>
+        </div>
+
+        <!-- Rejected row -->
+        <div class="table-row">
+          <div class="td"><input type="checkbox" class="checkbox"></div>
+          <div class="td"><div class="donor-cell"><div class="donor-avatar">👤</div><div><div class="donor-name">عمر بنيعيش</div><div class="donor-ref">#IB-2024-00843</div></div></div></div>
+          <div class="td" style="font-weight:600;">مدرسة تافيلالت</div>
+          <div class="td" style="font-family:'Inter';font-weight:800;color:#ef4444;">350 د.م</div>
+          <div class="td" style="color:var(--textm);font-family:'Inter';">2025-01-26</div>
+          <div class="td"><span class="status-badge status-rejected">✗ مرفوض</span></div>
+          <div class="td"><button class="row-btn" style="border-color:var(--border);color:var(--text2);">عرض</button></div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;font-size:13px;color:var(--text2);">
+        <span>عرض 1-5 من 1,247 تبرع</span>
+        <div style="display:flex;gap:4px;">
+          <button style="height:32px;padding:0 12px;border:1px solid var(--border);border-radius:8px;background:white;cursor:pointer;font-size:13px;">‹ السابق</button>
+          <button style="height:32px;padding:0 12px;border:1px solid var(--p500);border-radius:8px;background:var(--p500);color:white;cursor:pointer;font-size:13px;font-weight:700;">1</button>
+          <button style="height:32px;padding:0 12px;border:1px solid var(--border);border-radius:8px;background:white;cursor:pointer;font-size:13px;">التالي ›</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

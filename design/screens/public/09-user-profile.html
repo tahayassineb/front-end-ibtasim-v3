@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>09 — الملف الشخصي · ibtasim</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--p500:#0d7477;--p600:#0A5F62;--p400:#33C0C0;--p50:#E6F4F4;--p100:#CCF0F0;--surface:#f6f8f8;--teal-wash:#F0F7F7;--text:#0e1a1b;--text2:#64748b;--textm:#94a3b8;--border:#E5E9EB;--success:#22c55e;--warn:#f59e0b;--kafala:#C4A882;--kafala-bg:#F5EBD9;--shadow-card:0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05);--shadow-primary:0 4px 14px rgba(13,116,119,.25);--shadow-lg:0 10px 15px rgba(0,0,0,.10);}
+body{font-family:'Tajawal',sans-serif;background:var(--surface);color:var(--text);}
+a{text-decoration:none;color:inherit;}
+.back-nav{padding:12px 20px;background:white;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px;}
+.main-header{background:white;border-bottom:1px solid var(--border);box-shadow:var(--shadow-card);}
+.header-inner{max-width:1200px;margin:0 auto;padding:0 28px;height:64px;display:flex;align-items:center;justify-content:space-between;}
+.logo{display:flex;align-items:center;gap:10px;}.logo-mark{width:38px;height:38px;background:var(--p500);border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:16px;}.logo-name{font-size:20px;font-weight:800;}
+.nav-links{display:flex;gap:2px;}.nav-link{height:36px;padding:0 14px;border-radius:10px;font-size:14px;font-weight:500;color:var(--text2);display:flex;align-items:center;}.nav-link-active{background:var(--p50);color:var(--p600);font-weight:600;}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:none;cursor:pointer;font-family:'Tajawal';font-weight:600;border-radius:100px;}
+.btn-sm{height:36px;padding:0 16px;font-size:13px;}.btn-md{height:44px;padding:0 22px;font-size:14px;}
+.btn-primary{background:var(--p500);color:white;box-shadow:var(--shadow-primary);}.btn-soft{background:var(--p50);color:var(--p600);}.btn-danger{background:#FEE2E2;color:#dc2626;}
+.badge{display:inline-flex;align-items:center;gap:4px;border-radius:100px;font-weight:600;font-size:11px;padding:3px 10px;}
+.badge-success{background:#D1FAE5;color:#16a34a;}.badge-gold{background:#FEF3C7;color:#b45309;}.badge-primary{background:var(--p50);color:var(--p600);}
+.overline{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.15em;color:var(--p500);margin-bottom:8px;font-family:'Inter';}
+
+/* Profile hero */
+.profile-hero{background:linear-gradient(160deg,#021718,var(--p600));padding:48px 0 0;}
+.profile-hero-inner{max-width:1200px;margin:0 auto;padding:0 28px;display:flex;align-items:flex-end;gap:24px;}
+.profile-avatar{width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,var(--p200),var(--p400));border:4px solid white;display:flex;align-items:center;justify-content:center;font-size:40px;flex-shrink:0;margin-bottom:-32px;box-shadow:var(--shadow-lg);}
+.profile-info{padding-bottom:36px;}
+.profile-name{font-size:26px;font-weight:900;color:white;margin-bottom:4px;}
+.profile-meta{font-size:13px;color:rgba(255,255,255,.7);}
+.profile-badges{display:flex;gap:8px;margin-top:10px;}
+
+/* Main content */
+.main{max-width:1200px;margin:48px auto;padding:0 28px;display:grid;grid-template-columns:1fr 320px;gap:32px;align-items:start;}
+
+/* Stats */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;}
+.stat-card{background:white;border-radius:16px;border:1px solid var(--border);padding:20px;box-shadow:var(--shadow-card);}
+.stat-icon{font-size:24px;margin-bottom:10px;}
+.stat-label{font-size:12px;color:var(--textm);margin-bottom:4px;}
+.stat-value{font-size:24px;font-weight:800;color:var(--text);}
+.stat-sub{font-size:12px;color:var(--text2);margin-top:3px;}
+
+/* Donation history */
+.history-card{background:white;border-radius:16px;border:1px solid var(--border);box-shadow:var(--shadow-card);overflow:hidden;}
+.history-header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.history-title{font-size:16px;font-weight:700;}
+.donation-row{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border);}
+.donation-row:last-child{border-bottom:none;}
+.donation-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.donation-name{font-size:14px;font-weight:600;line-height:1.3;}
+.donation-date{font-size:12px;color:var(--textm);}
+.donation-amount{font-size:16px;font-weight:700;color:var(--p600);margin-right:auto;white-space:nowrap;}
+
+/* Kafala active -->
+.kafala-card{background:var(--kafala-bg);border-radius:16px;border:1.5px solid #E8D4B0;padding:20px;margin-bottom:16px;}
+.kafala-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.kafala-title{font-size:13px;font-weight:700;color:#6B4F12;text-transform:uppercase;letter-spacing:.1em;font-family:'Inter';}
+.kafala-item{display:flex;align-items:center;gap:12px;}
+.kafala-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#8B6914,#C4A882);display:flex;align-items:center;justify-content:center;font-size:22px;}
+.kafala-name{font-size:15px;font-weight:700;color:#3D2506;}
+.kafala-age{font-size:12px;color:#8B6914;}
+.kafala-price{font-size:16px;font-weight:800;color:#6B4F12;margin-top:4px;}
+.kafala-next{font-size:11px;color:#8B6914;}
+.kafala-renew-btn{background:#6B4F12;color:white;height:34px;padding:0 14px;border-radius:100px;font-size:12px;font-weight:700;font-family:'Tajawal';border:none;cursor:pointer;}
+
+/* Right sidebar -->
+.sidebar-section{display:flex;flex-direction:column;gap:16px;}
+.settings-card{background:white;border-radius:16px;border:1px solid var(--border);box-shadow:var(--shadow-card);overflow:hidden;}
+.settings-header{padding:14px 18px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;}
+.settings-item{display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--border);cursor:pointer;}
+.settings-item:last-child{border-bottom:none;}
+.settings-icon{font-size:18px;flex-shrink:0;}
+.settings-text{font-size:14px;font-weight:500;}
+.settings-arrow{color:var(--textm);margin-right:auto;}
+</style>
+</head>
+<body>
+<div class="back-nav"><a href="../../index.html">← فهرس التصميم</a><span>/</span><span>09 — الملف الشخصي</span><span style="margin-right:auto;background:var(--p50);color:var(--p600);font-size:10px;font-weight:700;padding:2px 10px;border-radius:100px;">DESKTOP 1440px</span></div>
+
+<nav class="main-header">
+  <div class="header-inner">
+    <div class="logo"><div class="logo-mark">ا</div><div class="logo-name">ابتسام</div></div>
+    <div class="nav-links">
+      <div class="nav-link">الرئيسية</div><div class="nav-link">المشاريع</div>
+      <div class="nav-link">الكفالة</div><div class="nav-link nav-link-active">ملفي الشخصي</div>
+    </div>
+    <div style="display:flex;gap:10px;"><button class="btn btn-sm btn-soft">تسجيل الخروج</button><button class="btn btn-sm btn-primary">تبرع الآن</button></div>
+  </div>
+</nav>
+
+<!-- Profile hero -->
+<div class="profile-hero">
+  <div class="profile-hero-inner">
+    <div class="profile-avatar">👤</div>
+    <div class="profile-info">
+      <div class="profile-name">محمد بن علي الإدريسي</div>
+      <div class="profile-meta">📞 +212 6 12 34 56 78 · ✉ m.idrisi@gmail.com</div>
+      <div class="profile-badges">
+        <span class="badge badge-gold">⭐ متبرع ذهبي</span>
+        <span class="badge badge-success">✓ موثق</span>
+        <span class="badge badge-primary">عضو منذ 2022</span>
+      </div>
+    </div>
+    <div style="margin-right:auto;padding-bottom:36px;">
+      <button class="btn btn-sm btn-soft">✏️ تعديل الملف</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div>
+    <!-- Stats -->
+    <div class="overline">إحصائياتي</div>
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-label">إجمالي تبرعاتي</div>
+        <div class="stat-value">3,450</div>
+        <div class="stat-sub">درهم مغربي</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📋</div>
+        <div class="stat-label">مشاريع دعمتها</div>
+        <div class="stat-value">8</div>
+        <div class="stat-sub">مشروع مختلف</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🤲</div>
+        <div class="stat-label">كفالات نشطة</div>
+        <div class="stat-value">1</div>
+        <div class="stat-sub">يتيم مكفول</div>
+      </div>
+    </div>
+
+    <!-- Active Kafala -->
+    <div class="overline" style="margin-top:4px;">كفالتي النشطة</div>
+    <div class="kafala-card" style="margin-bottom:28px;">
+      <div class="kafala-header">
+        <div class="kafala-title">🤲 KAFALA ACTIVE</div>
+        <span class="badge" style="background:#D1FAE5;color:#16a34a;">✓ نشطة</span>
+      </div>
+      <div class="kafala-item">
+        <div class="kafala-avatar">👦</div>
+        <div style="flex:1;">
+          <div class="kafala-name">محمد — 9 سنوات</div>
+          <div class="kafala-age">من منطقة درعة تافيلالت</div>
+          <div class="kafala-price">300 د.م / شهر</div>
+        </div>
+        <div style="text-align:left;">
+          <div class="kafala-next">الدفعة القادمة</div>
+          <div style="font-size:14px;font-weight:700;color:#6B4F12;">1 مايو 2026</div>
+          <button class="kafala-renew-btn" style="margin-top:6px;">تجديد</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Donation history -->
+    <div class="overline">سجل التبرعات</div>
+    <div class="history-card">
+      <div class="history-header">
+        <div class="history-title">آخر التبرعات</div>
+        <button class="btn btn-sm btn-soft">عرض الكل (12)</button>
+      </div>
+      <div class="donation-row">
+        <div class="donation-icon" style="background:var(--p50);">🎓</div>
+        <div>
+          <div class="donation-name">مدرسة تافيلالت</div>
+          <div class="donation-date">15 أبريل 2026</div>
+        </div>
+        <div class="donation-amount">500 د.م</div>
+        <span class="badge badge-success">✓ مقبول</span>
+      </div>
+      <div class="donation-row">
+        <div class="donation-icon" style="background:#F5EBD9;">🤲</div>
+        <div>
+          <div class="donation-name">كفالة شهرية — محمد</div>
+          <div class="donation-date">1 أبريل 2026</div>
+        </div>
+        <div class="donation-amount">300 د.م</div>
+        <span class="badge badge-success">✓ مقبول</span>
+      </div>
+      <div class="donation-row">
+        <div class="donation-icon" style="background:#FEF3C7;">💧</div>
+        <div>
+          <div class="donation-name">آبار المياه — سوس ماسة</div>
+          <div class="donation-date">20 مارس 2026</div>
+        </div>
+        <div class="donation-amount">200 د.م</div>
+        <span class="badge badge-success">✓ مقبول</span>
+      </div>
+      <div class="donation-row">
+        <div class="donation-icon" style="background:#D1FAE5;">❤️</div>
+        <div>
+          <div class="donation-name">العيادة المتنقلة</div>
+          <div class="donation-date">5 مارس 2026</div>
+        </div>
+        <div class="donation-amount">1,000 د.م</div>
+        <span class="badge badge-success">✓ مقبول</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar-section">
+    <div class="settings-card">
+      <div class="settings-header">⚙️ إعدادات الحساب</div>
+      <div class="settings-item"><span class="settings-icon">✏️</span><span class="settings-text">تعديل المعلومات الشخصية</span><span class="settings-arrow">←</span></div>
+      <div class="settings-item"><span class="settings-icon">🔒</span><span class="settings-text">تغيير كلمة المرور</span><span class="settings-arrow">←</span></div>
+      <div class="settings-item"><span class="settings-icon">🔔</span><span class="settings-text">إشعارات واتساب</span><span class="settings-arrow">←</span></div>
+      <div class="settings-item"><span class="settings-icon">🌍</span><span class="settings-text">اللغة — العربية</span><span class="settings-arrow">←</span></div>
+      <div class="settings-item"><span class="settings-icon">📜</span><span class="settings-text">تحميل شهادة التبرعات</span><span class="settings-arrow">←</span></div>
+    </div>
+    <div class="settings-card">
+      <div class="settings-item" style="color:#dc2626;"><span class="settings-icon">🚪</span><span class="settings-text">تسجيل الخروج</span></div>
+    </div>
+    <div style="background:var(--teal-wash);border-radius:14px;padding:16px;border:1px solid var(--p100);">
+      <div style="font-size:12px;font-weight:700;color:var(--p600);margin-bottom:6px;">🎖 مستوى المتبرع الذهبي</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.7;">تبرعاتك تجاوزت 3,000 درهم — أنت من أوفياء جمعية ابتسام</div>
+      <div style="margin-top:10px;height:6px;background:var(--border);border-radius:100px;overflow:hidden;"><div style="width:70%;height:100%;background:linear-gradient(to left,#f59e0b,#d97706);border-radius:100px;"></div></div>
+      <div style="font-size:11px;color:var(--textm);margin-top:4px;">3,450 / 5,000 درهم للمستوى البلاتيني</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

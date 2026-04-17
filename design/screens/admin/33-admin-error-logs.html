@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>33 — سجل الأخطاء · ibtasim Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--p500:#0d7477;--p600:#0A5F62;--p400:#33C0C0;--p50:#E6F4F4;--p100:#CCF0F0;--surface:#f6f8f8;--teal-wash:#F0F7F7;--text:#0e1a1b;--text2:#64748b;--textm:#94a3b8;--border:#E5E9EB;--shadow-card:0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05);--shadow-primary:0 4px 14px rgba(13,116,119,.25);--err:#ef4444;--err50:#FEF2F2;--err100:#FEE2E2;--warn:#f59e0b;--warn50:#FFFBEB;--warn100:#FEF3C7;}
+body{font-family:'Tajawal',sans-serif;background:var(--surface);color:var(--text);}
+a{text-decoration:none;color:inherit;}
+.back-nav{padding:12px 20px;background:white;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px;}
+.admin-shell{display:flex;min-height:calc(100vh - 45px);}
+.sidebar{width:240px;background:white;border-left:1px solid var(--border);flex-shrink:0;}
+.sidebar-logo{padding:20px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.sidebar-logo-mark{width:38px;height:38px;background:var(--p500);border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:16px;}
+.sidebar-logo-name{font-size:16px;font-weight:800;}
+.sidebar-section{padding:16px 12px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--textm);font-family:'Inter';}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;margin:2px 8px;font-size:14px;font-weight:500;color:var(--text2);cursor:pointer;}
+.sidebar-item-active{background:var(--p500);color:white;font-weight:700;box-shadow:var(--shadow-primary);}
+.sidebar-item-icon{font-size:16px;width:20px;text-align:center;}
+.badge-red{display:inline-flex;align-items:center;justify-content:center;background:#ef4444;color:white;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;margin-right:auto;}
+.admin-topbar{height:56px;background:white;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;}
+.topbar-title{font-size:18px;font-weight:800;flex:1;}
+.btn-secondary{height:38px;padding:0 16px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Tajawal';background:white;}
+.main-content{flex:1;padding:24px;}
+
+/* Summary pills */
+.error-summary{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.error-pill{display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:600;}
+.pill-error{background:var(--err50);border:1px solid var(--err100);color:var(--err);}
+.pill-warn{background:var(--warn50);border:1px solid var(--warn100);color:#92400e;}
+.pill-info{background:var(--p50);border:1px solid var(--p100);color:var(--p600);}
+.pill-num{font-size:20px;font-weight:900;font-family:'Inter';}
+
+/* Filter bar -->
+.filter-bar{background:white;border-radius:14px;border:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:20px;}
+.filter-search{flex:1;height:36px;padding:0 14px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:'Tajawal';outline:none;}
+.filter-chip{height:32px;padding:0 12px;border-radius:100px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:white;color:var(--text2);font-family:'Tajawal';}
+.filter-chip-active{background:var(--p500);color:white;border-color:var(--p500);}
+.filter-chip-error{background:var(--err50);border-color:var(--err);color:var(--err);}
+.filter-chip-warn{background:var(--warn50);border-color:var(--warn);color:#92400e;}
+
+/* Log entries -->
+.log-card{background:white;border-radius:16px;border:1px solid var(--border);box-shadow:var(--shadow-card);overflow:hidden;}
+.log-entry{border-bottom:1px solid var(--border);cursor:pointer;}
+.log-entry:last-child{border-bottom:none;}
+.log-entry:hover .log-entry-inner{background:#fafbfc;}
+
+/* CRITICAL/ERROR rows: red left border (RTL = right border) */
+.log-entry-error .log-entry-inner{border-right:4px solid var(--err);background:var(--err50);}
+.log-entry-warn .log-entry-inner{border-right:4px solid var(--warn);background:var(--warn50);}
+.log-entry-info .log-entry-inner{border-right:4px solid var(--p400);}
+
+.log-entry-inner{padding:14px 20px;display:flex;align-items:flex-start;gap:14px;transition:background .1s;}
+
+.log-level{padding:3px 10px;border-radius:100px;font-size:10px;font-weight:800;flex-shrink:0;margin-top:2px;font-family:'Inter';text-transform:uppercase;}
+.level-error{background:var(--err100);color:var(--err);}
+.level-warn{background:var(--warn100);color:#92400e;}
+.level-info{background:var(--p50);color:var(--p600);}
+
+.log-body{flex:1;}
+.log-source{font-size:11px;font-weight:700;color:var(--textm);font-family:'Inter';text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;}
+.log-message{font-size:14px;font-weight:600;margin-bottom:4px;}
+.log-meta{display:flex;gap:16px;font-size:11px;color:var(--textm);font-family:'Inter';}
+.log-api{font-size:12px;color:var(--text2);font-family:'Inter';background:var(--surface);padding:6px 10px;border-radius:8px;margin-top:8px;word-break:break-all;}
+
+.log-time{font-size:11px;color:var(--textm);font-family:'Inter';flex-shrink:0;white-space:nowrap;}
+
+/* Expanded detail -->
+.log-detail{padding:14px 20px 14px 54px;background:#fafbfc;border-top:1px solid var(--border);display:none;}
+.log-detail-active{display:block;}
+.code-block{background:#0e1a1b;color:#33C0C0;border-radius:10px;padding:14px;font-size:12px;font-family:'Inter';overflow-x:auto;line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="back-nav"><a href="../../index.html">← فهرس التصميم</a><span>/</span><span>33 — سجل الأخطاء</span><span style="margin-right:auto;background:var(--p50);color:var(--p600);font-size:10px;font-weight:700;padding:2px 10px;border-radius:100px;">DESKTOP 1440px · Admin</span></div>
+<div class="admin-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-mark">ا</div>
+      <div class="sidebar-logo-name">ابتسام · إدارة</div>
+    </div>
+    <div class="sidebar-section">الرئيسية</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">📊</span>لوحة التحكم</div>
+    <div class="sidebar-section">المحتوى</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">📁</span>المشاريع</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">🤲</span>الكفالة</div>
+    <div class="sidebar-section">المالية</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">💰</span>التبرعات</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">✅</span>التحقق <span class="badge-red">7</span></div>
+    <div class="sidebar-section">المستخدمون</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">👥</span>المتبرعون</div>
+    <div class="sidebar-section">النظام</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">⚙️</span>الإعدادات</div>
+    <div class="sidebar-item sidebar-item-active"><span class="sidebar-item-icon">🔴</span>سجل الأخطاء <span style="background:rgba(255,255,255,.3);color:white;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-right:auto;">3</span></div>
+  </aside>
+
+  <div style="flex:1;display:flex;flex-direction:column;">
+    <div class="admin-topbar">
+      <div class="topbar-title">🔴 سجل الأخطاء</div>
+      <button class="btn-secondary">🗑 مسح السجل</button>
+    </div>
+
+    <div class="main-content">
+      <!-- Summary -->
+      <div class="error-summary">
+        <div class="error-pill pill-error"><div class="pill-num">3</div><span>أخطاء حرجة</span></div>
+        <div class="error-pill pill-warn"><div class="pill-num">8</div><span>تحذيرات</span></div>
+        <div class="error-pill pill-info"><div class="pill-num">47</div><span>معلومات</span></div>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="filter-bar">
+        <input class="filter-search" placeholder="ابحث في السجل...">
+        <button class="filter-chip filter-chip-active">الكل (58)</button>
+        <button class="filter-chip filter-chip-error">🔴 أخطاء (3)</button>
+        <button class="filter-chip filter-chip-warn">🟡 تحذيرات (8)</button>
+        <button class="filter-chip">🔵 معلومات</button>
+        <select style="height:32px;border:1.5px solid var(--border);border-radius:100px;padding:0 12px;font-size:12px;font-family:'Tajawal';outline:none;">
+          <option>آخر 24 ساعة</option>
+          <option>آخر 7 أيام</option>
+          <option>آخر 30 يوم</option>
+        </select>
+      </div>
+
+      <!-- Log entries -->
+      <div class="log-card">
+
+        <!-- Error: expanded -->
+        <div class="log-entry log-entry-error">
+          <div class="log-entry-inner">
+            <span class="log-level level-error">ERROR</span>
+            <div class="log-body">
+              <div class="log-source">whatsapp · createAndConnectSession</div>
+              <div class="log-message">فشل الاتصال بـ WaSender API — 401 Unauthorized</div>
+              <div class="log-api">POST https://www.wasenderapi.com/api/sessions/+212661234567/connect</div>
+              <div class="log-meta">
+                <span>📌 HTTP 401</span>
+                <span>⚡ wasender</span>
+              </div>
+            </div>
+            <div class="log-time">14:32:11<br>2025-01-29</div>
+          </div>
+          <div class="log-detail log-detail-active">
+            <div class="code-block">{"error": "Unauthorized", "message": "Invalid or expired master token", "code": 401}
+
+<span style="color:#94a3b8;">// الحل المقترح: تحقق من صحة WASENDER_MASTER_TOKEN في إعدادات Convex</span></div>
+          </div>
+        </div>
+
+        <!-- Error -->
+        <div class="log-entry log-entry-error">
+          <div class="log-entry-inner">
+            <span class="log-level level-error">ERROR</span>
+            <div class="log-body">
+              <div class="log-source">payments · createWhopCheckout</div>
+              <div class="log-message">فشل إنشاء جلسة الدفع Whop — 422 Unprocessable Entity</div>
+              <div class="log-api">POST https://api.whop.com/api/v2/checkout_sessions</div>
+              <div class="log-meta">
+                <span>📌 HTTP 422</span>
+                <span>⚡ whop</span>
+              </div>
+            </div>
+            <div class="log-time">11:18:44<br>2025-01-29</div>
+          </div>
+        </div>
+
+        <!-- Warning -->
+        <div class="log-entry log-entry-warn">
+          <div class="log-entry-inner">
+            <span class="log-level level-warn">WARN</span>
+            <div class="log-body">
+              <div class="log-source">donations · verifyDonation</div>
+              <div class="log-message">محاولة تحقق مزدوجة من نفس التبرع #IB-2024-00847</div>
+              <div class="log-meta">
+                <span>📋 donationId: j17abc123</span>
+                <span>⚡ donations</span>
+              </div>
+            </div>
+            <div class="log-time">09:05:22<br>2025-01-29</div>
+          </div>
+        </div>
+
+        <!-- Warning -->
+        <div class="log-entry log-entry-warn">
+          <div class="log-entry-inner">
+            <span class="log-level level-warn">WARN</span>
+            <div class="log-body">
+              <div class="log-source">whatsapp · sendNotification</div>
+              <div class="log-message">تأخر إرسال إشعار واتساب — سيُعاد المحاولة خلال 5 دقائق</div>
+              <div class="log-meta">
+                <span>📞 +212661234567</span>
+              </div>
+            </div>
+            <div class="log-time">08:44:01<br>2025-01-29</div>
+          </div>
+        </div>
+
+        <!-- Info -->
+        <div class="log-entry log-entry-info">
+          <div class="log-entry-inner">
+            <span class="log-level level-info">INFO</span>
+            <div class="log-body">
+              <div class="log-source">donations · processWhopPayment</div>
+              <div class="log-message">تم تأكيد دفعة Whop تلقائياً — 500 درهم</div>
+              <div class="log-meta">
+                <span>📋 paymentId: pay_abc123</span>
+              </div>
+            </div>
+            <div class="log-time">07:12:38<br>2025-01-29</div>
+          </div>
+        </div>
+
+        <!-- Info -->
+        <div class="log-entry log-entry-info">
+          <div class="log-entry-inner">
+            <span class="log-level level-info">INFO</span>
+            <div class="log-body">
+              <div class="log-source">crons · autoRefreshStats</div>
+              <div class="log-message">تحديث إحصائيات المشاريع بنجاح (12 مشروع)</div>
+            </div>
+            <div class="log-time">06:00:00<br>2025-01-29</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;font-size:13px;color:var(--text2);">
+        <span>عرض 1-6 من 58 سجل</span>
+        <div style="display:flex;gap:4px;">
+          <button style="height:32px;padding:0 12px;border:1px solid var(--p500);border-radius:8px;background:var(--p500);color:white;cursor:pointer;font-size:13px;font-weight:700;">1</button>
+          <button style="height:32px;padding:0 12px;border:1px solid var(--border);border-radius:8px;background:white;cursor:pointer;font-size:13px;">2</button>
+          <button style="height:32px;padding:0 12px;border:1px solid var(--border);border-radius:8px;background:white;cursor:pointer;font-size:13px;">›</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

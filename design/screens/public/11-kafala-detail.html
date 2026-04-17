@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11 — ملف اليتيم · ibtasim</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--p500:#0d7477;--p600:#0A5F62;--p400:#33C0C0;--p50:#E6F4F4;--surface:#f6f8f8;--teal-wash:#F0F7F7;--text:#0e1a1b;--text2:#64748b;--textm:#94a3b8;--border:#E5E9EB;--k:#C4A882;--kdark:#8B6914;--kbg:#F5EBD9;--k100:#E8D4B0;--shadow-card:0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05);--shadow-primary:0 4px 14px rgba(13,116,119,.25);--shadow-k:0 4px 14px rgba(196,168,130,.35);--shadow-lg:0 10px 15px rgba(0,0,0,.10);}
+body{font-family:'Tajawal',sans-serif;background:var(--surface);color:var(--text);}
+a{text-decoration:none;color:inherit;}
+.back-nav{padding:12px 20px;background:white;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px;}
+.main-header{background:white;border-bottom:1px solid var(--border);box-shadow:var(--shadow-card);}
+.header-inner{max-width:1200px;margin:0 auto;padding:0 28px;height:64px;display:flex;align-items:center;justify-content:space-between;}
+.logo{display:flex;align-items:center;gap:10px;}.logo-mark{width:38px;height:38px;background:var(--p500);border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:16px;}.logo-name{font-size:20px;font-weight:800;}
+.nav-links{display:flex;gap:2px;}.nav-link{height:36px;padding:0 14px;border-radius:10px;font-size:14px;font-weight:500;color:var(--text2);display:flex;align-items:center;}.nav-link-active{background:var(--kbg);color:var(--kdark);font-weight:600;}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:none;cursor:pointer;font-family:'Tajawal';font-weight:600;border-radius:100px;}
+.btn-sm{height:36px;padding:0 16px;font-size:13px;}.btn-md{height:44px;padding:0 22px;font-size:14px;}
+.btn-primary{background:var(--p500);color:white;box-shadow:var(--shadow-primary);}
+.btn-soft{background:var(--p50);color:var(--p600);}
+
+/* Hero */
+.kafala-hero{background:linear-gradient(160deg,#3D2506,#6B4F12,#C4A882);padding:60px 0;}
+.hero-inner{max-width:1200px;margin:0 auto;padding:0 28px;display:flex;align-items:center;gap:48px;}
+.hero-avatar-wrap{flex-shrink:0;}
+.hero-avatar{width:180px;height:180px;border-radius:50%;background:linear-gradient(135deg,#6B4F12,#C4A882);border:5px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:80px;box-shadow:0 12px 32px rgba(0,0,0,.3);}
+.hero-text{}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.9);border-radius:100px;padding:5px 14px;font-size:12px;font-weight:600;margin-bottom:12px;}
+.hero-name{font-size:40px;font-weight:900;color:white;margin-bottom:6px;}
+.hero-meta{display:flex;gap:20px;font-size:14px;color:rgba(255,255,255,.75);}
+.hero-price{margin-top:20px;display:flex;align-items:baseline;gap:4px;}
+.hero-price-num{font-size:36px;font-weight:900;color:white;font-family:'Inter';}
+.hero-price-unit{font-size:14px;color:rgba(255,255,255,.7);}
+
+/* Back btn -->
+.back-btn{display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.75);font-size:13px;font-weight:600;margin-bottom:20px;cursor:pointer;}
+
+/* Main -->
+.main{max-width:1200px;margin:0 auto;padding:40px 28px;display:grid;grid-template-columns:1fr 360px;gap:40px;align-items:start;}
+.overline{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.15em;color:var(--kdark);margin-bottom:8px;font-family:'Inter';}
+.section-title{font-size:20px;font-weight:700;margin-bottom:14px;}
+.body-text{font-size:15px;color:var(--text2);line-height:1.85;}
+.divider{height:1px;background:var(--border);margin:24px 0;}
+
+/* Needs breakdown -->
+.needs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px;}
+.need-item{background:var(--kbg);border-radius:14px;padding:18px;text-align:center;border:1px solid var(--k100);}
+.need-icon{font-size:26px;margin-bottom:8px;}
+.need-label{font-size:13px;font-weight:700;color:var(--kdark);margin-bottom:4px;}
+.need-amount{font-size:16px;font-weight:800;color:var(--kdark);}
+.need-month{font-size:11px;color:var(--textm);}
+
+/* Coverage bar -->
+.coverage-bar{margin-top:14px;}
+.coverage-label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;}
+.coverage-track{height:10px;background:var(--k100);border-radius:100px;overflow:hidden;}
+.coverage-fill{height:100%;background:var(--kdark);border-radius:100px;}
+
+/* Testimonials -->
+.testimonial{background:var(--kbg);border-radius:14px;padding:20px;border-right:3px solid var(--k);margin-bottom:12px;}
+.testimonial-text{font-size:14px;color:var(--text2);line-height:1.8;font-style:italic;margin-bottom:10px;}
+.testimonial-author{font-size:12px;font-weight:600;color:var(--kdark);}
+
+/* Sidebar -->
+.sidebar-card{background:white;border-radius:18px;border:1.5px solid var(--k100);box-shadow:var(--shadow-k);padding:24px;position:sticky;top:80px;}
+.sidebar-badge{display:inline-flex;align-items:center;gap:6px;background:#D1FAE5;color:#16a34a;padding:4px 12px;border-radius:100px;font-size:12px;font-weight:600;margin-bottom:16px;}
+.sidebar-price-num{font-size:36px;font-weight:900;color:var(--kdark);font-family:'Inter';}
+.sidebar-price-unit{font-size:14px;color:var(--textm);}
+.sponsor-btn{width:100%;height:56px;background:var(--kdark);color:white;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;box-shadow:var(--shadow-k);font-family:'Tajawal';margin:20px 0 8px;}
+.cancel-note{text-align:center;font-size:12px;color:var(--textm);}
+.sidebar-features{margin-top:20px;border-top:1px solid var(--k100);padding-top:16px;}
+.feature-item{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);margin-bottom:10px;}
+.feature-icon{width:28px;height:28px;border-radius:50%;background:var(--kbg);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+</style>
+</head>
+<body>
+<div class="back-nav"><a href="../../index.html">← فهرس التصميم</a><span>/</span><span>11 — ملف اليتيم</span><span style="margin-right:auto;background:var(--kbg);color:var(--kdark);font-size:10px;font-weight:700;padding:2px 10px;border-radius:100px;">DESKTOP 1440px · لون الكفالة</span></div>
+
+<nav class="main-header">
+  <div class="header-inner">
+    <div class="logo"><div class="logo-mark">ا</div><div class="logo-name">ابتسام</div></div>
+    <div class="nav-links">
+      <div class="nav-link">الرئيسية</div><div class="nav-link">المشاريع</div>
+      <div class="nav-link nav-link-active">🤲 الكفالة</div><div class="nav-link">حول الجمعية</div>
+    </div>
+    <div style="display:flex;gap:10px;"><button class="btn btn-sm btn-soft">دخول</button><button class="btn btn-sm btn-primary">تبرع الآن</button></div>
+  </div>
+</nav>
+
+<!-- Kafala Detail Hero -->
+<div class="kafala-hero">
+  <div class="hero-inner">
+    <div class="hero-avatar-wrap">
+      <div class="hero-avatar">👦</div>
+    </div>
+    <div class="hero-text">
+      <div class="back-btn">← العودة لقائمة الأيتام</div>
+      <div class="hero-badge">🤲 متاح للكفالة · Available</div>
+      <h1 class="hero-name">محمد</h1>
+      <div class="hero-meta">
+        <span>🎂 9 سنوات</span>
+        <span>📍 منطقة درعة تافيلالت</span>
+        <span>👦 ذكر</span>
+      </div>
+      <div class="hero-price">
+        <span class="hero-price-num">300</span>
+        <span class="hero-price-unit">درهم مغربي / شهر</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main content -->
+<div class="main">
+  <div>
+    <div class="overline">قصة محمد</div>
+    <h2 class="section-title">من هو محمد؟</h2>
+    <p class="body-text">
+      محمد طفل يتيم بالغ من العمر 9 سنوات، فقد والده في سن مبكرة وتكفلت به والدته الأرملة التي تعاني من ظروف مادية صعبة. يعيش في إحدى قرى منطقة درعة تافيلالت النائية حيث تشح الموارد والفرص.
+    </p>
+    <p class="body-text" style="margin-top:12px;">
+      محمد طالب متفوق ويحلم بأن يصبح طبيباً في المستقبل — لكنه يحتاج إلى دعم مستمر ليواصل تعليمه ويحقق حلمه.
+    </p>
+
+    <div class="divider"></div>
+
+    <div class="overline">احتياجاته الشهرية</div>
+    <h2 class="section-title">ما الذي تغطيه الكفالة؟</h2>
+    <div class="needs-grid">
+      <div class="need-item">
+        <div class="need-icon">📚</div>
+        <div class="need-label">التعليم</div>
+        <div class="need-amount">120 د.م</div>
+        <div class="need-month">/ شهر</div>
+      </div>
+      <div class="need-item">
+        <div class="need-icon">🍞</div>
+        <div class="need-label">الغذاء</div>
+        <div class="need-amount">100 د.م</div>
+        <div class="need-month">/ شهر</div>
+      </div>
+      <div class="need-item">
+        <div class="need-icon">🏥</div>
+        <div class="need-label">الصحة</div>
+        <div class="need-amount">80 د.م</div>
+        <div class="need-month">/ شهر</div>
+      </div>
+    </div>
+
+    <div class="coverage-bar" style="margin-top:24px;">
+      <div class="coverage-label">
+        <span style="font-weight:600;color:var(--kdark);">300 درهم شهرياً تغطي كافة احتياجاته</span>
+        <span style="color:var(--textm);">100%</span>
+      </div>
+      <div class="coverage-track"><div class="coverage-fill" style="width:100%;"></div></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="overline">شهادات الكافلين</div>
+    <h2 class="section-title" style="margin-bottom:16px;">ماذا قال من كفلوا قبلك؟</h2>
+    <div class="testimonial">
+      <div class="testimonial-text">"تجربة الكفالة غيّرت طريقة تفكيري — أصبحت أشعر بأن لي فرداً آخر في أسرتي يحتاجني ويدعو لي."</div>
+      <div class="testimonial-author">أحمد الإدريسي — كافل منذ 2023</div>
+    </div>
+    <div class="testimonial">
+      <div class="testimonial-text">"أروع قرار اتخذته في حياتي — الجمعية ترسل لي تقارير ربع سنوية عن الطفل المكفول وهذا يمنحني الطمأنينة الكاملة."</div>
+      <div class="testimonial-author">فاطمة العلوي — كافلة منذ 2022</div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <a href="10-kafala-list.html"><button class="btn btn-md btn-soft">← تصفح أيتاماً آخرين</button></a>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar-card">
+    <div class="sidebar-badge">✓ متاح للكفالة الآن</div>
+    <div style="margin-bottom:8px;">
+      <div style="font-size:12px;color:var(--textm);">التكلفة الشهرية</div>
+      <span class="sidebar-price-num">300</span>
+      <span class="sidebar-price-unit"> درهم / شهر</span>
+    </div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.7;padding:12px;background:var(--kbg);border-radius:10px;margin-top:8px;">
+      🤲 كفالتك الشهرية تُجدَّد تلقائياً — يمكنك الإلغاء في أي وقت
+    </div>
+    <button class="sponsor-btn">🤲 اكفل محمد الآن</button>
+    <div class="cancel-note">بدون التزام طويل المدى · يمكنك الإلغاء متى شئت</div>
+
+    <div class="sidebar-features">
+      <div class="feature-item"><div class="feature-icon">📊</div><span>تقارير ربع سنوية عن الطفل</span></div>
+      <div class="feature-item"><div class="feature-icon">📸</div><span>صور لأحوال الطفل ودراسته</span></div>
+      <div class="feature-item"><div class="feature-icon">💬</div><span>تواصل مع فريق الكفالة</span></div>
+      <div class="feature-item"><div class="feature-icon">🔒</div><span>دفع آمن ومحمي</span></div>
+      <div class="feature-item"><div class="feature-icon">✓</div><span>جمعية معتمدة رسمياً</span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

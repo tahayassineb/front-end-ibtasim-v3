@@ -207,25 +207,25 @@ const ProjectDetail = ({ preview = false }) => {
 
             <div style={{ height: 1, background: '#E5E9EB', margin: '28px 0' }} />
 
-            {/* Impact */}
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#0d7477', marginBottom: 8, fontFamily: 'Inter, sans-serif' }}>
-              YOUR IMPACT
-            </div>
-            <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 20 }}>ماذا يفعل تبرعك؟</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3" style={{ gap: 16 }}>
-              {[
-                { amount: '100 د.م', desc: 'توفر كتباً مدرسية لطالب لمدة سنة كاملة' },
-                { amount: '500 د.م', desc: 'تموّل لوحة سبورة وتجهيزات فصل دراسي' },
-                { amount: '2,000 د.م', desc: 'تبني جداراً كاملاً في المشروع الجديد' },
-              ].map((item, i) => (
-                <div key={i} style={{ background: '#F0F7F7', borderRadius: 14, padding: 18, textAlign: 'center' }}>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: '#0A5F62', fontFamily: 'Inter, sans-serif' }}>{item.amount}</div>
-                  <div style={{ fontSize: 12, color: '#64748b', marginTop: 6, lineHeight: 1.5 }}>{item.desc}</div>
+            {/* Impact — only shown if the project has custom benefit cards */}
+            {project.benefitCards && project.benefitCards.length > 0 && (
+              <>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#0d7477', marginBottom: 8, fontFamily: 'Inter, sans-serif' }}>
+                  YOUR IMPACT
                 </div>
-              ))}
-            </div>
-
-            <div style={{ height: 1, background: '#E5E9EB', margin: '28px 0' }} />
+                <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 20 }}>ماذا يفعل تبرعك؟</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-3" style={{ gap: 16 }}>
+                  {project.benefitCards.map((card, i) => (
+                    <div key={i} style={{ background: '#F0F7F7', borderRadius: 14, padding: 18, textAlign: 'center' }}>
+                      <div style={{ fontSize: 28, marginBottom: 6 }}>{card.icon}</div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: '#0A5F62', fontFamily: 'Inter, sans-serif' }}>{card.value}</div>
+                      <div style={{ fontSize: 12, color: '#64748b', marginTop: 4, lineHeight: 1.5 }}>{card.label}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ height: 1, background: '#E5E9EB', margin: '28px 0' }} />
+              </>
+            )}
 
             {/* Donors */}
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#0d7477', marginBottom: 8, fontFamily: 'Inter, sans-serif' }}>

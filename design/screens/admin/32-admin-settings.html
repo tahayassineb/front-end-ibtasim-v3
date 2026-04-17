@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>32 — الإعدادات · ibtasim Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--p500:#0d7477;--p600:#0A5F62;--p400:#33C0C0;--p50:#E6F4F4;--p100:#CCF0F0;--surface:#f6f8f8;--teal-wash:#F0F7F7;--text:#0e1a1b;--text2:#64748b;--textm:#94a3b8;--border:#E5E9EB;--shadow-card:0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05);--shadow-primary:0 4px 14px rgba(13,116,119,.25);}
+body{font-family:'Tajawal',sans-serif;background:var(--surface);color:var(--text);}
+a{text-decoration:none;color:inherit;}
+.back-nav{padding:12px 20px;background:white;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px;}
+.admin-shell{display:flex;min-height:calc(100vh - 45px);}
+.sidebar{width:240px;background:white;border-left:1px solid var(--border);flex-shrink:0;}
+.sidebar-logo{padding:20px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.sidebar-logo-mark{width:38px;height:38px;background:var(--p500);border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:16px;}
+.sidebar-logo-name{font-size:16px;font-weight:800;}
+.sidebar-section{padding:16px 12px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--textm);font-family:'Inter';}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;margin:2px 8px;font-size:14px;font-weight:500;color:var(--text2);cursor:pointer;}
+.sidebar-item-active{background:var(--p500);color:white;font-weight:700;box-shadow:var(--shadow-primary);}
+.sidebar-item-icon{font-size:16px;width:20px;text-align:center;}
+.badge-red{display:inline-flex;align-items:center;justify-content:center;background:#ef4444;color:white;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;margin-right:auto;}
+.admin-topbar{height:56px;background:white;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;}
+.topbar-title{font-size:18px;font-weight:800;flex:1;}
+.main-content{flex:1;padding:24px;overflow-y:auto;}
+
+/* Tabs navigation */
+.settings-tabs{display:flex;gap:4px;background:white;border-radius:14px;border:1px solid var(--border);padding:6px;margin-bottom:20px;box-shadow:var(--shadow-card);}
+.stab{flex:1;height:36px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:none;color:var(--text2);font-family:'Tajawal';display:flex;align-items:center;justify-content:center;gap:6px;}
+.stab-active{background:var(--p500);color:white;box-shadow:var(--shadow-primary);}
+
+/* Settings section */
+.settings-card{background:white;border-radius:16px;border:1px solid var(--border);box-shadow:var(--shadow-card);overflow:hidden;margin-bottom:16px;}
+.settings-card-header{padding:16px 20px;border-bottom:1px solid var(--border);font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.settings-card-body{padding:20px;}
+
+/* Form fields */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.field-group-full{grid-column:1/-1;}
+.field-label{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:7px;display:block;}
+.field-input{width:100%;height:48px;border:1.5px solid var(--border);border-radius:12px;padding:0 14px;font-size:14px;font-family:'Tajawal';color:var(--text);outline:none;}
+.field-input:focus{border-color:var(--p500);box-shadow:0 0 0 3px rgba(13,116,119,.1);}
+.field-input-mono{font-family:'Inter';letter-spacing:.04em;}
+
+/* Bank info display */
+.rib-display{background:var(--teal-wash);border-radius:12px;padding:16px;border:1px solid var(--p100);text-align:center;margin-bottom:14px;}
+.rib-label{font-size:11px;font-weight:600;color:var(--textm);font-family:'Inter';text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+.rib-number{font-size:24px;font-weight:900;color:var(--p600);font-family:'Inter';letter-spacing:.06em;}
+
+/* WhatsApp status */
+.wa-status{display:flex;align-items:center;gap:10px;padding:14px;background:var(--teal-wash);border-radius:12px;margin-bottom:16px;border:1px solid var(--p100);}
+.wa-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.wa-dot-connected{background:#22c55e;}
+.wa-dot-disconnected{background:#ef4444;}
+.wa-status-label{font-size:14px;font-weight:700;}
+.wa-status-meta{font-size:12px;color:var(--text2);}
+.wa-btn-row{display:flex;gap:8px;margin-top:12px;}
+.wa-btn{flex:1;height:38px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Tajawal';border:none;}
+.wa-btn-connect{background:var(--p500);color:white;box-shadow:var(--shadow-primary);}
+.wa-btn-disconnect{background:#FEE2E2;color:#dc2626;}
+.wa-btn-sync{background:var(--teal-wash);color:var(--p600);border:1px solid var(--p100);}
+
+/* Toggle rows */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);}
+.toggle-row:last-child{border-bottom:none;}
+.toggle-info-title{font-size:14px;font-weight:600;}
+.toggle-info-desc{font-size:12px;color:var(--text2);margin-top:2px;}
+.toggle{width:44px;height:24px;background:var(--p500);border-radius:100px;position:relative;cursor:pointer;flex-shrink:0;}
+.toggle-knob{width:20px;height:20px;background:white;border-radius:50%;position:absolute;top:2px;left:22px;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.toggle-off{background:var(--border);}
+.toggle-off .toggle-knob{left:2px;}
+
+/* Save button */
+.save-btn{height:44px;padding:0 28px;background:var(--p500);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Tajawal';box-shadow:var(--shadow-primary);}
+
+/* Team member row */
+.team-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);}
+.team-row:last-child{border-bottom:none;}
+.team-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--p600),var(--p400));display:flex;align-items:center;justify-content:center;font-size:16px;color:white;font-weight:700;flex-shrink:0;}
+.team-info{flex:1;}
+.team-name{font-size:14px;font-weight:700;}
+.team-role{font-size:12px;color:var(--textm);}
+.team-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700;}
+.team-badge-admin{background:var(--p50);color:var(--p600);}
+.team-badge-super{background:#FEF3C7;color:#b45309;}
+</style>
+</head>
+<body>
+<div class="back-nav"><a href="../../index.html">← فهرس التصميم</a><span>/</span><span>32 — الإعدادات</span><span style="margin-right:auto;background:var(--p50);color:var(--p600);font-size:10px;font-weight:700;padding:2px 10px;border-radius:100px;">DESKTOP 1440px · Admin</span></div>
+<div class="admin-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-mark">ا</div>
+      <div class="sidebar-logo-name">ابتسام · إدارة</div>
+    </div>
+    <div class="sidebar-section">الرئيسية</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">📊</span>لوحة التحكم</div>
+    <div class="sidebar-section">المحتوى</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">📁</span>المشاريع</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">🤲</span>الكفالة</div>
+    <div class="sidebar-section">المالية</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">💰</span>التبرعات</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">✅</span>التحقق <span class="badge-red">7</span></div>
+    <div class="sidebar-section">المستخدمون</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">👥</span>المتبرعون</div>
+    <div class="sidebar-section">النظام</div>
+    <div class="sidebar-item sidebar-item-active"><span class="sidebar-item-icon">⚙️</span>الإعدادات</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">🔴</span>سجل الأخطاء <span class="badge-red">3</span></div>
+  </aside>
+
+  <div style="flex:1;display:flex;flex-direction:column;">
+    <div class="admin-topbar">
+      <div class="topbar-title">⚙️ الإعدادات</div>
+    </div>
+
+    <div class="main-content">
+      <!-- Tabs -->
+      <div class="settings-tabs">
+        <button class="stab stab-active">🏦 البنك</button>
+        <button class="stab">💬 واتساب</button>
+        <button class="stab">👥 الفريق</button>
+        <button class="stab">👤 حسابي</button>
+        <button class="stab">🔔 الإشعارات</button>
+      </div>
+
+      <!-- TAB 1: Bank settings (active) -->
+      <div class="settings-card">
+        <div class="settings-card-header">🏦 إعدادات التحويل البنكي</div>
+        <div class="settings-card-body">
+          <div class="rib-display">
+            <div class="rib-label">رقم الحساب الحالي (RIB)</div>
+            <div class="rib-number">007 780 0002 1234 5678 90</div>
+          </div>
+          <div class="form-grid">
+            <div>
+              <label class="field-label">اسم البنك</label>
+              <input class="field-input" type="text" value="بنك التجاري وفا بنك">
+            </div>
+            <div>
+              <label class="field-label">اسم الحساب (المستفيد)</label>
+              <input class="field-input" type="text" value="جمعية ابتسام للأعمال الخيرية">
+            </div>
+            <div class="field-group-full">
+              <label class="field-label">رقم RIB (24 خانة)</label>
+              <input class="field-input field-input-mono" type="text" value="007780000212345678900" dir="ltr">
+            </div>
+          </div>
+          <div style="margin-top:16px;display:flex;justify-content:flex-start;">
+            <button class="save-btn">💾 حفظ إعدادات البنك</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- WhatsApp preview (hidden, shown on tab 2) -->
+      <div class="settings-card" style="opacity:.45;pointer-events:none;">
+        <div class="settings-card-header">💬 إعدادات واتساب (WaSender)</div>
+        <div class="settings-card-body">
+          <div class="wa-status">
+            <div class="wa-dot wa-dot-connected"></div>
+            <div>
+              <div class="wa-status-label">✓ متصل — +212 661234567</div>
+              <div class="wa-status-meta">آخر تحديث: منذ 5 دقائق</div>
+            </div>
+          </div>
+          <div class="wa-btn-row">
+            <button class="wa-btn wa-btn-sync">🔄 مزامنة الحالة</button>
+            <button class="wa-btn wa-btn-disconnect">⊘ قطع الاتصال</button>
+          </div>
+          <div style="font-size:12px;color:var(--textm);margin-top:10px;font-style:italic;">الانتقال لتبويب "واتساب" لرؤية كافة الخيارات</div>
+        </div>
+      </div>
+
+      <!-- Team preview (hidden, shown on tab 3) -->
+      <div class="settings-card" style="opacity:.45;pointer-events:none;">
+        <div class="settings-card-header">👥 أعضاء الفريق</div>
+        <div class="settings-card-body">
+          <div class="team-row">
+            <div class="team-avatar">أ</div>
+            <div class="team-info"><div class="team-name">أحمد المدير</div><div class="team-role">+212 661234567</div></div>
+            <span class="team-badge team-badge-super">🔑 مدير عام</span>
+          </div>
+          <div class="team-row">
+            <div class="team-avatar">س</div>
+            <div class="team-info"><div class="team-name">سامية البكاري</div><div class="team-role">+212 677654321</div></div>
+            <span class="team-badge team-badge-admin">admin</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notifications tab preview -->
+      <div class="settings-card" style="opacity:.45;pointer-events:none;">
+        <div class="settings-card-header">🔔 إعدادات الإشعارات</div>
+        <div class="settings-card-body">
+          <div class="toggle-row">
+            <div><div class="toggle-info-title">إشعار عند تبرع جديد</div><div class="toggle-info-desc">واتساب للمدير عند كل تبرع جديد</div></div>
+            <div class="toggle"><div class="toggle-knob"></div></div>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-info-title">تأكيد للمتبرع تلقائياً</div><div class="toggle-info-desc">رسالة واتساب تلقائية عند قبول التبرع</div></div>
+            <div class="toggle"><div class="toggle-knob"></div></div>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-info-title">تذكير تجديد الكفالة</div><div class="toggle-info-desc">تذكير للكافل 3 أيام قبل موعد التجديد</div></div>
+            <div class="toggle toggle-off"><div class="toggle-knob"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>15 — التبرع: الخطوة 4 — رفع الوصل · ibtasim</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--p500:#0d7477;--p600:#0A5F62;--p400:#33C0C0;--p50:#E6F4F4;--p100:#CCF0F0;--surface:#f6f8f8;--teal-wash:#F0F7F7;--text:#0e1a1b;--text2:#64748b;--textm:#94a3b8;--border:#E5E9EB;--shadow-card:0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05);--shadow-primary:0 4px 14px rgba(13,116,119,.25);}
+body{font-family:'Tajawal',sans-serif;background:var(--teal-wash);color:var(--text);}
+a{text-decoration:none;color:inherit;}
+.back-nav{padding:12px 20px;background:white;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px;}
+.page-shell{display:flex;justify-content:center;padding:40px 20px;gap:48px;flex-wrap:wrap;}
+.mobile-frame{width:390px;min-height:820px;background:white;border-radius:40px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.08);flex-shrink:0;display:flex;flex-direction:column;}
+.mobile-bar{height:48px;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.mobile-notch{width:120px;height:32px;background:var(--text);border-radius:0 0 20px 20px;}
+.flow-top-bar{height:56px;display:flex;align-items:center;padding:0 20px;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0;}
+.flow-back{width:36px;height:36px;border-radius:50%;background:var(--teal-wash);display:flex;align-items:center;justify-content:center;font-size:16px;}
+.flow-title{font-size:15px;font-weight:700;}
+.flow-help{width:36px;height:36px;border-radius:50%;background:var(--teal-wash);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text2);}
+.seg-progress{padding:14px 20px 0;flex-shrink:0;}
+.seg-bar{display:flex;gap:4px;margin-bottom:6px;}
+.seg{flex:1;height:4px;border-radius:100px;background:var(--border);}
+.seg-done{background:var(--p500);}
+.seg-current{background:var(--p400);}
+.seg-label{font-size:11px;color:var(--textm);font-family:'Inter';}
+.project-ctx{margin:14px 16px;background:var(--teal-wash);border-radius:14px;padding:12px;display:flex;align-items:center;gap:12px;border:1px solid var(--p100);}
+.project-ctx-img{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,var(--p600),var(--p400));flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;}
+.ctx-amount{font-size:14px;font-weight:800;color:var(--p600);}
+.ctx-project{font-size:12px;color:var(--text2);}
+.step-content{flex:1;padding:16px;overflow-y:auto;}
+.step-title{font-size:18px;font-weight:800;margin-bottom:4px;}
+.step-sub{font-size:13px;color:var(--text2);margin-bottom:20px;}
+
+/* Upload zone */
+.upload-zone{border:2px dashed var(--border);border-radius:20px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:16px;background:var(--surface);}
+.upload-zone:hover{border-color:var(--p400);background:var(--p50);}
+.upload-icon{font-size:44px;margin-bottom:12px;display:block;}
+.upload-primary{font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.upload-secondary{font-size:12px;color:var(--textm);margin-bottom:14px;}
+.upload-browse-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;background:var(--p500);color:white;padding:8px 20px;border-radius:100px;box-shadow:var(--shadow-primary);}
+.upload-formats{font-size:11px;color:var(--textm);margin-top:10px;}
+
+/* Uploaded preview */
+.upload-preview{border:2px solid var(--p500);border-radius:20px;padding:16px;margin-bottom:16px;background:var(--p50);display:flex;gap:14px;align-items:flex-start;}
+.preview-thumb{width:72px;height:72px;border-radius:12px;background:linear-gradient(135deg,#e0e7ff,#c7d2fe);border:1px solid var(--p100);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;}
+.preview-info{flex:1;}
+.preview-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px;}
+.preview-meta{font-size:12px;color:var(--textm);margin-bottom:8px;font-family:'Inter';}
+.preview-status{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;background:#D1FAE5;color:#16a34a;padding:3px 10px;border-radius:100px;}
+.preview-remove{font-size:11px;color:#ef4444;cursor:pointer;text-decoration:underline;margin-top:6px;display:block;}
+
+/* Steps guide */
+.steps-guide{background:var(--teal-wash);border-radius:14px;padding:14px;margin-bottom:14px;border:1px solid var(--p100);}
+.steps-guide-title{font-size:12px;font-weight:700;color:var(--p600);margin-bottom:10px;}
+.guide-step{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;}
+.guide-step:last-child{margin-bottom:0;}
+.guide-num{width:22px;height:22px;border-radius:50%;background:var(--p500);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;}
+.guide-text{font-size:13px;color:var(--text2);line-height:1.5;}
+
+/* Tips */
+.tip-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);margin-bottom:6px;}
+.tip-icon{font-size:14px;flex-shrink:0;}
+
+.trust-bar{padding:10px 14px;background:var(--teal-wash);border-radius:10px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);margin-top:12px;}
+.flow-bottom{flex-shrink:0;padding:14px 16px;background:white;border-top:1px solid var(--border);}
+.flow-btn-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.flow-total{font-size:13px;color:var(--textm);}
+.flow-total strong{font-size:18px;font-weight:800;color:var(--p600);font-family:'Inter';}
+.flow-btn{flex:1;height:52px;background:var(--p500);color:white;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:var(--shadow-primary);font-family:'Tajawal';}
+.flow-btn-disabled{background:var(--border);color:var(--textm);box-shadow:none;cursor:not-allowed;}
+</style>
+</head>
+<body>
+<div class="back-nav"><a href="../../index.html">← فهرس التصميم</a><span>/</span><span>15 — التبرع: الخطوة 4 — رفع الوصل</span><span style="margin-right:auto;background:var(--p50);color:var(--p600);font-size:10px;font-weight:700;padding:2px 10px;border-radius:100px;">MOBILE 390px</span></div>
+<div class="page-shell">
+
+  <!-- Frame A: Empty upload state -->
+  <div class="mobile-frame">
+    <div class="mobile-bar"><div class="mobile-notch"></div></div>
+    <div class="flow-top-bar">
+      <div class="flow-back">←</div>
+      <div class="flow-title">إتمام التبرع</div>
+      <div class="flow-help">?</div>
+    </div>
+    <div class="seg-progress">
+      <div class="seg-bar">
+        <div class="seg seg-done"></div><div class="seg seg-done"></div>
+        <div class="seg seg-done"></div>
+        <div class="seg seg-current"></div>
+        <div class="seg"></div><div class="seg"></div>
+      </div>
+      <div class="seg-label">الخطوة 4 من 6 — رفع وصل التحويل</div>
+    </div>
+    <div class="project-ctx">
+      <div class="project-ctx-img">🎓</div>
+      <div>
+        <div class="ctx-amount">500 درهم</div>
+        <div class="ctx-project">مدرسة تافيلالت · تحويل بنكي</div>
+      </div>
+    </div>
+    <div class="step-content">
+      <div class="step-title">ارفع وصل التحويل</div>
+      <div class="step-sub">أرفق صورة وصل التحويل البنكي للتحقق من تبرعك</div>
+
+      <!-- Upload zone (empty state) -->
+      <div class="upload-zone">
+        <span class="upload-icon">📄</span>
+        <div class="upload-primary">اسحب وأفلت الوصل هنا</div>
+        <div class="upload-secondary">أو استخدم الكاميرا مباشرةً</div>
+        <div class="upload-browse-btn">📷 اختر من الجهاز</div>
+        <div class="upload-formats">PNG · JPG · PDF · حتى 10 ميغابايت</div>
+      </div>
+
+      <!-- Guide -->
+      <div class="steps-guide">
+        <div class="steps-guide-title">📋 ما الذي يجب أن يظهر في الوصل؟</div>
+        <div class="guide-step"><div class="guide-num">1</div><div class="guide-text">المبلغ: <strong>500 درهم</strong></div></div>
+        <div class="guide-step"><div class="guide-num">2</div><div class="guide-text">رقم الحساب المستفيد</div></div>
+        <div class="guide-step"><div class="guide-num">3</div><div class="guide-text">تاريخ ووقت العملية</div></div>
+        <div class="guide-step"><div class="guide-num">4</div><div class="guide-text">ختم / توقيع البنك أو الرقم المرجعي</div></div>
+      </div>
+
+      <div class="trust-bar">🔒 صورة الوصل محمية ولا تُشارك مع أي طرف ثالث</div>
+    </div>
+    <div class="flow-bottom">
+      <div class="flow-btn-row">
+        <div class="flow-total">المجموع<br><strong>500</strong> <span style="font-size:11px;color:var(--textm);">د.م</span></div>
+        <button class="flow-btn flow-btn-disabled">التالي: بياناتك ←</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Frame B: Uploaded state -->
+  <div class="mobile-frame">
+    <div class="mobile-bar"><div class="mobile-notch"></div></div>
+    <div class="flow-top-bar">
+      <div class="flow-back">←</div>
+      <div class="flow-title">إتمام التبرع</div>
+      <div class="flow-help">?</div>
+    </div>
+    <div class="seg-progress">
+      <div class="seg-bar">
+        <div class="seg seg-done"></div><div class="seg seg-done"></div>
+        <div class="seg seg-done"></div>
+        <div class="seg seg-current"></div>
+        <div class="seg"></div><div class="seg"></div>
+      </div>
+      <div class="seg-label">الخطوة 4 من 6 — رفع وصل التحويل</div>
+    </div>
+    <div class="project-ctx">
+      <div class="project-ctx-img">🎓</div>
+      <div>
+        <div class="ctx-amount">500 درهم</div>
+        <div class="ctx-project">مدرسة تافيلالت · تحويل بنكي</div>
+      </div>
+    </div>
+    <div class="step-content">
+      <div class="step-title">ارفع وصل التحويل</div>
+      <div class="step-sub">أرفق صورة وصل التحويل البنكي للتحقق من تبرعك</div>
+
+      <!-- Uploaded preview -->
+      <div class="upload-preview">
+        <div class="preview-thumb">🧾</div>
+        <div class="preview-info">
+          <div class="preview-name">receipt_transfer.jpg</div>
+          <div class="preview-meta">2.4 MB · JPG</div>
+          <div class="preview-status">✓ تم الرفع بنجاح</div>
+          <span class="preview-remove">× حذف والاستبدال</span>
+        </div>
+      </div>
+
+      <!-- Tips after upload -->
+      <div class="steps-guide" style="background:white;border:1px solid var(--p100);">
+        <div class="steps-guide-title" style="color:var(--p600);">✅ الوصل جاهز — سيتحقق فريقنا خلال:</div>
+        <div style="font-size:20px;font-weight:800;color:var(--p600);font-family:'Inter';margin:8px 0;">24 ساعة</div>
+        <div class="tip-row"><span class="tip-icon">📧</span><span>ستصلك رسالة تأكيد على هاتفك</span></div>
+        <div class="tip-row"><span class="tip-icon">🔔</span><span>ستتلقى إشعاراً عند اعتماد التبرع</span></div>
+        <div class="tip-row"><span class="tip-icon">📋</span><span>يمكنك متابعة حالة التبرع من ملفك الشخصي</span></div>
+      </div>
+
+      <div class="trust-bar">🔒 صورة الوصل محمية ولا تُشارك مع أي طرف ثالث</div>
+    </div>
+    <div class="flow-bottom">
+      <div class="flow-btn-row">
+        <div class="flow-total">المجموع<br><strong>500</strong> <span style="font-size:11px;color:var(--textm);">د.م</span></div>
+        <button class="flow-btn">التالي: بياناتك →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Note panel -->
+  <div style="max-width:320px;padding-top:100px;">
+    <div style="background:white;border-radius:14px;padding:18px;border:1px solid var(--border);box-shadow:var(--shadow-card);">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--p500);margin-bottom:8px;font-family:'Inter';">حالتان — فارغة ومكتملة</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.7;">
+        <strong style="color:var(--text);">الإطار الأول:</strong> منطقة الرفع الفارغة — زر "التالي" معطّل (رمادي) حتى يرفع المستخدم الوصل.<br><br>
+        <strong style="color:var(--text);">الإطار الثاني:</strong> بعد الرفع — يظهر preview مع اسم الملف والحجم وشارة "تم الرفع بنجاح" + زر الحذف/الاستبدال. زر "التالي" يصبح نشطاً.
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

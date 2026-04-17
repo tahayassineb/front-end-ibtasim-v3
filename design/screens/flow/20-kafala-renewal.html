@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>20 — تجديد الكفالة · ibtasim</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--p500:#0d7477;--p600:#0A5F62;--p400:#33C0C0;--p50:#E6F4F4;--p100:#CCF0F0;--surface:#f6f8f8;--teal-wash:#F0F7F7;--text:#0e1a1b;--text2:#64748b;--textm:#94a3b8;--border:#E5E9EB;--k:#C4A882;--kdark:#8B6914;--kbg:#F5EBD9;--k100:#E8D4B0;--shadow-card:0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05);--shadow-primary:0 4px 14px rgba(13,116,119,.25);--shadow-k:0 4px 14px rgba(196,168,130,.35);}
+body{font-family:'Tajawal',sans-serif;background:var(--teal-wash);color:var(--text);}
+a{text-decoration:none;color:inherit;}
+.back-nav{padding:12px 20px;background:white;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px;}
+.page-shell{display:flex;justify-content:center;padding:40px 20px;gap:48px;flex-wrap:wrap;}
+.mobile-frame{width:390px;min-height:820px;background:white;border-radius:40px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.08);flex-shrink:0;display:flex;flex-direction:column;}
+.mobile-bar{height:48px;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.mobile-notch{width:120px;height:32px;background:var(--text);border-radius:0 0 20px 20px;}
+
+/* Renewal hero banner */
+.renewal-hero{background:linear-gradient(135deg,#3D2506,var(--kdark),var(--k));padding:28px 20px;display:flex;align-items:center;gap:16px;}
+.renewal-avatar{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0;}
+.renewal-hero-text{}
+.renewal-hero-label{font-size:11px;font-weight:600;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}
+.renewal-hero-name{font-size:22px;font-weight:900;color:white;}
+.renewal-hero-meta{font-size:12px;color:rgba(255,255,255,.7);margin-top:2px;}
+.renewal-hero-streak{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.15);padding:4px 10px;border-radius:100px;font-size:11px;font-weight:700;color:white;margin-top:8px;}
+
+.step-content{flex:1;padding:16px;overflow-y:auto;}
+
+/* Relationship card */
+.relation-card{background:var(--kbg);border-radius:16px;padding:16px;border:1px solid var(--k100);margin-bottom:16px;}
+.relation-title{font-size:12px;font-weight:700;color:var(--kdark);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em;font-family:'Inter';}
+.relation-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.rstat{text-align:center;}
+.rstat-num{font-size:22px;font-weight:900;color:var(--kdark);font-family:'Inter';}
+.rstat-label{font-size:11px;color:var(--text2);margin-top:2px;}
+
+/* Update card -->
+.update-card{background:white;border-radius:16px;border:1px solid var(--k100);overflow:hidden;margin-bottom:16px;}
+.update-header{background:linear-gradient(90deg,var(--kbg),white);padding:12px 16px;border-bottom:1px solid var(--k100);font-size:13px;font-weight:700;color:var(--kdark);}
+.update-content{padding:14px 16px;}
+.update-photo{width:100%;height:140px;background:linear-gradient(135deg,#e8d4b0,#c4a882);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:48px;margin-bottom:12px;}
+.update-text{font-size:13px;color:var(--text2);line-height:1.7;}
+.update-date{font-size:11px;color:var(--textm);margin-top:8px;font-family:'Inter';}
+
+/* Renewal CTA -->
+.renewal-cta{background:linear-gradient(135deg,var(--kdark),var(--k));border-radius:16px;padding:20px;margin-bottom:14px;text-align:center;}
+.renewal-cta-title{font-size:16px;font-weight:800;color:white;margin-bottom:4px;}
+.renewal-cta-sub{font-size:12px;color:rgba(255,255,255,.8);margin-bottom:16px;}
+.renew-btn{width:100%;height:52px;background:white;color:var(--kdark);border:none;border-radius:14px;font-size:16px;font-weight:800;cursor:pointer;font-family:'Tajawal';}
+.pause-link{display:block;text-align:center;font-size:12px;color:rgba(255,255,255,.7);margin-top:10px;cursor:pointer;text-decoration:underline;}
+
+/* History -->
+.history-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
+.history-row:last-child{border-bottom:none;}
+.history-month{font-size:13px;font-weight:600;}
+.history-amount{font-size:13px;font-weight:700;color:var(--kdark);font-family:'Inter';}
+.history-status{font-size:11px;font-weight:600;color:#16a34a;}
+
+.flow-bottom{flex-shrink:0;padding:14px 16px;background:white;border-top:1px solid var(--border);display:flex;gap:10px;}
+.kafala-btn{flex:1;height:52px;background:var(--kdark);color:white;border:none;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:var(--shadow-k);font-family:'Tajawal';}
+.cancel-btn{height:52px;padding:0 16px;border:1.5px solid var(--border);border-radius:14px;font-size:13px;font-weight:600;color:var(--text2);background:white;cursor:pointer;font-family:'Tajawal';}
+</style>
+</head>
+<body>
+<div class="back-nav"><a href="../../index.html">← فهرس التصميم</a><span>/</span><span>20 — تجديد الكفالة</span><span style="margin-right:auto;background:var(--kbg);color:var(--kdark);font-size:10px;font-weight:700;padding:2px 10px;border-radius:100px;">MOBILE 390px · لون الكفالة</span></div>
+<div class="page-shell">
+
+  <div class="mobile-frame">
+    <div class="mobile-bar"><div class="mobile-notch"></div></div>
+
+    <!-- Renewal hero -->
+    <div class="renewal-hero">
+      <div class="renewal-avatar">👦</div>
+      <div class="renewal-hero-text">
+        <div class="renewal-hero-label">🤲 كفالتك النشطة</div>
+        <div class="renewal-hero-name">محمد</div>
+        <div class="renewal-hero-meta">📍 درعة تافيلالت · 9 سنوات</div>
+        <div class="renewal-hero-streak">🔥 8 أشهر متواصلة</div>
+      </div>
+    </div>
+
+    <div class="step-content">
+
+      <!-- Relationship stats -->
+      <div class="relation-card">
+        <div class="relation-title">علاقتك مع محمد</div>
+        <div class="relation-stats">
+          <div class="rstat">
+            <div class="rstat-num">8</div>
+            <div class="rstat-label">أشهر كفالة</div>
+          </div>
+          <div class="rstat">
+            <div class="rstat-num">2,400</div>
+            <div class="rstat-label">د.م أنفقت</div>
+          </div>
+          <div class="rstat">
+            <div class="rstat-num">3</div>
+            <div class="rstat-label">تقارير وصلت</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Latest update from child -->
+      <div class="update-card">
+        <div class="update-header">📸 آخر تحديث عن محمد — يناير 2025</div>
+        <div class="update-content">
+          <div class="update-photo">🎒</div>
+          <div class="update-text">
+            حصل محمد على المرتبة الثانية في فصله هذا الشهر! يواظب على حضور الدروس يومياً وأظهر تحسناً ملحوظاً في الرياضيات والعربية. العائلة تبعث لك بجزيل الشكر والامتنان.
+          </div>
+          <div class="update-date">تقرير يناير 2025</div>
+        </div>
+      </div>
+
+      <!-- Renewal CTA -->
+      <div class="renewal-cta">
+        <div class="renewal-cta-title">🔔 موعد تجديد كفالتك</div>
+        <div class="renewal-cta-sub">تجديد الشهر التاسع — 300 درهم</div>
+        <button class="renew-btn">🤲 جدّد الكفالة الآن</button>
+        <span class="pause-link">إيقاف مؤقت أو إلغاء الكفالة</span>
+      </div>
+
+      <!-- Payment history -->
+      <div style="font-size:13px;font-weight:700;color:var(--kdark);margin-bottom:10px;">📋 سجل مدفوعاتك</div>
+      <div class="history-row">
+        <div class="history-month">ديسمبر 2024</div>
+        <div class="history-amount">300 د.م</div>
+        <div class="history-status">✓ مؤكد</div>
+      </div>
+      <div class="history-row">
+        <div class="history-month">نوفمبر 2024</div>
+        <div class="history-amount">300 د.م</div>
+        <div class="history-status">✓ مؤكد</div>
+      </div>
+      <div class="history-row">
+        <div class="history-month">أكتوبر 2024</div>
+        <div class="history-amount">300 د.م</div>
+        <div class="history-status">✓ مؤكد</div>
+      </div>
+      <div style="text-align:center;margin-top:10px;">
+        <span style="font-size:12px;color:var(--p500);cursor:pointer;">عرض كل السجل ←</span>
+      </div>
+
+    </div>
+
+    <div class="flow-bottom">
+      <button class="kafala-btn">🤲 تجديد — 300 درهم</button>
+      <button class="cancel-btn">إيقاف</button>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

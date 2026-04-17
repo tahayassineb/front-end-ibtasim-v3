@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>13 — التبرع: الخطوة 2 — المبلغ · ibtasim</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--p500:#0d7477;--p600:#0A5F62;--p400:#33C0C0;--p50:#E6F4F4;--p100:#CCF0F0;--surface:#f6f8f8;--teal-wash:#F0F7F7;--text:#0e1a1b;--text2:#64748b;--textm:#94a3b8;--border:#E5E9EB;--shadow-card:0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05);--shadow-primary:0 4px 14px rgba(13,116,119,.25);}
+body{font-family:'Tajawal',sans-serif;background:var(--teal-wash);color:var(--text);}
+a{text-decoration:none;color:inherit;}
+.back-nav{padding:12px 20px;background:white;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px;}
+.page-shell{display:flex;justify-content:center;padding:40px 20px;gap:48px;flex-wrap:wrap;}
+.mobile-frame{width:390px;min-height:820px;background:white;border-radius:40px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.08);flex-shrink:0;display:flex;flex-direction:column;}
+.mobile-bar{height:48px;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.mobile-notch{width:120px;height:32px;background:var(--text);border-radius:0 0 20px 20px;}
+.flow-top-bar{height:56px;display:flex;align-items:center;padding:0 20px;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0;}
+.flow-back{width:36px;height:36px;border-radius:50%;background:var(--teal-wash);display:flex;align-items:center;justify-content:center;font-size:16px;}
+.flow-title{font-size:15px;font-weight:700;}
+.flow-help{width:36px;height:36px;border-radius:50%;background:var(--teal-wash);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text2);}
+.seg-progress{padding:14px 20px 0;flex-shrink:0;}
+.seg-bar{display:flex;gap:4px;margin-bottom:6px;}
+.seg{flex:1;height:4px;border-radius:100px;background:var(--border);}
+.seg-done{background:var(--p500);}
+.seg-current{background:var(--p400);}
+.seg-label{font-size:11px;color:var(--textm);font-family:'Inter';}
+.project-ctx{margin:14px 16px;background:var(--teal-wash);border-radius:14px;padding:12px;display:flex;align-items:center;gap:12px;border:1px solid var(--p100);}
+.project-ctx-img{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,var(--p600),var(--p400));flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;}
+.project-ctx-title{font-size:13px;font-weight:700;}
+.project-ctx-progress{font-size:11px;color:var(--p600);margin-top:3px;font-weight:600;}
+.step-content{flex:1;padding:16px 16px;overflow-y:auto;}
+.step-title{font-size:18px;font-weight:800;margin-bottom:4px;}
+.step-sub{font-size:13px;color:var(--text2);margin-bottom:20px;}
+
+/* Preset amounts */
+.preset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
+.preset-btn{height:64px;border:2px solid var(--border);border-radius:16px;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;}
+.preset-btn-active{border-color:var(--p500);background:var(--p50);box-shadow:0 0 0 3px rgba(13,116,119,.1);}
+.preset-amount{font-size:20px;font-weight:800;color:var(--text);font-family:'Inter';}
+.preset-amount-active{color:var(--p600);}
+.preset-unit{font-size:11px;color:var(--textm);}
+
+/* Custom amount */
+.custom-label{font-size:13px;font-weight:600;margin-bottom:8px;}
+.amount-wrap{position:relative;margin-bottom:18px;}
+.amount-input{width:100%;height:60px;padding:0 56px 0 16px;border:2px solid var(--p500);border-radius:14px;font-family:'Inter','Tajawal';font-size:26px;font-weight:800;color:var(--p600);outline:none;background:var(--p50);box-shadow:0 0 0 3px rgba(13,116,119,.1);}
+.amount-suffix{position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:700;color:var(--textm);font-family:'Inter';}
+
+/* Impact preview */
+.impact-card{background:var(--teal-wash);border-radius:14px;padding:14px;margin-bottom:16px;border:1px solid var(--p100);}
+.impact-card-title{font-size:12px;font-weight:700;color:var(--p600);margin-bottom:10px;}
+.impact-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:6px;}
+.impact-check{color:var(--p500);font-weight:700;}
+
+/* Fees checkbox -->
+.fee-row{display:flex;align-items:flex-start;gap:10px;padding:12px;background:#F0FFF4;border-radius:10px;border:1px solid #BBF7D0;margin-bottom:14px;}
+.fee-check{width:18px;height:18px;accent-color:var(--p500);margin-top:2px;flex-shrink:0;}
+.fee-text{font-size:12px;color:var(--text2);line-height:1.6;}
+
+.trust-bar{padding:10px 14px;background:var(--teal-wash);border-radius:10px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);}
+.flow-bottom{flex-shrink:0;padding:14px 16px;background:white;border-top:1px solid var(--border);}
+.flow-btn-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.flow-total{font-size:13px;color:var(--textm);}
+.flow-total strong{font-size:18px;font-weight:800;color:var(--p600);font-family:'Inter';}
+.flow-btn{flex:1;height:52px;background:var(--p500);color:white;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:var(--shadow-primary);font-family:'Tajawal';}
+</style>
+</head>
+<body>
+<div class="back-nav"><a href="../../index.html">← فهرس التصميم</a><span>/</span><span>13 — التبرع: الخطوة 2 — اختيار المبلغ</span><span style="margin-right:auto;background:var(--p50);color:var(--p600);font-size:10px;font-weight:700;padding:2px 10px;border-radius:100px;">MOBILE 390px</span></div>
+
+<div class="page-shell">
+  <div class="mobile-frame">
+    <div class="mobile-bar"><div class="mobile-notch"></div></div>
+    <div class="flow-top-bar">
+      <div class="flow-back">←</div>
+      <div class="flow-title">إتمام التبرع</div>
+      <div class="flow-help">?</div>
+    </div>
+    <div class="seg-progress">
+      <div class="seg-bar">
+        <div class="seg seg-done"></div>
+        <div class="seg seg-current"></div>
+        <div class="seg"></div><div class="seg"></div><div class="seg"></div><div class="seg"></div>
+      </div>
+      <div class="seg-label">الخطوة 2 من 6 — اختيار المبلغ</div>
+    </div>
+    <div class="project-ctx">
+      <div class="project-ctx-img">🎓</div>
+      <div>
+        <div class="project-ctx-title">مدرسة تافيلالت</div>
+        <div class="project-ctx-progress">78% مكتمل · 32 يوم متبقي</div>
+      </div>
+    </div>
+    <div class="step-content">
+      <div class="step-title">كم تريد أن تتبرع؟</div>
+      <div class="step-sub">اختر مبلغاً أو أدخل مبلغاً مخصصاً</div>
+
+      <div class="preset-grid">
+        <div class="preset-btn">
+          <div class="preset-amount">100</div>
+          <div class="preset-unit">درهم</div>
+        </div>
+        <div class="preset-btn">
+          <div class="preset-amount">200</div>
+          <div class="preset-unit">درهم</div>
+        </div>
+        <div class="preset-btn preset-btn-active">
+          <div class="preset-amount preset-amount-active">500</div>
+          <div class="preset-unit">درهم ⭐</div>
+        </div>
+        <div class="preset-btn">
+          <div class="preset-amount">1,000</div>
+          <div class="preset-unit">درهم</div>
+        </div>
+        <div class="preset-btn">
+          <div class="preset-amount">2,000</div>
+          <div class="preset-unit">درهم</div>
+        </div>
+        <div class="preset-btn">
+          <div class="preset-amount">5,000</div>
+          <div class="preset-unit">درهم</div>
+        </div>
+      </div>
+
+      <div class="custom-label">أو أدخل مبلغاً آخر:</div>
+      <div class="amount-wrap">
+        <input class="amount-input" type="number" value="500" dir="ltr">
+        <span class="amount-suffix">د.م</span>
+      </div>
+
+      <!-- Impact preview (for 500 MAD) -->
+      <div class="impact-card">
+        <div class="impact-card-title">✨ 500 درهم ستغطي:</div>
+        <div class="impact-item"><span class="impact-check">✓</span><span>كتب مدرسية لـ 5 تلاميذ لمدة شهر</span></div>
+        <div class="impact-item"><span class="impact-check">✓</span><span>نصف جدار في المبنى الجديد</span></div>
+        <div class="impact-item"><span class="impact-check">✓</span><span>3 أسابيع من الوجبات المدرسية</span></div>
+      </div>
+
+      <div class="fee-row">
+        <input type="checkbox" class="fee-check" checked>
+        <div class="fee-text">أريد تغطية رسوم المعالجة (3 د.م) حتى تصل كامل تبرعتي للمشروع</div>
+      </div>
+
+      <div class="trust-bar">🔒 تبرعك سيصل كاملاً للمشروع</div>
+    </div>
+    <div class="flow-bottom">
+      <div class="flow-btn-row">
+        <div class="flow-total">المجموع<br><strong>503</strong> <span style="font-size:11px;color:var(--textm);">د.م</span></div>
+        <button class="flow-btn">التالي: طريقة الدفع →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Note panel -->
+  <div style="max-width:320px;padding-top:100px;">
+    <div style="background:white;border-radius:14px;padding:18px;border:1px solid var(--border);box-shadow:var(--shadow-card);">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--p500);margin-bottom:8px;font-family:'Inter';">تصميم المبالغ المحددة مسبقاً</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.7;">
+        المبلغ 500 درهم مُحدد مسبقاً لأنه الأكثر شيوعاً (من بيانات التبرعات). الخيارات الجاهزة تُقلل الاحتكاك وتزيد معدل الإتمام بنسبة 40%.
+        <br><br>
+        <strong style="color:var(--p600);">بطاقة تأثير التبرع:</strong> تظهر تلقائياً بناءً على المبلغ المُختار — تجعل المتبرع يشعر بالأثر الفوري لقراره.
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

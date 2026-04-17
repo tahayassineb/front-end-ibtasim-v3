@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>07 — تسجيل الدخول · ibtasim</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--p500:#0d7477;--p600:#0A5F62;--p400:#33C0C0;--p50:#E6F4F4;--p100:#CCF0F0;--surface:#f6f8f8;--teal-wash:#F0F7F7;--text:#0e1a1b;--text2:#64748b;--textm:#94a3b8;--border:#E5E9EB;--success:#22c55e;--error:#ef4444;--shadow-card:0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05);--shadow-primary:0 4px 14px rgba(13,116,119,.25);--shadow-lg:0 10px 15px rgba(0,0,0,.10);}
+body{font-family:'Tajawal',sans-serif;background:var(--teal-wash);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
+a{text-decoration:none;color:inherit;}
+.back-nav{padding:12px 20px;background:white;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px;}
+
+/* Full page layout — shows mobile frame centered */
+.page-shell{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;gap:60px;}
+.mobile-frame{width:390px;background:var(--teal-wash);border-radius:40px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.08);min-height:780px;flex-shrink:0;}
+.mobile-bar{height:48px;background:var(--teal-wash);display:flex;align-items:center;justify-content:center;}
+.mobile-notch{width:120px;height:32px;background:var(--text);border-radius:0 0 20px 20px;}
+.mobile-content{padding:0;background:var(--teal-wash);}
+
+/* Screen content */
+.screen-top-bar{height:52px;display:flex;align-items:center;padding:0 20px;justify-content:space-between;}
+.back-btn{width:36px;height:36px;border-radius:50%;background:white;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;box-shadow:var(--shadow-card);}
+.top-help{font-size:13px;color:var(--p500);font-weight:600;}
+
+.logo-section{text-align:center;padding:24px 20px 20px;}
+.logo-mark{width:60px;height:60px;background:var(--p500);border-radius:18px;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:26px;margin:0 auto 12px;box-shadow:var(--shadow-primary);}
+.logo-name{font-size:22px;font-weight:900;}
+.logo-sub{font-size:13px;color:var(--text2);margin-top:2px;}
+
+.auth-card{margin:0 16px;background:white;border-radius:24px;padding:24px;box-shadow:var(--shadow-lg);}
+.auth-title{font-size:20px;font-weight:800;margin-bottom:4px;}
+.auth-sub{font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.6;}
+
+.form-group{margin-bottom:16px;}
+.form-label{display:block;font-size:13px;font-weight:600;margin-bottom:7px;}
+.form-input{width:100%;height:52px;padding:0 16px;border:1.5px solid var(--border);border-radius:12px;font-family:'Tajawal';font-size:14px;color:var(--text);outline:none;background:white;transition:border-color .2s;}
+.form-input:focus{border-color:var(--p500);box-shadow:0 0 0 3px rgba(13,116,119,.1);}
+.phone-wrap{display:flex;height:52px;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .2s;}
+.phone-wrap:focus-within{border-color:var(--p500);box-shadow:0 0 0 3px rgba(13,116,119,.1);}
+.phone-prefix{display:flex;align-items:center;gap:6px;padding:0 12px;background:var(--teal-wash);border-left:1.5px solid var(--border);font-size:13px;font-weight:600;color:var(--text);cursor:pointer;white-space:nowrap;}
+.phone-number{flex:1;border:none;outline:none;padding:0 12px;font-family:'Tajawal';font-size:14px;background:transparent;direction:ltr;}
+.pwd-wrap{position:relative;}
+.pwd-wrap .form-input{padding-left:48px;}
+.pwd-toggle{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--textm);cursor:pointer;font-size:18px;}
+.forgot-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.remember-label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);}
+.forgot-link{font-size:13px;color:var(--p500);font-weight:600;}
+.submit-btn{width:100%;height:52px;background:var(--p500);color:white;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:var(--shadow-primary);font-family:'Tajawal';margin-bottom:16px;}
+.divider-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.divider-line{flex:1;height:1px;background:var(--border);}
+.divider-text{font-size:12px;color:var(--textm);}
+.register-row{text-align:center;font-size:14px;color:var(--text2);}
+.register-link{color:var(--p500);font-weight:700;}
+
+/* Trust & social proof */
+.trust-section{padding:20px;text-align:center;}
+.social-proof{font-size:13px;color:var(--text2);margin-bottom:12px;}
+.social-proof strong{color:var(--p600);}
+.trust-badges{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;}
+.trust-badge{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;background:white;border:1px solid var(--border);border-radius:100px;font-size:11px;font-weight:600;color:var(--text2);box-shadow:var(--shadow-card);}
+
+/* Annotations panel */
+.annotations{flex:1;max-width:400px;padding-top:60px;}
+.annotation-title{font-size:18px;font-weight:800;color:var(--text);margin-bottom:20px;}
+.annotation-item{background:white;border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid var(--border);box-shadow:var(--shadow-card);}
+.annotation-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--p500);margin-bottom:6px;font-family:'Inter';}
+.annotation-text{font-size:13px;color:var(--text2);line-height:1.65;}
+</style>
+</head>
+<body>
+<div class="back-nav"><a href="../../index.html">← فهرس التصميم</a><span>/</span><span>07 — تسجيل الدخول</span><span style="margin-right:auto;background:var(--p50);color:var(--p600);font-size:10px;font-weight:700;padding:2px 10px;border-radius:100px;">MOBILE 390px</span></div>
+
+<div class="page-shell">
+  <!-- Mobile Frame -->
+  <div class="mobile-frame">
+    <div class="mobile-bar"><div class="mobile-notch"></div></div>
+    <div class="mobile-content">
+
+      <div class="screen-top-bar">
+        <div class="back-btn">←</div>
+        <div class="top-help">تحتاج مساعدة؟</div>
+      </div>
+
+      <div class="logo-section">
+        <div class="logo-mark">ا</div>
+        <div class="logo-name">ابتسام</div>
+        <div class="logo-sub">جمعية خيرية معتمدة</div>
+      </div>
+
+      <div class="auth-card">
+        <h1 class="auth-title">مرحباً بعودتك 👋</h1>
+        <p class="auth-sub">سجّل دخولك للمتابعة ومتابعة تبرعاتك</p>
+
+        <div class="form-group">
+          <label class="form-label">رقم الهاتف</label>
+          <div class="phone-wrap" style="border-color:var(--p400);">
+            <div class="phone-prefix">🇲🇦 +212 ▾</div>
+            <input class="phone-number" type="tel" placeholder="6 XX XX XX XX" value="6 12 34 56 78">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">كلمة المرور</label>
+          <div class="pwd-wrap">
+            <input class="form-input" type="password" value="••••••••">
+            <span class="pwd-toggle">👁</span>
+          </div>
+        </div>
+
+        <div class="forgot-row">
+          <label class="remember-label"><input type="checkbox" checked style="accent-color:var(--p500)"> تذكرني</label>
+          <span class="forgot-link">نسيت كلمة المرور؟</span>
+        </div>
+
+        <button class="submit-btn">تسجيل الدخول</button>
+
+        <div class="divider-row">
+          <div class="divider-line"></div>
+          <div class="divider-text">أو</div>
+          <div class="divider-line"></div>
+        </div>
+
+        <div class="register-row">
+          ليس لديك حساب؟ <span class="register-link">إنشاء حساب جديد</span>
+        </div>
+      </div>
+
+      <div class="trust-section">
+        <div class="social-proof">انضم إلى <strong>+4,200 متبرع</strong> يثقون بنا</div>
+        <div class="trust-badges">
+          <span class="trust-badge">🔒 SSL محمي</span>
+          <span class="trust-badge">✓ معتمد رسمياً</span>
+          <span class="trust-badge">💬 دعم 24/7</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Annotations -->
+  <div class="annotations">
+    <div class="annotation-title">📝 ملاحظات التصميم</div>
+    <div class="annotation-item">
+      <div class="annotation-label">خلفية الصفحة</div>
+      <div class="annotation-text">تستخدم <code>surface-teal-wash #F0F7F7</code> بدلاً من الأبيض — تمنح شعوراً بالثقة والحيوية دون أن تكون صارخة</div>
+    </div>
+    <div class="annotation-item">
+      <div class="annotation-label">الشعار في المنتصف</div>
+      <div class="annotation-text">الشعار بارز وكبير أعلى النموذج — يؤكد هوية الجمعية قبل أن يبدأ المستخدم في ملء البيانات</div>
+    </div>
+    <div class="annotation-item">
+      <div class="annotation-label">بادئة الهاتف</div>
+      <div class="annotation-text">الحقل الأول هو رقم الهاتف مع بادئة المغرب +212 — مألوف للمستخدم المغربي وأسرع من البريد الإلكتروني</div>
+    </div>
+    <div class="annotation-item">
+      <div class="annotation-label">إشارات الثقة</div>
+      <div class="annotation-text">ثلاثة عناصر في أسفل النموذج: SSL + اعتماد + دعم — تطمئن المستخدم قبل إدخال بياناته</div>
+    </div>
+    <div class="annotation-item">
+      <div class="annotation-label">الإثبات الاجتماعي</div>
+      <div class="annotation-text">"انضم إلى +4,200 متبرع" — يخفف القلق ويشجع على التسجيل من خلال الدليل الاجتماعي</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

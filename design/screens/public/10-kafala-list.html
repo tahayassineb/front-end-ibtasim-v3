@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10 — كفالة الأيتام · ibtasim</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--p500:#0d7477;--p600:#0A5F62;--p400:#33C0C0;--p50:#E6F4F4;--surface:#f6f8f8;--teal-wash:#F0F7F7;--text:#0e1a1b;--text2:#64748b;--textm:#94a3b8;--border:#E5E9EB;--k:#C4A882;--kdark:#8B6914;--kbg:#F5EBD9;--k100:#E8D4B0;--shadow-card:0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05);--shadow-primary:0 4px 14px rgba(13,116,119,.25);--shadow-k:0 4px 14px rgba(196,168,130,.35);--shadow-lg:0 10px 15px rgba(0,0,0,.10);}
+body{font-family:'Tajawal',sans-serif;background:var(--surface);color:var(--text);}
+a{text-decoration:none;color:inherit;}
+.back-nav{padding:12px 20px;background:white;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px;}
+.main-header{background:white;border-bottom:1px solid var(--border);box-shadow:var(--shadow-card);}
+.header-inner{max-width:1200px;margin:0 auto;padding:0 28px;height:64px;display:flex;align-items:center;justify-content:space-between;}
+.logo{display:flex;align-items:center;gap:10px;}.logo-mark{width:38px;height:38px;background:var(--p500);border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:16px;}.logo-name{font-size:20px;font-weight:800;}
+.nav-links{display:flex;gap:2px;}.nav-link{height:36px;padding:0 14px;border-radius:10px;font-size:14px;font-weight:500;color:var(--text2);display:flex;align-items:center;}.nav-link-active{background:var(--kbg);color:var(--kdark);font-weight:600;}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:none;cursor:pointer;font-family:'Tajawal';font-weight:600;border-radius:100px;}
+.btn-sm{height:36px;padding:0 16px;font-size:13px;}.btn-md{height:44px;padding:0 22px;font-size:14px;}
+.btn-primary{background:var(--p500);color:white;box-shadow:var(--shadow-primary);}
+.btn-kafala{background:var(--kdark);color:white;box-shadow:var(--shadow-k);}
+.btn-soft{background:var(--p50);color:var(--p600);}
+.badge{display:inline-flex;align-items:center;gap:4px;border-radius:100px;font-weight:600;font-size:11px;padding:3px 10px;}
+.badge-available{background:#D1FAE5;color:#16a34a;}
+.badge-sponsored{background:var(--k100);color:var(--kdark);}
+
+/* Kafala hero */
+.kafala-hero{background:linear-gradient(160deg,#3D2506,#6B4F12,#C4A882);padding:68px 0;text-align:center;position:relative;overflow:hidden;}
+.kafala-hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23C4A882' fill-opacity='0.08'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/svg%3E");}
+.hero-inner{max-width:640px;margin:0 auto;padding:0 28px;position:relative;z-index:1;}
+.kafala-overline{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.18em;color:var(--k100);margin-bottom:12px;font-family:'Inter';}
+.kafala-title{font-size:44px;font-weight:900;color:white;margin-bottom:14px;line-height:1.1;}
+.kafala-title span{color:var(--k);}
+.kafala-sub{font-size:16px;color:rgba(255,255,255,.75);line-height:1.8;margin-bottom:28px;}
+.kafala-cta-btn{height:56px;padding:0 36px;background:white;color:var(--kdark);border:none;border-radius:100px;font-size:17px;font-weight:800;cursor:pointer;font-family:'Tajawal';box-shadow:0 6px 20px rgba(0,0,0,.2);}
+.hero-stat-row{display:flex;justify-content:center;gap:40px;margin-top:32px;}
+.hero-stat{text-align:center;}
+.hero-stat-num{font-size:28px;font-weight:900;color:white;font-family:'Inter';}
+.hero-stat-label{font-size:12px;color:rgba(255,255,255,.65);}
+
+/* Filters */
+.filters-bar{background:white;border-bottom:1px solid var(--border);position:sticky;top:64px;z-index:40;box-shadow:var(--shadow-card);}
+.filters-inner{max-width:1200px;margin:0 auto;padding:14px 28px;display:flex;align-items:center;gap:14px;}
+.chip{height:36px;padding:0 18px;border-radius:100px;font-size:13px;font-weight:500;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;}
+.chip-active{background:var(--kdark);color:white;border-color:var(--kdark);box-shadow:var(--shadow-k);}
+
+/* Grid */
+.content{max-width:1200px;margin:0 auto;padding:36px 28px;}
+.section-label{font-size:14px;font-weight:700;color:var(--text2);margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;}
+.kafala-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;}
+
+/* Orphan card */
+.orphan-card{background:white;border-radius:20px;border:1px solid var(--border);box-shadow:var(--shadow-card);overflow:hidden;transition:transform .2s,box-shadow .2s;}
+.orphan-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);}
+.orphan-card-top{padding:24px 20px 16px;text-align:center;background:linear-gradient(180deg,var(--kbg) 0%,white 100%);}
+.orphan-avatar{width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,var(--kdark),var(--k));margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:40px;border:3px solid white;box-shadow:0 4px 12px rgba(196,168,130,.4);}
+.orphan-name{font-size:17px;font-weight:800;color:var(--text);}
+.orphan-age{font-size:13px;color:var(--kdark);font-weight:600;margin-top:2px;}
+.orphan-location{font-size:12px;color:var(--textm);margin-top:4px;}
+.orphan-card-body{padding:16px;}
+.orphan-price{font-size:20px;font-weight:900;color:var(--kdark);text-align:center;margin-bottom:12px;}
+.orphan-price span{font-size:13px;font-weight:500;color:var(--textm);}
+.sponsor-btn{width:100%;height:44px;background:var(--kdark);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Tajawal';box-shadow:var(--shadow-k);}
+.sponsored-btn{width:100%;height:44px;background:var(--k100);color:var(--kdark);border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:not-allowed;font-family:'Tajawal';}
+
+/* Impact CTA -->
+.impact-cta{background:linear-gradient(135deg,#3D2506,#6B4F12);border-radius:20px;padding:36px;text-align:center;margin:40px 0;}
+.impact-cta-title{font-size:24px;font-weight:900;color:white;margin-bottom:8px;}
+.impact-cta-sub{font-size:15px;color:rgba(255,255,255,.75);margin-bottom:20px;}
+</style>
+</head>
+<body>
+<div class="back-nav"><a href="../../index.html">← فهرس التصميم</a><span>/</span><span>10 — كفالة الأيتام</span><span style="margin-right:auto;background:var(--kbg);color:var(--kdark);font-size:10px;font-weight:700;padding:2px 10px;border-radius:100px;">DESKTOP 1440px · لون الكفالة الخاص</span></div>
+
+<nav class="main-header">
+  <div class="header-inner">
+    <div class="logo"><div class="logo-mark">ا</div><div class="logo-name">ابتسام</div></div>
+    <div class="nav-links">
+      <div class="nav-link">الرئيسية</div><div class="nav-link">المشاريع</div>
+      <div class="nav-link nav-link-active">🤲 الكفالة</div><div class="nav-link">حول الجمعية</div>
+    </div>
+    <div style="display:flex;gap:10px;"><button class="btn btn-sm btn-soft">دخول</button><button class="btn btn-sm btn-primary">تبرع الآن</button></div>
+  </div>
+</nav>
+
+<!-- Kafala Hero (warm sand colors — NOT teal) -->
+<div class="kafala-hero">
+  <div class="hero-inner">
+    <div class="kafala-overline">KAFALA PROGRAM · برنامج الكفالة</div>
+    <h1 class="kafala-title">اكفل <span>يتيماً</span><br>وغيّر حياته</h1>
+    <p class="kafala-sub">بـ 300 درهم شهرياً فقط، توفر لطفل يتيم التعليم والغذاء والرعاية الصحية والحب الذي يحتاجه</p>
+    <button class="kafala-cta-btn">🤲 ابدأ الكفالة الآن</button>
+    <div class="hero-stat-row">
+      <div class="hero-stat"><div class="hero-stat-num">48</div><div class="hero-stat-label">يتيم تحت الرعاية</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">12</div><div class="hero-stat-label">متاح للكفالة</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">300 د.م</div><div class="hero-stat-label">فقط شهرياً</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="filters-bar">
+  <div class="filters-inner">
+    <div class="chip chip-active">الكل (48)</div>
+    <div class="chip">متاح للكفالة (12)</div>
+    <div class="chip">مكفول (36)</div>
+    <div style="font-size:13px;color:var(--textm);margin-right:auto;">يتيم مكفول يعني: ممول شهرياً بالكامل</div>
+  </div>
+</div>
+
+<!-- Grid -->
+<div class="content">
+  <div class="section-label">
+    <span>الأيتام المتاحون للكفالة <span style="font-size:11px;font-weight:700;background:var(--kbg);color:var(--kdark);padding:2px 10px;border-radius:100px;">12</span></span>
+  </div>
+  <div class="kafala-grid">
+
+    <div class="orphan-card">
+      <div class="orphan-card-top">
+        <div class="orphan-avatar">👦</div>
+        <div class="orphan-name">محمد</div>
+        <div class="orphan-age">9 سنوات</div>
+        <div class="orphan-location">📍 منطقة درعة تافيلالت</div>
+        <div style="margin-top:8px;"><span class="badge badge-available">● متاح</span></div>
+      </div>
+      <div class="orphan-card-body">
+        <div class="orphan-price">300 <span>درهم / شهر</span></div>
+        <button class="sponsor-btn">🤲 اكفله الآن</button>
+      </div>
+    </div>
+
+    <div class="orphan-card">
+      <div class="orphan-card-top">
+        <div class="orphan-avatar">👧</div>
+        <div class="orphan-name">خديجة</div>
+        <div class="orphan-age">7 سنوات</div>
+        <div class="orphan-location">📍 إقليم ورزازات</div>
+        <div style="margin-top:8px;"><span class="badge badge-available">● متاح</span></div>
+      </div>
+      <div class="orphan-card-body">
+        <div class="orphan-price">300 <span>درهم / شهر</span></div>
+        <button class="sponsor-btn">🤲 اكفلها الآن</button>
+      </div>
+    </div>
+
+    <div class="orphan-card">
+      <div class="orphan-card-top">
+        <div class="orphan-avatar">👦</div>
+        <div class="orphan-name">يوسف</div>
+        <div class="orphan-age">12 سنة</div>
+        <div class="orphan-location">📍 إقليم الرشيدية</div>
+        <div style="margin-top:8px;"><span class="badge badge-sponsored">🤲 مكفول</span></div>
+      </div>
+      <div class="orphan-card-body">
+        <div class="orphan-price" style="color:var(--textm);">300 <span>درهم / شهر</span></div>
+        <button class="sponsored-btn">مكفول بالفعل</button>
+      </div>
+    </div>
+
+    <div class="orphan-card">
+      <div class="orphan-card-top">
+        <div class="orphan-avatar">👧</div>
+        <div class="orphan-name">فاطمة</div>
+        <div class="orphan-age">10 سنوات</div>
+        <div class="orphan-location">📍 إقليم تينغير</div>
+        <div style="margin-top:8px;"><span class="badge badge-available">● متاح</span></div>
+      </div>
+      <div class="orphan-card-body">
+        <div class="orphan-price">300 <span>درهم / شهر</span></div>
+        <button class="sponsor-btn">🤲 اكفلها الآن</button>
+      </div>
+    </div>
+
+    <div class="orphan-card">
+      <div class="orphan-card-top">
+        <div class="orphan-avatar">👦</div>
+        <div class="orphan-name">إبراهيم</div>
+        <div class="orphan-age">6 سنوات</div>
+        <div class="orphan-location">📍 إقليم زاكورة</div>
+        <div style="margin-top:8px;"><span class="badge badge-available">● متاح</span></div>
+      </div>
+      <div class="orphan-card-body">
+        <div class="orphan-price">300 <span>درهم / شهر</span></div>
+        <button class="sponsor-btn">🤲 اكفله الآن</button>
+      </div>
+    </div>
+
+    <div class="orphan-card">
+      <div class="orphan-card-top">
+        <div class="orphan-avatar">👧</div>
+        <div class="orphan-name">أمينة</div>
+        <div class="orphan-age">8 سنوات</div>
+        <div class="orphan-location">📍 إقليم أزيلال</div>
+        <div style="margin-top:8px;"><span class="badge badge-sponsored">🤲 مكفولة</span></div>
+      </div>
+      <div class="orphan-card-body">
+        <div class="orphan-price" style="color:var(--textm);">300 <span>درهم / شهر</span></div>
+        <button class="sponsored-btn">مكفولة بالفعل</button>
+      </div>
+    </div>
+
+    <div class="orphan-card">
+      <div class="orphan-card-top">
+        <div class="orphan-avatar">👦</div>
+        <div class="orphan-name">عمر</div>
+        <div class="orphan-age">11 سنة</div>
+        <div class="orphan-location">📍 إقليم خنيفرة</div>
+        <div style="margin-top:8px;"><span class="badge badge-available">● متاح</span></div>
+      </div>
+      <div class="orphan-card-body">
+        <div class="orphan-price">300 <span>درهم / شهر</span></div>
+        <button class="sponsor-btn">🤲 اكفله الآن</button>
+      </div>
+    </div>
+
+    <div class="orphan-card">
+      <div class="orphan-card-top">
+        <div class="orphan-avatar">👧</div>
+        <div class="orphan-name">سلمى</div>
+        <div class="orphan-age">13 سنة</div>
+        <div class="orphan-location">📍 إقليم ميدلت</div>
+        <div style="margin-top:8px;"><span class="badge badge-available">● متاح</span></div>
+      </div>
+      <div class="orphan-card-body">
+        <div class="orphan-price">300 <span>درهم / شهر</span></div>
+        <button class="sponsor-btn">🤲 اكفلها الآن</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="impact-cta">
+    <div class="impact-cta-title">💛 لماذا الكفالة؟</div>
+    <div class="impact-cta-sub">كفالتك الشهرية توفر لليتيم: التعليم، الغذاء، الرعاية الصحية، والملابس — بـ 10 درهم فقط يومياً</div>
+    <button class="kafala-cta-btn" style="border:none;cursor:pointer;font-family:'Tajawal';">ابدأ الكفالة الآن →</button>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>34 — تسجيل مدير جديد · ibtasim Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--p500:#0d7477;--p600:#0A5F62;--p400:#33C0C0;--p50:#E6F4F4;--p100:#CCF0F0;--surface:#f6f8f8;--teal-wash:#F0F7F7;--text:#0e1a1b;--text2:#64748b;--textm:#94a3b8;--border:#E5E9EB;--shadow-card:0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05);--shadow-primary:0 4px 14px rgba(13,116,119,.25);}
+body{font-family:'Tajawal',sans-serif;background:var(--teal-wash);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
+a{text-decoration:none;color:inherit;}
+.back-nav{padding:12px 20px;background:white;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px;}
+.page-shell{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px;}
+
+/* Registration card */
+.reg-card{background:white;border-radius:24px;box-shadow:0 24px 60px rgba(0,0,0,.12),0 0 0 1px rgba(0,0,0,.05);width:100%;max-width:460px;overflow:hidden;}
+
+/* Card header (dark teal) */
+.card-header{background:linear-gradient(135deg,#010C0D,var(--p600));padding:32px 32px 28px;text-align:center;position:relative;overflow:hidden;}
+.card-header::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.05);}
+.card-header-logo{width:52px;height:52px;background:white;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;color:var(--p600);margin:0 auto 14px;position:relative;z-index:1;}
+.card-header-title{font-size:22px;font-weight:900;color:white;position:relative;z-index:1;}
+.card-header-sub{font-size:13px;color:rgba(255,255,255,.65);margin-top:4px;position:relative;z-index:1;}
+
+/* Invitation banner -->
+.invite-banner{margin:20px 24px;background:var(--p50);border-radius:12px;padding:14px;border:1.5px solid var(--p100);display:flex;align-items:center;gap:10px;}
+.invite-icon{font-size:24px;flex-shrink:0;}
+.invite-text{font-size:13px;color:var(--text2);line-height:1.5;}
+.invite-code{font-family:'Inter';font-weight:700;color:var(--p600);background:white;padding:2px 8px;border-radius:6px;border:1px solid var(--p100);}
+
+/* Form body -->
+.card-body{padding:0 24px 24px;}
+.field-group{margin-bottom:16px;}
+.field-label{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:7px;display:flex;align-items:center;gap:4px;}
+.field-required{color:#ef4444;}
+.field-input{width:100%;height:50px;border:1.5px solid var(--border);border-radius:14px;padding:0 16px;font-size:15px;font-family:'Tajawal';color:var(--text);outline:none;transition:border-color .15s;}
+.field-input:focus{border-color:var(--p500);box-shadow:0 0 0 3px rgba(13,116,119,.1);}
+.phone-wrap{display:flex;gap:8px;}
+.phone-prefix{height:50px;padding:0 14px;background:var(--teal-wash);border:1.5px solid var(--border);border-radius:14px;display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700;white-space:nowrap;font-family:'Inter';flex-shrink:0;}
+.phone-input{flex:1;height:50px;border:1.5px solid var(--border);border-radius:14px;padding:0 16px;font-size:16px;font-family:'Inter';color:var(--text);outline:none;}
+.phone-input:focus{border-color:var(--p500);box-shadow:0 0 0 3px rgba(13,116,119,.1);}
+
+/* Role selection -->
+.role-row{display:flex;gap:10px;margin-bottom:16px;}
+.role-option{flex:1;border:2px solid var(--border);border-radius:14px;padding:12px;text-align:center;cursor:pointer;transition:all .15s;}
+.role-option-active{border-color:var(--p500);background:var(--p50);}
+.role-icon{font-size:22px;margin-bottom:6px;}
+.role-title{font-size:13px;font-weight:700;}
+.role-desc{font-size:11px;color:var(--textm);margin-top:2px;}
+
+.divider{height:1px;background:var(--border);margin:16px 0;}
+
+.register-btn{width:100%;height:52px;background:var(--p500);color:white;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:var(--shadow-primary);font-family:'Tajawal';}
+.login-link{text-align:center;font-size:13px;color:var(--text2);margin-top:12px;}
+.login-link a{color:var(--p500);font-weight:600;}
+
+/* Security note */
+.security-note{text-align:center;font-size:11px;color:var(--textm);margin-top:16px;display:flex;align-items:center;justify-content:center;gap:4px;}
+</style>
+</head>
+<body>
+<div class="back-nav"><a href="../../index.html">← فهرس التصميم</a><span>/</span><span>34 — تسجيل مدير جديد (بدعوة)</span><span style="margin-right:auto;background:var(--p50);color:var(--p600);font-size:10px;font-weight:700;padding:2px 10px;border-radius:100px;">CENTERED · Admin</span></div>
+
+<div class="page-shell">
+  <div class="reg-card">
+    <!-- Header -->
+    <div class="card-header">
+      <div class="card-header-logo">ا</div>
+      <div class="card-header-title">انضم لفريق إدارة ابتسام</div>
+      <div class="card-header-sub">هذه الصفحة متاحة بدعوة خاصة فقط</div>
+    </div>
+
+    <!-- Invitation banner -->
+    <div class="invite-banner">
+      <div class="invite-icon">✉️</div>
+      <div class="invite-text">
+        دُعيت من قِبل <strong>أحمد المدير</strong> للانضمام كعضو في فريق الإدارة.<br>
+        رمز الدعوة: <span class="invite-code">INV-XK7P2</span>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <div class="card-body">
+      <div class="field-group">
+        <div class="field-label">الاسم الكامل <span class="field-required">*</span></div>
+        <input class="field-input" type="text" placeholder="أدخل اسمك الكامل">
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">رقم الهاتف <span class="field-required">*</span></div>
+        <div class="phone-wrap">
+          <div class="phone-prefix">🇲🇦 +212</div>
+          <input class="phone-input" type="tel" placeholder="661234567" dir="ltr">
+        </div>
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">كلمة المرور <span class="field-required">*</span></div>
+        <input class="field-input" type="password" placeholder="••••••••••">
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">تأكيد كلمة المرور <span class="field-required">*</span></div>
+        <input class="field-input" type="password" placeholder="••••••••••">
+      </div>
+
+      <!-- Role selection -->
+      <div class="field-label" style="margin-bottom:10px;">الدور في الفريق</div>
+      <div class="role-row">
+        <div class="role-option role-option-active">
+          <div class="role-icon">🛡️</div>
+          <div class="role-title">مدير</div>
+          <div class="role-desc">صلاحيات كاملة</div>
+        </div>
+        <div class="role-option">
+          <div class="role-icon">👁️</div>
+          <div class="role-title">مراجع</div>
+          <div class="role-desc">عرض فقط</div>
+        </div>
+        <div class="role-option">
+          <div class="role-icon">✅</div>
+          <div class="role-title">محقق</div>
+          <div class="role-desc">تحقق التبرعات</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <button class="register-btn">✅ إنشاء الحساب</button>
+      <div class="login-link">لديك حساب؟ <a href="21-admin-login.html">تسجيل الدخول</a></div>
+      <div class="security-note">🔒 <span>بياناتك محمية بتشفير SSL 256-bit</span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

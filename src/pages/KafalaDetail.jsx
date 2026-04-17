@@ -191,6 +191,26 @@ export default function KafalaDetail() {
             </div>
           </div>
 
+          {/* What you get as a sponsor */}
+          <div style={{ height: 1, background: '#E5E9EB', margin: '24px 0' }} />
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#8B6914', marginBottom: 8, fontFamily: 'Inter, sans-serif' }}>مزايا الكافل</div>
+          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 14 }}>ماذا تحصل عليه كافلاً؟</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2,1fr)', gap: 12 }}>
+            {[
+              { icon: '📊', text: 'تقارير ربع سنوية عن الطفل ودراسته' },
+              { icon: '📸', text: 'صور دورية لأحوال الطفل ونموه' },
+              { icon: '💬', text: 'تواصل مباشر مع فريق الكفالة' },
+              { icon: '🔒', text: 'دفع آمن ومحمي بالكامل' },
+              { icon: '✅', text: 'جمعية معتمدة رسمياً من الدولة' },
+              { icon: '🔄', text: 'إلغاء مجاني في أي وقت دون شروط' },
+            ].map((f, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#F5EBD9', borderRadius: 12, padding: '12px 16px', border: '1px solid #E8D4B0' }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(139,105,20,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>{f.icon}</div>
+                <span style={{ fontSize: 13, color: '#64748b', lineHeight: 1.4 }}>{f.text}</span>
+              </div>
+            ))}
+          </div>
+
           {/* Mid-page sponsor CTA */}
           {!isSponsored && (
             <div style={{ margin: '24px 0', background: '#F5EBD9', borderRadius: 18, padding: '20px 24px', border: '1.5px solid #E8D4B0', textAlign: 'center' }}>

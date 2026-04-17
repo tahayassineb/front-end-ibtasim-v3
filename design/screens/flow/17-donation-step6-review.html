@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>17 — التبرع: الخطوة 6 — المراجعة · ibtasim</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--p500:#0d7477;--p600:#0A5F62;--p400:#33C0C0;--p50:#E6F4F4;--p100:#CCF0F0;--surface:#f6f8f8;--teal-wash:#F0F7F7;--text:#0e1a1b;--text2:#64748b;--textm:#94a3b8;--border:#E5E9EB;--shadow-card:0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05);--shadow-primary:0 4px 14px rgba(13,116,119,.25);}
+body{font-family:'Tajawal',sans-serif;background:var(--teal-wash);color:var(--text);}
+a{text-decoration:none;color:inherit;}
+.back-nav{padding:12px 20px;background:white;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px;}
+.page-shell{display:flex;justify-content:center;padding:40px 20px;gap:48px;flex-wrap:wrap;}
+.mobile-frame{width:390px;min-height:820px;background:white;border-radius:40px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.08);flex-shrink:0;display:flex;flex-direction:column;}
+.mobile-bar{height:48px;background:white;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.mobile-notch{width:120px;height:32px;background:var(--text);border-radius:0 0 20px 20px;}
+.flow-top-bar{height:56px;display:flex;align-items:center;padding:0 20px;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0;}
+.flow-back{width:36px;height:36px;border-radius:50%;background:var(--teal-wash);display:flex;align-items:center;justify-content:center;font-size:16px;}
+.flow-title{font-size:15px;font-weight:700;}
+.flow-help{width:36px;height:36px;border-radius:50%;background:var(--teal-wash);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text2);}
+.seg-progress{padding:14px 20px 0;flex-shrink:0;}
+.seg-bar{display:flex;gap:4px;margin-bottom:6px;}
+.seg{flex:1;height:4px;border-radius:100px;background:var(--border);}
+.seg-done{background:var(--p500);}
+.seg-current{background:var(--p400);}
+.seg-label{font-size:11px;color:var(--textm);font-family:'Inter';}
+.step-content{flex:1;padding:16px;overflow-y:auto;}
+.step-title{font-size:18px;font-weight:800;margin-bottom:4px;}
+.step-sub{font-size:13px;color:var(--text2);margin-bottom:16px;}
+
+/* Summary card */
+.summary-card{background:white;border:1.5px solid var(--border);border-radius:20px;overflow:hidden;margin-bottom:14px;}
+.summary-header{background:var(--teal-wash);padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--p100);}
+.summary-project-img{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--p600),var(--p400));display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.summary-project-name{font-size:14px;font-weight:700;}
+.summary-project-sub{font-size:11px;color:var(--p600);font-weight:600;margin-top:2px;}
+
+.summary-row{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border);}
+.summary-row:last-child{border-bottom:none;}
+.summary-label{font-size:13px;color:var(--text2);}
+.summary-value{font-size:14px;font-weight:700;color:var(--text);}
+.summary-value-teal{color:var(--p600);}
+.edit-link{font-size:12px;font-weight:600;color:var(--p500);padding:3px 8px;background:var(--p50);border-radius:100px;cursor:pointer;}
+
+/* Receipt preview in summary */
+.receipt-thumb{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#e0e7ff,#c7d2fe);display:flex;align-items:center;justify-content:center;font-size:16px;}
+
+/* Total highlight */
+.total-highlight{background:var(--p600);border-radius:16px;padding:16px;margin-bottom:14px;text-align:center;}
+.total-label{font-size:13px;color:rgba(255,255,255,.7);margin-bottom:4px;}
+.total-amount{font-size:36px;font-weight:900;color:white;font-family:'Inter';}
+.total-currency{font-size:16px;color:rgba(255,255,255,.7);font-family:'Inter';}
+
+/* Terms */
+.terms-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;}
+.terms-check{width:20px;height:20px;accent-color:var(--p500);margin-top:2px;flex-shrink:0;}
+.terms-text{font-size:12px;color:var(--text2);line-height:1.6;}
+.terms-link{color:var(--p500);text-decoration:underline;}
+
+/* Trust signals */
+.trust-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.trust-badge{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:5px 10px;border-radius:100px;background:var(--teal-wash);color:var(--p600);}
+
+.flow-bottom{flex-shrink:0;padding:14px 16px;background:white;border-top:1px solid var(--border);}
+.confirm-btn{width:100%;height:56px;background:var(--p500);color:white;border:none;border-radius:16px;font-size:17px;font-weight:800;cursor:pointer;box-shadow:var(--shadow-primary);font-family:'Tajawal';display:flex;align-items:center;justify-content:center;gap:8px;}
+.confirm-note{text-align:center;font-size:11px;color:var(--textm);margin-top:8px;}
+</style>
+</head>
+<body>
+<div class="back-nav"><a href="../../index.html">← فهرس التصميم</a><span>/</span><span>17 — التبرع: الخطوة 6 — المراجعة والتأكيد</span><span style="margin-right:auto;background:var(--p50);color:var(--p600);font-size:10px;font-weight:700;padding:2px 10px;border-radius:100px;">MOBILE 390px</span></div>
+<div class="page-shell">
+
+  <div class="mobile-frame">
+    <div class="mobile-bar"><div class="mobile-notch"></div></div>
+    <div class="flow-top-bar">
+      <div class="flow-back">←</div>
+      <div class="flow-title">إتمام التبرع</div>
+      <div class="flow-help">?</div>
+    </div>
+    <div class="seg-progress">
+      <div class="seg-bar">
+        <div class="seg seg-done"></div><div class="seg seg-done"></div>
+        <div class="seg seg-done"></div><div class="seg seg-done"></div>
+        <div class="seg seg-done"></div>
+        <div class="seg seg-current"></div>
+      </div>
+      <div class="seg-label">الخطوة 6 من 6 — مراجعة وتأكيد</div>
+    </div>
+
+    <div class="step-content">
+      <div class="step-title">راجع تبرعك</div>
+      <div class="step-sub">تأكد من صحة التفاصيل قبل الإرسال</div>
+
+      <!-- Total highlight -->
+      <div class="total-highlight">
+        <div class="total-label">إجمالي تبرعك</div>
+        <div><span class="total-amount">500</span> <span class="total-currency">درهم مغربي</span></div>
+      </div>
+
+      <!-- Summary card -->
+      <div class="summary-card">
+        <!-- Project header -->
+        <div class="summary-header">
+          <div class="summary-project-img">🎓</div>
+          <div>
+            <div class="summary-project-name">مدرسة تافيلالت</div>
+            <div class="summary-project-sub">✓ مشروع معتمد · 78% مكتمل</div>
+          </div>
+        </div>
+
+        <!-- Amount -->
+        <div class="summary-row">
+          <div class="summary-label">المبلغ</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="summary-value summary-value-teal">500 درهم</div>
+            <div class="edit-link">تعديل</div>
+          </div>
+        </div>
+
+        <!-- Fees -->
+        <div class="summary-row">
+          <div class="summary-label">رسوم المعالجة (مغطاة)</div>
+          <div class="summary-value" style="color:#16a34a;">+0 درهم ✓</div>
+        </div>
+
+        <!-- Payment method -->
+        <div class="summary-row">
+          <div class="summary-label">طريقة الدفع</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="summary-value">🏦 تحويل بنكي</div>
+            <div class="edit-link">تعديل</div>
+          </div>
+        </div>
+
+        <!-- Receipt -->
+        <div class="summary-row">
+          <div class="summary-label">وصل التحويل</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="receipt-thumb">🧾</div>
+            <div class="summary-value" style="font-size:12px;">receipt_transfer.jpg</div>
+            <div class="edit-link">تغيير</div>
+          </div>
+        </div>
+
+        <!-- Donor name -->
+        <div class="summary-row">
+          <div class="summary-label">المتبرع</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="summary-value">مجهول الهوية 🙈</div>
+            <div class="edit-link">تعديل</div>
+          </div>
+        </div>
+
+        <!-- Phone -->
+        <div class="summary-row">
+          <div class="summary-label">رقم الهاتف</div>
+          <div class="summary-value" style="font-family:'Inter';">+212 661234567</div>
+        </div>
+
+        <!-- Dedication -->
+        <div class="summary-row">
+          <div class="summary-label">الإهداء</div>
+          <div class="summary-value" style="font-size:13px;font-weight:600;max-width:160px;text-align:left;">باسم والدي رحمه الله</div>
+        </div>
+      </div>
+
+      <!-- Trust row -->
+      <div class="trust-row">
+        <div class="trust-badge">🔒 SSL 256-bit</div>
+        <div class="trust-badge">✓ جمعية معتمدة</div>
+        <div class="trust-badge">📋 وصل رسمي</div>
+      </div>
+
+      <!-- Terms -->
+      <div class="terms-row">
+        <input type="checkbox" class="terms-check" checked>
+        <div class="terms-text">أوافق على <span class="terms-link">شروط الاستخدام</span> و<span class="terms-link">سياسة الخصوصية</span> لجمعية ابتسام</div>
+      </div>
+    </div>
+
+    <div class="flow-bottom">
+      <button class="confirm-btn">🤲 أرسل تبرعي الآن</button>
+      <div class="confirm-note">ستصلك رسالة تأكيد فور إرسال التبرع</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

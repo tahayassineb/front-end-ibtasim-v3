@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
+import { convexFileUrl } from '../lib/convex';
+import RichTextEditor from '../components/RichTextEditor';
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
 const BORDER  = '#E5E9EB';
@@ -28,6 +30,7 @@ const EMPTY_FORM = {
   badgeIcon: '🎓', badgeText: 'التعليم',
   catLabel: 'EDUCATION · تعليم', catColor: '#0A5F62',
   isPublished: false, isFeatured: false,
+  coverImage: '', body: '',
 };
 
 const FieldLabel = ({ children }) => (
@@ -42,23 +45,28 @@ const fieldInput = {
 
 export default function AdminStories() {
   const { showToast, user: adminUser } = useApp();
-  const stories      = useQuery(api.stories.getAllStories);
-  const createStory  = useMutation(api.stories.createStory);
-  const updateStory  = useMutation(api.stories.updateStory);
-  const deleteStory  = useMutation(api.stories.deleteStory);
-  const publishStory   = useMutation(api.stories.publishStory);
-  const unpublishStory = useMutation(api.stories.unpublishStory);
+  const stories                  = useQuery(api.stories.getAllStories);
+  const createStory              = useMutation(api.stories.createStory);
+  const updateStory              = useMutation(api.stories.updateStory);
+  const deleteStory              = useMutation(api.stories.deleteStory);
+  const publishStory             = useMutation(api.stories.publishStory);
+  const unpublishStory           = useMutation(api.stories.unpublishStory);
+  const generateUploadUrl        = useMutation(api.stories.generateStoryImageUploadUrl);
 
-  const [showForm, setShowForm]   = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [form, setForm]           = useState(EMPTY_FORM);
-  const [saving, setSaving]       = useState(false);
+  const [showForm, setShowForm]         = useState(false);
+  const [editingId, setEditingId]       = useState(null);
+  const [form, setForm]                 = useState(EMPTY_FORM);
+  const [saving, setSaving]             = useState(false);
+  const [coverPreview, setCoverPreview] = useState(null);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const coverInputRef = useRef();
 
   const handleField = (field, val) => setForm(p => ({ ...p, [field]: val }));
 
   const handleOpenNew = () => {
     setForm(EMPTY_FORM);
     setEditingId(null);
+    setCoverPreview(null);
     setShowForm(true);
   };
 
@@ -68,9 +76,26 @@ export default function AdminStories() {
       gradient: story.gradient, badgeIcon: story.badgeIcon, badgeText: story.badgeText,
       catLabel: story.catLabel, catColor: story.catColor,
       isPublished: story.isPublished, isFeatured: story.isFeatured ?? false,
+      coverImage: story.coverImage || '',
+      body: story.body || '',
     });
+    setCoverPreview(story.coverImage ? convexFileUrl(story.coverImage) : null);
     setEditingId(story._id);
     setShowForm(true);
+  };
+
+  const handleCoverUpload = async (file) => {
+    if (!file) return;
+    setUploadingCover(true);
+    try {
+      const uploadUrl = await generateUploadUrl();
+      const res = await fetch(uploadUrl, { method: 'POST', headers: { 'Content-Type': file.type }, body: file });
+      const { storageId } = await res.json();
+      handleField('coverImage', storageId);
+      setCoverPreview(URL.createObjectURL(file));
+    } catch (e) {
+      showToast?.('فشل رفع الصورة', 'error');
+    } finally { setUploadingCover(false); }
   };
 
   const handleSave = async () => {
@@ -79,11 +104,19 @@ export default function AdminStories() {
     }
     setSaving(true);
     try {
+      const payload = {
+        title: form.title, excerpt: form.excerpt, category: form.category,
+        gradient: form.gradient, badgeIcon: form.badgeIcon, badgeText: form.badgeText,
+        catLabel: form.catLabel, catColor: form.catColor,
+        isPublished: form.isPublished, isFeatured: form.isFeatured,
+        coverImage: form.coverImage || undefined,
+        body: form.body || undefined,
+      };
       if (editingId) {
-        await updateStory({ id: editingId, ...form });
+        await updateStory({ id: editingId, ...payload });
         showToast?.('تم تحديث القصة', 'success');
       } else {
-        await createStory({ ...form, adminId: adminUser?.id || 'admin' });
+        await createStory({ ...payload, adminId: adminUser?.id || 'admin' });
         showToast?.('تم إنشاء القصة', 'success');
       }
       setShowForm(false);
@@ -135,16 +168,40 @@ export default function AdminStories() {
               <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: TEXT2 }}>×</button>
             </div>
 
+            {/* Cover image upload */}
+            <div style={{ marginBottom: 16 }}>
+              <FieldLabel>صورة الغلاف</FieldLabel>
+              <input ref={coverInputRef} type="file" accept="image/*" style={{ display: 'none' }}
+                onChange={e => handleCoverUpload(e.target.files?.[0])} />
+              {coverPreview ? (
+                <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', height: 140 }}>
+                  <img src={coverPreview} alt="cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <button type="button" onClick={() => { handleField('coverImage', ''); setCoverPreview(null); }}
+                    style={{ position: 'absolute', top: 8, left: 8, width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,0,0,.5)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                </div>
+              ) : (
+                <button type="button" onClick={() => coverInputRef.current?.click()} disabled={uploadingCover}
+                  style={{ width: '100%', height: 100, border: `2px dashed ${BORDER}`, borderRadius: 12, background: '#F8FAFC', cursor: 'pointer', fontSize: 13, color: TEXT2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 24 }}>🖼️</span>
+                  <span>{uploadingCover ? 'جاري الرفع...' : 'اضغط لرفع صورة الغلاف'}</span>
+                </button>
+              )}
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
               <div style={{ gridColumn: '1/-1' }}>
                 <FieldLabel>العنوان *</FieldLabel>
                 <input style={fieldInput} value={form.title} onChange={e => handleField('title', e.target.value)} placeholder="عنوان القصة" />
               </div>
               <div style={{ gridColumn: '1/-1' }}>
-                <FieldLabel>المختصر *</FieldLabel>
+                <FieldLabel>المختصر * (جملة أو جملتان)</FieldLabel>
                 <textarea value={form.excerpt} onChange={e => handleField('excerpt', e.target.value)}
                   placeholder="وصف مختصر للقصة..."
-                  style={{ ...fieldInput, height: 80, paddingTop: 10, resize: 'vertical' }} />
+                  style={{ ...fieldInput, height: 64, paddingTop: 10, resize: 'vertical' }} />
+              </div>
+              <div style={{ gridColumn: '1/-1' }}>
+                <FieldLabel>محتوى القصة (يدعم النص المنسق + الصور)</FieldLabel>
+                <RichTextEditor value={form.body} onChange={val => handleField('body', val)} placeholder="اكتب محتوى القصة هنا..." rows={8} />
               </div>
               <div>
                 <FieldLabel>التصنيف</FieldLabel>

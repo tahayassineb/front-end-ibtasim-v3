@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ibtasim Visual System and Design Audit</title>
+  <style>
+    :root {
+      --bg: #f3f8f8;
+      --panel: #ffffff;
+      --panel-2: #f7fbfb;
+      --text: #0f1a1b;
+      --soft: #5a7175;
+      --line: #d8e5e6;
+      --primary: #0d7477;
+      --primary-2: #0a5f62;
+      --gold: #b08a3f;
+      --danger: #d94d45;
+      --warn: #cf8a13;
+      --info: #2f7abf;
+      --radius: 20px;
+      --shadow: 0 14px 28px rgba(14, 32, 34, 0.08);
+      --max: 1360px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(13,116,119,0.12), transparent 25%),
+        radial-gradient(circle at top right, rgba(176,138,63,0.10), transparent 20%),
+        linear-gradient(180deg, #eef5f5 0%, #f9fbfb 45%, #eef4f4 100%);
+    }
+    code { background: #eef6f6; padding: 2px 6px; border-radius: 8px; }
+    .wrap { width: min(calc(100% - 24px), var(--max)); margin: 0 auto; padding: 18px 0 70px; }
+    .hero {
+      background: linear-gradient(135deg, #071314, #113031);
+      color: #edf5f5;
+      border-radius: 28px;
+      padding: 26px;
+      box-shadow: 0 18px 42px rgba(0,0,0,.18);
+    }
+    .eyebrow {
+      display: inline-flex;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .hero-grid, .metric-grid, .jump-grid, .pill-grid, .route-grid, .audit-grid, .lang-grid, .mock-grid, .file-grid, .flow-grid, .table-grid, .score-grid {
+      display: grid;
+      gap: 16px;
+    }
+    .hero-grid { grid-template-columns: 1.45fr 1fr; margin-top: 18px; }
+    .hero h1 { margin: 12px 0 12px; font-size: clamp(32px, 5vw, 56px); line-height: 1.02; letter-spacing: -.03em; }
+    .hero p { margin: 0; color: rgba(237,245,245,.78); line-height: 1.7; }
+    .metric-grid { grid-template-columns: repeat(4, minmax(0,1fr)); margin-top: 18px; }
+    .metric, .jump, .section, .pill, .route, .card, .mock, .file, .score {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .metric {
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.08);
+      color: #edf5f5;
+      box-shadow: none;
+      padding: 16px;
+    }
+    .metric b { display: block; font-size: 28px; margin-bottom: 8px; }
+    .metric span { color: rgba(237,245,245,.74); font-size: 13px; line-height: 1.5; }
+    .jump-grid { grid-template-columns: 1fr 1fr; }
+    .jump { padding: 16px; background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.08); color: #edf5f5; text-decoration: none; box-shadow: none; }
+    .jump b { display: block; margin-bottom: 6px; }
+    .jump small { color: rgba(237,245,245,.74); line-height: 1.5; }
+    .toolbar { display: flex; justify-content: space-between; gap: 12px; margin: 16px 0 22px; flex-wrap: wrap; }
+    .tabs, .actions, .flow-picker { display: flex; gap: 10px; flex-wrap: wrap; }
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .tab { background: rgba(255,255,255,.82); border: 1px solid var(--line); color: var(--soft); }
+    .tab.active, .flow-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-2)); color: white; }
+    .btn-secondary, .flow-btn { background: white; border: 1px solid var(--line); color: var(--soft); }
+    .section { margin-top: 24px; padding: 24px; }
+    .section h2 { margin: 0 0 8px; font-size: clamp(24px, 3vw, 34px); letter-spacing: -.02em; }
+    .lead { color: var(--soft); line-height: 1.7; margin: 0 0 18px; max-width: 980px; }
+    .pill-grid { grid-template-columns: repeat(4, minmax(0,1fr)); }
+    .pill { padding: 16px; background: linear-gradient(180deg,#fff,#f6fafb); }
+    .pill b { display: block; margin-bottom: 8px; }
+    .pill span { color: var(--soft); line-height: 1.55; font-size: 14px; }
+    .system-grid { display: grid; grid-template-columns: 1fr 64px 1fr 64px 1fr; gap: 10px; align-items: start; }
+    .stack { display: grid; gap: 14px; }
+    .node { padding: 16px; border-radius: 18px; border: 1px solid var(--line); background: #fff; min-height: 110px; }
+    .node h3 { margin: 0 0 8px; font-size: 16px; }
+    .node p { margin: 0; color: var(--soft); line-height: 1.55; font-size: 14px; }
+    .node small { display: inline-block; margin-top: 10px; padding: 6px 8px; border-radius: 10px; background: #edf6f6; color: var(--primary-2); font-weight: 700; }
+    .arrow { display: grid; place-items: center; font-size: 28px; color: #80979b; min-height: 100%; }
+    .route-grid, .audit-grid, .lang-grid, .file-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .route, .card, .mock, .file, .score { padding: 18px; }
+    .route h3, .card h3, .mock h3, .file h3, .score h3 { margin: 0 0 8px; }
+    .route ul, .card ul, .file ul { margin: 8px 0 0; padding-left: 18px; color: var(--soft); line-height: 1.7; }
+    .flow-grid { grid-template-columns: 300px 1fr; }
+    .flow-steps, .flow-detail { display: grid; gap: 14px; }
+    .step, .detail { padding: 16px; border-radius: 18px; border: 1px solid var(--line); background: #fff; }
+    .step { position: relative; padding-left: 44px; }
+    .step::before {
+      content: attr(data-step);
+      position: absolute; left: 14px; top: 14px;
+      width: 20px; height: 20px; border-radius: 50%;
+      display: grid; place-items: center; background: var(--primary); color: white; font-size: 11px; font-weight: 700;
+    }
+    .step b { display: block; margin-bottom: 4px; }
+    .step span, .detail p, .detail li, .score p { color: var(--soft); line-height: 1.6; font-size: 14px; }
+    .detail ul { margin: 8px 0 0; padding-left: 18px; }
+    .table-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .table { border: 1px solid var(--line); border-radius: 18px; background: white; overflow: hidden; }
+    .table-head { width: 100%; background: linear-gradient(180deg,#fff,#f7fbfb); padding: 16px; border-bottom: 1px solid var(--line); text-align: left; }
+    .table-body { padding: 16px; display: none; }
+    .table.open .table-body { display: block; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; }
+    .chip { padding: 6px 10px; border-radius: 999px; background: #edf6f6; color: var(--primary-2); font-size: 12px; font-weight: 700; }
+    .risk-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 16px; }
+    .risk-head { padding: 16px; border-bottom: 1px solid var(--line); }
+    .risk-body { padding: 16px; }
+    .sev { display: inline-flex; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; margin-bottom: 10px; }
+    .p0 { background: #ffe7e4; color: var(--danger); }
+    .p1 { background: #fff2d7; color: var(--warn); }
+    .p2 { background: #eaf2ff; color: var(--info); }
+    .p3 { background: #eef3f4; color: #63797d; }
+    .score-grid { grid-template-columns: repeat(6, minmax(0,1fr)); margin-top: 16px; }
+    .ring {
+      width: 78px; height: 78px; border-radius: 50%; display: grid; place-items: center; margin: 0 auto 12px;
+      background: radial-gradient(circle at center, white 54%, transparent 55%), conic-gradient(var(--primary) calc(var(--score)*1%), #dce8e8 0);
+    }
+    .mock-grid { grid-template-columns: 1.2fr 1fr; }
+    .window { border: 1px solid var(--line); border-radius: 20px; overflow: hidden; background: linear-gradient(180deg,#fdfefe,#f6fafb); }
+    .bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--line); background: #fbfdfd; }
+    .dots { display: flex; gap: 6px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #cbd7d8; }
+    .flag { display: inline-flex; padding: 6px 10px; border-radius: 999px; background: #edf6f6; color: var(--primary-2); font-size: 12px; font-weight: 700; }
+    .mock-body { padding: 16px; display: grid; gap: 14px; }
+    .mock-hero { min-height: 120px; border-radius: 18px; padding: 18px; color: white; display: grid; align-content: end; gap: 8px; background: linear-gradient(135deg, var(--primary), var(--primary-2), #113536); }
+    .mock-hero.gold { color: #3d2506; background: linear-gradient(135deg, #8b6914, #c8a660, #f0e2c6); }
+    .mock-row { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+    .box { min-height: 118px; border-radius: 16px; border: 1px solid var(--line); padding: 14px; background: white; position: relative; }
+    .box.tall { min-height: 176px; }
+    .box::after { content: ""; position: absolute; inset: 10px; border: 1px dashed rgba(13,116,119,.24); border-radius: 12px; pointer-events: none; }
+    .lang-grid { margin-top: 16px; }
+    .print-note { margin-top: 12px; padding: 12px 14px; border-radius: 14px; background: #eef7f7; color: var(--soft); border: 1px solid #d7e7e7; }
+    @media (max-width: 1100px) {
+      .hero-grid, .flow-grid, .mock-grid, .system-grid { grid-template-columns: 1fr; }
+      .metric-grid, .pill-grid, .route-grid, .audit-grid, .lang-grid, .file-grid, .table-grid, .risk-grid { grid-template-columns: 1fr 1fr; }
+      .score-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+      .arrow { min-height: auto; }
+    }
+    @media (max-width: 760px) {
+      .wrap { width: min(calc(100% - 16px), var(--max)); }
+      .hero, .section { padding: 18px; }
+      .metric-grid, .jump-grid, .pill-grid, .route-grid, .audit-grid, .lang-grid, .file-grid, .table-grid, .risk-grid, .score-grid, .mock-row { grid-template-columns: 1fr; }
+      .tabs button, .actions button, .flow-picker button { flex: 1 1 auto; }
+    }
+    @media print {
+      body { background: white; }
+      .wrap { width: 100%; padding: 0; }
+      .toolbar, .flow-picker { display: none !important; }
+      .section, .metric, .pill, .route, .card, .mock, .file, .score, .node, .table { box-shadow: none; }
+      .table-body { display: block !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <span class="eyebrow">Ibtasim Visual System + UX/UI Audit</span>
+      <div class="hero-grid">
+        <div>
+          <h1>One browser file to understand product logic, backend behavior, database shape, and current design gaps.</h1>
+          <p>This file is the visual companion to <code>IBTASIM_ONBOARDING_AUDIT.md</code>. It is built for a new developer or designer who needs the full map first: routes, backend modules, flow sequences, data tables, UI/UX risks, writing issues in Arabic/French/English, and desktop/mobile audit.</p>
+          <div class="metric-grid">
+            <div class="metric"><b>31+</b><span>Routes split across public, kafala, and admin surfaces.</span></div>
+            <div class="metric"><b>11+</b><span>Main Convex tables and operational entities used by the product.</span></div>
+            <div class="metric"><b>4</b><span>Critical flows explained step by step.</span></div>
+            <div class="metric"><b>6</b><span>Audit lenses: logic, UI, UX, writing, responsive, risk.</span></div>
+          </div>
+        </div>
+        <div class="jump-grid">
+          <a class="jump" href="#system-map"><b>System Map</b><small>Frontend, Convex, integrations, and data model in one picture.</small></a>
+          <a class="jump" href="#flows"><b>Step-by-Step Flows</b><small>Donation, kafala, admin verification, and payment callback.</small></a>
+          <a class="jump" href="#database"><b>Table Explorer</b><small>Interactive cards for the most important tables and risks.</small></a>
+          <a class="jump" href="#design-audit"><b>Design Audit</b><small>UI, UX, writing, and responsive behavior review.</small></a>
+          <a class="jump" href="#mockups"><b>Mockups</b><small>Visual frames of current structure vs target structure.</small></a>
+          <a class="jump" href="#action-plan"><b>Fix Strategy</b><small>What to do first if you want clarity and a stronger design.</small></a>
+        </div>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <div class="tabs" id="topTabs">
+        <button class="tab active" data-target="overview">Overview</button>
+        <button class="tab" data-target="logic">Logic</button>
+        <button class="tab" data-target="design">Design</button>
+        <button class="tab" data-target="writing">Writing</button>
+        <button class="tab" data-target="risks">Risks</button>
+      </div>
+      <div class="actions">
+        <button class="btn-secondary" id="expandTables">Expand all tables</button>
+        <button class="btn-secondary" id="collapseTables">Collapse all tables</button>
+        <button class="btn-primary" id="printReport">Print / Save as PDF</button>
+      </div>
+    </div>
+
+    <section class="section" id="overview">
+      <h2>Executive View</h2>
+      <p class="lead">Ibtasim is one product with two money paths. First: standard project donations. Second: orphan sponsorship through kafala. The app combines a public donor website and an admin back office, with Convex acting as backend logic layer, schema layer, runtime storage, and part of the settings surface.</p>
+      <div class="pill-grid">
+        <div class="pill"><b>What the product is</b><span>A charity platform for campaigns, sponsorship, donor journeys, and internal operations.</span></div>
+        <div class="pill"><b>Why logic feels hard</b><span>Behavior is spread across pages, Convex modules, callback handlers, and operational settings.</span></div>
+        <div class="pill"><b>Why design feels unresolved</b><span>The design system is documented better than it is enforced in runtime code.</span></div>
+        <div class="pill"><b>What this file does</b><span>It gives you one visual model before you return to implementation files.</span></div>
+      </div>
+      <div class="print-note">Open this HTML in a browser. Use the browser print dialog to export it as PDF.</div>
+    </section>
+
+    <section class="section" id="system-map">
+      <h2>System Map</h2>
+      <p class="lead">Read this from left to right. Users enter through React routes. Those routes call Convex modules. Convex updates tables, config, logs, storage, and callback flows. The biggest danger zones are not visual. They are authorization, money handling, and state transition consistency.</p>
+      <div class="system-grid">
+        <div class="stack">
+          <div class="node"><h3>Frontend shell</h3><p><code>src/App.jsx</code> is the route truth. Public, kafala, and admin are all mounted in one shell.</p><small>Route map</small></div>
+          <div class="node"><h3>Client state</h3><p><code>src/context/AppContext.jsx</code> controls language, local auth state, donation state, theme, and toast behavior.</p><small>LocalStorage + UI session</small></div>
+          <div class="node"><h3>Page layer</h3><p>Public pages, sponsorship pages, layouts, admin pages, and shared components drive the visible product.</p><small>Mixed component discipline</small></div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="stack">
+          <div class="node"><h3>Convex domain modules</h3><p><code>projects.ts</code>, <code>donations.ts</code>, <code>kafala.ts</code>, <code>payments.ts</code>, <code>auth.ts</code>, <code>admin.ts</code>.</p><small>Business logic</small></div>
+          <div class="node"><h3>HTTP + integration layer</h3><p><code>http.ts</code>, <code>storage.ts</code>, <code>config.ts</code>, <code>whatsapp.ts</code>.</p><small>Callbacks and settings</small></div>
+          <div class="node"><h3>Schema contract</h3><p><code>convex/schema.ts</code> defines the main tables, but not one normalized workflow model for all money paths.</p><small>Data model baseline</small></div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="stack">
+          <div class="node"><h3>Runtime data</h3><p><code>users</code>, <code>projects</code>, <code>donations</code>, <code>payments</code>, <code>kafala</code>, sponsorship tables, config, logs.</p><small>Operational truth</small></div>
+          <div class="node"><h3>External surfaces</h3><p>Payment instructions, verification proofs, redirects, HTTP callbacks, file URLs, and WhatsApp/session config.</p><small>Callback risk points</small></div>
+          <div class="node"><h3>Admin operations</h3><p>Project CRUD, verifications, donor management, kafala management, settings, and runtime error views.</p><small>Needs stronger auth boundaries</small></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="logic">
+      <h2>Route Map</h2>
+      <p class="lead">This is the fastest orientation diagram for a new developer. The public donor site, kafala experience, and admin product are separate surfaces sharing one runtime shell.</p>
+      <div class="route-grid">
+        <div class="route">
+          <h3>Public donor flow</h3>
+          <ul>
+            <li><code>/</code> home</li>
+            <li><code>/projects</code> list</li>
+            <li><code>/projects/:id</code> detail</li>
+            <li><code>/impact</code>, <code>/about</code>, <code>/contact</code></li>
+            <li><code>/login</code>, <code>/register</code>, <code>/profile</code></li>
+            <li><code>/donate</code>, <code>/donate/:projectId</code>, <code>/donate/success</code></li>
+          </ul>
+        </div>
+        <div class="route">
+          <h3>Kafala flow</h3>
+          <ul>
+            <li><code>/kafala</code> list</li>
+            <li><code>/kafala/:id</code> detail</li>
+            <li><code>/kafala/:id/sponsor</code> sponsor flow</li>
+            <li><code>/kafala/:id/renew</code> renewal flow</li>
+            <li>Separate entities from standard donations</li>
+            <li>Separate pricing and lifecycle assumptions</li>
+          </ul>
+        </div>
+        <div class="route">
+          <h3>Admin flow</h3>
+          <ul>
+            <li><code>/admin/login</code></li>
+            <li><code>/admin</code> dashboard</li>
+            <li>Projects, donations, verification, donors</li>
+            <li>Settings and config</li>
+            <li>Kafala management and verifications</li>
+            <li>Error logs and operational views</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="flows">
+      <h2>Step-by-Step Logic Flows</h2>
+      <p class="lead">Use the flow picker to inspect one business sequence at a time. The point is to understand where state is created, where it changes, and where failure or duplication can hurt the system.</p>
+      <div class="flow-picker" id="flowPicker"></div>
+      <div class="flow-grid">
+        <div class="flow-steps" id="flowSteps"></div>
+        <div class="flow-detail">
+          <div class="detail"><h3 id="flowTitle">Flow detail</h3><p id="flowSummary"></p></div>
+          <div class="detail"><h3>System touchpoints</h3><ul id="flowTouchpoints"></ul></div>
+          <div class="detail"><h3>Danger zones in this flow</h3><ul id="flowRisks"></ul></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="database">
+      <h2>Interactive Table Explorer</h2>
+      <p class="lead">Open any table card to inspect its purpose, important fields, relations, and danger zones. This is the fastest schema-level onboarding tool after <code>src/App.jsx</code> and <code>convex/schema.ts</code>.</p>
+      <div class="table-grid" id="tableGrid"></div>
+    </section>
+
+    <section class="section" id="risks">
+      <h2>Risk Register</h2>
+      <p class="lead">Severity is ordered by real damage potential, not by code neatness. Security boundary issues come first, then money and state integrity, then frontend/runtime quality, then maintainability.</p>
+      <div class="risk-grid">
+        <div class="card">
+          <div class="risk-head"><span class="sev p0">P0 Security</span><h3>Backend authorization is weaker than the UI suggests</h3></div>
+          <div class="risk-body">
+            <ul>
+              <li>Client-side admin route checks are not a security boundary.</li>
+              <li>Operational modules expose sensitive reads or privileged writes too broadly.</li>
+              <li>Admin bootstrap and invitation behavior is especially sensitive.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="risk-head"><span class="sev p1">P1 Data Integrity</span><h3>Money units and transaction states are not normalized enough</h3></div>
+          <div class="risk-body">
+            <ul>
+              <li>Amount handling is inconsistent between UI creation, public display, and reporting assumptions.</li>
+              <li>Verification and callback paths look weakly idempotent.</li>
+              <li>Kafala and standard donations duplicate transaction concepts instead of sharing one hardened model.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="risk-head"><span class="sev p2">P2 Runtime Quality</span><h3>Frontend structure is buildable, not yet clean</h3></div>
+          <div class="risk-body">
+            <ul>
+              <li>Lint fails and points to structural/runtime issues.</li>
+              <li>Bad localStorage values can break startup behavior.</li>
+              <li>Placeholder links, partial accessibility wiring, and mixed patterns reduce confidence.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="risk-head"><span class="sev p3">P3 Maintainability</span><h3>The design system is documented better than it is enforced</h3></div>
+          <div class="risk-body">
+            <ul>
+              <li>Tokens and layout docs exist.</li>
+              <li>Pages still bypass them with heavy inline styling and duplicated visual logic.</li>
+              <li>New pages can drift fast because the component layer is not strict enough.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="design-audit">
+      <h2>Current Frontend Design Audit</h2>
+      <p class="lead">This audit covers UI, UX, UX writing, multilingual behavior, and desktop/mobile behavior. The point is not to say the product has no design. The point is to show why it feels unfinished and hard to trust as a system.</p>
+      <div class="score-grid">
+        <div class="score"><h3>Visual Consistency</h3><div class="ring" style="--score:48;"><b>48</b></div><p>Brand colors are coherent. Component enforcement is weak.</p></div>
+        <div class="score"><h3>Hierarchy</h3><div class="ring" style="--score:56;"><b>56</b></div><p>Main actions are visible, but visual grammar changes too often.</p></div>
+        <div class="score"><h3>Flow Clarity</h3><div class="ring" style="--score:61;"><b>61</b></div><p>Donor intent is understandable, but state transitions are not always explicit.</p></div>
+        <div class="score"><h3>Mobile Readiness</h3><div class="ring" style="--score:58;"><b>58</b></div><p>Mobile intent exists, but not every screen feels mobile-first.</p></div>
+        <div class="score"><h3>Writing Maturity</h3><div class="ring" style="--score:43;"><b>43</b></div><p>Arabic is strongest. French and English are partial product modes.</p></div>
+        <div class="score"><h3>System Maturity</h3><div class="ring" style="--score:39;"><b>39</b></div><p>Strong docs, low runtime enforcement, too many exceptions.</p></div>
+      </div>
+
+      <div class="audit-grid" style="margin-top:18px;">
+        <div class="card">
+          <h3>What works now</h3>
+          <ul>
+            <li>The public product has a recognizable charity identity.</li>
+            <li>Teal for public donation and warm gold for kafala is a sensible split.</li>
+            <li>The admin interface clearly reads as an operations dashboard.</li>
+            <li>Cards, CTAs, and sectioned content are visually understandable.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>What breaks confidence</h3>
+          <ul>
+            <li>Inline style volume makes the product feel page-crafted rather than system-driven.</li>
+            <li>English labels and Arabic body content are mixed unevenly.</li>
+            <li>Spacing, badge logic, and component detail differ across page families.</li>
+            <li>Interactive states are not standardized strongly enough.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>What the design is not yet</h3>
+          <ul>
+            <li>It is not yet a strict, scalable design system.</li>
+            <li>It is not yet a complete multilingual product experience.</li>
+            <li>It is not yet one unified premium donor journey.</li>
+            <li>It is not yet safe from visual drift as more pages are added.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="writing">
+      <h2>UX Writing Audit Across Arabic, French, and English</h2>
+      <p class="lead">The language model exists in code, but the product writing system is not mature enough yet. The main issue is not only translation coverage. It is tone, completeness, vocabulary consistency, and interface hierarchy.</p>
+      <div class="lang-grid">
+        <div class="card">
+          <h3>Arabic</h3>
+          <p class="lead">Primary language</p>
+          <ul>
+            <li>Strongest coverage in navigation, CTAs, and public-facing content.</li>
+            <li>Still mixed with English overlines and labels in important views.</li>
+            <li>Tone is often warm and charitable, but not fully standardized across product surfaces.</li>
+            <li>RTL support exists, but several components hardcode layout behavior instead of using a unified system.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>French</h3>
+          <p class="lead">Partial support</p>
+          <ul>
+            <li>Core dictionary entries exist, but full page-level localization is incomplete.</li>
+            <li>There is a gap between translated UI tokens and a complete French donor journey.</li>
+            <li>Trust and payment messaging need native-quality copy, not only direct equivalents.</li>
+            <li>Today French behaves like a UI mode, not a finished product voice.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>English</h3>
+          <p class="lead">Partial support</p>
+          <ul>
+            <li>English appears in labels and structure more than in full donor content.</li>
+            <li>Some pages mix English section labels with Arabic content, which weakens tone consistency.</li>
+            <li>English is serviceable as a fallback interface layer, not yet as a polished donor journey.</li>
+            <li>A complete English pass should include trust, payment instructions, empty states, and support text.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="responsive">
+      <h2>Desktop and Mobile Audit</h2>
+      <p class="lead">The codebase intends to support both desktop and mobile. The problem is that responsive behavior is split across inline styles, Tailwind utilities, and page-specific layout choices. That makes the result acceptable, but not reliably excellent.</p>
+      <div class="audit-grid">
+        <div class="card">
+          <h3>Desktop</h3>
+          <ul>
+            <li>Desktop pages have enough space to feel credible and operational.</li>
+            <li>Admin pages fit desktop usage better because density is expected there.</li>
+            <li>Public pages feel more visually stable on desktop than mobile.</li>
+            <li>The desktop experience is the strongest current version of the product.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Mobile</h3>
+          <ul>
+            <li>Mobile containers and sticky behavior are documented and partially implemented.</li>
+            <li>The app can function on mobile, but not every page feels designed mobile-first.</li>
+            <li>Form-heavy and admin-heavy screens need clearer mobile hierarchy.</li>
+            <li>Component size and spacing are not consistently token-driven.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Main responsive problems</h3>
+          <ul>
+            <li>Too many layout decisions live inside page files.</li>
+            <li>Some desktop-rich compositions do not collapse into a strong mobile grammar.</li>
+            <li>Navigation and action density differ by page family.</li>
+            <li>Responsive behavior should be part of component contracts, not improvisation.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="mockups">
+      <h2>Visual Mockups and Concept Frames</h2>
+      <p class="lead">These are not final UI designs. They are simplified visual frames that show the current information hierarchy and the recommended target hierarchy. Use them to align design decisions before editing production code.</p>
+      <div class="mock-grid">
+        <div class="mock">
+          <div class="window">
+            <div class="bar"><div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div><span class="flag">Current public surface</span></div>
+            <div class="mock-body">
+              <div class="mock-hero"><strong>Strong donor intent, but mixed hierarchy and page-specific visual rules.</strong><span>CTA is visible. System discipline is not.</span></div>
+              <div class="mock-row">
+                <div class="box tall"><b>Project card</b><p>Reusable in idea, but still styled per page.</p></div>
+                <div class="box tall"><b>Project card</b><p>Amount and progress are visible, but not consistently normalized.</p></div>
+                <div class="box tall"><b>Kafala block</b><p>Smart palette split, weaker system consistency.</p></div>
+              </div>
+              <div class="mock-row">
+                <div class="box"><b>Trust band</b></div>
+                <div class="box"><b>Impact stats</b></div>
+                <div class="box"><b>Story / CTA</b></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mock">
+          <div class="window">
+            <div class="bar"><div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div><span class="flag">Target public frame</span></div>
+            <div class="mock-body">
+              <div class="mock-hero gold"><strong>One hierarchy: proof, urgency, primary action, trust.</strong><span>All sections reuse one spacing, type, and card grammar.</span></div>
+              <div class="mock-row">
+                <div class="box tall"><b>Primary card</b><p>One standard image, title, amount, status, CTA pattern.</p></div>
+                <div class="box tall"><b>Primary card</b><p>Localized content and consistent badges.</p></div>
+                <div class="box tall"><b>Kafala feature</b><p>Different palette, same system grammar.</p></div>
+              </div>
+              <div class="mock-row">
+                <div class="box"><b>Proof block</b></div>
+                <div class="box"><b>Trust block</b></div>
+                <div class="box"><b>Secondary CTA</b></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mock-grid" style="margin-top:18px;">
+        <div class="mock">
+          <div class="window">
+            <div class="bar"><div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div><span class="flag">Current admin frame</span></div>
+            <div class="mock-body">
+              <div class="mock-row">
+                <div class="box"><b>Sidebar</b><p>Useful, but visually page-specific.</p></div>
+                <div class="box"><b>Top bar</b></div>
+                <div class="box"><b>Quick action</b></div>
+              </div>
+              <div class="mock-row">
+                <div class="box tall"><b>Stats</b></div>
+                <div class="box tall"><b>Verification queue</b></div>
+                <div class="box tall"><b>Recent errors</b></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mock">
+          <div class="window">
+            <div class="bar"><div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div><span class="flag">Target admin frame</span></div>
+            <div class="mock-body">
+              <div class="mock-row">
+                <div class="box"><b>Stable nav shell</b><p>One sidebar pattern and one top app bar pattern only.</p></div>
+                <div class="box"><b>Search / filters</b></div>
+                <div class="box"><b>High-priority action</b></div>
+              </div>
+              <div class="mock-row">
+                <div class="box tall"><b>Metrics system</b></div>
+                <div class="box tall"><b>Work queue</b></div>
+                <div class="box tall"><b>Risk queue</b></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="file-map">
+      <h2>Files to Read Beside This Report</h2>
+      <p class="lead">These are the files that matter most if you want to connect the diagrams in this report to real code. Read them in this order.</p>
+      <div class="file-grid">
+        <div class="file">
+          <h3>Start here</h3>
+          <ul>
+            <li><code>src/App.jsx</code></li>
+            <li><code>convex/schema.ts</code></li>
+            <li><code>src/context/AppContext.jsx</code></li>
+            <li><code>IBTASIM_ONBOARDING_AUDIT.md</code></li>
+          </ul>
+        </div>
+        <div class="file">
+          <h3>Critical flows</h3>
+          <ul>
+            <li><code>src/pages/DonationFlow.jsx</code></li>
+            <li><code>src/pages/KafalaFlow.jsx</code></li>
+            <li><code>convex/donations.ts</code></li>
+            <li><code>convex/kafala.ts</code></li>
+            <li><code>convex/http.ts</code></li>
+          </ul>
+        </div>
+        <div class="file">
+          <h3>Admin operations</h3>
+          <ul>
+            <li><code>src/pages/AdminDashboard.jsx</code></li>
+            <li><code>src/pages/AdminDonations.jsx</code></li>
+            <li><code>src/pages/AdminProjectForm.jsx</code></li>
+            <li><code>src/pages/AdminSettings.jsx</code></li>
+            <li><code>convex/admin.ts</code></li>
+            <li><code>convex/config.ts</code></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="action-plan">
+      <h2>How to Fix Your Two Main Problems</h2>
+      <p class="lead">You said the hardest part is understanding the full logic and then reaching a design you are happy with. Those are two different workstreams and they should be solved in this order.</p>
+      <div class="audit-grid">
+        <div class="card">
+          <h3>Step 1: Logic pack</h3>
+          <ul>
+            <li>Use this HTML as the system map.</li>
+            <li>Validate each flow against code while keeping the visual map open.</li>
+            <li>Normalize statuses, payment states, and money units on paper first.</li>
+            <li>Do not redesign flows you still do not fully understand.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Step 2: Design recovery</h3>
+          <ul>
+            <li>Choose one visual direction for the whole product.</li>
+            <li>Lock tokens: color, type, spacing, radius, shadow, and motion.</li>
+            <li>Design six core primitives before redesigning full pages.</li>
+            <li>Redesign one flagship page first, then systematize.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Step 3: Writing and responsive pass</h3>
+          <ul>
+            <li>Create a content style guide for Arabic, French, and English.</li>
+            <li>Audit every CTA, empty state, success state, error state, and helper text.</li>
+            <li>Make mobile behavior part of component contracts, not page-level improvisation.</li>
+            <li>Only then scale design across the rest of the product.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const flowData = {
+      donation: {
+        title: "Project Donation Flow",
+        summary: "Starts in the public app, collects amount and payment method, creates donation/payment state in Convex, then depends on verification or callback handling to finalize status.",
+        steps: [
+          { title: "User enters donation screen", text: "Usually from home, project list, or project detail." },
+          { title: "Amount and method are collected", text: "Client state stores amount, payment method, phone, receipt, and progress." },
+          { title: "Backend records are created", text: "Convex persists donation intent and payment-related state." },
+          { title: "Verification or callback branch happens", text: "Bank transfer, cash agency, or callback processing moves the flow forward." },
+          { title: "Status is finalized", text: "Success UI appears, but correctness depends on backend transitions." }
+        ],
+        touchpoints: ["src/pages/DonationFlow.jsx", "src/context/AppContext.jsx", "convex/donations.ts", "convex/payments.ts", "convex/http.ts"],
+        risks: ["Amount normalization is inconsistent across creation and display.", "Callback and verification branches look weakly idempotent.", "Status truth is spread across multiple modules."]
+      },
+      kafala: {
+        title: "Kafala Sponsorship Flow",
+        summary: "Kafala is a separate domain with its own entities, pricing, sponsorship state, and renewal behavior.",
+        steps: [
+          { title: "User browses kafala list or detail", text: "They inspect sponsorable profiles and choose a sponsorship." },
+          { title: "User begins sponsorship", text: "The flow captures sponsor intent, price, and lifecycle-related state." },
+          { title: "Sponsorship and donation state are created", text: "Backend records for sponsorship and related payments are updated." },
+          { title: "Payment / verification happens", text: "The flow depends on clean transition logic like standard donations." },
+          { title: "Renewal and lifecycle continue", text: "Renewal pages and admin verification keep sponsorship state valid." }
+        ],
+        touchpoints: ["src/pages/KafalaList.jsx", "src/pages/KafalaDetail.jsx", "src/pages/KafalaFlow.jsx", "src/pages/KafalaRenew.jsx", "convex/kafala.ts"],
+        risks: ["The domain duplicates transaction ideas instead of sharing one hardened model.", "Renewal and sponsorship states need stronger transaction discipline.", "Public status/trust messaging should be clearer."]
+      },
+      verification: {
+        title: "Admin Verification Flow",
+        summary: "Admins review proof, metadata, and pending items, then apply state changes that affect reporting and donor trust.",
+        steps: [
+          { title: "Admin opens verification queue", text: "Admin pages surface pending donation or sponsorship items." },
+          { title: "Admin reviews proof and metadata", text: "Receipts, payment method, donor context, and status logs are checked." },
+          { title: "Admin accepts or rejects", text: "A backend mutation updates payment-related state." },
+          { title: "Logs and records update", text: "Verification logs and related entities should stay consistent." },
+          { title: "Public/admin views reflect final status", text: "Reporting and donor trust depend on this path being correct." }
+        ],
+        touchpoints: ["src/pages/AdminVerifications.jsx", "src/pages/AdminDonations.jsx", "src/pages/AdminKafalaVerifications.jsx", "convex/admin.ts", "convex/donations.ts", "convex/kafala.ts"],
+        risks: ["Verification query logic is inconsistent across payment methods.", "Operational mutations need stronger backend authorization.", "Manual flows need stronger guardrails and audit visibility."]
+      },
+      callback: {
+        title: "Payment Callback / HTTP Success Flow",
+        summary: "This is the backend edge where external systems or redirected browser requests become final application state.",
+        steps: [
+          { title: "HTTP handler receives request", text: "Convex HTTP endpoints receive callback or success/failure data." },
+          { title: "Request data is interpreted", text: "Payment ids, statuses, and metadata are matched to local records." },
+          { title: "Backend state is updated", text: "Donations, payments, or sponsorship entities change state." },
+          { title: "User-facing success/fallback is rendered", text: "The user is redirected or shown a generated page." },
+          { title: "Logs and safety behavior apply", text: "This path should be safe against retries, malformed input, and duplicate events." }
+        ],
+        touchpoints: ["convex/http.ts", "convex/payments.ts", "convex/donations.ts", "convex/kafala.ts"],
+        risks: ["Reflected request-derived values in fallback HTML increase injection risk.", "Retry behavior may apply state changes more than once.", "This path is hard to reason about without a diagram."]
+      }
+    };
+
+    const tables = [
+      { name: "users", purpose: "Public user accounts and donor identity.", fields: ["name", "email", "role", "profile"], relations: ["Used by profile and donor history", "Referenced by donations"], risks: ["Local auth assumptions are stronger in UI than backend protection."] },
+      { name: "admins", purpose: "Admin accounts and onboarding metadata.", fields: ["email", "role", "invitation data"], relations: ["Used by admin login and admin invitations"], risks: ["Bootstrap and invitation paths are high-risk."] },
+      { name: "projects", purpose: "Campaign definitions for public fundraising.", fields: ["title", "description", "goalAmount", "raisedAmount", "category", "image"], relations: ["Linked from public project pages", "Referenced by donations"], risks: ["Admin form fields do not fully align with persistence contract."] },
+      { name: "donations", purpose: "Project-linked donation records.", fields: ["projectId", "userId", "amount", "status", "paymentMethod"], relations: ["Tied to projects", "Related to payments"], risks: ["Amount unit handling is inconsistent.", "State transitions are spread across modules."] },
+      { name: "payments", purpose: "Payment lifecycle state.", fields: ["donationId", "payment id", "status", "metadata"], relations: ["Connected to donations", "Used by callbacks"], risks: ["Needs stronger idempotency guarantees."] },
+      { name: "kafala", purpose: "Public sponsorship entities.", fields: ["name", "age", "status", "monthlyPrice", "location"], relations: ["Shown in kafala listing/detail", "Feeds sponsorship lifecycle"], risks: ["Separate domain but overlapping transaction concerns."] },
+      { name: "kafalaSponsorship", purpose: "Active relationship between sponsor and child/case.", fields: ["kafalaId", "sponsor info", "status", "renewal state"], relations: ["Owned by sponsor and renew flows"], risks: ["Lifecycle state must align with payment outcomes."] },
+      { name: "kafalaDonations", purpose: "Donation/payment records specific to kafala.", fields: ["sponsorshipId", "amount", "payment state"], relations: ["Related to sponsorship lifecycle"], risks: ["Separate payment model increases divergence risk."] },
+      { name: "config", purpose: "Operational settings and integration configuration.", fields: ["settings keys", "payment config", "session/config"], relations: ["Read by admin settings and integration modules"], risks: ["Sensitive values should not be broadly readable."] },
+      { name: "verificationLogs", purpose: "Operational trail for verification decisions.", fields: ["target entity", "action", "admin", "note"], relations: ["Supports admin verification"], risks: ["Only useful if all verification paths log consistently."] },
+      { name: "errorLogs", purpose: "Runtime and client error capture surfaced to admins.", fields: ["message", "details", "source", "timestamps"], relations: ["Fed by global error logging"], risks: ["Logging helps detect problems but does not prevent them."] }
+    ];
+
+    const flowPicker = document.getElementById("flowPicker");
+    const flowSteps = document.getElementById("flowSteps");
+    const flowTitle = document.getElementById("flowTitle");
+    const flowSummary = document.getElementById("flowSummary");
+    const flowTouchpoints = document.getElementById("flowTouchpoints");
+    const flowRisks = document.getElementById("flowRisks");
+
+    function renderFlow(key) {
+      const item = flowData[key];
+      document.querySelectorAll(".flow-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.flow === key));
+      flowTitle.textContent = item.title;
+      flowSummary.textContent = item.summary;
+      flowSteps.innerHTML = item.steps.map((step, i) => `<div class="step" data-step="${i + 1}"><b>${step.title}</b><span>${step.text}</span></div>`).join("");
+      flowTouchpoints.innerHTML = item.touchpoints.map(x => `<li>${x}</li>`).join("");
+      flowRisks.innerHTML = item.risks.map(x => `<li>${x}</li>`).join("");
+    }
+
+    Object.keys(flowData).forEach((key, index) => {
+      const button = document.createElement("button");
+      button.className = "flow-btn" + (index === 0 ? " active" : "");
+      button.dataset.flow = key;
+      button.textContent = flowData[key].title;
+      button.addEventListener("click", () => renderFlow(key));
+      flowPicker.appendChild(button);
+    });
+    renderFlow("donation");
+
+    const tableGrid = document.getElementById("tableGrid");
+    tables.forEach((table, index) => {
+      const card = document.createElement("div");
+      card.className = "table" + (index < 3 ? " open" : "");
+      card.innerHTML = `<button class="table-head"><strong>${table.name}</strong><br><small style="color:#61777b;">${table.purpose}</small></button><div class="table-body"><div class="chips">${table.fields.map(f => `<span class="chip">${f}</span>`).join("")}</div><ul>${table.relations.map(r => `<li>${r}</li>`).join("")}</ul><ul>${table.risks.map(r => `<li><b>Risk:</b> ${r}</li>`).join("")}</ul></div>`;
+      card.querySelector(".table-head").addEventListener("click", () => card.classList.toggle("open"));
+      tableGrid.appendChild(card);
+    });
+
+    document.getElementById("expandTables").addEventListener("click", () => document.querySelectorAll(".table").forEach(card => card.classList.add("open")));
+    document.getElementById("collapseTables").addEventListener("click", () => document.querySelectorAll(".table").forEach(card => card.classList.remove("open")));
+    document.getElementById("printReport").addEventListener("click", () => window.print());
+
+    const topTabs = document.getElementById("topTabs");
+    const tabTargets = { overview: "overview", logic: "system-map", design: "design-audit", writing: "writing", risks: "risks" };
+    topTabs.querySelectorAll(".tab").forEach(btn => {
+      btn.addEventListener("click", () => {
+        topTabs.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+        btn.classList.add("active");
+        const target = document.getElementById(tabTargets[btn.dataset.target]);
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+  </script>
+</body>
+</html>

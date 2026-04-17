@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ibtasim — فهرس التصميم</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Tajawal', 'Inter', sans-serif; background: #f6f8f8; color: #0e1a1b; }
+  a { text-decoration: none; color: inherit; }
+  .page { max-width: 1200px; margin: 0 auto; padding: 40px 28px 60px; }
+
+  /* Header */
+  .header { text-align: center; margin-bottom: 56px; }
+  .logo-wrap { display: inline-flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .logo-mark { width: 56px; height: 56px; background: #0d7477; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 24px; box-shadow: 0 4px 14px rgba(13,116,119,0.35); }
+  .logo-text { text-align: right; }
+  .logo-name { font-size: 32px; font-weight: 900; }
+  .logo-sub { font-size: 13px; color: #64748b; font-family: 'Inter'; }
+  .header-desc { font-size: 16px; color: #64748b; max-width: 520px; margin: 0 auto; line-height: 1.7; }
+
+  /* Design System Link */
+  .ds-link { display: flex; align-items: center; gap: 16px; background: white; border: 1.5px solid #0d7477; border-radius: 16px; padding: 20px 24px; margin-bottom: 48px; box-shadow: 0 4px 14px rgba(13,116,119,0.15); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+  .ds-link:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(13,116,119,0.25); }
+  .ds-icon { width: 52px; height: 52px; background: #E6F4F4; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+  .ds-text h2 { font-size: 18px; font-weight: 700; color: #0d7477; }
+  .ds-text p { font-size: 13px; color: #64748b; margin-top: 3px; }
+  .ds-arrow { margin-right: auto; font-size: 22px; color: #0d7477; }
+
+  /* Section */
+  .section { margin-bottom: 48px; }
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .section-title { font-size: 18px; font-weight: 700; }
+  .section-count { font-size: 12px; font-weight: 600; background: #E6F4F4; color: #0A5F62; padding: 3px 10px; border-radius: 100px; font-family: 'Inter'; }
+
+  /* Grid */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+
+  /* Card */
+  .screen-card { background: white; border-radius: 14px; border: 1px solid #E5E9EB; padding: 18px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+  .screen-card:hover { border-color: #0d7477; box-shadow: 0 4px 14px rgba(13,116,119,0.15); transform: translateY(-2px); }
+  .screen-number { font-size: 11px; font-weight: 700; color: #94a3b8; font-family: 'Inter'; margin-bottom: 6px; }
+  .screen-name { font-size: 15px; font-weight: 700; line-height: 1.3; margin-bottom: 4px; }
+  .screen-route { font-size: 11px; color: #94a3b8; font-family: 'Inter'; }
+  .screen-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 100px; margin-top: 10px; }
+  .tag-public { background: #E6F4F4; color: #0A5F62; }
+  .tag-flow { background: #FEF3C7; color: #d97706; }
+  .tag-admin { background: #EDE9FE; color: #6d28d9; }
+  .tag-kafala { background: #F5EBD9; color: #8B6914; }
+
+  /* Stats bar */
+  .stats-bar { display: flex; gap: 16px; margin-bottom: 40px; flex-wrap: wrap; }
+  .stat-pill { background: white; border: 1px solid #E5E9EB; border-radius: 100px; padding: 10px 18px; display: flex; align-items: center; gap: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .stat-pill-num { font-size: 20px; font-weight: 800; color: #0d7477; font-family: 'Inter'; }
+  .stat-pill-label { font-size: 13px; color: #64748b; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-wrap">
+      <div class="logo-mark">ا</div>
+      <div class="logo-text">
+        <div class="logo-name">جمعية ابتسام</div>
+        <div class="logo-sub">ibtasim — Design Paper v1.0 · 2026</div>
+      </div>
+    </div>
+    <p class="header-desc">فهرس شامل لجميع الشاشات والمكونات البصرية لمنصة ابتسام الخيرية — صُمم ليكون مرجعاً احترافياً وموثوقاً</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat-pill"><span class="stat-pill-num">36</span><span class="stat-pill-label">شاشة مصممة</span></div>
+    <div class="stat-pill"><span class="stat-pill-num">11</span><span class="stat-pill-label">شاشة عامة</span></div>
+    <div class="stat-pill"><span class="stat-pill-num">9</span><span class="stat-pill-label">تدفق التبرع والكفالة</span></div>
+    <div class="stat-pill"><span class="stat-pill-num">14</span><span class="stat-pill-label">شاشة إدارية</span></div>
+    <div class="stat-pill"><span class="stat-pill-num">40+</span><span class="stat-pill-label">مكون في نظام التصميم</span></div>
+  </div>
+
+  <!-- Design System -->
+  <a href="00-design-system.html" class="ds-link">
+    <div class="ds-icon">🎨</div>
+    <div class="ds-text">
+      <h2>نظام التصميم — Design System</h2>
+      <p>الألوان · الخطوط · التباعد · الأزرار · البطاقات · حقول الإدخال · الشارات · التنقل</p>
+    </div>
+    <div class="ds-arrow">←</div>
+  </a>
+
+  <!-- PUBLIC SCREENS -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background:#E6F4F4;">🌐</div>
+      <div class="section-title">الشاشات العامة</div>
+      <div class="section-count">11 شاشة</div>
+    </div>
+    <div class="grid">
+      <a href="screens/public/01-home.html" class="screen-card">
+        <div class="screen-number">01</div>
+        <div class="screen-name">الصفحة الرئيسية</div>
+        <div class="screen-route">/</div>
+        <div class="screen-tag tag-public">🌐 عام</div>
+      </a>
+      <a href="screens/public/02-projects-list.html" class="screen-card">
+        <div class="screen-number">02</div>
+        <div class="screen-name">قائمة المشاريع</div>
+        <div class="screen-route">/projects</div>
+        <div class="screen-tag tag-public">🌐 عام</div>
+      </a>
+      <a href="screens/public/03-project-detail.html" class="screen-card">
+        <div class="screen-number">03</div>
+        <div class="screen-name">تفاصيل المشروع</div>
+        <div class="screen-route">/projects/:id</div>
+        <div class="screen-tag tag-public">🌐 عام</div>
+      </a>
+      <a href="screens/public/04-impact-stories.html" class="screen-card">
+        <div class="screen-number">04</div>
+        <div class="screen-name">قصص النجاح</div>
+        <div class="screen-route">/impact</div>
+        <div class="screen-tag tag-public">🌐 عام</div>
+      </a>
+      <a href="screens/public/05-about.html" class="screen-card">
+        <div class="screen-number">05</div>
+        <div class="screen-name">حول الجمعية</div>
+        <div class="screen-route">/about</div>
+        <div class="screen-tag tag-public">🌐 عام</div>
+      </a>
+      <a href="screens/public/06-contact.html" class="screen-card">
+        <div class="screen-number">06</div>
+        <div class="screen-name">تواصل معنا</div>
+        <div class="screen-route">/contact</div>
+        <div class="screen-tag tag-public">🌐 عام</div>
+      </a>
+      <a href="screens/public/07-login.html" class="screen-card">
+        <div class="screen-number">07</div>
+        <div class="screen-name">تسجيل الدخول</div>
+        <div class="screen-route">/login</div>
+        <div class="screen-tag tag-public">🔐 مصادقة</div>
+      </a>
+      <a href="screens/public/08-register.html" class="screen-card">
+        <div class="screen-number">08</div>
+        <div class="screen-name">إنشاء حساب</div>
+        <div class="screen-route">/register</div>
+        <div class="screen-tag tag-public">🔐 مصادقة</div>
+      </a>
+      <a href="screens/public/09-user-profile.html" class="screen-card">
+        <div class="screen-number">09</div>
+        <div class="screen-name">الملف الشخصي</div>
+        <div class="screen-route">/profile</div>
+        <div class="screen-tag tag-public">👤 خاص</div>
+      </a>
+      <a href="screens/public/10-kafala-list.html" class="screen-card">
+        <div class="screen-number">10</div>
+        <div class="screen-name">كفالة الأيتام</div>
+        <div class="screen-route">/kafala</div>
+        <div class="screen-tag tag-kafala">🤲 كفالة</div>
+      </a>
+      <a href="screens/public/11-kafala-detail.html" class="screen-card">
+        <div class="screen-number">11</div>
+        <div class="screen-name">ملف اليتيم</div>
+        <div class="screen-route">/kafala/:id</div>
+        <div class="screen-tag tag-kafala">🤲 كفالة</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- FLOW SCREENS -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background:#FEF3C7;">💳</div>
+      <div class="section-title">تدفق التبرع والكفالة</div>
+      <div class="section-count">9 شاشة</div>
+    </div>
+    <div class="grid">
+      <a href="screens/flow/12-donation-step1-auth.html" class="screen-card">
+        <div class="screen-number">12</div>
+        <div class="screen-name">التبرع — الخطوة 1</div>
+        <div class="screen-route">تسجيل الدخول أو الاستمرار</div>
+        <div class="screen-tag tag-flow">💳 تبرع</div>
+      </a>
+      <a href="screens/flow/13-donation-step2-amount.html" class="screen-card">
+        <div class="screen-number">13</div>
+        <div class="screen-name">التبرع — الخطوة 2</div>
+        <div class="screen-route">اختيار المبلغ</div>
+        <div class="screen-tag tag-flow">💳 تبرع</div>
+      </a>
+      <a href="screens/flow/14-donation-step3-payment.html" class="screen-card">
+        <div class="screen-number">14</div>
+        <div class="screen-name">التبرع — الخطوة 3</div>
+        <div class="screen-route">طريقة الدفع</div>
+        <div class="screen-tag tag-flow">💳 تبرع</div>
+      </a>
+      <a href="screens/flow/15-donation-step4-receipt.html" class="screen-card">
+        <div class="screen-number">15</div>
+        <div class="screen-name">التبرع — الخطوة 4</div>
+        <div class="screen-route">رفع الإيصال</div>
+        <div class="screen-tag tag-flow">💳 تبرع</div>
+      </a>
+      <a href="screens/flow/16-donation-step5-info.html" class="screen-card">
+        <div class="screen-number">16</div>
+        <div class="screen-name">التبرع — الخطوة 5</div>
+        <div class="screen-route">معلومات المتبرع</div>
+        <div class="screen-tag tag-flow">💳 تبرع</div>
+      </a>
+      <a href="screens/flow/17-donation-step6-review.html" class="screen-card">
+        <div class="screen-number">17</div>
+        <div class="screen-name">التبرع — الخطوة 6</div>
+        <div class="screen-route">مراجعة وتأكيد</div>
+        <div class="screen-tag tag-flow">💳 تبرع</div>
+      </a>
+      <a href="screens/flow/18-donation-success.html" class="screen-card">
+        <div class="screen-number">18</div>
+        <div class="screen-name">تم التبرع بنجاح</div>
+        <div class="screen-route">/donate/success</div>
+        <div class="screen-tag tag-flow">✅ نجاح</div>
+      </a>
+      <a href="screens/flow/19-kafala-flow.html" class="screen-card">
+        <div class="screen-number">19</div>
+        <div class="screen-name">تدفق الكفالة</div>
+        <div class="screen-route">/kafala/:id/sponsor</div>
+        <div class="screen-tag tag-kafala">🤲 كفالة</div>
+      </a>
+      <a href="screens/flow/20-kafala-renewal.html" class="screen-card">
+        <div class="screen-number">20</div>
+        <div class="screen-name">تجديد الكفالة</div>
+        <div class="screen-route">/kafala/:id/renew</div>
+        <div class="screen-tag tag-kafala">🔄 تجديد</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- ADMIN SCREENS -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background:#EDE9FE;">⚙️</div>
+      <div class="section-title">لوحة الإدارة</div>
+      <div class="section-count">14 شاشة</div>
+    </div>
+    <div class="grid">
+      <a href="screens/admin/21-admin-login.html" class="screen-card">
+        <div class="screen-number">21</div>
+        <div class="screen-name">دخول المشرف</div>
+        <div class="screen-route">/admin/login</div>
+        <div class="screen-tag tag-admin">🔐 إدارة</div>
+      </a>
+      <a href="screens/admin/22-admin-dashboard.html" class="screen-card">
+        <div class="screen-number">22</div>
+        <div class="screen-name">لوحة التحكم</div>
+        <div class="screen-route">/admin</div>
+        <div class="screen-tag tag-admin">📊 إدارة</div>
+      </a>
+      <a href="screens/admin/23-admin-projects.html" class="screen-card">
+        <div class="screen-number">23</div>
+        <div class="screen-name">إدارة المشاريع</div>
+        <div class="screen-route">/admin/projects</div>
+        <div class="screen-tag tag-admin">📋 إدارة</div>
+      </a>
+      <a href="screens/admin/24-admin-project-form.html" class="screen-card">
+        <div class="screen-number">24</div>
+        <div class="screen-name">نموذج المشروع</div>
+        <div class="screen-route">/admin/projects/new</div>
+        <div class="screen-tag tag-admin">➕ إدارة</div>
+      </a>
+      <a href="screens/admin/25-admin-project-detail.html" class="screen-card">
+        <div class="screen-number">25</div>
+        <div class="screen-name">تفاصيل المشروع</div>
+        <div class="screen-route">/admin/projects/:id</div>
+        <div class="screen-tag tag-admin">📋 إدارة</div>
+      </a>
+      <a href="screens/admin/26-admin-donations.html" class="screen-card">
+        <div class="screen-number">26</div>
+        <div class="screen-name">إدارة التبرعات</div>
+        <div class="screen-route">/admin/donations</div>
+        <div class="screen-tag tag-admin">💰 إدارة</div>
+      </a>
+      <a href="screens/admin/27-admin-verifications.html" class="screen-card">
+        <div class="screen-number">27</div>
+        <div class="screen-name">التحقق من التبرعات</div>
+        <div class="screen-route">/admin/verification</div>
+        <div class="screen-tag tag-admin">✅ إدارة</div>
+      </a>
+      <a href="screens/admin/28-admin-donors.html" class="screen-card">
+        <div class="screen-number">28</div>
+        <div class="screen-name">دليل المتبرعين</div>
+        <div class="screen-route">/admin/donors</div>
+        <div class="screen-tag tag-admin">👥 إدارة</div>
+      </a>
+      <a href="screens/admin/29-admin-donor-detail.html" class="screen-card">
+        <div class="screen-number">29</div>
+        <div class="screen-name">ملف المتبرع</div>
+        <div class="screen-route">/admin/donors/:id</div>
+        <div class="screen-tag tag-admin">👤 إدارة</div>
+      </a>
+      <a href="screens/admin/30-admin-kafala.html" class="screen-card">
+        <div class="screen-number">30</div>
+        <div class="screen-name">إدارة الكفالات</div>
+        <div class="screen-route">/admin/kafala</div>
+        <div class="screen-tag tag-admin">👶 إدارة</div>
+      </a>
+      <a href="screens/admin/31-admin-kafala-form.html" class="screen-card">
+        <div class="screen-number">31</div>
+        <div class="screen-name">نموذج الكفالة</div>
+        <div class="screen-route">/admin/kafala/new</div>
+        <div class="screen-tag tag-admin">➕ إدارة</div>
+      </a>
+      <a href="screens/admin/32-admin-settings.html" class="screen-card">
+        <div class="screen-number">32</div>
+        <div class="screen-name">الإعدادات</div>
+        <div class="screen-route">/admin/settings</div>
+        <div class="screen-tag tag-admin">⚙️ إدارة</div>
+      </a>
+      <a href="screens/admin/33-admin-error-logs.html" class="screen-card">
+        <div class="screen-number">33</div>
+        <div class="screen-name">سجلات الأخطاء</div>
+        <div class="screen-route">/admin/error-logs</div>
+        <div class="screen-tag tag-admin">🔴 إدارة</div>
+      </a>
+      <a href="screens/admin/34-admin-register.html" class="screen-card">
+        <div class="screen-number">34</div>
+        <div class="screen-name">تسجيل المشرف</div>
+        <div class="screen-route">/admin/register/:token</div>
+        <div class="screen-tag tag-admin">🔐 إدارة</div>
+      </a>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding-top:20px;color:#94a3b8;font-size:12px;font-family:'Inter';">
+    ibtasim Design Paper v1.0 · جمعية ابتسام © 2026
+  </div>
+</div>
+</body>
+</html>

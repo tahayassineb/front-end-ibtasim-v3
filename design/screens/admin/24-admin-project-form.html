@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>24 — نموذج المشروع · ibtasim Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--p500:#0d7477;--p600:#0A5F62;--p400:#33C0C0;--p50:#E6F4F4;--p100:#CCF0F0;--surface:#f6f8f8;--teal-wash:#F0F7F7;--text:#0e1a1b;--text2:#64748b;--textm:#94a3b8;--border:#E5E9EB;--shadow-card:0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05);--shadow-primary:0 4px 14px rgba(13,116,119,.25);}
+body{font-family:'Tajawal',sans-serif;background:var(--surface);color:var(--text);}
+a{text-decoration:none;color:inherit;}
+.back-nav{padding:12px 20px;background:white;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px;}
+.admin-shell{display:flex;min-height:calc(100vh - 45px);}
+.sidebar{width:240px;background:white;border-left:1px solid var(--border);flex-shrink:0;}
+.sidebar-logo{padding:20px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.sidebar-logo-mark{width:38px;height:38px;background:var(--p500);border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:16px;}
+.sidebar-logo-name{font-size:16px;font-weight:800;}
+.sidebar-section{padding:16px 12px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--textm);font-family:'Inter';}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;margin:2px 8px;font-size:14px;font-weight:500;color:var(--text2);cursor:pointer;}
+.sidebar-item-active{background:var(--p500);color:white;font-weight:700;box-shadow:var(--shadow-primary);}
+.sidebar-item-icon{font-size:16px;width:20px;text-align:center;}
+.badge-red{display:inline-flex;align-items:center;justify-content:center;background:#ef4444;color:white;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;margin-right:auto;}
+.admin-topbar{height:56px;background:white;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;}
+.topbar-title{font-size:18px;font-weight:800;flex:1;}
+.main-content{flex:1;padding:24px;max-width:900px;}
+
+/* Form layout */
+.form-section{background:white;border-radius:16px;border:1px solid var(--border);box-shadow:var(--shadow-card);margin-bottom:20px;overflow:hidden;}
+.form-section-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.form-section-icon{font-size:18px;}
+.form-section-title{font-size:15px;font-weight:700;}
+.form-section-body{padding:20px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.field-group{margin-bottom:0;}
+.field-group-full{grid-column:1/-1;}
+.field-label{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:7px;display:flex;align-items:center;gap:4px;}
+.field-required{color:#ef4444;}
+.field-input{width:100%;height:48px;border:1.5px solid var(--border);border-radius:12px;padding:0 14px;font-size:14px;font-family:'Tajawal';color:var(--text);outline:none;transition:border-color .15s;background:white;}
+.field-input:focus{border-color:var(--p500);box-shadow:0 0 0 3px rgba(13,116,119,.1);}
+.field-textarea{width:100%;min-height:100px;border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;font-size:14px;font-family:'Tajawal';color:var(--text);outline:none;resize:vertical;line-height:1.6;}
+.field-textarea:focus{border-color:var(--p500);box-shadow:0 0 0 3px rgba(13,116,119,.1);}
+.field-select{width:100%;height:48px;border:1.5px solid var(--border);border-radius:12px;padding:0 14px;font-size:14px;font-family:'Tajawal';color:var(--text);outline:none;background:white;cursor:pointer;}
+.field-select:focus{border-color:var(--p500);}
+.field-hint{font-size:11px;color:var(--textm);margin-top:5px;}
+
+/* Upload zone */
+.upload-zone{border:2px dashed var(--border);border-radius:14px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface);}
+.upload-zone:hover{border-color:var(--p400);background:var(--p50);}
+
+/* Toggle row */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);}
+.toggle-row:last-child{border-bottom:none;}
+.toggle-info-title{font-size:14px;font-weight:600;}
+.toggle-info-desc{font-size:12px;color:var(--text2);margin-top:2px;}
+.toggle{width:44px;height:24px;background:var(--p500);border-radius:100px;position:relative;cursor:pointer;flex-shrink:0;}
+.toggle-knob{width:20px;height:20px;background:white;border-radius:50%;position:absolute;top:2px;left:22px;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.toggle-off{background:var(--border);}
+.toggle-off .toggle-knob{left:2px;}
+
+/* Bottom action bar */
+.action-bar{background:white;border-top:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;bottom:0;}
+.btn-secondary{height:44px;padding:0 20px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Tajawal';background:white;}
+.btn-primary{height:44px;padding:0 28px;background:var(--p500);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Tajawal';box-shadow:var(--shadow-primary);}
+.btn-success{height:44px;padding:0 28px;background:#16a34a;color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Tajawal';}
+</style>
+</head>
+<body>
+<div class="back-nav"><a href="../../index.html">← فهرس التصميم</a><span>/</span><span>24 — نموذج إضافة/تعديل مشروع</span><span style="margin-right:auto;background:var(--p50);color:var(--p600);font-size:10px;font-weight:700;padding:2px 10px;border-radius:100px;">DESKTOP 1440px · Admin</span></div>
+<div class="admin-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-mark">ا</div>
+      <div class="sidebar-logo-name">ابتسام · إدارة</div>
+    </div>
+    <div class="sidebar-section">الرئيسية</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">📊</span>لوحة التحكم</div>
+    <div class="sidebar-section">المحتوى</div>
+    <div class="sidebar-item sidebar-item-active"><span class="sidebar-item-icon">📁</span>المشاريع</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">🤲</span>الكفالة</div>
+    <div class="sidebar-section">المالية</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">💰</span>التبرعات <span class="badge-red">12</span></div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">✅</span>التحقق <span class="badge-red">7</span></div>
+    <div class="sidebar-section">المستخدمون</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">👥</span>المتبرعون</div>
+    <div class="sidebar-section">النظام</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">⚙️</span>الإعدادات</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">🔴</span>سجل الأخطاء <span class="badge-red">3</span></div>
+  </aside>
+
+  <div style="flex:1;display:flex;flex-direction:column;overflow-y:auto;">
+    <div class="admin-topbar">
+      <div class="topbar-title">📁 إضافة مشروع جديد</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-secondary">← العودة</button>
+        <button class="btn-primary">💾 حفظ كمسودة</button>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <!-- Section 1: Basic info -->
+      <div class="form-section">
+        <div class="form-section-header">
+          <div class="form-section-icon">📝</div>
+          <div class="form-section-title">المعلومات الأساسية</div>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field-group field-group-full">
+              <div class="field-label">اسم المشروع <span class="field-required">*</span></div>
+              <input class="field-input" type="text" value="مدرسة تافيلالت — المرحلة الثانية">
+            </div>
+            <div class="field-group">
+              <div class="field-label">الفئة <span class="field-required">*</span></div>
+              <select class="field-select">
+                <option>🎓 التعليم</option>
+                <option>💧 الماء</option>
+                <option>🏥 الصحة</option>
+                <option>🕌 الدين</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <div class="field-label">الموقع الجغرافي</div>
+              <input class="field-input" type="text" value="درعة تافيلالت، المغرب">
+            </div>
+            <div class="field-group field-group-full">
+              <div class="field-label">الوصف المختصر <span class="field-required">*</span></div>
+              <textarea class="field-textarea" rows="3">بناء مبنى جديد لمدرسة تافيلالت لاستيعاب 200 تلميذ إضافي في المنطقة النائية، يتضمن فصولاً دراسية ومرافق صحية.</textarea>
+            </div>
+            <div class="field-group field-group-full">
+              <div class="field-label">الوصف التفصيلي</div>
+              <textarea class="field-textarea" rows="5" placeholder="أضف وصفاً مفصلاً للمشروع، أهدافه، والفئة المستفيدة..."></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Financial -->
+      <div class="form-section">
+        <div class="form-section-header">
+          <div class="form-section-icon">💰</div>
+          <div class="form-section-title">المعلومات المالية</div>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field-group">
+              <div class="field-label">المبلغ المستهدف (درهم) <span class="field-required">*</span></div>
+              <input class="field-input" type="number" value="160000" dir="ltr">
+            </div>
+            <div class="field-group">
+              <div class="field-label">المبلغ المحصّل حتى الآن (درهم)</div>
+              <input class="field-input" type="number" value="0" dir="ltr">
+              <div class="field-hint">للمشاريع التي جمعت تبرعات قبل الإدراج في المنصة</div>
+            </div>
+            <div class="field-group">
+              <div class="field-label">تاريخ بداية الحملة</div>
+              <input class="field-input" type="date" value="2025-02-01" dir="ltr">
+            </div>
+            <div class="field-group">
+              <div class="field-label">تاريخ نهاية الحملة</div>
+              <input class="field-input" type="date" value="2025-05-01" dir="ltr">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Media -->
+      <div class="form-section">
+        <div class="form-section-header">
+          <div class="form-section-icon">🖼️</div>
+          <div class="form-section-title">الصور والوسائط</div>
+        </div>
+        <div class="form-section-body">
+          <div class="field-label" style="margin-bottom:10px;">صورة الغلاف الرئيسية <span class="field-required">*</span></div>
+          <div class="upload-zone">
+            <div style="font-size:36px;margin-bottom:8px;">🖼️</div>
+            <div style="font-size:14px;font-weight:700;margin-bottom:4px;">اسحب وأفلت أو انقر للاختيار</div>
+            <div style="font-size:12px;color:var(--textm);">PNG أو JPG · 1200×600px مُفضَّل · حتى 5 ميغابايت</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Settings -->
+      <div class="form-section">
+        <div class="form-section-header">
+          <div class="form-section-icon">⚙️</div>
+          <div class="form-section-title">إعدادات المشروع</div>
+        </div>
+        <div class="form-section-body">
+          <div class="toggle-row">
+            <div><div class="toggle-info-title">عرض قائمة المتبرعين</div><div class="toggle-info-desc">إظهار أسماء المتبرعين في صفحة المشروع</div></div>
+            <div class="toggle"><div class="toggle-knob"></div></div>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-info-title">السماح بالتبرع المجهول</div><div class="toggle-info-desc">يمكن للمتبرعين اختيار إخفاء هويتهم</div></div>
+            <div class="toggle"><div class="toggle-knob"></div></div>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-info-title">مشروع مميز</div><div class="toggle-info-desc">يظهر في أعلى قائمة المشاريع والرئيسية</div></div>
+            <div class="toggle toggle-off"><div class="toggle-knob"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action bar -->
+    <div class="action-bar">
+      <button class="btn-secondary">← إلغاء</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary">💾 حفظ كمسودة</button>
+        <button class="btn-success">✅ نشر المشروع</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

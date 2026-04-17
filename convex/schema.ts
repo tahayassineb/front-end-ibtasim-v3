@@ -127,6 +127,13 @@ export default defineSchema({
       v.literal("education"),     // مرحلة التعليم والتأهيل
       v.literal("integration"),   // مرحلة الاندماج المجتمعي
     )),
+
+    // Custom impact/benefit cards shown on project detail page
+    benefitCards: v.optional(v.array(v.object({
+      icon: v.string(),    // emoji e.g. "👨‍👩‍👧‍👦"
+      value: v.string(),   // e.g. "10"
+      label: v.string(),   // e.g. "أسرة مستفيدة"
+    }))),
   })
     .index("by_status", ["status"])
     .index("by_category", ["category"])
@@ -438,6 +445,9 @@ export default defineSchema({
     isFeatured: v.optional(v.boolean()),
     publishedAt: v.optional(v.number()),
     adminId: v.string(),
+    // Rich content fields
+    coverImage: v.optional(v.string()),       // Convex storage ID
+    body: v.optional(v.string()),             // HTML from rich text editor
   }).index('by_published', ['isPublished']),
 
   // ============================================

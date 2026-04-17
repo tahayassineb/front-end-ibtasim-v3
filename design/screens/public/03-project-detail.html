@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>03 — تفاصيل المشروع · ibtasim</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--p500:#0d7477;--p600:#0A5F62;--p400:#33C0C0;--p50:#E6F4F4;--surface:#f6f8f8;--white:#fff;--teal-wash:#F0F7F7;--text:#0e1a1b;--text2:#64748b;--textm:#94a3b8;--border:#E5E9EB;--success:#22c55e;--warn:#f59e0b;--shadow-card:0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05);--shadow-primary:0 4px 14px rgba(13,116,119,.25);--shadow-lg:0 10px 15px rgba(0,0,0,.10);}
+body{font-family:'Tajawal',sans-serif;background:var(--surface);color:var(--text);}
+a{text-decoration:none;color:inherit;}
+.back-nav{padding:12px 20px;background:white;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px;}
+.main-header{background:white;border-bottom:1px solid var(--border);box-shadow:var(--shadow-card);}
+.header-inner{max-width:1200px;margin:0 auto;padding:0 28px;height:64px;display:flex;align-items:center;justify-content:space-between;}
+.logo{display:flex;align-items:center;gap:10px;}.logo-mark{width:38px;height:38px;background:var(--p500);border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:16px;}.logo-name{font-size:20px;font-weight:800;}
+.nav-links{display:flex;gap:2px;}.nav-link{height:36px;padding:0 14px;border-radius:10px;font-size:14px;font-weight:500;color:var(--text2);display:flex;align-items:center;}.nav-link-active{background:var(--p50);color:var(--p600);font-weight:600;}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:none;cursor:pointer;font-family:'Tajawal';font-weight:600;border-radius:100px;}
+.btn-sm{height:36px;padding:0 16px;font-size:13px;}.btn-md{height:44px;padding:0 22px;font-size:14px;}.btn-lg{height:52px;padding:0 28px;font-size:16px;}
+.btn-primary{background:var(--p500);color:white;box-shadow:var(--shadow-primary);}.btn-secondary{background:white;color:var(--p500);border:1.5px solid var(--p500);}.btn-soft{background:var(--p50);color:var(--p600);}
+.badge{display:inline-flex;align-items:center;gap:4px;border-radius:100px;font-weight:600;font-size:11px;padding:3px 10px;}
+.badge-success{background:#D1FAE5;color:#16a34a;}.badge-warning{background:#FEF3C7;color:#d97706;}.badge-primary{background:var(--p50);color:var(--p600);}
+
+/* Hero image */
+.project-hero{position:relative;height:420px;background:linear-gradient(160deg,#021718,#052E2F,#0d7477);overflow:hidden;display:flex;align-items:flex-end;}
+.project-hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.75) 0%,rgba(0,0,0,.2) 50%,transparent 100%);}
+.project-hero-content{position:relative;z-index:2;max-width:1200px;width:100%;margin:0 auto;padding:0 28px 32px;}
+.project-hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.25);color:white;border-radius:100px;padding:5px 14px;font-size:12px;font-weight:600;margin-bottom:12px;}
+.project-hero-title{font-size:32px;font-weight:900;color:white;margin-bottom:8px;}
+.project-hero-meta{display:flex;align-items:center;gap:16px;font-size:13px;color:rgba(255,255,255,.7);}
+.back-btn{position:absolute;top:20px;right:20px;z-index:3;width:40px;height:40px;background:rgba(255,255,255,.2);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:18px;cursor:pointer;}
+
+/* Sticky funding bar */
+.sticky-fund-bar{position:sticky;top:64px;z-index:40;background:white;border-bottom:1px solid var(--border);box-shadow:var(--shadow-card);}
+.sticky-fund-inner{max-width:1200px;margin:0 auto;padding:12px 28px;display:flex;align-items:center;gap:24px;}
+.sticky-raised{font-size:22px;font-weight:900;color:var(--p600);white-space:nowrap;}
+.sticky-bar{flex:1;height:8px;background:var(--border);border-radius:100px;overflow:hidden;}
+.sticky-fill{height:100%;background:var(--p500);border-radius:100px;}
+.sticky-pct{font-size:14px;font-weight:700;color:var(--text2);white-space:nowrap;}
+.sticky-btn{flex-shrink:0;}
+
+/* Main layout */
+.main-content{max-width:1200px;margin:0 auto;padding:40px 28px;display:grid;grid-template-columns:1fr 360px;gap:40px;align-items:start;}
+
+/* Left column */
+.overline{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:var(--p500);margin-bottom:8px;font-family:'Inter';}
+.section-title{font-size:22px;font-weight:700;margin-bottom:16px;}
+.body-text{font-size:15px;color:var(--text2);line-height:1.85;}
+.divider{height:1px;background:var(--border);margin:28px 0;}
+
+/* Impact breakdown */
+.impact-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px;}
+.impact-item{background:var(--teal-wash);border-radius:14px;padding:18px;text-align:center;}
+.impact-amount{font-size:20px;font-weight:800;color:var(--p600);font-family:'Inter';}
+.impact-desc{font-size:12px;color:var(--text2);margin-top:6px;line-height:1.5;}
+
+/* Donors */
+.donor-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);}
+.donor-avatar{width:40px;height:40px;border-radius:50%;background:var(--p100);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.donor-name{font-size:14px;font-weight:600;}
+.donor-amount{font-size:14px;font-weight:700;color:var(--p600);margin-right:auto;}
+.donor-time{font-size:12px;color:var(--textm);}
+
+/* Right sidebar card */
+.sidebar-card{background:white;border-radius:18px;border:1px solid var(--border);box-shadow:var(--shadow-card);padding:24px;position:sticky;top:130px;}
+.goal-section{margin-bottom:24px;}
+.goal-numbers{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px;}
+.goal-raised-big{font-size:28px;font-weight:900;color:var(--p600);}
+.goal-target{font-size:13px;color:var(--textm);text-align:left;}
+.goal-bar-lg{height:12px;background:var(--border);border-radius:100px;overflow:hidden;margin-bottom:10px;}
+.goal-fill-lg{height:100%;background:var(--p500);border-radius:100px;}
+.goal-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--textm);}
+.donate-btn{width:100%;height:56px;background:var(--p500);color:white;border:none;border-radius:16px;font-size:17px;font-weight:700;cursor:pointer;box-shadow:var(--shadow-primary);font-family:'Tajawal';margin-bottom:12px;}
+.trust-row{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;color:var(--textm);}
+.share-row{display:flex;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);}
+.share-btn{flex:1;height:38px;border-radius:10px;font-size:13px;font-weight:600;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;font-family:'Tajawal';display:flex;align-items:center;justify-content:center;gap:6px;}
+
+/* Stats strip */
+.stats-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-radius:12px;overflow:hidden;margin-top:20px;}
+.stats-strip-item{background:white;padding:14px;text-align:center;}
+.stats-strip-num{font-size:20px;font-weight:800;color:var(--text);}
+.stats-strip-label{font-size:11px;color:var(--textm);margin-top:4px;}
+</style>
+</head>
+<body>
+<div class="back-nav"><a href="../../index.html">← فهرس التصميم</a><span>/</span><span>03 — تفاصيل المشروع</span><span style="margin-right:auto;background:var(--p50);color:var(--p600);font-size:10px;font-weight:700;padding:2px 10px;border-radius:100px;">DESKTOP 1440px</span></div>
+
+<!-- Header -->
+<nav class="main-header">
+  <div class="header-inner">
+    <div class="logo"><div class="logo-mark">ا</div><div class="logo-name">ابتسام</div></div>
+    <div class="nav-links">
+      <div class="nav-link">الرئيسية</div><div class="nav-link nav-link-active">المشاريع</div>
+      <div class="nav-link">الكفالة</div><div class="nav-link">قصص النجاح</div>
+    </div>
+    <div style="display:flex;gap:10px;"><button class="btn btn-sm btn-soft">دخول</button><button class="btn btn-sm btn-primary">تبرع الآن</button></div>
+  </div>
+</nav>
+
+<!-- Project Hero -->
+<div class="project-hero">
+  <div class="project-hero-overlay"></div>
+  <div class="back-btn">←</div>
+  <div class="project-hero-content">
+    <div class="project-hero-badge">🎓 التعليم</div>
+    <h1 class="project-hero-title">بناء مدرسة في منطقة تافيلالت</h1>
+    <div class="project-hero-meta">
+      <span>📍 منطقة درعة تافيلالت، المغرب</span>
+      <span>|</span>
+      <span>📅 بدأ في 1 مارس 2026</span>
+      <span>|</span>
+      <span>⏳ 32 يوماً متبقياً</span>
+    </div>
+  </div>
+</div>
+
+<!-- Sticky funding bar -->
+<div class="sticky-fund-bar">
+  <div class="sticky-fund-inner">
+    <div class="sticky-raised">78,000 د.م</div>
+    <div class="sticky-bar"><div class="sticky-fill" style="width:78%;"></div></div>
+    <div class="sticky-pct">78% من الهدف</div>
+    <button class="btn btn-md btn-primary sticky-btn">تبرع الآن</button>
+  </div>
+</div>
+
+<!-- Main content -->
+<div class="main-content">
+  <!-- LEFT: Description -->
+  <div>
+    <!-- About project -->
+    <div class="overline">ABOUT THE PROJECT</div>
+    <h2 class="section-title">عن المشروع</h2>
+    <p class="body-text">
+      تعاني منطقة تافيلالت من شح حاد في البنية التحتية التعليمية، مما يضطر أطفال المنطقة إلى قطع مسافات طويلة للوصول إلى أقرب مدرسة. يهدف هذا المشروع إلى بناء مدرسة ابتدائية متكاملة تضم 6 فصول دراسية، مكتبة، ومرافق صحية لائقة لاستيعاب 200 طالب وطالبة.
+    </p>
+    <p class="body-text" style="margin-top:14px;">
+      ستوفر المدرسة التعليم المجاني لجميع الأطفال في المنطقة، مع توفير الكتب المدرسية والقرطاسية والوجبات الغذائية في إطار برنامج التغذية المدرسية.
+    </p>
+
+    <div class="divider"></div>
+
+    <!-- Impact breakdown -->
+    <div class="overline">YOUR IMPACT</div>
+    <h2 class="section-title">ماذا يفعل تبرعك؟</h2>
+    <div class="impact-grid">
+      <div class="impact-item">
+        <div class="impact-amount">100 د.م</div>
+        <div class="impact-desc">توفر كتب مدرسية لطالب لمدة سنة كاملة</div>
+      </div>
+      <div class="impact-item">
+        <div class="impact-amount">500 د.م</div>
+        <div class="impact-desc">تموّل لوحة سبورة وتجهيزات فصل دراسي</div>
+      </div>
+      <div class="impact-item">
+        <div class="impact-amount">2,000 د.م</div>
+        <div class="impact-desc">تبني جداراً كاملاً في المدرسة الجديدة</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Donors section -->
+    <div class="overline">GENEROUS DONORS</div>
+    <h2 class="section-title" style="margin-bottom:20px;">المتبرعون الكرام <span style="font-size:14px;color:var(--textm);font-weight:500;">(127 متبرع)</span></h2>
+
+    <div class="donor-item">
+      <div class="donor-avatar">👤</div>
+      <div>
+        <div class="donor-name">أحمد محمد الإدريسي</div>
+        <div class="donor-time">منذ 3 ساعات</div>
+      </div>
+      <div class="donor-amount">500 د.م</div>
+    </div>
+    <div class="donor-item">
+      <div class="donor-avatar" style="background:#D1FAE5;">👤</div>
+      <div>
+        <div class="donor-name">فاطمة الزهراء بنعلي</div>
+        <div class="donor-time">منذ 8 ساعات</div>
+      </div>
+      <div class="donor-amount">200 د.م</div>
+    </div>
+    <div class="donor-item">
+      <div class="donor-avatar" style="background:#FEF3C7;">👤</div>
+      <div>
+        <div class="donor-name">متبرع مجهول</div>
+        <div class="donor-time">منذ يوم</div>
+      </div>
+      <div class="donor-amount">1,000 د.م</div>
+    </div>
+    <div class="donor-item">
+      <div class="donor-avatar" style="background:#E0E7FF;">👤</div>
+      <div>
+        <div class="donor-name">محمد العلوي</div>
+        <div class="donor-time">منذ يومين</div>
+      </div>
+      <div class="donor-amount">300 د.م</div>
+    </div>
+    <div style="margin-top:16px;">
+      <button class="btn btn-sm btn-soft">عرض جميع المتبرعين (127) →</button>
+    </div>
+  </div>
+
+  <!-- RIGHT: Sidebar -->
+  <div class="sidebar-card">
+    <div class="goal-section">
+      <div class="goal-numbers">
+        <div>
+          <div style="font-size:12px;color:var(--textm);margin-bottom:4px;">تم جمع</div>
+          <div class="goal-raised-big">78,000 د.م</div>
+        </div>
+        <div class="goal-target">
+          <div>من أصل</div>
+          <div style="font-size:16px;font-weight:700;color:var(--text);">100,000 د.م</div>
+        </div>
+      </div>
+      <div class="goal-bar-lg"><div class="goal-fill-lg" style="width:78%;"></div></div>
+      <div class="goal-meta">
+        <span><strong style="color:var(--p500);">78%</strong> مكتمل</span>
+        <span>⏳ 32 يوم متبقي</span>
+      </div>
+    </div>
+
+    <div class="stats-strip">
+      <div class="stats-strip-item">
+        <div class="stats-strip-num">127</div>
+        <div class="stats-strip-label">متبرع</div>
+      </div>
+      <div class="stats-strip-item">
+        <div class="stats-strip-num">22,000</div>
+        <div class="stats-strip-label">درهم متبقي</div>
+      </div>
+      <div class="stats-strip-item">
+        <div class="stats-strip-num">32</div>
+        <div class="stats-strip-label">يوم متبقي</div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;">
+      <button class="donate-btn">تبرع الآن 💚</button>
+      <div class="trust-row">🔒 تبرعك آمن ومحمي بالكامل</div>
+    </div>
+
+    <div class="share-row">
+      <button class="share-btn">📘 شارك</button>
+      <button class="share-btn">💬 واتساب</button>
+      <button class="share-btn">🔗 نسخ الرابط</button>
+    </div>
+
+    <div style="margin-top:20px;padding:14px;background:var(--teal-wash);border-radius:12px;">
+      <div style="font-size:12px;font-weight:700;color:var(--p600);margin-bottom:6px;">✓ جمعية معتمدة رسمياً</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.6;">تبرعاتكم تصل مباشرة إلى المشروع · نشر تقارير دورية للإنجاز</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

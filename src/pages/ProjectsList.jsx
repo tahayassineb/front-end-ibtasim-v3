@@ -313,7 +313,7 @@ const ProjectsList = () => {
                     </div>
 
                     <button
-                      onClick={e => { e.stopPropagation(); navigate(`/donate/${item.id}`); }}
+                      onClick={e => { e.stopPropagation(); navigate(`/projects/${item.id}`); }}
                       style={{ width: '100%', height: 44, borderRadius: 100, background: '#0d7477', color: 'white', border: 'none', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: '0 4px 14px rgba(13,116,119,0.25)' }}
                     >
                       تبرع الآن

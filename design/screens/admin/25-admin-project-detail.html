@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>25 — تفاصيل المشروع · ibtasim Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--p500:#0d7477;--p600:#0A5F62;--p400:#33C0C0;--p50:#E6F4F4;--p100:#CCF0F0;--surface:#f6f8f8;--teal-wash:#F0F7F7;--text:#0e1a1b;--text2:#64748b;--textm:#94a3b8;--border:#E5E9EB;--shadow-card:0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05);--shadow-primary:0 4px 14px rgba(13,116,119,.25);}
+body{font-family:'Tajawal',sans-serif;background:var(--surface);color:var(--text);}
+a{text-decoration:none;color:inherit;}
+.back-nav{padding:12px 20px;background:white;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px;}
+.admin-shell{display:flex;min-height:calc(100vh - 45px);}
+.sidebar{width:240px;background:white;border-left:1px solid var(--border);flex-shrink:0;}
+.sidebar-logo{padding:20px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.sidebar-logo-mark{width:38px;height:38px;background:var(--p500);border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:16px;}
+.sidebar-logo-name{font-size:16px;font-weight:800;}
+.sidebar-section{padding:16px 12px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--textm);font-family:'Inter';}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;margin:2px 8px;font-size:14px;font-weight:500;color:var(--text2);cursor:pointer;}
+.sidebar-item-active{background:var(--p500);color:white;font-weight:700;box-shadow:var(--shadow-primary);}
+.sidebar-item-icon{font-size:16px;width:20px;text-align:center;}
+.badge-red{display:inline-flex;align-items:center;justify-content:center;background:#ef4444;color:white;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;margin-right:auto;}
+.admin-topbar{height:56px;background:white;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;}
+.topbar-title{font-size:18px;font-weight:800;flex:1;}
+.btn-secondary{height:38px;padding:0 16px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Tajawal';background:white;}
+.btn-primary{height:38px;padding:0 18px;background:var(--p500);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Tajawal';box-shadow:var(--shadow-primary);}
+.btn-danger{height:38px;padding:0 16px;background:#FEE2E2;color:#dc2626;border:1px solid #FCA5A5;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Tajawal';}
+.main-content{flex:1;padding:24px;overflow-y:auto;}
+
+/* Project hero card */
+.project-hero{background:white;border-radius:16px;border:1px solid var(--border);box-shadow:var(--shadow-card);overflow:hidden;margin-bottom:20px;}
+.project-hero-img{height:200px;background:linear-gradient(135deg,var(--p600),var(--p400));display:flex;align-items:center;justify-content:center;font-size:64px;position:relative;}
+.project-hero-status{position:absolute;top:16px;right:16px;padding:5px 14px;border-radius:100px;font-size:12px;font-weight:700;background:#D1FAE5;color:#16a34a;}
+.project-hero-body{padding:20px;}
+.project-hero-name{font-size:22px;font-weight:900;margin-bottom:8px;}
+.project-hero-meta{display:flex;gap:16px;font-size:13px;color:var(--text2);margin-bottom:16px;}
+
+/* Progress row */
+.progress-section{display:flex;align-items:center;gap:16px;margin-bottom:12px;}
+.progress-nums{flex-shrink:0;}
+.progress-raised{font-size:28px;font-weight:900;color:var(--p600);font-family:'Inter';}
+.progress-goal{font-size:14px;color:var(--textm);}
+.progress-bar-wrap{flex:1;}
+.progress-bar{height:10px;background:var(--border);border-radius:100px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--p500);border-radius:100px;}
+.progress-pct{font-size:18px;font-weight:900;color:var(--p600);font-family:'Inter';flex-shrink:0;}
+
+/* Stats grid */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;}
+.stat-card{background:white;border-radius:14px;border:1px solid var(--border);box-shadow:var(--shadow-card);padding:16px;text-align:center;}
+.stat-num{font-size:24px;font-weight:900;font-family:'Inter';color:var(--p600);}
+.stat-label{font-size:12px;color:var(--text2);margin-top:4px;}
+
+/* Donations table -->
+.section-card{background:white;border-radius:16px;border:1px solid var(--border);box-shadow:var(--shadow-card);overflow:hidden;margin-bottom:20px;}
+.section-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.section-title{font-size:15px;font-weight:700;}
+.table-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;border-bottom:1px solid var(--border);align-items:center;}
+.th{padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--textm);font-family:'Inter';background:var(--teal-wash);}
+.td{padding:12px 16px;font-size:13px;}
+.status-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700;}
+.status-verified{background:#D1FAE5;color:#16a34a;}
+.status-pending{background:#FEF3C7;color:#b45309;}
+</style>
+</head>
+<body>
+<div class="back-nav"><a href="../../index.html">← فهرس التصميم</a><span>/</span><span>25 — تفاصيل المشروع (قراءة)</span><span style="margin-right:auto;background:var(--p50);color:var(--p600);font-size:10px;font-weight:700;padding:2px 10px;border-radius:100px;">DESKTOP 1440px · Admin</span></div>
+<div class="admin-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-mark">ا</div>
+      <div class="sidebar-logo-name">ابتسام · إدارة</div>
+    </div>
+    <div class="sidebar-section">الرئيسية</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">📊</span>لوحة التحكم</div>
+    <div class="sidebar-section">المحتوى</div>
+    <div class="sidebar-item sidebar-item-active"><span class="sidebar-item-icon">📁</span>المشاريع</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">🤲</span>الكفالة</div>
+    <div class="sidebar-section">المالية</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">💰</span>التبرعات <span class="badge-red">12</span></div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">✅</span>التحقق <span class="badge-red">7</span></div>
+    <div class="sidebar-section">المستخدمون</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">👥</span>المتبرعون</div>
+    <div class="sidebar-section">النظام</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">⚙️</span>الإعدادات</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">🔴</span>سجل الأخطاء <span class="badge-red">3</span></div>
+  </aside>
+
+  <div style="flex:1;display:flex;flex-direction:column;">
+    <div class="admin-topbar">
+      <div class="topbar-title">📁 مدرسة تافيلالت</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-secondary">← المشاريع</button>
+        <button class="btn-primary">✏️ تعديل</button>
+        <button class="btn-danger">⏸ إيقاف مؤقت</button>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <!-- Project hero -->
+      <div class="project-hero">
+        <div class="project-hero-img">🎓<div class="project-hero-status">● نشط</div></div>
+        <div class="project-hero-body">
+          <div class="project-hero-name">مدرسة تافيلالت — المرحلة الأولى</div>
+          <div class="project-hero-meta">
+            <span>📍 درعة تافيلالت</span>
+            <span>🎓 التعليم</span>
+            <span>📅 بدأ: 1 أكتوبر 2024</span>
+            <span>⏰ ينتهي: 1 أبريل 2025</span>
+          </div>
+          <div class="progress-section">
+            <div class="progress-nums">
+              <div class="progress-raised">124,800</div>
+              <div class="progress-goal">من 160,000 درهم</div>
+            </div>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar"><div class="progress-fill" style="width:78%;"></div></div>
+            </div>
+            <div class="progress-pct">78%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-num">247</div><div class="stat-label">عدد المتبرعين</div></div>
+        <div class="stat-card"><div class="stat-num">124,800</div><div class="stat-label">درهم محصّل</div></div>
+        <div class="stat-card"><div class="stat-num">504</div><div class="stat-label">درهم متوسط التبرع</div></div>
+        <div class="stat-card"><div class="stat-num">32</div><div class="stat-label">يوم متبقي</div></div>
+      </div>
+
+      <!-- Recent donations table -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">💰 آخر التبرعات</div>
+          <a href="26-admin-donations.html" style="font-size:12px;color:var(--p500);font-weight:600;">عرض الكل ←</a>
+        </div>
+        <div class="table-row">
+          <div class="th">المتبرع</div>
+          <div class="th">المبلغ</div>
+          <div class="th">التاريخ</div>
+          <div class="th">الحالة</div>
+        </div>
+        <div class="table-row">
+          <div class="td" style="font-weight:600;">أحمد الإدريسي</div>
+          <div class="td" style="font-family:'Inter';font-weight:700;color:var(--p600);">500 د.م</div>
+          <div class="td" style="color:var(--textm);font-family:'Inter';">2025-01-29</div>
+          <div class="td"><span class="status-badge status-verified">✓ مؤكد</span></div>
+        </div>
+        <div class="table-row">
+          <div class="td" style="font-weight:600;">مجهول الهوية</div>
+          <div class="td" style="font-family:'Inter';font-weight:700;color:var(--p600);">1,000 د.م</div>
+          <div class="td" style="color:var(--textm);font-family:'Inter';">2025-01-29</div>
+          <div class="td"><span class="status-badge status-pending">⏳ انتظار</span></div>
+        </div>
+        <div class="table-row">
+          <div class="td" style="font-weight:600;">فاطمة العلوي</div>
+          <div class="td" style="font-family:'Inter';font-weight:700;color:var(--p600);">200 د.م</div>
+          <div class="td" style="color:var(--textm);font-family:'Inter';">2025-01-28</div>
+          <div class="td"><span class="status-badge status-verified">✓ مؤكد</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

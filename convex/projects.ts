@@ -217,6 +217,7 @@ export const createProject = mutation({
     isFeatured: v.optional(v.boolean()),
     featuredOrder: v.optional(v.number()),
     createdBy: v.id("admins"),
+    benefitCards: v.optional(v.array(v.object({ icon: v.string(), value: v.string(), label: v.string() }))),
   },
   returns: v.id("projects"),
   handler: async (ctx, args) => {
@@ -251,6 +252,7 @@ export const createProject = mutation({
       updatedAt: now,
       isFeatured: args.isFeatured || false,
       featuredOrder: featuredOrder,
+      benefitCards: args.benefitCards,
     });
 
     // Schedule notification if published directly as active
@@ -296,6 +298,7 @@ export const updateProject = mutation({
       endDate: v.optional(v.number()),
       isFeatured: v.optional(v.boolean()),
       featuredOrder: v.optional(v.number()),
+      benefitCards: v.optional(v.array(v.object({ icon: v.string(), value: v.string(), label: v.string() }))),
     }),
   },
   returns: v.boolean(),

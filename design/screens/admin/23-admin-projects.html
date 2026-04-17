@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>23 — المشاريع · ibtasim Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--p500:#0d7477;--p600:#0A5F62;--p400:#33C0C0;--p50:#E6F4F4;--p100:#CCF0F0;--surface:#f6f8f8;--teal-wash:#F0F7F7;--text:#0e1a1b;--text2:#64748b;--textm:#94a3b8;--border:#E5E9EB;--shadow-card:0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05);--shadow-primary:0 4px 14px rgba(13,116,119,.25);--warn:#f59e0b;--warn50:#FFFBEB;}
+body{font-family:'Tajawal',sans-serif;background:var(--surface);color:var(--text);}
+a{text-decoration:none;color:inherit;}
+.back-nav{padding:12px 20px;background:white;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px;}
+.admin-shell{display:flex;min-height:calc(100vh - 45px);}
+.sidebar{width:240px;background:white;border-left:1px solid var(--border);flex-shrink:0;}
+.sidebar-logo{padding:20px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.sidebar-logo-mark{width:38px;height:38px;background:var(--p500);border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:16px;}
+.sidebar-logo-name{font-size:16px;font-weight:800;}
+.sidebar-section{padding:16px 12px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--textm);font-family:'Inter';}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;margin:2px 8px;font-size:14px;font-weight:500;color:var(--text2);cursor:pointer;}
+.sidebar-item-active{background:var(--p500);color:white;font-weight:700;box-shadow:var(--shadow-primary);}
+.sidebar-item-icon{font-size:16px;width:20px;text-align:center;}
+.badge-red{display:inline-flex;align-items:center;justify-content:center;background:#ef4444;color:white;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;margin-right:auto;}
+.admin-topbar{height:56px;background:white;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;}
+.topbar-title{font-size:18px;font-weight:800;flex:1;}
+.main-content{flex:1;padding:24px;}
+
+/* Filter bar */
+.filter-bar{background:white;border-radius:14px;border:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.filter-search{flex:1;min-width:200px;height:38px;padding:0 16px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:'Tajawal';outline:none;}
+.filter-search:focus{border-color:var(--p500);}
+.filter-chip{height:34px;padding:0 14px;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:white;color:var(--text2);font-family:'Tajawal';}
+.filter-chip-active{background:var(--p500);color:white;border-color:var(--p500);}
+.btn-primary{height:38px;padding:0 18px;background:var(--p500);color:white;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Tajawal';box-shadow:var(--shadow-primary);}
+
+/* Table */
+.table-card{background:white;border-radius:16px;border:1px solid var(--border);box-shadow:var(--shadow-card);overflow:hidden;}
+.table-head{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 100px;gap:0;background:var(--teal-wash);border-bottom:1px solid var(--border);}
+.th{padding:12px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--textm);font-family:'Inter';}
+.table-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 100px;border-bottom:1px solid var(--border);align-items:center;}
+.table-row:last-child{border-bottom:none;}
+.table-row:nth-child(odd){background:white;}
+.table-row:nth-child(even){background:#fafbfc;}
+.table-row:hover{background:var(--p50);}
+.td{padding:14px 16px;font-size:13px;}
+.project-cell{display:flex;align-items:center;gap:10px;}
+.proj-thumb{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--p600),var(--p400));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.proj-name{font-size:14px;font-weight:700;}
+.proj-id{font-size:11px;color:var(--textm);font-family:'Inter';}
+
+/* Progress in table */
+.table-progress{height:6px;background:var(--border);border-radius:100px;width:100%;}
+.table-progress-fill{height:100%;border-radius:100px;background:var(--p500);}
+
+/* Status badges */
+.status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;}
+.status-active{background:#D1FAE5;color:#16a34a;}
+.status-draft{background:var(--teal-wash);color:var(--textm);}
+.status-ended{background:#FEE2E2;color:#dc2626;}
+.status-paused{background:var(--warn50);color:#92400e;}
+
+.row-actions{display:flex;gap:6px;}
+.row-btn{height:28px;width:28px;border-radius:8px;border:1px solid var(--border);background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;}
+</style>
+</head>
+<body>
+<div class="back-nav"><a href="../../index.html">← فهرس التصميم</a><span>/</span><span>23 — إدارة المشاريع</span><span style="margin-right:auto;background:var(--p50);color:var(--p600);font-size:10px;font-weight:700;padding:2px 10px;border-radius:100px;">DESKTOP 1440px · Admin</span></div>
+<div class="admin-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-mark">ا</div>
+      <div class="sidebar-logo-name">ابتسام · إدارة</div>
+    </div>
+    <div class="sidebar-section">الرئيسية</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">📊</span>لوحة التحكم</div>
+    <div class="sidebar-section">المحتوى</div>
+    <div class="sidebar-item sidebar-item-active"><span class="sidebar-item-icon">📁</span>المشاريع</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">🤲</span>الكفالة</div>
+    <div class="sidebar-section">المالية</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">💰</span>التبرعات <span class="badge-red">12</span></div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">✅</span>التحقق <span class="badge-red">7</span></div>
+    <div class="sidebar-section">المستخدمون</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">👥</span>المتبرعون</div>
+    <div class="sidebar-section">النظام</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">⚙️</span>الإعدادات</div>
+    <div class="sidebar-item"><span class="sidebar-item-icon">🔴</span>سجل الأخطاء <span class="badge-red">3</span></div>
+  </aside>
+
+  <div style="flex:1;display:flex;flex-direction:column;">
+    <div class="admin-topbar">
+      <div class="topbar-title">📁 المشاريع</div>
+      <button class="btn-primary">+ إضافة مشروع</button>
+    </div>
+
+    <div class="main-content">
+      <!-- Filter bar -->
+      <div class="filter-bar">
+        <input class="filter-search" placeholder="ابحث عن مشروع...">
+        <button class="filter-chip filter-chip-active">الكل (12)</button>
+        <button class="filter-chip">نشط (8)</button>
+        <button class="filter-chip">مسودة (2)</button>
+        <button class="filter-chip">منتهي (2)</button>
+        <button class="filter-chip">📋 تصدير CSV</button>
+      </div>
+
+      <!-- Table -->
+      <div class="table-card">
+        <div class="table-head">
+          <div class="th">المشروع</div>
+          <div class="th">الهدف</div>
+          <div class="th">المحصّل</div>
+          <div class="th">التقدم</div>
+          <div class="th">الحالة</div>
+          <div class="th">إجراءات</div>
+        </div>
+
+        <!-- Row 1 -->
+        <div class="table-row">
+          <div class="td"><div class="project-cell"><div class="proj-thumb">🎓</div><div><div class="proj-name">مدرسة تافيلالت</div><div class="proj-id">#PRJ-001</div></div></div></div>
+          <div class="td" style="font-family:'Inter';font-weight:600;">160,000 د.م</div>
+          <div class="td" style="font-family:'Inter';font-weight:700;color:var(--p600);">124,800 د.م</div>
+          <div class="td"><div style="display:flex;align-items:center;gap:8px;"><div class="table-progress" style="flex:1;"><div class="table-progress-fill" style="width:78%;"></div></div><span style="font-size:12px;font-weight:700;color:var(--p600);font-family:'Inter';">78%</span></div></div>
+          <div class="td"><span class="status-badge status-active">● نشط</span></div>
+          <div class="td"><div class="row-actions"><div class="row-btn" title="تعديل">✏️</div><div class="row-btn" title="عرض">👁</div></div></div>
+        </div>
+
+        <!-- Row 2 -->
+        <div class="table-row">
+          <div class="td"><div class="project-cell"><div class="proj-thumb">💧</div><div><div class="proj-name">بئر الماء — أيت باها</div><div class="proj-id">#PRJ-002</div></div></div></div>
+          <div class="td" style="font-family:'Inter';font-weight:600;">80,000 د.م</div>
+          <div class="td" style="font-family:'Inter';font-weight:700;color:var(--p600);">36,000 د.م</div>
+          <div class="td"><div style="display:flex;align-items:center;gap:8px;"><div class="table-progress" style="flex:1;"><div class="table-progress-fill" style="width:45%;"></div></div><span style="font-size:12px;font-weight:700;color:var(--p600);font-family:'Inter';">45%</span></div></div>
+          <div class="td"><span class="status-badge status-active">● نشط</span></div>
+          <div class="td"><div class="row-actions"><div class="row-btn">✏️</div><div class="row-btn">👁</div></div></div>
+        </div>
+
+        <!-- Row 3 -->
+        <div class="table-row">
+          <div class="td"><div class="project-cell"><div class="proj-thumb">🏥</div><div><div class="proj-name">عيادة صحة الأم</div><div class="proj-id">#PRJ-003</div></div></div></div>
+          <div class="td" style="font-family:'Inter';font-weight:600;">200,000 د.م</div>
+          <div class="td" style="font-family:'Inter';font-weight:700;color:var(--p600);">124,000 د.م</div>
+          <div class="td"><div style="display:flex;align-items:center;gap:8px;"><div class="table-progress" style="flex:1;"><div class="table-progress-fill" style="width:62%;"></div></div><span style="font-size:12px;font-weight:700;color:var(--p600);font-family:'Inter';">62%</span></div></div>
+          <div class="td"><span class="status-badge status-active">● نشط</span></div>
+          <div class="td"><div class="row-actions"><div class="row-btn">✏️</div><div class="row-btn">👁</div></div></div>
+        </div>
+
+        <!-- Row 4 (draft) -->
+        <div class="table-row">
+          <div class="td"><div class="project-cell"><div class="proj-thumb" style="background:var(--border);">📄</div><div><div class="proj-name">مشروع التعليم 2025</div><div class="proj-id">#PRJ-004</div></div></div></div>
+          <div class="td" style="font-family:'Inter';font-weight:600;">120,000 د.م</div>
+          <div class="td" style="color:var(--textm);">—</div>
+          <div class="td" style="color:var(--textm);">لم يبدأ</div>
+          <div class="td"><span class="status-badge status-draft">○ مسودة</span></div>
+          <div class="td"><div class="row-actions"><div class="row-btn">✏️</div><div class="row-btn">▶</div></div></div>
+        </div>
+
+        <!-- Row 5 (ended) -->
+        <div class="table-row">
+          <div class="td"><div class="project-cell"><div class="proj-thumb" style="background:linear-gradient(135deg,#64748b,#94a3b8);">✅</div><div><div class="proj-name">مسجد قرية زرق</div><div class="proj-id">#PRJ-005</div></div></div></div>
+          <div class="td" style="font-family:'Inter';font-weight:600;">50,000 د.م</div>
+          <div class="td" style="font-family:'Inter';font-weight:700;color:#16a34a;">50,000 د.م</div>
+          <div class="td"><div style="display:flex;align-items:center;gap:8px;"><div class="table-progress" style="flex:1;"><div class="table-progress-fill" style="width:100%;background:#16a34a;"></div></div><span style="font-size:12px;font-weight:700;color:#16a34a;font-family:'Inter';">100%</span></div></div>
+          <div class="td"><span class="status-badge status-ended">✓ منتهي</span></div>
+          <div class="td"><div class="row-actions"><div class="row-btn">👁</div></div></div>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;font-size:13px;color:var(--text2);">
+        <span>عرض 1-5 من 12 مشروع</span>
+        <div style="display:flex;gap:4px;">
+          <button style="height:32px;width:32px;border:1px solid var(--border);border-radius:8px;background:white;cursor:pointer;">‹</button>
+          <button style="height:32px;width:32px;border:1px solid var(--p500);border-radius:8px;background:var(--p500);color:white;cursor:pointer;font-weight:700;">1</button>
+          <button style="height:32px;width:32px;border:1px solid var(--border);border-radius:8px;background:white;cursor:pointer;">2</button>
+          <button style="height:32px;width:32px;border:1px solid var(--border);border-radius:8px;background:white;cursor:pointer;">3</button>
+          <button style="height:32px;width:32px;border:1px solid var(--border);border-radius:8px;background:white;cursor:pointer;">›</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -24,6 +24,14 @@ export const getPublishedStories = query({
   },
 });
 
+// ── Admin: generate upload URL for story cover image ────────────────────────
+export const generateStoryImageUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
 // ── Admin: create story ─────────────────────────────────────────────────────
 export const createStory = mutation({
   args: {
@@ -38,6 +46,8 @@ export const createStory = mutation({
     isPublished: v.boolean(),
     isFeatured: v.optional(v.boolean()),
     adminId: v.string(),
+    coverImage: v.optional(v.string()),
+    body: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("stories", {
@@ -61,6 +71,8 @@ export const updateStory = mutation({
     catColor: v.optional(v.string()),
     isPublished: v.optional(v.boolean()),
     isFeatured: v.optional(v.boolean()),
+    coverImage: v.optional(v.string()),
+    body: v.optional(v.string()),
   },
   handler: async (ctx, { id, ...fields }) => {
     await ctx.db.patch(id, fields);

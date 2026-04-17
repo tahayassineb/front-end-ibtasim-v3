@@ -1,6 +1,6 @@
 // Trigger fresh Vercel deployment - cache bust
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 
 // Layouts
@@ -55,6 +55,18 @@ import AdminDonorDetail from './pages/AdminDonorDetail';
 import AdminSettings from './pages/AdminSettings';
 import AdminRegister from './pages/AdminRegister';
 import AdminErrorLogs from './pages/AdminErrorLogs';
+
+// ============================================
+// SCROLL TO TOP ON ROUTE CHANGE
+// ============================================
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
 
 // ============================================
 // GLOBAL TOAST RENDERER
@@ -138,6 +150,7 @@ function AppContent() {
 
   return (
     <Router>
+      <ScrollToTop />
       <div dir={currentLanguage.dir}>
         <ToastRenderer />
         <GlobalErrorLogger />

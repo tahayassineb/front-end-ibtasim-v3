@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
+import { convexFileUrl } from '../lib/convex';
 
 // ============================================
 // STORY DETAIL PAGE — Full story view
@@ -59,8 +60,13 @@ export default function StoryDetail() {
   return (
     <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', overflowX: 'hidden' }}>
 
-      {/* Hero */}
-      <div style={{ background: story.gradient || 'linear-gradient(160deg,#052E2F,#0d7477)', minHeight: isMobile ? 220 : 340, position: 'relative', display: 'flex', alignItems: 'flex-end' }}>
+      {/* Hero — use cover image if available, otherwise gradient */}
+      <div style={{
+        background: story.coverImage
+          ? `url(${convexFileUrl(story.coverImage)}) center/cover`
+          : (story.gradient || 'linear-gradient(160deg,#052E2F,#0d7477)'),
+        minHeight: isMobile ? 220 : 340, position: 'relative', display: 'flex', alignItems: 'flex-end'
+      }}>
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,.65) 0%,rgba(0,0,0,.2) 60%,transparent 100%)' }} />
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 800, margin: '0 auto', width: '100%', padding: isMobile ? '0 20px 28px' : '0 28px 40px' }}>
           {/* Category badge */}
@@ -102,9 +108,18 @@ export default function StoryDetail() {
 
         {/* Story body */}
         <div style={{ background: 'white', borderRadius: 18, border: '1px solid #E5E9EB', padding: isMobile ? 20 : 36, boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
-          <p style={{ fontSize: isMobile ? 15 : 17, color: '#374151', lineHeight: 2, borderRight: '3px solid #33C0C0', paddingRight: 16, margin: 0 }}>
+          {/* Excerpt — always shown as pull-quote */}
+          <p style={{ fontSize: isMobile ? 15 : 17, color: '#374151', lineHeight: 2, borderRight: '3px solid #33C0C0', paddingRight: 16, margin: 0, marginBottom: story.body ? 24 : 0 }}>
             {story.excerpt}
           </p>
+          {/* Rich body — rendered as HTML if present */}
+          {story.body && (
+            <div
+              style={{ fontSize: isMobile ? 15 : 16, color: '#374151', lineHeight: 1.9 }}
+              className="prose max-w-none"
+              dangerouslySetInnerHTML={{ __html: story.body }}
+            />
+          )}
         </div>
 
         {/* Share / back CTA */}

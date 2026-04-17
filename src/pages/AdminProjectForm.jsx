@@ -118,6 +118,7 @@ export default function AdminProjectForm() {
     impactMetrics: [],
     updates: [],
     transformationStage: '',
+    benefitCards: [],
   });
 
   // Load existing project in edit mode
@@ -137,6 +138,7 @@ export default function AdminProjectForm() {
         beneficiaries: existingProject.beneficiaries?.toString() || '',
         status: existingProject.status || 'draft',
         transformationStage: existingProject.transformationStage || '',
+        benefitCards: existingProject.benefitCards || [],
       }));
     }
   }, [isEditMode, existingProject]);
@@ -238,6 +240,7 @@ export default function AdminProjectForm() {
             location: formData.location,
             beneficiaries: parseInt(formData.beneficiaries) || 0,
             ...(formData.transformationStage ? { transformationStage: formData.transformationStage } : {}),
+            ...(formData.benefitCards?.length ? { benefitCards: formData.benefitCards } : { benefitCards: [] }),
           },
         });
       } else {
@@ -256,6 +259,7 @@ export default function AdminProjectForm() {
           isFeatured: formData.featured,
           createdBy: adminId,
           ...(formData.transformationStage ? { transformationStage: formData.transformationStage } : {}),
+          ...(formData.benefitCards?.length ? { benefitCards: formData.benefitCards } : {}),
         });
       }
       showToast(status === 'active' ? 'تم نشر المشروع' : 'تم حفظ المسودة', 'success');
@@ -420,6 +424,42 @@ export default function AdminProjectForm() {
             <div style={fieldHint}>عدد الأشخاص المستفيدين من المشروع</div>
           </div>
         </div>
+      </Section>
+
+      {/* ── Section 2b: Benefit Cards ── */}
+      <Section icon="🎯" title="بطاقات الأثر (اختياري)">
+        <div style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
+          أضف بطاقات توضح أثر المشروع — ستظهر في صفحة التفاصيل بدلاً من الأرقام التلقائية.
+          <br />مثال: 👨‍👩‍👧‍👦 · 10 · أسرة مستفيدة
+        </div>
+        {(formData.benefitCards || []).map((card, i) => (
+          <div key={i} style={{ display: 'grid', gridTemplateColumns: '60px 1fr 1fr auto', gap: 10, marginBottom: 10, alignItems: 'center' }}>
+            <input
+              value={card.icon} onChange={e => { const c = [...formData.benefitCards]; c[i] = { ...c[i], icon: e.target.value }; set('benefitCards', c); }}
+              placeholder="👨‍👩‍👧" style={{ ...fieldInput, textAlign: 'center', fontSize: 20, padding: '0 8px' }}
+            />
+            <input
+              value={card.value} onChange={e => { const c = [...formData.benefitCards]; c[i] = { ...c[i], value: e.target.value }; set('benefitCards', c); }}
+              placeholder="10" style={{ ...fieldInput }} dir="ltr"
+            />
+            <input
+              value={card.label} onChange={e => { const c = [...formData.benefitCards]; c[i] = { ...c[i], label: e.target.value }; set('benefitCards', c); }}
+              placeholder="أسرة مستفيدة" style={{ ...fieldInput }}
+            />
+            <button type="button"
+              onClick={() => { const c = formData.benefitCards.filter((_, j) => j !== i); set('benefitCards', c); }}
+              style={{ width: 36, height: 44, background: '#FEE2E2', border: 'none', borderRadius: 10, color: '#dc2626', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              ×
+            </button>
+          </div>
+        ))}
+        {(formData.benefitCards || []).length < 6 && (
+          <button type="button"
+            onClick={() => set('benefitCards', [...(formData.benefitCards || []), { icon: '', value: '', label: '' }])}
+            style={{ height: 40, padding: '0 18px', border: `1.5px dashed ${BORDER}`, borderRadius: 10, background: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', color: PRIMARY, fontFamily: 'Tajawal, sans-serif' }}>
+            ➕ إضافة بطاقة
+          </button>
+        )}
       </Section>
 
       {/* ── Section 3: Media ── */}
