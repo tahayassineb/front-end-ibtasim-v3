@@ -68,7 +68,7 @@ const About = () => {
   const innerStyle = { maxWidth: 1200, margin: '0 auto', padding: isMobile ? '0 16px' : '0 28px' };
 
   return (
-    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b' }}>
+    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', overflowX: 'hidden' }}>
 
       {/* Hero */}
       <div style={{ background: 'linear-gradient(160deg,#021718,#052E2F 60%,#0d7477)', padding: isMobile ? '48px 20px' : '80px 0', textAlign: 'center' }}>
@@ -90,12 +90,12 @@ const About = () => {
 
       {/* Stats band */}
       <div style={{ background: '#0A5F62', padding: isMobile ? '24px 0' : '32px 0' }}>
-        <div style={{ ...innerStyle, display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3,1fr)' : 'repeat(5,1fr)', rowGap: isMobile ? 20 : 0 }}>
+        <div style={{ ...innerStyle, display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(5,1fr)', rowGap: isMobile ? 16 : 0 }}>
           {stats.map((s, i) => (
-            <div key={i} style={{ textAlign: 'center', padding: '0 16px', borderLeft: i < stats.length - 1 ? '1px solid rgba(255,255,255,.15)' : 'none' }}>
-              <div style={{ fontSize: 34, fontWeight: 900, color: 'white', fontFamily: 'Inter, sans-serif' }}>{s.num}</div>
-              <div style={{ fontSize: 12, color: '#33C0C0', fontWeight: 600, marginTop: 2 }}>{s.unit}</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)', marginTop: 4 }}>{s.label}</div>
+            <div key={i} style={{ textAlign: 'center', padding: isMobile ? '0 8px' : '0 16px', borderLeft: !isMobile && i < stats.length - 1 ? '1px solid rgba(255,255,255,.15)' : 'none' }}>
+              <div style={{ fontSize: isMobile ? 24 : 34, fontWeight: 900, color: 'white', fontFamily: 'Inter, sans-serif' }}>{s.num}</div>
+              <div style={{ fontSize: isMobile ? 11 : 12, color: '#33C0C0', fontWeight: 600, marginTop: 2 }}>{s.unit}</div>
+              <div style={{ fontSize: isMobile ? 11 : 12, color: 'rgba(255,255,255,.6)', marginTop: 4 }}>{s.label}</div>
             </div>
           ))}
         </div>

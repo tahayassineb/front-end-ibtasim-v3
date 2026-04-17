@@ -1,10 +1,20 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import { convexFileUrl } from '../lib/convex';
 import KafalaAvatar from '../components/kafala/KafalaAvatar';
+
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const h = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  return isMobile;
+};
 
 // ============================================
 // KAFALA DETAIL PAGE — Orphan profile + sponsor CTA
@@ -14,6 +24,7 @@ export default function KafalaDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { currentLanguage } = useApp();
+  const isMobile = useIsMobile();
   const lang = currentLanguage?.code || 'ar';
 
   const data = useQuery(api.kafala.getKafalaById, { kafalaId: id });
@@ -70,30 +81,30 @@ export default function KafalaDetail() {
     <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b' }}>
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(160deg,#3D2506,#6B4F12,#C4A882)', padding: '60px 0' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px', display: 'flex', alignItems: 'center', gap: 48 }}>
+      <div style={{ background: 'linear-gradient(160deg,#3D2506,#6B4F12,#C4A882)', padding: isMobile ? '36px 0 28px' : '60px 0' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '0 20px' : '0 28px', display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'center' : 'center', gap: isMobile ? 16 : 48, textAlign: isMobile ? 'center' : 'right' }}>
           {/* Avatar */}
           <div style={{ flexShrink: 0 }}>
-            <div style={{ width: 180, height: 180, borderRadius: '50%', background: 'linear-gradient(135deg,#6B4F12,#C4A882)', border: '5px solid rgba(255,255,255,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 80, boxShadow: '0 12px 32px rgba(0,0,0,.3)', overflow: 'hidden' }}>
-              <KafalaAvatar gender={kafala.gender} photo={kafala.photo} photoUrl={photoUrl} size={180} />
+            <div style={{ width: isMobile ? 100 : 180, height: isMobile ? 100 : 180, borderRadius: '50%', background: 'linear-gradient(135deg,#6B4F12,#C4A882)', border: '5px solid rgba(255,255,255,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? 44 : 80, boxShadow: '0 12px 32px rgba(0,0,0,.3)', overflow: 'hidden' }}>
+              <KafalaAvatar gender={kafala.gender} photo={kafala.photo} photoUrl={photoUrl} size={isMobile ? 100 : 180} />
             </div>
           </div>
           {/* Text */}
-          <div>
-            <button onClick={() => navigate('/kafala')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,.75)', fontSize: 13, fontWeight: 600, marginBottom: 20, cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'Tajawal, sans-serif' }}>
+          <div style={{ width: isMobile ? '100%' : 'auto' }}>
+            <button onClick={() => navigate('/kafala')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,.75)', fontSize: 13, fontWeight: 600, marginBottom: 14, cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'Tajawal, sans-serif' }}>
               {tx.back}
             </button>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,.15)', border: '1px solid rgba(255,255,255,.25)', color: 'rgba(255,255,255,.9)', borderRadius: 100, padding: '5px 14px', fontSize: 12, fontWeight: 600, marginBottom: 12 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,.15)', border: '1px solid rgba(255,255,255,.25)', color: 'rgba(255,255,255,.9)', borderRadius: 100, padding: '5px 14px', fontSize: 12, fontWeight: 600, marginBottom: 10 }}>
               {isSponsored ? '🤲 مكفول · Sponsored' : '🤲 متاح للكفالة · Available'}
             </div>
-            <h1 style={{ fontSize: 40, fontWeight: 900, color: 'white', marginBottom: 6 }}>{kafala.name}</h1>
-            <div style={{ display: 'flex', gap: 20, fontSize: 14, color: 'rgba(255,255,255,.75)' }}>
+            <h1 style={{ fontSize: isMobile ? 26 : 40, fontWeight: 900, color: 'white', marginBottom: 6 }}>{kafala.name}</h1>
+            <div style={{ display: 'flex', justifyContent: isMobile ? 'center' : 'flex-start', flexWrap: 'wrap', gap: isMobile ? 10 : 20, fontSize: 14, color: 'rgba(255,255,255,.75)' }}>
               <span>🎂 {kafala.age} {lang === 'ar' ? 'سنوات' : lang === 'fr' ? 'ans' : 'yrs'}</span>
               <span>📍 {kafala.location}</span>
               <span>{kafala.gender === 'female' ? `👧 ${tx.female}` : `👦 ${tx.male}`}</span>
             </div>
-            <div style={{ marginTop: 20, display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              <span style={{ fontSize: 36, fontWeight: 900, color: 'white', fontFamily: 'Inter, sans-serif' }}>{monthlyAmount}</span>
+            <div style={{ marginTop: 14, display: 'flex', alignItems: 'baseline', justifyContent: isMobile ? 'center' : 'flex-start', gap: 4 }}>
+              <span style={{ fontSize: isMobile ? 28 : 36, fontWeight: 900, color: 'white', fontFamily: 'Inter, sans-serif' }}>{monthlyAmount}</span>
               <span style={{ fontSize: 14, color: 'rgba(255,255,255,.7)' }}>{tx.perMonth}</span>
             </div>
           </div>
@@ -111,7 +122,7 @@ export default function KafalaDetail() {
       )}
 
       {/* Main Content */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 28px', display: 'grid', gridTemplateColumns: '1fr 360px', gap: 40, alignItems: 'start' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '24px 16px 48px' : '40px 28px', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 360px', gap: isMobile ? 24 : 40, alignItems: 'start' }}>
 
         {/* Left column */}
         <div>
@@ -136,7 +147,7 @@ export default function KafalaDetail() {
           {/* Needs breakdown */}
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#8B6914', marginBottom: 8, fontFamily: 'Inter, sans-serif' }}>احتياجاته الشهرية</div>
           <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 14 }}>ما الذي تغطيه الكفالة؟</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(3,1fr)', gap: 14 }}>
             {[
               { icon: '📚', label: 'التعليم', amount: '120 د.م' },
               { icon: '🍞', label: 'الغذاء', amount: '100 د.م' },
@@ -185,7 +196,7 @@ export default function KafalaDetail() {
         </div>
 
         {/* Sidebar */}
-        <div style={{ background: 'white', borderRadius: 18, border: '1.5px solid #E8D4B0', boxShadow: '0 4px 14px rgba(196,168,130,.35)', padding: 24, position: 'sticky', top: 80 }}>
+        <div style={{ background: 'white', borderRadius: 18, border: '1.5px solid #E8D4B0', boxShadow: '0 4px 14px rgba(196,168,130,.35)', padding: 24, position: isMobile ? 'static' : 'sticky', top: 80 }}>
           {isSponsored ? (
             <>
               <div style={{ textAlign: 'center', padding: '20px 0' }}>

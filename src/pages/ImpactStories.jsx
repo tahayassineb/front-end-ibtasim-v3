@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from 'convex/react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 
@@ -19,6 +20,7 @@ const useIsMobile = () => {
 
 const ImpactStories = () => {
   const { t, language } = useApp();
+  const navigate = useNavigate();
   const [selectedFilter, setSelectedFilter] = useState('all');
   const isMobile = useIsMobile();
 
@@ -148,6 +150,7 @@ const ImpactStories = () => {
           {filteredStories.map((story) => (
             <div
               key={story.id}
+              onClick={() => navigate('/impact/' + story.id)}
               style={{
                 background: 'white',
                 borderRadius: 16,
@@ -167,25 +170,20 @@ const ImpactStories = () => {
               }}
             >
               {/* Image */}
-              <div style={{ height: isMobile ? 160 : 200, background: story.gradient, position: 'relative' }}>
+              <div style={{ height: isMobile ? 140 : 180, background: story.gradient, position: 'relative' }}>
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,.5),transparent)' }} />
-                <div style={{ position: 'absolute', bottom: 14, right: 14, zIndex: 1 }}>
+                <div style={{ position: 'absolute', bottom: 12, right: 12, zIndex: 1 }}>
                   <span style={{ background: story.badgeBg, color: story.badgeColor, fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 100 }}>
                     {story.badgeIcon} {story.badgeText}
                   </span>
                 </div>
               </div>
-              {/* Body */}
-              <div style={{ padding: 18 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.12em', color: story.catColor, marginBottom: 8, fontFamily: 'Inter, sans-serif' }}>
+              {/* Body — title only */}
+              <div style={{ padding: '14px 16px 16px' }}>
+                <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.12em', color: story.catColor, marginBottom: 6, fontFamily: 'Inter, sans-serif' }}>
                   {story.catLabel}
                 </div>
-                <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.4, marginBottom: 10 }}>{story.title}</div>
-                <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7, marginBottom: 14 }}>{story.excerpt}</div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: '#94a3b8' }}>
-                  <span>{story.date}</span>
-                  <span style={{ color: '#0d7477', fontWeight: 600, fontSize: 13 }}>اقرأ المزيد ←</span>
-                </div>
+                <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.45 }}>{story.title}</div>
               </div>
             </div>
           ))}

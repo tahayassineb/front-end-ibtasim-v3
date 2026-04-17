@@ -1,9 +1,19 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import { convexFileUrl } from '../lib/convex';
+
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const h = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  return isMobile;
+};
 
 // ============================================
 // ADMIN DASHBOARD PAGE - Connected to Convex
@@ -12,6 +22,7 @@ import { convexFileUrl } from '../lib/convex';
 export default function AdminDashboard() {
   const { currentLanguage, showToast } = useApp();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const stats = useQuery(api.admin.getDashboardStats);
   const pendingVerifications = useQuery(api.admin.getVerifications, {
@@ -118,24 +129,24 @@ export default function AdminDashboard() {
     : [];
 
   return (
-    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: 24 }} dir="rtl">
+    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: isMobile ? 16 : 24, overflowX: 'hidden' }} dir="rtl">
 
       {/* KPI row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: isMobile ? 12 : 16, marginBottom: isMobile ? 16 : 24 }}>
         {kpiCards.map((c, i) => (
-          <div key={i} style={{ background: 'white', borderRadius: 16, padding: 20, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
+          <div key={i} style={{ background: 'white', borderRadius: 16, padding: isMobile ? 14 : 20, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <div style={{ width: 40, height: 40, borderRadius: 10, background: c.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{c.icon}</div>
               <div style={{ fontSize: 12, fontWeight: 600, color: c.trendColor, display: 'flex', alignItems: 'center', gap: 2 }}>{c.trend}</div>
             </div>
-            <div style={{ fontSize: 28, fontWeight: 900, fontFamily: 'Inter, sans-serif' }}>{c.num}</div>
+            <div style={{ fontSize: isMobile ? 20 : 28, fontWeight: 900, fontFamily: 'Inter, sans-serif' }}>{c.num}</div>
             <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{c.label}</div>
           </div>
         ))}
       </div>
 
       {/* Chart + Pending */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 16, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 360px', gap: isMobile ? 12 : 16, marginBottom: isMobile ? 16 : 24 }}>
         {/* Area chart */}
         <div style={{ background: 'white', borderRadius: 16, padding: 20, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -283,7 +294,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Lower row: Projects + Activity */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 12 : 16, marginBottom: isMobile ? 16 : 24 }}>
         {/* Active projects */}
         <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', overflow: 'hidden' }}>
           <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E9EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -368,7 +379,7 @@ export default function AdminDashboard() {
               </Link>
             </div>
           </div>
-          <div style={{ padding: 20, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
+          <div style={{ padding: isMobile ? 12 : 20, display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(3,1fr)', gap: isMobile ? 10 : 16 }}>
             {featuredProjects.map((p, i) => (
               <div key={p._id}
                 draggable

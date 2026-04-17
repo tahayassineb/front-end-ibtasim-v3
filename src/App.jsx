@@ -12,6 +12,7 @@ import Home from './pages/Home';
 import ProjectsList from './pages/ProjectsList';
 import ProjectDetail from './pages/ProjectDetail';
 import ImpactStories from './pages/ImpactStories';
+import StoryDetail from './pages/StoryDetail';
 import UserProfile from './pages/UserProfile';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -159,6 +160,7 @@ function AppContent() {
 
           {/* Impact Stories */}
           <Route path="/impact" element={<ErrorBoundary><MainLayout><ImpactStories /></MainLayout></ErrorBoundary>} />
+          <Route path="/impact/:id" element={<ErrorBoundary><MainLayout><StoryDetail /></MainLayout></ErrorBoundary>} />
 
           {/* Auth Routes */}
           <Route path="/login" element={<ErrorBoundary><Login /></ErrorBoundary>} />

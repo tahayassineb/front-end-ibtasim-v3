@@ -1,5 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const h = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  return isMobile;
+};
 
 // ============================================
 // CONTACT PAGE - Two Column Layout with Form
@@ -7,6 +17,7 @@ import { useApp } from '../context/AppContext';
 
 const Contact = () => {
   const { t, language } = useApp();
+  const isMobile = useIsMobile();
   const [formData, setFormData] = useState({ name: '', phone: '', email: '', subject: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -48,11 +59,11 @@ const Contact = () => {
   ];
 
   return (
-    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b' }}>
+    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', overflowX: 'hidden' }}>
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg,#052E2F,#0A5F62)', padding: '60px 0', textAlign: 'center' }}>
-        <div style={{ maxWidth: 600, margin: '0 auto', padding: '0 28px' }}>
+      <div style={{ background: 'linear-gradient(135deg,#052E2F,#0A5F62)', padding: isMobile ? '40px 20px' : '60px 0', textAlign: 'center' }}>
+        <div style={{ maxWidth: 600, margin: '0 auto', padding: isMobile ? '0' : '0 28px' }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#33C0C0', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>CONTACT US</div>
           <h1 style={{ fontSize: 40, fontWeight: 900, color: 'white', marginBottom: 12 }}>تواصل معنا</h1>
           <p style={{ fontSize: 16, color: 'rgba(255,255,255,.7)', lineHeight: 1.7 }}>نحن هنا للإجابة على جميع استفساراتك — فريقنا يرد في غضون 24 ساعة</p>
@@ -60,7 +71,7 @@ const Contact = () => {
       </div>
 
       {/* Main Content */}
-      <div style={{ maxWidth: 1200, margin: '60px auto', padding: '0 28px', display: 'grid', gridTemplateColumns: '1fr 380px', gap: 48, alignItems: 'start' }}>
+      <div style={{ maxWidth: 1200, margin: isMobile ? '28px auto' : '60px auto', padding: isMobile ? '0 16px' : '0 28px', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 380px', gap: isMobile ? 20 : 48, alignItems: 'start' }}>
 
         {/* Form Card */}
         <div style={{ background: 'white', borderRadius: 20, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', padding: 36 }}>
@@ -83,7 +94,7 @@ const Contact = () => {
               <p style={{ fontSize: 14, color: '#64748b', marginBottom: 28, lineHeight: 1.6 }}>سواء كان لديك سؤال حول التبرع، أو مشروع، أو الكفالة — نحن نسمعك</p>
 
               {/* Name + Phone grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 20 }}>
                 <div>
                   <label style={labelStyle}>الاسم الكامل *</label>
                   <input
