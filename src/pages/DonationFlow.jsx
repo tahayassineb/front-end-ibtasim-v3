@@ -64,7 +64,7 @@ const ProjectCtx = ({ project, step, amount }) => (
       {step <= 1 ? (
         <>
           <div style={{ fontSize: 13, fontWeight: 700 }}>{project?.title || 'تبرع لجمعية ابتسام'}</div>
-          <div style={{ fontSize: 11, color: '#0A5F62', marginTop: 3, fontWeight: 600 }}>جارٍ التحميل...</div>
+          {!project && <div style={{ fontSize: 11, color: '#0A5F62', marginTop: 3, fontWeight: 600 }}>جارٍ التحميل...</div>}
         </>
       ) : (
         <>
@@ -440,8 +440,10 @@ const Step2Payment = ({ donationData, setDonationData, bankInfo, showToast, lang
   );
 };
 
+const MOROCCAN_BANKS = ['CIH Bank', 'Attijariwafa Bank', 'BMCE Bank (Bank of Africa)', 'Banque Populaire', 'BCP (Banque Centrale Populaire)', 'Société Générale Maroc', 'BMCI', 'Crédit Agricole du Maroc', 'CDG Capital', 'CFG Bank', 'Al Barid Bank', 'Umnia Bank', 'Wafa Cash', 'Cash Plus', 'أخرى'];
+
 // ─── Step 3: Receipt Upload ───────────────────────────────────────────────────
-const Step3Receipt = ({ uploadedFile, setUploadedFile, dragActive, setDragActive, showToast, lang, amount }) => {
+const Step3Receipt = ({ uploadedFile, setUploadedFile, dragActive, setDragActive, showToast, lang, amount, donationData, setDonationData }) => {
   const handleDrag = (e) => {
     e.preventDefault(); e.stopPropagation();
     setDragActive(e.type === 'dragenter' || e.type === 'dragover');
@@ -484,6 +486,46 @@ const Step3Receipt = ({ uploadedFile, setUploadedFile, dragActive, setDragActive
           <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 10 }}>PNG · JPG · PDF · حتى 10 ميغابايت</div>
         </div>
       )}
+
+      {/* Structured transfer details */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: '#0e1a1b' }}>تفاصيل التحويل</div>
+
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>اسم البنك / الوكالة <span style={{ color: '#ef4444' }}>*</span></div>
+          <select
+            value={donationData?.bankName || ''}
+            onChange={e => setDonationData(p => ({ ...p, bankName: e.target.value }))}
+            style={{ width: '100%', height: 52, border: `1.5px solid ${donationData?.bankName ? '#33C0C0' : '#E5E9EB'}`, borderRadius: 14, padding: '0 16px', fontSize: 14, fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', background: 'white', outline: 'none', boxSizing: 'border-box', appearance: 'none', cursor: 'pointer' }}
+          >
+            <option value="">-- اختر البنك أو الوكالة --</option>
+            {MOROCCAN_BANKS.map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
+        </div>
+
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>اسم صاحب الحساب المُحوِّل</div>
+          <input
+            type="text"
+            value={donationData?.senderName || ''}
+            onChange={e => setDonationData(p => ({ ...p, senderName: e.target.value }))}
+            placeholder="الاسم الكامل كما هو في البطاقة البنكية"
+            style={{ width: '100%', height: 52, border: '1.5px solid #E5E9EB', borderRadius: 14, padding: '0 16px', fontSize: 14, fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', background: 'white', outline: 'none', boxSizing: 'border-box' }}
+          />
+        </div>
+
+        <div style={{ marginBottom: 4 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>رقم المرجع / RIB (اختياري)</div>
+          <input
+            type="text"
+            value={donationData?.transactionReference || ''}
+            onChange={e => setDonationData(p => ({ ...p, transactionReference: e.target.value }))}
+            placeholder="رقم العملية أو RIB"
+            dir="ltr"
+            style={{ width: '100%', height: 52, border: '1.5px solid #E5E9EB', borderRadius: 14, padding: '0 16px', fontSize: 14, fontFamily: 'Inter, sans-serif', color: '#0e1a1b', background: 'white', outline: 'none', boxSizing: 'border-box', letterSpacing: '.04em' }}
+          />
+        </div>
+      </div>
 
       <div style={{ background: '#F0F7F7', borderRadius: 14, padding: 14, marginBottom: 14, border: '1px solid #CCF0F0' }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: '#0A5F62', marginBottom: 10 }}>📋 ما الذي يجب أن يظهر في الوصل؟</div>
@@ -957,13 +999,15 @@ export default function DonationFlow() {
 
   // ── Navigation helpers ──
   const getNextStep = () => {
-    if (step === 2 && donationData.paymentMethod === 'card') return 4; // skip receipt for card
+    if (step === 2 && donationData.paymentMethod === 'card') return isAuthenticated ? 5 : 4;
+    if (step === 3 && isAuthenticated) return 5; // skip personal info for logged-in users
     return step + 1;
   };
 
   const handleBack = () => {
     if (step === 0) { navigate(-1); return; }
     if (step === 4 && donationData.paymentMethod === 'card') { setStep(2); return; }
+    if (step === 5 && isAuthenticated) { setStep(donationData.paymentMethod === 'card' ? 2 : 3); return; }
     if (step === 1 && !isAuthenticated) { setStep(0); return; }
     setStep(s => s - 1);
   };
@@ -989,7 +1033,7 @@ export default function DonationFlow() {
     if (step === 1 && calculateTotal() <= 0) return true;
     if (step === 2 && !donationData.paymentMethod) return true;
     if (step === 3 && !uploadedFile) return true;
-    if (step === 4 && (!donationData.donorName?.trim() || !donationData.donorPhone?.trim())) return true;
+    if (step === 4 && !isAuthenticated && (!donationData.donorName?.trim() || !donationData.donorPhone?.trim())) return true;
     if (step === 5 && !agreedTerms) return true;
     return false;
   };
@@ -1037,7 +1081,7 @@ export default function DonationFlow() {
         )}
         {step === 1 && <Step1Amount donationData={donationData} setDonationData={setDonationData} />}
         {step === 2 && <Step2Payment donationData={donationData} setDonationData={setDonationData} bankInfo={bankInfo} showToast={showToast} lang={lang} />}
-        {step === 3 && <Step3Receipt uploadedFile={uploadedFile} setUploadedFile={setUploadedFile} dragActive={dragActive} setDragActive={setDragActive} showToast={showToast} lang={lang} amount={amount} />}
+        {step === 3 && <Step3Receipt uploadedFile={uploadedFile} setUploadedFile={setUploadedFile} dragActive={dragActive} setDragActive={setDragActive} showToast={showToast} lang={lang} amount={amount} donationData={donationData} setDonationData={setDonationData} />}
         {step === 4 && <Step4Info donationData={donationData} setDonationData={setDonationData} lang={lang} />}
         {step === 5 && <Step5Review donationData={donationData} project={project} uploadedFile={uploadedFile} amount={amount} agreedTerms={agreedTerms} setAgreedTerms={setAgreedTerms} setStep={setStep} />}
         {step === 6 && <Step6Success donationReference={donationReference} project={project} navigate={navigate} resetDonation={resetDonation} lang={lang} />}

@@ -48,6 +48,9 @@ export const createStory = mutation({
     adminId: v.string(),
     coverImage: v.optional(v.string()),
     body: v.optional(v.string()),
+    postType: v.optional(v.union(v.literal("story"), v.literal("activity"), v.literal("update"))),
+    slug: v.optional(v.string()),
+    metaDescription: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("stories", {
@@ -73,6 +76,9 @@ export const updateStory = mutation({
     isFeatured: v.optional(v.boolean()),
     coverImage: v.optional(v.string()),
     body: v.optional(v.string()),
+    postType: v.optional(v.union(v.literal("story"), v.literal("activity"), v.literal("update"))),
+    slug: v.optional(v.string()),
+    metaDescription: v.optional(v.string()),
   },
   handler: async (ctx, { id, ...fields }) => {
     await ctx.db.patch(id, fields);

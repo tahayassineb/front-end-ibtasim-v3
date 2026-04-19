@@ -283,20 +283,6 @@ export default function KafalaDetail() {
               </button>
               <div style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8' }}>بدون التزام طويل المدى · يمكنك الإلغاء متى شئت</div>
 
-              <div style={{ marginTop: 20, borderTop: '1px solid #E8D4B0', paddingTop: 16 }}>
-                {[
-                  { icon: '📊', text: 'تقارير ربع سنوية عن الطفل' },
-                  { icon: '📸', text: 'صور لأحوال الطفل ودراسته' },
-                  { icon: '💬', text: 'تواصل مع فريق الكفالة' },
-                  { icon: '🔒', text: 'دفع آمن ومحمي' },
-                  { icon: '✓', text: 'جمعية معتمدة رسمياً' },
-                ].map((f, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#64748b', marginBottom: 10 }}>
-                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#F5EBD9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>{f.icon}</div>
-                    <span>{f.text}</span>
-                  </div>
-                ))}
-              </div>
             </>
           )}
         </div>

@@ -22,6 +22,7 @@ const ImpactStories = () => {
   const { t, language } = useApp();
   const navigate = useNavigate();
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [selectedPostType, setSelectedPostType] = useState('all');
   const isMobile = useIsMobile();
 
   const convexStories = useQuery(api.stories.getPublishedStories);
@@ -48,9 +49,13 @@ const ImpactStories = () => {
     })).filter(f => stories.some(s => s.category === f.id)),
   ];
 
-  const filteredStories = selectedFilter === 'all'
-    ? stories
-    : stories.filter((s) => s.category === selectedFilter);
+  const POST_TYPE_LABELS = { story: '🌟 قصص نجاح', activity: '🎉 أنشطة', update: '📢 تحديثات' };
+  const hasPostTypes = stories.some(s => s.postType);
+  const filteredStories = stories.filter(s => {
+    const categoryMatch = selectedFilter === 'all' || s.category === selectedFilter;
+    const postTypeMatch = selectedPostType === 'all' || s.postType === selectedPostType;
+    return categoryMatch && postTypeMatch;
+  });
 
   const featuredStory = stories.find(s => s.isFeatured) || stories[0] || null;
 
@@ -91,6 +96,17 @@ const ImpactStories = () => {
               </button>
             ))}
           </div>
+          {/* Post type filter — only shown when at least one story has a postType */}
+          {hasPostTypes && (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+              {[{ id: 'all', label: 'الكل' }, ...Object.entries(POST_TYPE_LABELS).map(([id, label]) => ({ id, label }))].map(pt => (
+                <button key={pt.id} onClick={() => setSelectedPostType(pt.id)}
+                  style={{ height: 30, padding: '0 14px', borderRadius: 100, fontSize: 12, fontWeight: 600, border: '1px solid', borderColor: selectedPostType === pt.id ? 'rgba(255,255,255,.8)' : 'rgba(255,255,255,.2)', background: selectedPostType === pt.id ? 'rgba(255,255,255,.15)' : 'transparent', color: 'white', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+                  {pt.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

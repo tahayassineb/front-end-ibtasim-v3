@@ -24,6 +24,14 @@ const GRADIENT_PRESETS = [
   { label: 'كفالة', value: 'linear-gradient(160deg,#8B6914,#C4A882)' },
 ];
 
+const POST_TYPES = [
+  { id: 'story',    label: '🌟 قصة نجاح' },
+  { id: 'activity', label: '🎉 نشاط' },
+  { id: 'update',   label: '📢 تحديث' },
+];
+
+const slugify = (text) => text.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\u0600-\u06FF-]/g, '').slice(0, 80);
+
 const EMPTY_FORM = {
   title: '', excerpt: '', category: 'education',
   gradient: GRADIENT_PRESETS[0].value,
@@ -31,6 +39,7 @@ const EMPTY_FORM = {
   catLabel: 'EDUCATION · تعليم', catColor: '#0A5F62',
   isPublished: false, isFeatured: false,
   coverImage: '', body: '',
+  postType: 'story', slug: '', metaDescription: '',
 };
 
 const FieldLabel = ({ children }) => (
@@ -78,6 +87,9 @@ export default function AdminStories() {
       isPublished: story.isPublished, isFeatured: story.isFeatured ?? false,
       coverImage: story.coverImage || '',
       body: story.body || '',
+      postType: story.postType || 'story',
+      slug: story.slug || '',
+      metaDescription: story.metaDescription || '',
     });
     setCoverPreview(story.coverImage ? convexFileUrl(story.coverImage) : null);
     setEditingId(story._id);
@@ -111,6 +123,9 @@ export default function AdminStories() {
         isPublished: form.isPublished, isFeatured: form.isFeatured,
         coverImage: form.coverImage || undefined,
         body: form.body || undefined,
+        postType: form.postType || 'story',
+        slug: form.slug || undefined,
+        metaDescription: form.metaDescription || undefined,
       };
       if (editingId) {
         await updateStory({ id: editingId, ...payload });
@@ -188,16 +203,43 @@ export default function AdminStories() {
               )}
             </div>
 
+            {/* Post type */}
+            <div style={{ marginBottom: 14 }}>
+              <FieldLabel>نوع المنشور</FieldLabel>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {POST_TYPES.map(pt => (
+                  <button key={pt.id} type="button" onClick={() => handleField('postType', pt.id)}
+                    style={{ flex: 1, height: 38, borderRadius: 10, border: `1.5px solid ${form.postType === pt.id ? PRIMARY : BORDER}`, background: form.postType === pt.id ? P50 : 'white', color: form.postType === pt.id ? P600 : TEXT2, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+                    {pt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
               <div style={{ gridColumn: '1/-1' }}>
                 <FieldLabel>العنوان *</FieldLabel>
-                <input style={fieldInput} value={form.title} onChange={e => handleField('title', e.target.value)} placeholder="عنوان القصة" />
+                <input style={fieldInput} value={form.title}
+                  onChange={e => { handleField('title', e.target.value); if (!form.slug) handleField('slug', slugify(e.target.value)); }}
+                  placeholder="عنوان القصة" />
               </div>
               <div style={{ gridColumn: '1/-1' }}>
                 <FieldLabel>المختصر * (جملة أو جملتان)</FieldLabel>
                 <textarea value={form.excerpt} onChange={e => handleField('excerpt', e.target.value)}
                   placeholder="وصف مختصر للقصة..."
                   style={{ ...fieldInput, height: 64, paddingTop: 10, resize: 'vertical' }} />
+              </div>
+              <div style={{ gridColumn: '1/-1' }}>
+                <FieldLabel>الرابط (Slug) — يُملأ تلقائياً</FieldLabel>
+                <input style={{ ...fieldInput, fontFamily: 'Inter, monospace', fontSize: 12 }} value={form.slug}
+                  onChange={e => handleField('slug', e.target.value)} placeholder="my-story-slug" dir="ltr" />
+              </div>
+              <div style={{ gridColumn: '1/-1' }}>
+                <FieldLabel>وصف الصفحة (Meta Description) — حتى 160 حرفاً</FieldLabel>
+                <textarea value={form.metaDescription} onChange={e => handleField('metaDescription', e.target.value.slice(0, 160))}
+                  placeholder="وصف مختصر يظهر في نتائج محركات البحث..."
+                  style={{ ...fieldInput, height: 56, paddingTop: 10, resize: 'none' }} />
+                <div style={{ fontSize: 11, color: TEXTM, textAlign: 'left', fontFamily: 'Inter, sans-serif' }}>{(form.metaDescription || '').length} / 160</div>
               </div>
               <div style={{ gridColumn: '1/-1' }}>
                 <FieldLabel>محتوى القصة (يدعم النص المنسق + الصور)</FieldLabel>
@@ -294,6 +336,7 @@ export default function AdminStories() {
                     {story.isPublished ? '✓ منشورة' : 'مسودة'}
                   </span>
                   {story.isFeatured && <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 100, background: '#FEF3C7', color: '#b45309' }}>⭐ مميزة</span>}
+                  {story.postType && story.postType !== 'story' && <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 100, background: '#F1F5F9', color: TEXT2 }}>{POST_TYPES.find(p => p.id === story.postType)?.label}</span>}
                 </div>
               </div>
               {/* Actions */}

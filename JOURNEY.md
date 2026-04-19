@@ -689,3 +689,36 @@ This was deliberately saved for last because it's the most complex page (~1400 l
 - `height: 100dvh` (not `minHeight`) is the correct pattern for mobile-first full-screen flows. `100dvh` accounts for browser chrome (address bar) on iOS/Android; `100vh` ignores it.
 - Always verify field names match between the write side (AdminSettings saves `bankName`) and the read side (DonationFlow reads it). A name mismatch causes silent undefined with a hardcoded fallback — hard to notice until testing.
 - For dynamic lists (kafala needs), `Date.now()` as temporary ID works fine for new rows; just use the existing `id` field when pre-filling from DB.
+
+---
+
+## Session 3: Blog System, Donation Flow Fixes, Emoji Picker, Navigation Fixes
+
+### What was done
+9 issues resolved across multiple files:
+
+1. **KafalaDetail sidebar duplicate** — Removed 5-item benefits list from sidebar (it duplicated the 6-item "مزايا الكافل" section in the main column added in Session 1).
+
+2. **Home donate button** — Changed `navigate('/donate/${id}')` → `navigate('/projects/${id}')` in Home.jsx so "تبرع الآن" goes to project detail first.
+
+3. **DonationFlow header "جارٍ التحميل..."** — `ProjectCtx` showed this text unconditionally when `step <= 1`. Fixed to only show it when `!project` (data still loading).
+
+4. **Skip Step 4 for logged-in users** — `getNextStep()` now jumps to step 5 when `isAuthenticated` and user came from step 3 or step 2 (card). `handleBack()` likewise skips step 4 when going back from step 5. `isNextDisabled` check for step 4 is now conditional on `!isAuthenticated`.
+
+5. **Structured bank/agency fields in Step 3** — Added `MOROCCAN_BANKS` array + bank name dropdown, sender name input, and reference/RIB input to `Step3Receipt`. These bind to `donationData.bankName`, `donationData.senderName`, and `donationData.transactionReference` — all mapped to existing schema fields.
+
+6. **Emoji picker for benefit cards** — Replaced plain icon text input in AdminProjectForm with `EmojiPickerBtn` component: a button showing current emoji, click opens 40-emoji grid popover (charity-relevant), auto-closes on outside click or selection.
+
+7. **Blog system overhaul** — Added `postType` (story/activity/update), `slug`, and `metaDescription` fields to:
+   - `convex/schema.ts` (3 optional fields on stories table)
+   - `convex/stories.ts` (createStory + updateStory args)
+   - `AdminStories.jsx` (postType selector, auto-slug from title, meta description with 160-char counter)
+   - `ImpactStories.jsx` (postType filter row, only shown if any story has a postType)
+
+### Mistakes
+- Used TypeScript `as` cast in a `.jsx` file — caught immediately, removed.
+
+### Lessons
+- When adding filter tabs that are "optional" (only show if data exists), check `stories.some(s => s.postType)` before rendering — avoids UI clutter on empty data.
+- For step-skip logic in multi-step flows, update both `getNextStep()` AND `handleBack()` — missing the back direction causes the user to land on a skipped step when going backward.
+- `EmojiPickerBtn` click-outside uses `document.addEventListener('mousedown', close)` — `click` would fire on the button itself and immediately reclose.

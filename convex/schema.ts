@@ -448,6 +448,10 @@ export default defineSchema({
     // Rich content fields
     coverImage: v.optional(v.string()),       // Convex storage ID
     body: v.optional(v.string()),             // HTML from rich text editor
+    // Blog/SEO fields
+    postType: v.optional(v.union(v.literal("story"), v.literal("activity"), v.literal("update"))),
+    slug: v.optional(v.string()),
+    metaDescription: v.optional(v.string()),
   }).index('by_published', ['isPublished']),
 
   // ============================================

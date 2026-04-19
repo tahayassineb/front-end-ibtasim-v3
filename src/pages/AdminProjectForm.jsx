@@ -75,6 +75,36 @@ const ToggleRow = ({ title, desc, checked, onChange, last }) => (
   </div>
 );
 
+const BENEFIT_EMOJIS = ['🏠','🏫','💧','🍽️','❤️','👨‍👩‍👧','📚','🌟','🤲','🩺','🌱','⚡','🎓','🛖','🫀','🧒','👶','🌊','☀️','🐄','🍎','💊','🧑‍🏫','🪴','🏗️','🎒','✏️','👕','🩹','🔬','🌍','🕌','🤝','🎯','💰','📦','🚰','🛏️','🧹','🌾'];
+
+const EmojiPickerBtn = ({ value, onChange }) => {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, []);
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button type="button" onClick={() => setOpen(o => !o)}
+        style={{ width: '100%', height: 48, border: `1.5px solid ${open ? PRIMARY : BORDER}`, borderRadius: 12, background: 'white', fontSize: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+        {value || <span style={{ fontSize: 14, color: TEXTM }}>＋</span>}
+      </button>
+      {open && (
+        <div style={{ position: 'absolute', top: 54, right: 0, zIndex: 100, background: 'white', border: `1.5px solid ${BORDER}`, borderRadius: 14, padding: 10, boxShadow: '0 8px 24px rgba(0,0,0,.12)', width: 230, display: 'grid', gridTemplateColumns: 'repeat(8,1fr)', gap: 4 }}>
+          {BENEFIT_EMOJIS.map(e => (
+            <button key={e} type="button" onClick={() => { onChange(e); setOpen(false); }}
+              style={{ width: 26, height: 26, border: 'none', borderRadius: 6, background: value === e ? '#E6F4F4' : 'transparent', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {e}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── Main component ────────────────────────────────────────────────────────────
 export default function AdminProjectForm() {
   const { id } = useParams();
@@ -434,9 +464,9 @@ export default function AdminProjectForm() {
         </div>
         {(formData.benefitCards || []).map((card, i) => (
           <div key={i} style={{ display: 'grid', gridTemplateColumns: '60px 1fr 1fr auto', gap: 10, marginBottom: 10, alignItems: 'center' }}>
-            <input
-              value={card.icon} onChange={e => { const c = [...formData.benefitCards]; c[i] = { ...c[i], icon: e.target.value }; set('benefitCards', c); }}
-              placeholder="👨‍👩‍👧" style={{ ...fieldInput, textAlign: 'center', fontSize: 20, padding: '0 8px' }}
+            <EmojiPickerBtn
+              value={card.icon}
+              onChange={v => { const c = [...formData.benefitCards]; c[i] = { ...c[i], icon: v }; set('benefitCards', c); }}
             />
             <input
               value={card.value} onChange={e => { const c = [...formData.benefitCards]; c[i] = { ...c[i], value: e.target.value }; set('benefitCards', c); }}
