@@ -743,3 +743,92 @@ Applied 11 UI/UX fixes across DonationFlow, KafalaFlow, AdminStories, AdminProje
 **Inline image in RichTextEditor (Task 3):** Must save `window.getSelection().getRangeAt(0).cloneRange()` BEFORE triggering the file input (clicking the file input shifts focus away). Restore the range after upload completes, then `execCommand('insertHTML', false, '<img ...>')`.
 
 **EmojiPickerBtn free input (Task 1):** Combined a `<input type="text">` with the picker dropdown using a flex wrapper. The input allows typing any emoji; the dropdown still works as a helper palette.
+
+---
+
+## Session N: Architecture Refactor (Steps 1–5 of 7-step plan)
+
+### What was done
+Full architecture cleanup across 6 areas: admin security fix, AppContext split, i18n extraction, donation state isolation, money utilities, and AdminSettings tab extraction.
+
+### Step 1 — Admin Auth Security Fix
+**What was broken:** `AdminRoute` in App.jsx checked `user?.role === 'admin'` from localStorage only. Any user who set `localStorage['app-user'] = JSON.stringify({id: 'x', role: 'admin'})` could access all admin pages with no server validation.
+
+**Fix:** Added `verifyAdminSession` query to `convex/admin.ts` that looks up the admin record by ID and checks `isActive`. `AdminRoute` now calls this query via `useQuery` on every render. Returns `null` while loading (prevents flash of admin content), redirects to `/admin/login` if invalid.
+
+**Lesson:** Never trust localStorage for authorization. Always validate against the server on protected routes. The localStorage `user.id` was a real Convex `Id<"admins">` — it just needed a server roundtrip to verify it was still active.
+
+**Deploy note:** Requires `npx convex deploy --yes` in addition to git push — the query must exist in Convex before the frontend references it.
+
+### Step 2 — Donation State Out of AppContext
+**What was broken:** `donationState` (amount, projectId, step, etc.) lived in global AppContext and persisted to localStorage. This meant navigating away mid-donation and returning would re-hydrate a stale wizard state.
+
+**Fix:** Local `useState` in `DonationFlow.jsx`. State resets on every mount. Removed `donation-state` localStorage key (added cleanup in UIContext init useEffect).
+
+**Lesson:** Global context is for truly global concerns (auth, language, toast). Per-flow state belongs in the flow component.
+
+### Step 3 — i18n Extraction
+**What was done:** Moved LANGUAGES and TRANSLATIONS dictionaries (originally ~170 lines of AppContext.jsx) to `src/lib/i18n.js`. AppContext (now UIContext) imports from there. No behavior change.
+
+**Lesson:** A 1000-line context file is almost always a sign that non-context logic snuck in. Dictionaries, color tokens, and utility functions don't need React context.
+
+### Step 4 — AppContext Split into AuthContext + UIContext
+**What was done:** Extracted auth concerns (user, isAuthenticated, login, logout, updateUser) into `AuthContext.jsx` and UI concerns (language, toast, darkMode, formatters) into `UIContext.jsx`. `AppContext.jsx` rewritten as a 4-line backward-compat wrapper: `useApp()` merges both contexts. All existing pages continue to call `useApp()` unchanged.
+
+**Mistake made:** The Write tool requires a prior Read. Tried to write new files (AuthContext.jsx, UIContext.jsx) before reading them. Fixed by checking file system — the agent had already created them.
+
+**Lesson:** When splitting a god-object context, the backward-compat hook merger pattern (`useApp = () => ({ ...useAuth(), ...useUI() })`) lets you do the split without touching every consumer file. Update consumers gradually later.
+
+### Step 5 — AdminSettings Tab Extraction
+**What was done:** Split `AdminSettings.jsx` (~1000 lines) into:
+- `src/pages/admin/settings/shared.jsx` — Design tokens + reusable primitives (SettingsCard, FieldLabel, SaveBtn, ToggleRow, TABS)
+- `BankTab.jsx`, `WhatsAppTab.jsx`, `TeamTab.jsx`, `ProfileTab.jsx`, `NotificationsTab.jsx`
+- `AdminSettings.jsx` reduced to ~100 lines of Convex hooks + state + tab router
+
+**Critical detail:** The WhatsApp QR auto-refresh (20s setInterval) and status poll (5s setInterval) useEffects moved INTO `WhatsAppTab.jsx`. They depend only on `whatsappSession` state and action callbacks — both available as props. Timer cleanup on unmount means switching away from the WhatsApp tab stops both intervals automatically.
+
+**Mistake made:** After replacing the render block, orphaned JSX from the old component remained in the file (the Edit tool appended new content but didn't remove old). Fixed by truncating at the correct line. Also left `initials` and `ROLE_CFG` helper functions defined in AdminSettings.jsx after their JSX was moved to TeamTab — these referenced `P600` which was no longer imported, causing a would-be build error. Removed them.
+
+**Lesson:** When extracting large JSX blocks, always grep for dangling references (helpers, constants) that were co-located with the JSX and need to move with it. Run ESLint after each extraction — it catches undefined references faster than a full build.
+
+### Step 6 — Money Utilities
+Created `src/lib/money.js` with `toCentimes`, `fromCentimes`, and `formatMAD`. Additive only — no existing code changed. Future edits should import from here instead of writing inline `/100` divisions.
+
+---
+
+## Session N+1: Post-Audit Bug Fixes (10 issues)
+
+### What was done
+A senior architect audit of the Steps 1-7 refactor identified 10 bugs/risks. All 10 were fixed in this session with zero behavior changes.
+
+### A-Group: Correctness Bugs
+
+**`isAuthenticated` desync (AuthContext.jsx):** Two independent `useState` values — `user` and `isAuthenticated` — represented the same truth. `updateUser` updated `user` but never called `setIsAuthenticated`. Fixed by making `isAuthenticated` a derived value: `const isAuthenticated = user !== null`. Removed `setIsAuthenticated` entirely. The two values can now never diverge.
+
+**`updateUser` null spread (AuthContext.jsx):** If `updateUser` was called while `user` was `null`, `{ ...null, ...updates }` produced a partial user object that was written to localStorage. On next load, this partial object made the user appear authenticated with no `id`, causing the `AdminRoute` Convex query to fire with `undefined` and hang indefinitely. Fixed with a one-line null guard: `if (!prev) return prev;`.
+
+**`showToast` timer leak (UIContext.jsx):** Every `showToast` call created a new `setTimeout` with no cleanup. Rapid consecutive calls left multiple timers active — earlier timers would clear toasts set by later calls, making error feedback disappear instantly. Fixed with `useRef` to track the active timer and `clearTimeout` before each new call.
+
+### B-Group: WhatsApp Runtime Bugs
+
+**`sessionId` vs `instanceId` mismatch (AdminSettings.jsx):** Initial state used `sessionId: null` while `WhatsAppTab.jsx` checked `instanceId` throughout. Replaced `sessionId` with `instanceId` in the initial state shape.
+
+**`handlePhoneChange` persisting transient state (AdminSettings.jsx):** The handler was calling `JSON.stringify({ ...whatsappSession })`, which serialized `qrCode`, `isLoading`, and other runtime-only fields to the database. On next page load, `isLoading: true` could permanently disable all buttons, and a stale QR code would render. Fixed by explicitly listing only config-relevant fields in the persisted object.
+
+**`whatsappSettingsData` overwriting live QR (AdminSettings.jsx):** The Convex `whatsappSettingsData` subscription re-fires whenever ANY config key changes. The `useEffect` that parsed it would then merge DB state back in, potentially overwriting a just-fetched QR code while the user was on a different tab. Fixed with a `useRef` flag (`whatsappInitialized`) so the parse runs only once on first delivery.
+
+### C-Group: Structural
+
+**`shared.jsx` split:** Moved design tokens to `tokens.js` (pure constants, no React) and React components to `components.jsx`. Kept `shared.jsx` as a barrel re-export for backward compatibility. This resolved the `react-refresh/only-export-components` ESLint error on that file.
+
+**`AppContent` context consistency:** `ToastRenderer` used `useUI()`, `AdminRoute` used `useAuth()`, but `AppContent` still used `useApp()`. Changed to `useUI()` for consistency. Also removed now-unused `t` and `useApp` import.
+
+**`@/` path alias:** Added `resolve.alias: { '@': './src' }` to `vite.config.js`. Existing `../../../../` imports still work; new code should use `@/` instead.
+
+**`money.js` null guards:** Added `null` and `NaN` input checks to all three functions. `formatMAD(null)` now returns `'— درهم'` rather than `'NaN درهم'`.
+
+### CLAUDE.md
+Added "Mandatory Post-Execution Review" section requiring build check, lint check, self-audit, behavior verification, and JOURNEY.md entry after every task. Non-negotiable standing instruction.
+
+### Lesson
+When an AI generates code quickly across many files, correctness bugs cluster in: (1) dual-state that should be derived, (2) timers/refs without cleanup, (3) state shapes that diverge between parent and child, and (4) functions that serialize more than they should. These are the first places to check in any future audit.

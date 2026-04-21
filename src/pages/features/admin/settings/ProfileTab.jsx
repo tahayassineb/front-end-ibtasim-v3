@@ -1,0 +1,33 @@
+import React from 'react';
+import { SettingsCard, FieldLabel, SaveBtn, fieldInput, PRIMARY, BORDER } from './shared';
+
+const ProfileTab = ({ formData, handleInputChange, handleSaveProfile, isSavingProfile }) => (
+  <SettingsCard icon="👤" title="ملف الجمعية">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {[
+        { label: 'اسم المنظمة',         field: 'organizationName', type: 'text' },
+        { label: 'البريد الإلكتروني',    field: 'email',            type: 'email' },
+        { label: 'الهاتف',              field: 'phone',            type: 'tel' },
+        { label: 'العنوان',             field: 'address',          type: 'text' },
+      ].map(({ label, field, type }) => (
+        <div key={field}>
+          <FieldLabel>{label}</FieldLabel>
+          <input style={fieldInput} type={type} value={formData[field] || ''}
+            onChange={e => handleInputChange(field, e.target.value)}
+            onFocus={e => e.target.style.borderColor = PRIMARY}
+            onBlur={e => e.target.style.borderColor = BORDER} />
+        </div>
+      ))}
+      <div>
+        <FieldLabel>الوصف</FieldLabel>
+        <textarea value={formData.description || ''} onChange={e => handleInputChange('description', e.target.value)} rows={3}
+          style={{ ...fieldInput, height: 'auto', padding: '12px 14px', resize: 'none', lineHeight: 1.6 }}
+          onFocus={e => e.target.style.borderColor = PRIMARY}
+          onBlur={e => e.target.style.borderColor = BORDER} />
+      </div>
+      <SaveBtn onClick={handleSaveProfile} loading={isSavingProfile}>💾 حفظ ملف الجمعية</SaveBtn>
+    </div>
+  </SettingsCard>
+);
+
+export default ProfileTab;

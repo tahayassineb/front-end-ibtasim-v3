@@ -543,3 +543,12 @@ export const acceptAdminInvitation = mutation({
     return { success: true, adminId } as const;
   },
 });
+
+export const verifyAdminSession = query({
+  args: { adminId: v.id("admins") },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const admin = await ctx.db.get(args.adminId);
+    return !!(admin && admin.isActive);
+  },
+});

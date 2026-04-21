@@ -1,60 +1,62 @@
 // Trigger fresh Vercel deployment - cache bust
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AppProvider, useApp } from './context/AppContext';
+import { AppProvider } from './context/AppContext';
+import { useAuth } from './context/AuthContext';
+import { useUI } from './context/UIContext';
 
 // Layouts
 import MainLayout from './components/MainLayout';
 import AdminLayout from './components/AdminLayout';
 
 // Public Pages
-import Home from './pages/Home';
-import ProjectsList from './pages/ProjectsList';
-import ProjectDetail from './pages/ProjectDetail';
-import ImpactStories from './pages/ImpactStories';
-import StoryDetail from './pages/StoryDetail';
-import UserProfile from './pages/UserProfile';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import About from './pages/About';
-import Contact from './pages/Contact';
+import Home from './pages/features/public/Home';
+import ProjectsList from './pages/features/projects/ProjectsList';
+import ProjectDetail from './pages/features/projects/ProjectDetail';
+import ImpactStories from './pages/features/stories/ImpactStories';
+import StoryDetail from './pages/features/stories/StoryDetail';
+import UserProfile from './pages/features/public/UserProfile';
+import Login from './pages/features/auth/Login';
+import Register from './pages/features/auth/Register';
+import About from './pages/features/public/About';
+import Contact from './pages/features/public/Contact';
 
 // Donation Flow
-import DonationFlow from './pages/DonationFlow';
-import DonateSuccess from './pages/DonateSuccess';
+import DonationFlow from './pages/features/donations/DonationFlow';
+import DonateSuccess from './pages/features/donations/DonateSuccess';
 
 // Kafala (Orphan Sponsorship)
-import KafalaList from './pages/KafalaList';
-import KafalaDetail from './pages/KafalaDetail';
-import KafalaFlow from './pages/KafalaFlow';
-import KafalaRenew from './pages/KafalaRenew';
+import KafalaList from './pages/features/kafala/KafalaList';
+import KafalaDetail from './pages/features/kafala/KafalaDetail';
+import KafalaFlow from './pages/features/kafala/KafalaFlow';
+import KafalaRenew from './pages/features/kafala/KafalaRenew';
 
 // Error Boundary
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Convex error logging
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '../convex/_generated/api';
 
 // Admin Kafala Pages
-import AdminKafala from './pages/AdminKafala';
-import AdminKafalaForm from './pages/AdminKafalaForm';
-import AdminKafalaVerifications from './pages/AdminKafalaVerifications';
-import AdminStories from './pages/AdminStories';
+import AdminKafala from './pages/features/admin/kafala/AdminKafala';
+import AdminKafalaForm from './pages/features/admin/kafala/AdminKafalaForm';
+import AdminKafalaVerifications from './pages/features/admin/kafala/AdminKafalaVerifications';
+import AdminStories from './pages/features/admin/stories/AdminStories';
 
 // Admin Pages
-import AdminLogin from './pages/AdminLogin';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminProjects from './pages/AdminProjects';
-import AdminProjectDetail from './pages/AdminProjectDetail';
-import AdminProjectForm from './pages/AdminProjectForm';
-import AdminDonations from './pages/AdminDonations';
-import AdminVerifications from './pages/AdminVerifications';
-import AdminDonors from './pages/AdminDonors';
-import AdminDonorDetail from './pages/AdminDonorDetail';
-import AdminSettings from './pages/AdminSettings';
-import AdminRegister from './pages/AdminRegister';
-import AdminErrorLogs from './pages/AdminErrorLogs';
+import AdminLogin from './pages/features/admin/AdminLogin';
+import AdminDashboard from './pages/features/admin/dashboard/AdminDashboard';
+import AdminProjects from './pages/features/admin/projects/AdminProjects';
+import AdminProjectDetail from './pages/features/admin/projects/AdminProjectDetail';
+import AdminProjectForm from './pages/features/admin/projects/AdminProjectForm';
+import AdminDonations from './pages/features/admin/donations/AdminDonations';
+import AdminVerifications from './pages/features/admin/donations/AdminVerifications';
+import AdminDonors from './pages/features/admin/donors/AdminDonors';
+import AdminDonorDetail from './pages/features/admin/donors/AdminDonorDetail';
+import AdminSettings from './pages/features/admin/settings/AdminSettings';
+import AdminRegister from './pages/features/admin/AdminRegister';
+import AdminErrorLogs from './pages/features/admin/AdminErrorLogs';
 
 // ============================================
 // SCROLL TO TOP ON ROUTE CHANGE
@@ -75,7 +77,7 @@ function ScrollToTop() {
 // ============================================
 
 function ToastRenderer() {
-  const { toast } = useApp();
+  const { toast } = useUI();
   if (!toast) return null;
 
   const styles = {
@@ -130,14 +132,21 @@ function GlobalErrorLogger() {
 
 // Protected route for authenticated users
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useApp();
+  const { isAuthenticated } = useAuth();
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
 // Protected route for admin
 const AdminRoute = ({ children }) => {
-  const { isAuthenticated, user } = useApp();
-  if (!isAuthenticated || user?.role !== 'admin') return <Navigate to="/admin/login" />;
+  const { isAuthenticated, user } = useAuth();
+  const isAdmin = useQuery(
+    api.admin.verifyAdminSession,
+    isAuthenticated && user?.id ? { adminId: user.id } : 'skip'
+  );
+
+  if (!isAuthenticated || !user?.id) return <Navigate to="/admin/login" />;
+  if (isAdmin === undefined) return null;
+  if (!isAdmin) return <Navigate to="/admin/login" />;
   return children;
 };
 
@@ -146,7 +155,7 @@ const AdminRoute = ({ children }) => {
 // ============================================
 
 function AppContent() {
-  const { t, currentLanguage } = useApp();
+  const { currentLanguage } = useUI();
 
   return (
     <Router>

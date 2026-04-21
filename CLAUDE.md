@@ -228,3 +228,22 @@ Session flow: create (`POST /sessions`) → connect (`POST /sessions/{id}/connec
 **Always write a new entry in `JOURNEY.md` at the end of every session or task.**
 
 Include: what was broken, what you tried, what mistakes you made, root cause, fix, lessons for the next instance. Non-negotiable — do it for small sessions too.
+
+---
+
+## Mandatory Post-Execution Review
+
+**After completing ANY task, execution plan, or code change — without exception:**
+
+1. **Build check**: Run `npm run build`. Zero errors required before reporting done.
+2. **Lint check**: Run `npx eslint [changed files]` and fix any new `error`-level issues introduced (not pre-existing warnings).
+3. **Self-audit**: Re-read every file you modified and check for:
+   - Undefined variables or imports
+   - Props passed but never destructured (or vice versa)
+   - State shape mismatches between parent and child
+   - `useRef` / `useState` used without being imported
+   - Relative import depth correctness (`../../` chain counts)
+4. **Behavior verification**: For each changed file, state in one sentence what the user-visible behavior is before and after. If it changed, flag it explicitly.
+5. **JOURNEY.md entry**: Write a new entry per the Standing Instruction above.
+
+This review step is non-negotiable. Do not mark a task complete until these 5 checks pass.
