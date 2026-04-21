@@ -214,9 +214,6 @@ export default function KafalaDetail() {
           {/* Mid-page sponsor CTA */}
           {!isSponsored && (
             <div style={{ margin: '24px 0', background: '#F5EBD9', borderRadius: 18, padding: '20px 24px', border: '1.5px solid #E8D4B0', textAlign: 'center' }}>
-              <div style={{ fontSize: 13, color: '#8B6914', fontWeight: 600, marginBottom: 12 }}>
-                🤲 كفالتك الشهرية تغطي تعليم {kafala.name} وغذاءه وصحته
-              </div>
               <button
                 onClick={() => navigate(`/kafala/${kafala._id}/sponsor`)}
                 style={{ width: '100%', height: 52, background: '#8B6914', color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: '0 4px 14px rgba(196,168,130,.35)', marginBottom: 8 }}

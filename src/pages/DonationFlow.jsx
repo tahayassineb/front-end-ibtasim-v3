@@ -64,7 +64,6 @@ const ProjectCtx = ({ project, step, amount }) => (
       {step <= 1 ? (
         <>
           <div style={{ fontSize: 13, fontWeight: 700 }}>{project?.title || 'تبرع لجمعية ابتسام'}</div>
-          {!project && <div style={{ fontSize: 11, color: '#0A5F62', marginTop: 3, fontWeight: 600 }}>جارٍ التحميل...</div>}
         </>
       ) : (
         <>
@@ -515,12 +514,12 @@ const Step3Receipt = ({ uploadedFile, setUploadedFile, dragActive, setDragActive
         </div>
 
         <div style={{ marginBottom: 4 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>رقم المرجع / RIB (اختياري)</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>رقم المرجع (اختياري)</div>
           <input
             type="text"
             value={donationData?.transactionReference || ''}
             onChange={e => setDonationData(p => ({ ...p, transactionReference: e.target.value }))}
-            placeholder="رقم العملية أو RIB"
+            placeholder="رقم الوصل من البنك"
             dir="ltr"
             style={{ width: '100%', height: 52, border: '1.5px solid #E5E9EB', borderRadius: 14, padding: '0 16px', fontSize: 14, fontFamily: 'Inter, sans-serif', color: '#0e1a1b', background: 'white', outline: 'none', boxSizing: 'border-box', letterSpacing: '.04em' }}
           />
@@ -788,6 +787,11 @@ export default function DonationFlow() {
   const [step, setStep] = useState(getInitialStep);
   const [isLoading, setIsLoading] = useState(false);
 
+  // If auth state loads after mount and user is already logged in, skip auth step
+  useEffect(() => {
+    if (isAuthenticated && step === 0) setStep(1);
+  }, [isAuthenticated]);
+
   // ── Donation data ──
   const [donationData, setDonationData] = useState({
     amount: donationState?.amount || 200,
@@ -816,7 +820,7 @@ export default function DonationFlow() {
   }, [user]);
 
   // ── Auth state (preserved exactly) ──
-  const [authMode, setAuthMode] = useState('login');
+  const [authMode, setAuthMode] = useState(null);
   const [authFormData, setAuthFormData] = useState({ fullName: '', email: '', phone: '', password: '', confirmPassword: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);

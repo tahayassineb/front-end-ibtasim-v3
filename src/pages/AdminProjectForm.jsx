@@ -87,10 +87,19 @@ const EmojiPickerBtn = ({ value, onChange }) => {
   }, []);
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <button type="button" onClick={() => setOpen(o => !o)}
-        style={{ width: '100%', height: 48, border: `1.5px solid ${open ? PRIMARY : BORDER}`, borderRadius: 12, background: 'white', fontSize: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-        {value || <span style={{ fontSize: 14, color: TEXTM }}>＋</span>}
-      </button>
+      <div style={{ display: 'flex', border: `1.5px solid ${open ? PRIMARY : BORDER}`, borderRadius: 12, overflow: 'hidden', height: 48, background: 'white' }}>
+        <input
+          type="text"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder="😊"
+          style={{ flex: 1, border: 'none', outline: 'none', fontSize: 22, textAlign: 'center', padding: '0 4px', fontFamily: 'sans-serif', background: 'transparent', minWidth: 0 }}
+        />
+        <button type="button" onClick={() => setOpen(o => !o)}
+          style={{ width: 28, background: '#F0F7F7', border: 'none', cursor: 'pointer', fontSize: 11, color: TEXTM, borderRight: `1px solid ${BORDER}`, flexShrink: 0 }}>
+          ▾
+        </button>
+      </div>
       {open && (
         <div style={{ position: 'absolute', top: 54, right: 0, zIndex: 100, background: 'white', border: `1.5px solid ${BORDER}`, borderRadius: 14, padding: 10, boxShadow: '0 8px 24px rgba(0,0,0,.12)', width: 230, display: 'grid', gridTemplateColumns: 'repeat(8,1fr)', gap: 4 }}>
           {BENEFIT_EMOJIS.map(e => (

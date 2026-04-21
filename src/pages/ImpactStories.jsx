@@ -5,7 +5,7 @@ import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 
 // ============================================
-// IMPACT STORIES PAGE - Success Stories
+// BLOG PAGE - المدونة
 // ============================================
 
 const useIsMobile = () => {
@@ -49,7 +49,7 @@ const ImpactStories = () => {
     })).filter(f => stories.some(s => s.category === f.id)),
   ];
 
-  const POST_TYPE_LABELS = { story: '🌟 قصص نجاح', activity: '🎉 أنشطة', update: '📢 تحديثات' };
+  const POST_TYPE_LABELS = { story: '🌟 قصص نجاح', activity: '🎉 أنشطة وفعاليات', update: '📢 أخبار وتحديثات' };
   const hasPostTypes = stories.some(s => s.postType);
   const filteredStories = stories.filter(s => {
     const categoryMatch = selectedFilter === 'all' || s.category === selectedFilter;
@@ -66,11 +66,11 @@ const ImpactStories = () => {
       <div style={{ background: 'linear-gradient(135deg,#052E2F,#0A5F62,#0d7477)', padding: isMobile ? '40px 20px' : '60px 0' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '0' : '0 28px', textAlign: 'center' }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#33C0C0', marginBottom: 12, fontFamily: 'Inter, sans-serif' }}>
-            SUCCESS STORIES · قصص ملهمة
+            BLOG · المدونة
           </div>
-          <h1 style={{ fontSize: 40, fontWeight: 900, color: 'white', marginBottom: 12 }}>تبرعاتكم غيّرت حياتهم</h1>
+          <h1 style={{ fontSize: 40, fontWeight: 900, color: 'white', marginBottom: 12 }}>مدونة الجمعية</h1>
           <p style={{ fontSize: 16, color: 'rgba(255,255,255,.7)', lineHeight: 1.7, maxWidth: 500, margin: '0 auto 28px' }}>
-            قصص حقيقية لأسر وأطفال استفادوا من كرم متبرعينا الأوفياء
+            قصص النجاح، الأنشطة والفعاليات، وآخر الأخبار من جمعية ابتسام
           </p>
           {/* Filter chips */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -97,16 +97,14 @@ const ImpactStories = () => {
             ))}
           </div>
           {/* Post type filter — only shown when at least one story has a postType */}
-          {hasPostTypes && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-              {[{ id: 'all', label: 'الكل' }, ...Object.entries(POST_TYPE_LABELS).map(([id, label]) => ({ id, label }))].map(pt => (
-                <button key={pt.id} onClick={() => setSelectedPostType(pt.id)}
-                  style={{ height: 30, padding: '0 14px', borderRadius: 100, fontSize: 12, fontWeight: 600, border: '1px solid', borderColor: selectedPostType === pt.id ? 'rgba(255,255,255,.8)' : 'rgba(255,255,255,.2)', background: selectedPostType === pt.id ? 'rgba(255,255,255,.15)' : 'transparent', color: 'white', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
-                  {pt.label}
-                </button>
-              ))}
-            </div>
-          )}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+            {[{ id: 'all', label: 'الكل' }, ...Object.entries(POST_TYPE_LABELS).map(([id, label]) => ({ id, label }))].map(pt => (
+              <button key={pt.id} onClick={() => setSelectedPostType(pt.id)}
+                style={{ height: 30, padding: '0 14px', borderRadius: 100, fontSize: 12, fontWeight: 600, border: '1px solid', borderColor: selectedPostType === pt.id ? 'rgba(255,255,255,.8)' : 'rgba(255,255,255,.2)', background: selectedPostType === pt.id ? 'rgba(255,255,255,.15)' : 'transparent', color: 'white', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+                {pt.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -114,7 +112,7 @@ const ImpactStories = () => {
       {featuredStory && (
         <div style={{ maxWidth: 1200, margin: isMobile ? '28px auto 0' : '48px auto 0', padding: isMobile ? '0 16px' : '0 28px' }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 16, fontFamily: 'Inter, sans-serif' }}>
-            STORY OF THE MONTH · قصة الشهر
+            FEATURED · المنشور المميز
           </div>
           <div style={{ background: 'white', borderRadius: 20, overflow: 'hidden', boxShadow: '0 10px 15px rgba(0,0,0,.10)', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
             {/* Gradient side */}
@@ -127,7 +125,7 @@ const ImpactStories = () => {
             {/* Body */}
             <div style={{ padding: isMobile ? 24 : 40 }}>
               <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 12, fontFamily: 'Inter, sans-serif' }}>
-                SUCCESS STORY · قصة نجاح
+                {POST_TYPE_LABELS[featuredStory.postType] || 'المدونة'}
               </div>
               <h2 style={{ fontSize: isMobile ? 20 : 26, fontWeight: 800, lineHeight: 1.3, marginBottom: 14 }}>
                 {featuredStory.title}
@@ -146,8 +144,8 @@ const ImpactStories = () => {
       {/* Stories Grid */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '28px 16px 48px' : '40px 28px 60px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 700 }}>جميع القصص</h2>
-          <div style={{ fontSize: 13, color: '#94a3b8' }}>{filteredStories.length} قصة</div>
+          <h2 style={{ fontSize: 22, fontWeight: 700 }}>جميع المنشورات</h2>
+          <div style={{ fontSize: 13, color: '#94a3b8' }}>{filteredStories.length} منشور</div>
         </div>
 
         {convexStories === undefined && (
@@ -156,9 +154,9 @@ const ImpactStories = () => {
         {convexStories !== undefined && filteredStories.length === 0 && (
           <div style={{ textAlign: 'center', padding: '60px 20px', background: 'white', borderRadius: 20, border: '1px solid #E5E9EB' }}>
             <div style={{ fontSize: 48, marginBottom: 14 }}>📖</div>
-            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>لا توجد قصص منشورة بعد</div>
+            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>لا توجد منشورات بعد</div>
             <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7 }}>
-              ستظهر قصص النجاح هنا بمجرد نشرها من لوحة الإدارة
+              ستظهر المقالات والأخبار والفعاليات هنا بمجرد نشرها من لوحة الإدارة
             </div>
           </div>
         )}

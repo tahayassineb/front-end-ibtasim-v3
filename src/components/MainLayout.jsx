@@ -31,7 +31,7 @@ const MainLayout = ({ children }) => {
     { path: '/', label: 'الرئيسية' },
     { path: '/projects', label: 'المشاريع' },
     { path: '/kafala', label: 'الكفالة' },
-    { path: '/impact', label: 'قصص النجاح' },
+    { path: '/impact', label: 'المدونة' },
     { path: '/about', label: 'حول الجمعية' },
     { path: '/contact', label: 'تواصل معنا' },
   ];
@@ -292,7 +292,7 @@ const MainLayout = ({ children }) => {
                 { path: '/', label: 'الصفحة الرئيسية' },
                 { path: '/projects', label: 'المشاريع' },
                 { path: '/kafala', label: 'الكفالة' },
-                { path: '/impact', label: 'قصص النجاح' },
+                { path: '/impact', label: 'المدونة' },
                 { path: '/about', label: 'حول الجمعية' },
               ].map((item) => (
                 <Link key={item.path} to={item.path} style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,0.55)', marginBottom: 10, textDecoration: 'none' }}>

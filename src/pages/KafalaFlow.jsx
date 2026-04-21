@@ -61,8 +61,13 @@ export default function KafalaFlow() {
   // ── Step state ──
   const [step, setStep] = useState(isAuthenticated ? 1 : 0);
 
-  // ── Auth state (preserved exactly) ──
-  const [authMode, setAuthMode] = useState('login');
+  // Skip auth step if user is already authenticated when the component mounts or auth loads
+  useEffect(() => {
+    if (isAuthenticated && step === 0) setStep(1);
+  }, [isAuthenticated]);
+
+  // ── Auth state ──
+  const [authMode, setAuthMode] = useState(null);
   const [authFormData, setAuthFormData] = useState({ fullName: '', email: '', phone: '', password: '', confirmPassword: '' });
   const [authErrors, setAuthErrors] = useState({});
   const [otpSent, setOtpSent] = useState(false);

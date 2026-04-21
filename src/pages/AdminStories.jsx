@@ -15,28 +15,23 @@ const TEXTM   = '#94a3b8';
 const SHADOW  = '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)';
 const SHADOW_P = '0 4px 14px rgba(13,116,119,.25)';
 
-const GRADIENT_PRESETS = [
-  { label: 'تعليم', value: 'linear-gradient(160deg,#063a3b,#0d7477)' },
-  { label: 'مياه',  value: 'linear-gradient(160deg,#1a4a6b,#48aadf)' },
-  { label: 'صحة',   value: 'linear-gradient(160deg,#7c1e0e,#e74c3c)' },
-  { label: 'غذاء',  value: 'linear-gradient(160deg,#1a4520,#27ae60)' },
-  { label: 'سكن',   value: 'linear-gradient(160deg,#4a1a6b,#9b59b6)' },
-  { label: 'كفالة', value: 'linear-gradient(160deg,#8B6914,#C4A882)' },
-];
-
 const POST_TYPES = [
   { id: 'story',    label: '🌟 قصة نجاح' },
-  { id: 'activity', label: '🎉 نشاط' },
-  { id: 'update',   label: '📢 تحديث' },
+  { id: 'activity', label: '🎉 نشاط وفعالية' },
+  { id: 'update',   label: '📢 خبر وتحديث' },
 ];
+
+const POST_TYPE_DEFAULTS = {
+  story:    { gradient: 'linear-gradient(160deg,#063a3b,#0d7477)', badgeIcon: '🌟', badgeText: 'قصة نجاح', catLabel: 'SUCCESS STORY · قصة نجاح', catColor: '#0A5F62', category: 'education' },
+  activity: { gradient: 'linear-gradient(160deg,#1a4520,#27ae60)', badgeIcon: '🎉', badgeText: 'نشاط وفعالية', catLabel: 'ACTIVITY · نشاط', catColor: '#16a34a', category: 'education' },
+  update:   { gradient: 'linear-gradient(160deg,#1a4a6b,#48aadf)', badgeIcon: '📢', badgeText: 'خبر وتحديث', catLabel: 'NEWS · أخبار', catColor: '#0d7477', category: 'education' },
+};
 
 const slugify = (text) => text.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\u0600-\u06FF-]/g, '').slice(0, 80);
 
 const EMPTY_FORM = {
-  title: '', excerpt: '', category: 'education',
-  gradient: GRADIENT_PRESETS[0].value,
-  badgeIcon: '🎓', badgeText: 'التعليم',
-  catLabel: 'EDUCATION · تعليم', catColor: '#0A5F62',
+  title: '', excerpt: '',
+  ...POST_TYPE_DEFAULTS.story,
   isPublished: false, isFeatured: false,
   coverImage: '', body: '',
   postType: 'story', slug: '', metaDescription: '',
@@ -68,6 +63,7 @@ export default function AdminStories() {
   const [saving, setSaving]             = useState(false);
   const [coverPreview, setCoverPreview] = useState(null);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [seoOpen, setSeoOpen]           = useState(false);
   const coverInputRef = useRef();
 
   const handleField = (field, val) => setForm(p => ({ ...p, [field]: val }));
@@ -80,14 +76,14 @@ export default function AdminStories() {
   };
 
   const handleOpenEdit = (story) => {
+    const pt = story.postType || 'story';
     setForm({
-      title: story.title, excerpt: story.excerpt, category: story.category,
-      gradient: story.gradient, badgeIcon: story.badgeIcon, badgeText: story.badgeText,
-      catLabel: story.catLabel, catColor: story.catColor,
+      title: story.title, excerpt: story.excerpt,
+      ...POST_TYPE_DEFAULTS[pt],
       isPublished: story.isPublished, isFeatured: story.isFeatured ?? false,
       coverImage: story.coverImage || '',
       body: story.body || '',
-      postType: story.postType || 'story',
+      postType: pt,
       slug: story.slug || '',
       metaDescription: story.metaDescription || '',
     });
@@ -110,6 +106,13 @@ export default function AdminStories() {
     } finally { setUploadingCover(false); }
   };
 
+  const handleInlineImageUpload = async (file) => {
+    const uploadUrl = await generateUploadUrl();
+    const res = await fetch(uploadUrl, { method: 'POST', headers: { 'Content-Type': file.type }, body: file });
+    const { storageId } = await res.json();
+    return convexFileUrl(storageId);
+  };
+
   const handleSave = async () => {
     if (!form.title.trim() || !form.excerpt.trim()) {
       showToast?.('العنوان والمختصر مطلوبان', 'error'); return;
@@ -129,10 +132,10 @@ export default function AdminStories() {
       };
       if (editingId) {
         await updateStory({ id: editingId, ...payload });
-        showToast?.('تم تحديث القصة', 'success');
+        showToast?.('تم تحديث المنشور', 'success');
       } else {
         await createStory({ ...payload, adminId: adminUser?.id || 'admin' });
-        showToast?.('تم إنشاء القصة', 'success');
+        showToast?.('تم إنشاء المنشور', 'success');
       }
       setShowForm(false);
     } catch (e) {
@@ -165,12 +168,12 @@ export default function AdminStories() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
-          <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>📖 القصص</h1>
-          <div style={{ fontSize: 13, color: TEXT2, marginTop: 4 }}>{stories?.length ?? 0} قصة في قاعدة البيانات</div>
+          <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>📖 المدونة</h1>
+          <div style={{ fontSize: 13, color: TEXT2, marginTop: 4 }}>{stories?.length ?? 0} منشور في قاعدة البيانات</div>
         </div>
         <button onClick={handleOpenNew}
           style={{ height: 40, padding: '0 18px', background: PRIMARY, color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: SHADOW_P }}>
-          ➕ قصة جديدة
+          ➕ منشور جديد
         </button>
       </div>
 
@@ -179,7 +182,7 @@ export default function AdminStories() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <div style={{ background: 'white', borderRadius: 20, padding: 28, width: '100%', maxWidth: 600, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,.2)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h2 style={{ fontSize: 17, fontWeight: 800, margin: 0 }}>{editingId ? 'تعديل القصة' : 'قصة جديدة'}</h2>
+              <h2 style={{ fontSize: 17, fontWeight: 800, margin: 0 }}>{editingId ? 'تعديل المنشور' : 'منشور جديد'}</h2>
               <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: TEXT2 }}>×</button>
             </div>
 
@@ -208,7 +211,8 @@ export default function AdminStories() {
               <FieldLabel>نوع المنشور</FieldLabel>
               <div style={{ display: 'flex', gap: 8 }}>
                 {POST_TYPES.map(pt => (
-                  <button key={pt.id} type="button" onClick={() => handleField('postType', pt.id)}
+                  <button key={pt.id} type="button"
+                    onClick={() => setForm(p => ({ ...p, postType: pt.id, ...POST_TYPE_DEFAULTS[pt.id] }))}
                     style={{ flex: 1, height: 38, borderRadius: 10, border: `1.5px solid ${form.postType === pt.id ? PRIMARY : BORDER}`, background: form.postType === pt.id ? P50 : 'white', color: form.postType === pt.id ? P600 : TEXT2, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
                     {pt.label}
                   </button>
@@ -216,87 +220,69 @@ export default function AdminStories() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-              <div style={{ gridColumn: '1/-1' }}>
-                <FieldLabel>العنوان *</FieldLabel>
-                <input style={fieldInput} value={form.title}
-                  onChange={e => { handleField('title', e.target.value); if (!form.slug) handleField('slug', slugify(e.target.value)); }}
-                  placeholder="عنوان القصة" />
-              </div>
-              <div style={{ gridColumn: '1/-1' }}>
-                <FieldLabel>المختصر * (جملة أو جملتان)</FieldLabel>
-                <textarea value={form.excerpt} onChange={e => handleField('excerpt', e.target.value)}
-                  placeholder="وصف مختصر للقصة..."
-                  style={{ ...fieldInput, height: 64, paddingTop: 10, resize: 'vertical' }} />
-              </div>
-              <div style={{ gridColumn: '1/-1' }}>
-                <FieldLabel>الرابط (Slug) — يُملأ تلقائياً</FieldLabel>
-                <input style={{ ...fieldInput, fontFamily: 'Inter, monospace', fontSize: 12 }} value={form.slug}
-                  onChange={e => handleField('slug', e.target.value)} placeholder="my-story-slug" dir="ltr" />
-              </div>
-              <div style={{ gridColumn: '1/-1' }}>
-                <FieldLabel>وصف الصفحة (Meta Description) — حتى 160 حرفاً</FieldLabel>
-                <textarea value={form.metaDescription} onChange={e => handleField('metaDescription', e.target.value.slice(0, 160))}
-                  placeholder="وصف مختصر يظهر في نتائج محركات البحث..."
-                  style={{ ...fieldInput, height: 56, paddingTop: 10, resize: 'none' }} />
-                <div style={{ fontSize: 11, color: TEXTM, textAlign: 'left', fontFamily: 'Inter, sans-serif' }}>{(form.metaDescription || '').length} / 160</div>
-              </div>
-              <div style={{ gridColumn: '1/-1' }}>
-                <FieldLabel>محتوى القصة (يدعم النص المنسق + الصور)</FieldLabel>
-                <RichTextEditor value={form.body} onChange={val => handleField('body', val)} placeholder="اكتب محتوى القصة هنا..." rows={8} />
-              </div>
-              <div>
-                <FieldLabel>التصنيف</FieldLabel>
-                <select value={form.category} onChange={e => handleField('category', e.target.value)} style={{ ...fieldInput, cursor: 'pointer' }}>
-                  {['education','water','health','kafala','food','housing'].map(c => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <FieldLabel>تدرج اللون</FieldLabel>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {GRADIENT_PRESETS.map(g => (
-                    <button key={g.value} type="button" onClick={() => handleField('gradient', g.value)}
-                      style={{ width: 32, height: 32, borderRadius: 8, background: g.value, border: `2px solid ${form.gradient === g.value ? PRIMARY : 'transparent'}`, cursor: 'pointer', title: g.label }} />
-                  ))}
-                </div>
-              </div>
-              <div>
-                <FieldLabel>أيقونة الشارة</FieldLabel>
-                <input style={fieldInput} value={form.badgeIcon} onChange={e => handleField('badgeIcon', e.target.value)} placeholder="🎓" />
-              </div>
-              <div>
-                <FieldLabel>نص الشارة</FieldLabel>
-                <input style={fieldInput} value={form.badgeText} onChange={e => handleField('badgeText', e.target.value)} placeholder="التعليم" />
-              </div>
-              <div>
-                <FieldLabel>تسمية الفئة</FieldLabel>
-                <input style={fieldInput} value={form.catLabel} onChange={e => handleField('catLabel', e.target.value)} placeholder="EDUCATION · تعليم" />
-              </div>
-              <div>
-                <FieldLabel>لون الفئة (hex)</FieldLabel>
-                <input style={{ ...fieldInput, fontFamily: 'Inter, monospace' }} value={form.catColor} onChange={e => handleField('catColor', e.target.value)} placeholder="#0A5F62" dir="ltr" />
-              </div>
-              <div style={{ gridColumn: '1/-1', display: 'flex', gap: 20 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-                  <input type="checkbox" checked={form.isPublished} onChange={e => handleField('isPublished', e.target.checked)} style={{ accentColor: PRIMARY }} />
-                  نشر فوراً
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-                  <input type="checkbox" checked={form.isFeatured} onChange={e => handleField('isFeatured', e.target.checked)} style={{ accentColor: PRIMARY }} />
-                  قصة مميزة
-                </label>
-              </div>
+            {/* Title */}
+            <div style={{ marginBottom: 14 }}>
+              <FieldLabel>العنوان *</FieldLabel>
+              <input style={fieldInput} value={form.title}
+                onChange={e => { handleField('title', e.target.value); if (!form.slug) handleField('slug', slugify(e.target.value)); }}
+                placeholder="عنوان المنشور" />
             </div>
 
-            {/* Preview */}
-            <div style={{ height: 60, borderRadius: 10, background: form.gradient, marginBottom: 16, display: 'flex', alignItems: 'center', paddingRight: 14, gap: 10 }}>
-              <span style={{ fontSize: 20 }}>{form.badgeIcon}</span>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'white' }}>{form.title || 'معاينة العنوان'}</div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,.7)', fontFamily: 'Inter, sans-serif' }}>{form.catLabel}</div>
-              </div>
+            {/* Excerpt */}
+            <div style={{ marginBottom: 14 }}>
+              <FieldLabel>المختصر * (جملة أو جملتان)</FieldLabel>
+              <textarea value={form.excerpt} onChange={e => handleField('excerpt', e.target.value)}
+                placeholder="وصف مختصر يظهر في بطاقة المنشور..."
+                style={{ ...fieldInput, height: 64, paddingTop: 10, resize: 'vertical' }} />
+            </div>
+
+            {/* Body */}
+            <div style={{ marginBottom: 14 }}>
+              <FieldLabel>المحتوى (يدعم النص المنسق وإدراج الصور)</FieldLabel>
+              <RichTextEditor
+                value={form.body}
+                onChange={val => handleField('body', val)}
+                placeholder="اكتب محتوى المنشور هنا..."
+                rows={10}
+                onInsertImage={handleInlineImageUpload}
+              />
+            </div>
+
+            {/* Publish options */}
+            <div style={{ display: 'flex', gap: 20, marginBottom: 14 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                <input type="checkbox" checked={form.isPublished} onChange={e => handleField('isPublished', e.target.checked)} style={{ accentColor: PRIMARY }} />
+                نشر فوراً
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                <input type="checkbox" checked={form.isFeatured} onChange={e => handleField('isFeatured', e.target.checked)} style={{ accentColor: PRIMARY }} />
+                منشور مميز
+              </label>
+            </div>
+
+            {/* SEO collapsible */}
+            <div style={{ border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
+              <button type="button" onClick={() => setSeoOpen(o => !o)}
+                style={{ width: '100%', padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F8FAFC', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: TEXT2, fontFamily: 'Tajawal, sans-serif' }}>
+                <span>🔍 إعدادات SEO</span>
+                <span>{seoOpen ? '▲' : '▼'}</span>
+              </button>
+              {seoOpen && (
+                <div style={{ padding: '14px' }}>
+                  <div style={{ marginBottom: 12 }}>
+                    <FieldLabel>الرابط (Slug) — يُملأ تلقائياً</FieldLabel>
+                    <input style={{ ...fieldInput, fontFamily: 'Inter, monospace', fontSize: 12 }} value={form.slug}
+                      onChange={e => handleField('slug', e.target.value)} placeholder="my-post-slug" dir="ltr" />
+                  </div>
+                  <div>
+                    <FieldLabel>وصف الصفحة (Meta Description) — حتى 160 حرفاً</FieldLabel>
+                    <textarea value={form.metaDescription} onChange={e => handleField('metaDescription', e.target.value.slice(0, 160))}
+                      placeholder="وصف مختصر يظهر في نتائج محركات البحث..."
+                      style={{ ...fieldInput, height: 56, paddingTop: 10, resize: 'none' }} />
+                    <div style={{ fontSize: 11, color: TEXTM, textAlign: 'left', fontFamily: 'Inter, sans-serif' }}>{(form.metaDescription || '').length} / 160</div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
@@ -316,8 +302,8 @@ export default function AdminStories() {
       ) : stories.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 60, background: 'white', borderRadius: 16, border: `1px solid ${BORDER}` }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>📖</div>
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>لا توجد قصص بعد</div>
-          <div style={{ fontSize: 13, color: TEXT2 }}>أضف أول قصة نجاح للتحفيز على التبرع</div>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>لا توجد منشورات بعد</div>
+          <div style={{ fontSize: 13, color: TEXT2 }}>أضف أول منشور في المدونة</div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

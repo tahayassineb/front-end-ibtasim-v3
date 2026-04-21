@@ -63,7 +63,7 @@ import AdminErrorLogs from './pages/AdminErrorLogs';
 function ScrollToTop() {
   const { pathname } = useLocation();
   React.useEffect(() => {
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, [pathname]);
   return null;
 }
