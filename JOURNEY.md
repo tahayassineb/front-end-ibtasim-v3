@@ -722,3 +722,24 @@ This was deliberately saved for last because it's the most complex page (~1400 l
 - When adding filter tabs that are "optional" (only show if data exists), check `stories.some(s => s.postType)` before rendering — avoids UI clutter on empty data.
 - For step-skip logic in multi-step flows, update both `getNextStep()` AND `handleBack()` — missing the back direction causes the user to land on a skipped step when going backward.
 - `EmojiPickerBtn` click-outside uses `document.addEventListener('mousedown', close)` — `click` would fire on the button itself and immediately reclose.
+
+---
+
+## Session 2026-04-21 — 11-task organised fix batch
+
+### What was done
+Applied 11 UI/UX fixes across DonationFlow, KafalaFlow, AdminStories, AdminProjectForm, ImpactStories, MainLayout, KafalaDetail, App.jsx, index.css, and RichTextEditor.
+
+### Key fixes and lessons
+
+**authMode bug (Tasks 8 & 6):** Both DonationFlow and KafalaFlow initialized `authMode` to `'login'`, showing the login form immediately. The fix: `useState(null)` so the option cards are shown first. KafalaFlow had the same bug — always check both flows when fixing one.
+
+**Async auth skip (Task 10):** `useState(getInitialStep)` only runs once at mount. If `isAuthenticated` is async-false at mount (context not yet hydrated), step 0 shows even for logged-in users. Fix: `useEffect(() => { if (isAuthenticated && step === 0) setStep(1); }, [isAuthenticated])` in both flows.
+
+**scroll-behavior: smooth vs instant (Task 5):** The `html { scroll-behavior: smooth }` in index.css caused visible animation when `ScrollToTop` fired `window.scrollTo(0, 0)`. Changed to `window.scrollTo({ top: 0, behavior: 'instant' })` AND removed `scroll-behavior: smooth` from html. Either fix alone might not be sufficient in all browsers — do both.
+
+**Blog simplification (Task 3):** Removed gradient presets, badge icons, catLabel, catColor from AdminStories form. Auto-derive these from `postType` via `POST_TYPE_DEFAULTS` map. The Convex schema still expects these fields — keep them in the form state, just don't show the inputs. Passing `null` would break the schema validators.
+
+**Inline image in RichTextEditor (Task 3):** Must save `window.getSelection().getRangeAt(0).cloneRange()` BEFORE triggering the file input (clicking the file input shifts focus away). Restore the range after upload completes, then `execCommand('insertHTML', false, '<img ...>')`.
+
+**EmojiPickerBtn free input (Task 1):** Combined a `<input type="text">` with the picker dropdown using a flex wrapper. The input allows typing any emoji; the dropdown still works as a helper palette.
