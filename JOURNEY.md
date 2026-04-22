@@ -832,3 +832,51 @@ Added "Mandatory Post-Execution Review" section requiring build check, lint chec
 
 ### Lesson
 When an AI generates code quickly across many files, correctness bugs cluster in: (1) dual-state that should be derived, (2) timers/refs without cleanup, (3) state shapes that diverge between parent and child, and (4) functions that serialize more than they should. These are the first places to check in any future audit.
+
+---
+
+## Session 6: Master Fix Plan — Phase 1 (Backend) + Phase 2 (Frontend) — 30 Issues
+
+### What Was Fixed
+
+**Phase 1 — Convex Backend (B1–B12)**
+
+- **B1**: `getDashboardStats` never queried `kafalaSponsorship` or `kafalaDonations` tables. Dashboard always showed 0 for kafala counts and donations. Fixed by adding queries for active sponsorships, pending kafala verifications, and monthly kafala revenue, and returning them in the response.
+- **B2**: `createSponsorship` had no guard against a user sponsoring the same orphan twice (race condition or double-tap). Added an index query checking for existing active/pending_payment records for the same (userId, kafalaId) pair.
+- **B3**: `extendKafalaSponsorship` idempotency check only scanned the last 5 kafalaDonation records. A Whop webhook replay for a 6-month-old payment would have been processed again. Fixed by using a full index scan filtered by `whopPaymentId`.
+- **B4**: No `membership.cancelled` webhook case existed. Whop subscription cancellations were silently ignored — sponsorships stayed active indefinitely. Added handler that calls new `expireSponsorshipBySubscriptionId` mutation.
+- **B5**: Bank/cash sponsorships that stopped paying had no expiry mechanism. Added daily cron at 8 AM UTC, `kafalaExpiry.ts` action, `getOverdueBankCashSponsorships` query (3-day grace), and `expireSponsorship` mutation.
+- **B6**: Renewal reminders used exact-day matching — if the cron missed day 5 (e.g., server restart), that reminder was lost forever. Fixed with range-based matching and `remindersSent` array on the sponsorship record to track which levels have been sent.
+- **B7**: No cancel flow existed at all. Added `cancelKafalaSubscription` action that calls Whop API for card subscribers, then marks the sponsorship expired regardless of payment method.
+- **B8**: `getDonationsByUser` returned donation records with only a `projectId`. Frontend was forced to display "مشروع" for every donation. Fixed by joining with the projects table and including `projectTitle` and `projectPhoto`.
+- **B9/B10/B11**: Admin was never notified when a receipt was uploaded. Users were never notified on verify or reject. Added `notifyAdminNewVerification` action (B9), `sendDonationRejectionNotification` action (B10), and `sendKafalaVerificationNotification` action (B11), all using WhatsApp via WaSender.
+- **B12**: Contact form data was thrown away on submit (fake 1-second delay). Added `contactMessages` table in schema, `contact.ts` with `submitContactMessage` mutation, and admin WhatsApp notification.
+
+**Phase 2 — Frontend (F1–F11)**
+
+- **F1**: Dashboard KPI card #2 said "all statuses" — now shows "verified only" trend label. Pending card now sums both donation and kafala pending verifications. Y-axis labels were formatting amounts as `NaN` or raw centimes — fixed the `(maxAmt * pct / 100)` formula. Added a second amber chart for monthly kafala revenue.
+- **F2**: UserProfile showed hardcoded kafala stat ("1") and generic "مشروع" in donation list. Rewrote to use real `getUserKafalaSponsorship` query, show each sponsorship's orphan photo/name/status/renewal date, and add a working cancel button.
+- **F3**: KafalaFlow allowed submitting bank/cash payment with no receipt and no reference number. Added validation blocking submission. Success screen for bank/cash now shows "pending review" state instead of the checkmark used for card payments.
+- **F4**: KafalaRenew only validated `bank_transfer` — `cash_agency` could still be submitted empty. Unified the check. Added cancel button wired to `cancelKafalaSubscription` action.
+- **F5**: DonationFlow Step 3 "Continue" button was active even with no receipt. Fixed `isNextDisabled` to block unless either a file is uploaded or a reference number is entered.
+- **F6**: AdminVerifications download button existed but had no `onClick`. Wired it to create a temporary anchor tag and trigger `download`, resolving the storageId via `convexFileUrl`.
+- **F7**: AdminKafalaVerifications used a height toggle for receipt viewing. Replaced with a proper full-screen overlay modal (`fixed inset-0 z-[9999]`) with a close button.
+- **F8**: TeamTab displayed `'admin'` (English) as the role label instead of Arabic. Fixed to `'👤 مشرف'`. Also removed `showToast` and `user` props from TeamTab — these were being passed from AdminSettings but are available from `useApp()` context directly. Eliminated the prop threading.
+- **F9**: `AdminRoute` returned `null` while `isAdmin` was undefined (auth resolving), causing a blank white flash. Replaced with a centered Arabic loading skeleton.
+- **F10**: Contact form did nothing on submit. Wired to `api.contact.submitContactMessage` Convex mutation. Map placeholder div now opens Google Maps on click.
+- **F11**: Already complete from a prior session — benefit cards editor existed at `AdminProjectForm.jsx:474–501`. No changes needed.
+
+### Mistakes Made
+
+**`git stash` disaster**: Ran `git stash` mid-session to check pre-existing ESLint errors. This reverted all 11 edited frontend files to their pre-session state. Recovered via `git stash pop` at the start of the next session. Lesson: use `git diff HEAD -- [file]` or `git stash show` to inspect stash contents before popping; and when you only want to check pre-existing lint errors on a subset of files, use `git show HEAD:[file] > /tmp/original.jsx && eslint /tmp/original.jsx` instead of disturbing the working tree.
+
+**Contact.jsx import depth**: Initially wrote `'../../../convex/_generated/api'` (3 levels). The file is at `src/pages/features/public/Contact.jsx` — 4 levels from root. Build failed with "Could not resolve". Fixed to `'../../../../convex/_generated/api'`. Lesson: always count the actual directory depth from the file, not the conceptual location.
+
+**AdminDashboard variable ordering**: The kafala chart geometry variables (`kafalaCoords`, `kafalaMax`, etc.) referenced `CHART_W`, `CHART_H`, `PAD_T`, `PAD_B` — but those constants were declared lower in the file, after the kafala block. JavaScript `const` declarations are not hoisted. Fixed by moving the shared constants declaration block above the chart data sections.
+
+### Lessons
+
+1. When adding a second chart to a file that already has chart geometry constants, always locate where those constants are declared before writing the new chart block.
+2. Checking pre-existing ESLint errors: use `git stash` only if you can immediately `pop` it; prefer copying the original file to a temp path for isolated checks.
+3. Import depth bugs only appear at build time, not in the editor — always do a build before considering a file done.
+4. The `remindersSent` pattern (record which notification levels have been sent, check before sending) is reusable for any tiered notification system where the cron may not run on exactly the right day.
