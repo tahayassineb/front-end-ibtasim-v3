@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { api } from "./_generated/api";
 
 // ============================================
 // QUERIES
@@ -317,6 +318,24 @@ export const createSponsorship = mutation({
       throw new Error("هذا اليتيم مكفول بالفعل");
     }
 
+    // Guard against duplicate pending/active sponsorship for same user+kafala
+    const existingSponsorship = await ctx.db
+      .query("kafalaSponsorship")
+      .withIndex("by_kafala", (q) => q.eq("kafalaId", args.kafalaId))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("userId"), args.userId),
+          q.or(
+            q.eq(q.field("status"), "active"),
+            q.eq(q.field("status"), "pending_payment")
+          )
+        )
+      )
+      .first();
+    if (existingSponsorship) {
+      throw new Error("لديك بالفعل كفالة نشطة أو في انتظار الدفع لهذا اليتيم");
+    }
+
     const now = Date.now();
     const thirtyDays = 30 * 24 * 60 * 60 * 1000;
 
@@ -414,6 +433,14 @@ export const uploadKafalaReceipt = mutation({
       status: "awaiting_verification",
       updatedAt: Date.now(),
     });
+
+    // Notify admin via WhatsApp
+    try {
+      await ctx.scheduler.runAfter(0, api.notifications.notifyAdminNewVerification, {
+        type: "kafala",
+        donationId: args.donationId as string,
+      });
+    } catch (e) { console.error("Admin notification failed:", e); }
   },
 });
 
@@ -444,11 +471,12 @@ export const verifyKafalaDonation = mutation({
         updatedAt: now,
       });
 
-      // Activate sponsorship + extend renewal date
+      // Activate sponsorship + extend renewal date (reset reminder tracking)
       const thirtyDays = 30 * 24 * 60 * 60 * 1000;
       await ctx.db.patch(donation.sponsorshipId, {
         status: "active",
         nextRenewalDate: now + thirtyDays,
+        remindersSent: [],
         updatedAt: now,
       });
 
@@ -457,6 +485,15 @@ export const verifyKafalaDonation = mutation({
         status: "sponsored",
         updatedAt: now,
       });
+
+      // Notify user via WhatsApp
+      try {
+        await ctx.scheduler.runAfter(0, api.notifications.sendKafalaVerificationNotification, {
+          userId: donation.userId,
+          kafalaId: donation.kafalaId,
+          verified: true,
+        });
+      } catch (e) { console.error("Kafala verify notification failed:", e); }
     } else {
       // Reject donation
       await ctx.db.patch(args.donationId, {
@@ -477,6 +514,16 @@ export const verifyKafalaDonation = mutation({
         status: "active",
         updatedAt: now,
       });
+
+      // Notify user via WhatsApp
+      try {
+        await ctx.scheduler.runAfter(0, api.notifications.sendKafalaVerificationNotification, {
+          userId: donation.userId,
+          kafalaId: donation.kafalaId,
+          verified: false,
+          notes: args.notes,
+        });
+      } catch (e) { console.error("Kafala rejection notification failed:", e); }
     }
   },
 });
@@ -562,16 +609,13 @@ export const extendKafalaSponsorship = mutation({
     const kafala = await ctx.db.get(sponsorship.kafalaId);
     if (!kafala) throw new Error("الكفالة غير موجودة");
 
-    // Idempotency: check if this payment ID was already processed
-    const recentDonations = await ctx.db
+    // Idempotency: check all records for this payment ID (not just last 5)
+    const existingWithSamePayment = await ctx.db
       .query("kafalaDonations")
       .withIndex("by_sponsorship", (q) => q.eq("sponsorshipId", args.sponsorshipId))
-      .order("desc")
-      .take(5);
-    const alreadyProcessed = recentDonations.some(
-      (d) => d.whopPaymentId === args.whopPaymentId
-    );
-    if (alreadyProcessed) return; // Already handled — idempotent
+      .filter((q) => q.eq(q.field("whopPaymentId"), args.whopPaymentId))
+      .first();
+    if (existingWithSamePayment) return; // Already processed this exact payment
 
     const now = Date.now();
     const thirtyDays = 30 * 24 * 60 * 60 * 1000;
@@ -595,10 +639,11 @@ export const extendKafalaSponsorship = mutation({
       updatedAt: now,
     });
 
-    // Push the renewal date forward 30 days and link latest donation
+    // Push the renewal date forward 30 days, link latest donation, reset reminder tracking
     await ctx.db.patch(args.sponsorshipId, {
       nextRenewalDate: now + thirtyDays,
       lastDonationId: donationId,
+      remindersSent: [],
       updatedAt: now,
     });
 
@@ -606,6 +651,87 @@ export const extendKafalaSponsorship = mutation({
     await ctx.db.patch(sponsorship.kafalaId, {
       status: "sponsored",
       updatedAt: now,
+    });
+  },
+});
+
+/**
+ * Get a single sponsorship by its ID.
+ * Used by cancelKafalaSubscription action.
+ */
+export const getSponsorshipById = query({
+  args: { sponsorshipId: v.id("kafalaSponsorship") },
+  handler: async (ctx, args) => ctx.db.get(args.sponsorshipId),
+});
+
+/**
+ * Expire a sponsorship and re-open the kafala slot.
+ * Used by expiry cron, membership.cancelled webhook, and cancel action.
+ */
+export const expireSponsorship = mutation({
+  args: { sponsorshipId: v.id("kafalaSponsorship") },
+  handler: async (ctx, args) => {
+    const s = await ctx.db.get(args.sponsorshipId);
+    if (!s || s.status !== "active") return;
+    const now = Date.now();
+    await ctx.db.patch(args.sponsorshipId, { status: "expired", updatedAt: now });
+    await ctx.db.patch(s.kafalaId, { status: "active", updatedAt: now });
+  },
+});
+
+/**
+ * Expire an active sponsorship by its Whop subscription ID.
+ * Called when Whop fires a membership.cancelled event.
+ */
+export const expireSponsorshipBySubscriptionId = mutation({
+  args: { whopSubscriptionId: v.string() },
+  handler: async (ctx, args) => {
+    const sponsorship = await ctx.db
+      .query("kafalaSponsorship")
+      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .filter((q) => q.eq(q.field("whopSubscriptionId"), args.whopSubscriptionId))
+      .first();
+    if (!sponsorship) return;
+    const now = Date.now();
+    await ctx.db.patch(sponsorship._id, { status: "expired", updatedAt: now });
+    await ctx.db.patch(sponsorship.kafalaId, { status: "active", updatedAt: now });
+  },
+});
+
+/**
+ * Get active bank/cash sponsorships whose nextRenewalDate is before the given cutoff.
+ * Used by the daily expiry cron (3-day grace period applied by caller).
+ */
+export const getOverdueBankCashSponsorships = query({
+  args: { cutoff: v.number() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("kafalaSponsorship")
+      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .filter((q) =>
+        q.and(
+          q.neq(q.field("paymentMethod"), "card_whop"),
+          q.lt(q.field("nextRenewalDate"), args.cutoff)
+        )
+      )
+      .collect();
+  },
+});
+
+/**
+ * Record that a reminder at a given level has been sent for this sponsorship.
+ * Used by the renewal reminder cron to prevent re-sending.
+ */
+export const markReminderSent = mutation({
+  args: { sponsorshipId: v.id("kafalaSponsorship"), reminderKey: v.string() },
+  handler: async (ctx, args) => {
+    const s = await ctx.db.get(args.sponsorshipId);
+    if (!s) return;
+    const existing = s.remindersSent ?? [];
+    if (existing.includes(args.reminderKey)) return;
+    await ctx.db.patch(args.sponsorshipId, {
+      remindersSent: [...existing, args.reminderKey],
+      updatedAt: Date.now(),
     });
   },
 });

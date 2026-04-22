@@ -21,6 +21,14 @@ export const getDashboardStats = query({
       amount: v.number(),
       count: v.number(),
     })),
+    activeKafala: v.number(),
+    donationCount: v.number(),
+    pendingKafalaVerifications: v.number(),
+    monthlyKafala: v.array(v.object({
+      month: v.string(),
+      amount: v.number(),
+      count: v.number(),
+    })),
   }),
   handler: async (ctx) => {
     // Get all donations
@@ -37,7 +45,7 @@ export const getDashboardStats = query({
       .withIndex("by_status", (q) => q.eq("status", "active"))
       .collect();
 
-    // Get pending verifications
+    // Get pending verifications (donations)
     const pendingVerificationsData = await ctx.db
       .query("donations")
       .withIndex("by_status", (q) => q.eq("status", "awaiting_verification"))
@@ -46,7 +54,7 @@ export const getDashboardStats = query({
     // Get unique donors
     const uniqueDonorIds = new Set(verifiedDonations.map(d => d.userId));
 
-    // Calculate monthly stats (last 6 months)
+    // Calculate monthly donation stats (last 6 months)
     const monthlyStats: Record<string, { amount: number; count: number }> = {};
     const now = new Date();
 
@@ -71,6 +79,39 @@ export const getDashboardStats = query({
       count: stats.count,
     }));
 
+    // ── Kafala stats ─────────────────────────────────────────────────────────
+    const activeSponsorships = await ctx.db
+      .query("kafalaSponsorship")
+      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .collect();
+
+    const pendingKafalaVerif = await ctx.db
+      .query("kafalaDonations")
+      .withIndex("by_status", (q) => q.eq("status", "awaiting_verification"))
+      .collect();
+
+    const verifiedKafalaDonations = await ctx.db
+      .query("kafalaDonations")
+      .withIndex("by_status", (q) => q.eq("status", "verified"))
+      .collect();
+
+    const monthlyKafalaStats: Record<string, { amount: number; count: number }> = {};
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthKey = date.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+      monthlyKafalaStats[monthKey] = { amount: 0, count: 0 };
+    }
+    verifiedKafalaDonations.forEach(d => {
+      const key = new Date(d.createdAt).toLocaleString('en-US', { month: 'short', year: 'numeric' });
+      if (monthlyKafalaStats[key]) {
+        monthlyKafalaStats[key].amount += d.amount;
+        monthlyKafalaStats[key].count += 1;
+      }
+    });
+    const monthlyKafala = Object.entries(monthlyKafalaStats).map(([month, s]) => ({
+      month, amount: s.amount, count: s.count,
+    }));
+
     return {
       totalDonations: verifiedDonations.length,
       totalRaised,
@@ -79,6 +120,10 @@ export const getDashboardStats = query({
       pendingVerifications: pendingVerificationsData.length,
       rejectedDonations: rejectedDonations.length,
       monthlyDonations,
+      activeKafala: activeSponsorships.length,
+      donationCount: verifiedDonations.length,
+      pendingKafalaVerifications: pendingKafalaVerif.length,
+      monthlyKafala,
     };
   },
 });

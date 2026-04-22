@@ -104,7 +104,15 @@ export const sendKafalaRenewalReminders = action({
       const msUntilRenewal = s.nextRenewalDate - now;
       const daysUntilRenewal = Math.round(msUntilRenewal / dayMs);
 
-      if (!REMINDER_DAYS.includes(daysUntilRenewal)) continue;
+      // Range check: find which reminder level this day count falls into
+      const dayKey = REMINDER_DAYS.find(
+        (d) => daysUntilRenewal <= d && daysUntilRenewal > (REMINDER_DAYS[REMINDER_DAYS.indexOf(d) + 1] ?? 0)
+      );
+      if (!dayKey) continue;
+
+      const keyStr = String(dayKey);
+      // Skip if we already sent this reminder level for this sponsorship cycle
+      if ((s.remindersSent ?? []).includes(keyStr)) continue;
 
       const kafala: any = await ctx.runQuery(api.kafala.getKafalaById, {
         kafalaId: s.kafalaId,
@@ -121,6 +129,12 @@ export const sendKafalaRenewalReminders = action({
       const message = buildReminderMessage(lang, kafala.name, daysUntilRenewal, renewalLink);
 
       await sendWhatsAppMessage(user.phoneNumber, message, apiKey);
+
+      // Record that this reminder level was sent
+      await ctx.runMutation(api.kafala.markReminderSent, {
+        sponsorshipId: s._id,
+        reminderKey: keyStr,
+      });
 
       // Rate limit: 250ms between messages
       await new Promise((r) => setTimeout(r, 250));

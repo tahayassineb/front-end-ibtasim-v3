@@ -504,6 +504,169 @@ export const sendProjectPublishedNotification = action({
  * Returns:
  *   - notificationId: ID of the created notification record
  */
+// ============================================
+// ADMIN VERIFICATION NOTIFICATION
+// ============================================
+
+/**
+ * Notify admin via WhatsApp when a receipt is uploaded for review.
+ * Admin phone is read from the bank_info config (adminPhone field).
+ */
+export const notifyAdminNewVerification = action({
+  args: {
+    type: v.union(v.literal("donation"), v.literal("kafala")),
+    donationId: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const { api } = await import("./_generated/api");
+
+    let adminPhone: string | undefined;
+    try {
+      const bankInfoRaw = await ctx.runQuery(api.config.getConfig, { key: "bank_info" });
+      if (bankInfoRaw) {
+        const bankInfo = JSON.parse(bankInfoRaw);
+        if (bankInfo.adminPhone) adminPhone = bankInfo.adminPhone;
+      }
+    } catch (e) { console.error("Could not read bank_info config:", e); }
+    if (!adminPhone) return null;
+
+    let sessionApiKey: string | undefined;
+    try {
+      const rawSettings = await ctx.runQuery(api.config.getConfig, { key: "whatsapp_settings" });
+      if (rawSettings) {
+        const settings = JSON.parse(rawSettings);
+        if (settings.apiKey) sessionApiKey = settings.apiKey;
+      }
+    } catch (e) { console.error("Could not read whatsapp_settings config:", e); }
+
+    const label = args.type === "kafala" ? "كفالة" : "تبرع";
+    const message = `🔔 طلب تحقق جديد\nنوع: ${label}\nيرجى مراجعة صفحة التحقق في لوحة الإدارة.`;
+    await sendWhatsAppMessage(adminPhone, message, 0, sessionApiKey);
+    return null;
+  },
+});
+
+// ============================================
+// DONATION REJECTION NOTIFICATION
+// ============================================
+
+/**
+ * Notify a donor via WhatsApp when their donation is rejected.
+ */
+export const sendDonationRejectionNotification = action({
+  args: {
+    userId: v.id("users"),
+    donationId: v.id("donations"),
+    notes: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const { api } = await import("./_generated/api");
+
+    const user = await ctx.runQuery(api.users.getUserById, { userId: args.userId });
+    if (!user?.phoneNumber) return null;
+
+    let sessionApiKey: string | undefined;
+    try {
+      const rawSettings = await ctx.runQuery(api.config.getConfig, { key: "whatsapp_settings" });
+      if (rawSettings) {
+        const settings = JSON.parse(rawSettings);
+        if (settings.apiKey) sessionApiKey = settings.apiKey;
+      }
+    } catch (e) { console.error("Could not read whatsapp_settings config:", e); }
+
+    const reason = args.notes ? `\nالسبب: ${args.notes}` : '';
+    const message = `❌ تبرعك لم يتم قبوله${reason}\nيرجى التواصل معنا أو إعادة إرسال الوصل.`;
+    await sendWhatsAppMessage(user.phoneNumber, message, 0, sessionApiKey);
+    return null;
+  },
+});
+
+// ============================================
+// KAFALA VERIFICATION NOTIFICATION
+// ============================================
+
+/**
+ * Notify a sponsor via WhatsApp when their kafala donation is verified or rejected.
+ */
+export const sendKafalaVerificationNotification = action({
+  args: {
+    userId: v.id("users"),
+    kafalaId: v.id("kafala"),
+    verified: v.boolean(),
+    notes: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const { api } = await import("./_generated/api");
+
+    const user = await ctx.runQuery(api.users.getUserById, { userId: args.userId });
+    if (!user?.phoneNumber) return null;
+
+    const kafala: any = await ctx.runQuery(api.kafala.getKafalaById, { kafalaId: args.kafalaId });
+
+    let sessionApiKey: string | undefined;
+    try {
+      const rawSettings = await ctx.runQuery(api.config.getConfig, { key: "whatsapp_settings" });
+      if (rawSettings) {
+        const settings = JSON.parse(rawSettings);
+        if (settings.apiKey) sessionApiKey = settings.apiKey;
+      }
+    } catch (e) { console.error("Could not read whatsapp_settings config:", e); }
+
+    const name = kafala?.name ?? 'اليتيم';
+    const message = args.verified
+      ? `✅ تم تأكيد كفالتك لـ ${name}. بارك الله فيك!`
+      : `❌ لم يتم قبول دفع الكفالة لـ ${name}.${args.notes ? '\nالسبب: ' + args.notes : ''}\nيرجى إعادة الإرسال أو التواصل معنا.`;
+    await sendWhatsAppMessage(user.phoneNumber, message, 0, sessionApiKey);
+    return null;
+  },
+});
+
+// ============================================
+// ADMIN CONTACT NOTIFICATION
+// ============================================
+
+/**
+ * Notify admin via WhatsApp when a new contact form message arrives.
+ */
+export const notifyAdminNewContact = action({
+  args: {
+    name: v.string(),
+    phone: v.optional(v.string()),
+    subject: v.optional(v.string()),
+    message: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const { api } = await import("./_generated/api");
+
+    let adminPhone: string | undefined;
+    try {
+      const bankInfoRaw = await ctx.runQuery(api.config.getConfig, { key: "bank_info" });
+      if (bankInfoRaw) {
+        const bankInfo = JSON.parse(bankInfoRaw);
+        if (bankInfo.adminPhone) adminPhone = bankInfo.adminPhone;
+      }
+    } catch (e) { console.error("Could not read bank_info config:", e); }
+    if (!adminPhone) return null;
+
+    let sessionApiKey: string | undefined;
+    try {
+      const rawSettings = await ctx.runQuery(api.config.getConfig, { key: "whatsapp_settings" });
+      if (rawSettings) {
+        const settings = JSON.parse(rawSettings);
+        if (settings.apiKey) sessionApiKey = settings.apiKey;
+      }
+    } catch (e) { console.error("Could not read whatsapp_settings config:", e); }
+
+    const text = `📩 رسالة جديدة من: ${args.name}${args.phone ? ' (' + args.phone + ')' : ''}\nالموضوع: ${args.subject ?? '—'}\n\n${args.message}`;
+    await sendWhatsAppMessage(adminPhone, text, 0, sessionApiKey);
+    return null;
+  },
+});
+
 export const logNotification = mutation({
   args: {
     userId: v.id("users"),

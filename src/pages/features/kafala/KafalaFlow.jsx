@@ -175,13 +175,24 @@ export default function KafalaFlow() {
     finally { setIsAuthLoading(false); }
   };
 
-  // ── Submit (preserved exactly) ──
+  // ── Submit ──
   const handleSubmit = async () => {
     if (submitting) return;
     setSubmitting(true);
     try {
       const userId = appUser?.userId || appUser?.id;
       if (!userId) { showToast('يرجى تسجيل الدخول أولاً', 'error'); setStep(0); return; }
+
+      if (paymentMethod === 'bank_transfer' && !receipt && !reference.trim()) {
+        showToast('يجب إرفاق وصل الدفع أو إدخال رقم المرجع', 'error');
+        setSubmitting(false);
+        return;
+      }
+      if (paymentMethod === 'cash_agency' && !receipt && !reference.trim()) {
+        showToast('يجب إرفاق وصل الدفع أو إدخال رقم الوصل', 'error');
+        setSubmitting(false);
+        return;
+      }
       const result = await createSponsorship({ kafalaId: id, userId, paymentMethod, isAnonymous });
 
       if (paymentMethod === 'card_whop') {
@@ -248,15 +259,20 @@ export default function KafalaFlow() {
 
   // ── Success screen ──
   if (done) {
+    const isPending = paymentMethod !== 'card_whop';
     return (
       <div style={{ minHeight: '100vh', background: K.kbg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'Tajawal, sans-serif' }} dir="rtl">
         <div style={{ background: 'white', borderRadius: 28, boxShadow: '0 10px 40px rgba(0,0,0,.12)', padding: 40, maxWidth: 380, width: '100%', textAlign: 'center' }}>
-          <div style={{ width: 88, height: 88, background: '#D1FAE5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 40 }}>✅</div>
-          <h2 style={{ fontSize: 22, fontWeight: 900, color: K.kdark, marginBottom: 12 }}>تم تسجيل كفالتك!</h2>
-          <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7, marginBottom: 16 }}>جزاك الله خيراً على هذا العمل الصالح. ستتلقى رسالة تأكيد عبر واتساب.</p>
-          {paymentMethod !== 'card_whop' && (
-            <p style={{ fontSize: 12, color: '#b45309', background: '#FEF3C7', borderRadius: 10, padding: '10px 16px', marginBottom: 20 }}>سيتم مراجعة تبرعك وتأكيده خلال 24 ساعة.</p>
-          )}
+          <div style={{ width: 88, height: 88, background: isPending ? '#FEF3C7' : '#D1FAE5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 40 }}>{isPending ? '⏳' : '✅'}</div>
+          <h2 style={{ fontSize: 22, fontWeight: 900, color: K.kdark, marginBottom: 12 }}>
+            {isPending ? 'تم إرسال طلب الكفالة بنجاح ✅' : 'تم تسجيل كفالتك!'}
+          </h2>
+          <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7, marginBottom: 16 }}>
+            {isPending
+              ? 'طلبك قيد المراجعة من الفريق. سيصلك إشعار واتساب عند التأكيد.'
+              : 'جزاك الله خيراً على هذا العمل الصالح. ستتلقى رسالة تأكيد عبر واتساب.'
+            }
+          </p>
           <button onClick={() => navigate('/')} style={{ background: K.kdark, color: 'white', padding: '14px 32px', borderRadius: 14, fontWeight: 700, border: 'none', cursor: 'pointer', fontSize: 15, fontFamily: 'Tajawal, sans-serif', boxShadow: `0 4px 14px rgba(196,168,130,.4)` }}>
             العودة للرئيسية
           </button>
@@ -560,7 +576,7 @@ export default function KafalaFlow() {
                           onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
                           style={{ width: '100%', border: `2px dashed ${K.k100}`, borderRadius: 12, padding: '14px', textAlign: 'center', background: 'white', cursor: 'pointer', fontSize: 13, color: receipt ? '#16a34a' : '#64748b', fontFamily: 'Tajawal, sans-serif' }}
                         >
-                          {receipt ? `✓ ${receipt.name}` : '📷 اختر ملف الوصل (اختياري)'}
+                          {receipt ? `✓ ${receipt.name}` : '📷 أرفق وصل الدفع *'}
                         </button>
                         <div style={{ marginTop: 10 }}>
                           <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>رقم المرجع (اختياري)</div>
@@ -586,7 +602,7 @@ export default function KafalaFlow() {
                           onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
                           style={{ width: '100%', border: `2px dashed ${K.k100}`, borderRadius: 12, padding: '14px', textAlign: 'center', background: 'white', cursor: 'pointer', fontSize: 13, color: receipt ? '#16a34a' : '#64748b', fontFamily: 'Tajawal, sans-serif', marginBottom: 10 }}
                         >
-                          {receipt ? `✓ ${receipt.name}` : '📷 اختر ملف الوصل (اختياري)'}
+                          {receipt ? `✓ ${receipt.name}` : '📷 أرفق وصل الدفع *'}
                         </button>
                         <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>رقم الوصل / المرجع</div>
                         <input

@@ -168,3 +168,46 @@ export const createKafalaWhopCheckout = action({
     return purchaseUrl;
   },
 });
+
+// ============================================
+// CANCEL KAFALA SUBSCRIPTION
+// ============================================
+
+/**
+ * Cancel an active kafala sponsorship.
+ * For card_whop: calls Whop API to void the subscription first.
+ * For bank/cash: marks expired immediately.
+ * Returns { success, error }.
+ */
+export const cancelKafalaSubscription = action({
+  args: {
+    sponsorshipId: v.id("kafalaSponsorship"),
+  },
+  returns: v.object({ success: v.boolean(), error: v.optional(v.string()) }),
+  handler: async (ctx, args): Promise<{ success: boolean; error?: string }> => {
+    const sponsorship: any = await ctx.runQuery(api.kafala.getSponsorshipById, {
+      sponsorshipId: args.sponsorshipId,
+    });
+    if (!sponsorship) return { success: false, error: "الكفالة غير موجودة" };
+
+    // For card_whop — cancel Whop subscription first
+    if (sponsorship.paymentMethod === "card_whop" && sponsorship.whopSubscriptionId) {
+      const apiKey = process.env.WHOP_API_KEY;
+      if (!apiKey) return { success: false, error: "WHOP_API_KEY not configured" };
+
+      const res = await fetch(
+        `${WHOP_API_BASE}/api/v2/memberships/${sponsorship.whopSubscriptionId}/cancel`,
+        { method: "POST", headers: { Authorization: `Bearer ${apiKey}` } }
+      );
+      if (!res.ok) {
+        const body = await res.text();
+        console.error("Whop cancel failed:", res.status, body);
+        return { success: false, error: `Whop cancel failed: HTTP ${res.status}` };
+      }
+    }
+
+    // Mark expired in DB regardless of payment method
+    await ctx.runMutation(api.kafala.expireSponsorship, { sponsorshipId: args.sponsorshipId });
+    return { success: true };
+  },
+});

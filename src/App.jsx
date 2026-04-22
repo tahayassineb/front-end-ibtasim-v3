@@ -145,7 +145,21 @@ const AdminRoute = ({ children }) => {
   );
 
   if (!isAuthenticated || !user?.id) return <Navigate to="/admin/login" />;
-  if (isAdmin === undefined) return null;
+  if (isAdmin === undefined) return (
+    <div style={{
+      minHeight: '100vh',
+      background: '#f8fafc',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontFamily: 'Tajawal, sans-serif',
+    }}>
+      <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>
+        <div style={{ fontSize: 32, marginBottom: 12 }}>🔐</div>
+        جاري التحقق...
+      </div>
+    </div>
+  );
   if (!isAdmin) return <Navigate to="/admin/login" />;
   return children;
 };

@@ -382,6 +382,7 @@ export default defineSchema({
       v.literal("cancelled")
     ),
     lastDonationId: v.optional(v.id("kafalaDonations")),
+    remindersSent: v.optional(v.array(v.string())), // e.g. ["10", "5", "3", "1"]
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -453,6 +454,21 @@ export default defineSchema({
     slug: v.optional(v.string()),
     metaDescription: v.optional(v.string()),
   }).index('by_published', ['isPublished']),
+
+  // ============================================
+  // CONTACT MESSAGES TABLE
+  // ============================================
+  contactMessages: defineTable({
+    name: v.string(),
+    phone: v.optional(v.string()),
+    email: v.optional(v.string()),
+    subject: v.optional(v.string()),
+    message: v.string(),
+    status: v.union(v.literal("new"), v.literal("read"), v.literal("replied")),
+    createdAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_created", ["createdAt"]),
 
   // ============================================
   // ACTIVITY LOG TABLE (Audit Trail)

@@ -7,7 +7,7 @@ import { api } from "./_generated/api";
 // ============================================
 
 export const getDonationsByUser = query({
-  args: { 
+  args: {
     userId: v.id("users"),
     limit: v.optional(v.number()),
   },
@@ -24,6 +24,8 @@ export const getDonationsByUser = query({
     createdAt: v.number(),
     verifiedAt: v.optional(v.number()),
     receiptUrl: v.optional(v.string()),
+    projectTitle: v.optional(v.object({ ar: v.string(), fr: v.string(), en: v.string() })),
+    projectPhoto: v.optional(v.union(v.string(), v.null())),
   })),
   handler: async (ctx, args) => {
     const donations = await ctx.db
@@ -31,21 +33,30 @@ export const getDonationsByUser = query({
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .order("desc")
       .take(args.limit || 50);
-    
-    return donations.map(d => ({
-      _id: d._id,
-      _creationTime: d._creationTime,
-      projectId: d.projectId,
-      amount: d.amount,
-      currency: d.currency,
-      paymentMethod: d.paymentMethod,
-      status: d.status,
-      isAnonymous: d.isAnonymous,
-      message: d.message,
-      createdAt: d.createdAt,
-      verifiedAt: d.verifiedAt,
-      receiptUrl: d.receiptUrl,
-    }));
+
+    const enriched = await Promise.all(
+      donations.map(async (d) => {
+        const project = await ctx.db.get(d.projectId);
+        return {
+          _id: d._id,
+          _creationTime: d._creationTime,
+          projectId: d.projectId,
+          amount: d.amount,
+          currency: d.currency,
+          paymentMethod: d.paymentMethod,
+          status: d.status,
+          isAnonymous: d.isAnonymous,
+          message: d.message,
+          createdAt: d.createdAt,
+          verifiedAt: d.verifiedAt,
+          receiptUrl: d.receiptUrl,
+          projectTitle: project?.title ?? { ar: 'مشروع', fr: 'Projet', en: 'Project' },
+          projectPhoto: project?.mainImage ?? null,
+        };
+      })
+    );
+
+    return enriched;
   },
 });
 
@@ -297,14 +308,22 @@ export const uploadReceipt = mutation({
     const donation = await ctx.db.get(args.donationId);
     if (!donation) return false;
     if (donation.status !== "awaiting_receipt") return false;
-    
+
     await ctx.db.patch(args.donationId, {
       receiptUrl: args.receiptUrl,
       receiptUploadedAt: Date.now(),
       status: "awaiting_verification",
       updatedAt: Date.now(),
     });
-    
+
+    // Notify admin via WhatsApp
+    try {
+      await ctx.scheduler.runAfter(0, api.notifications.notifyAdminNewVerification, {
+        type: "donation",
+        donationId: args.donationId as string,
+      });
+    } catch (e) { console.error("Admin notification failed:", e); }
+
     return true;
   },
 });
@@ -374,6 +393,17 @@ export const verifyDonation = mutation({
         }
       } catch (error) {
         console.error("Failed to schedule verification notification:", error);
+      }
+    } else {
+      // Notify user of rejection
+      try {
+        await ctx.scheduler.runAfter(0, api.notifications.sendDonationRejectionNotification, {
+          userId: donation.userId,
+          donationId: args.donationId,
+          notes: args.notes,
+        });
+      } catch (error) {
+        console.error("Failed to schedule rejection notification:", error);
       }
     }
 

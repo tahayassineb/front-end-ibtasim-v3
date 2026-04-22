@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
 import { convexFileUrl } from '../../../lib/convex';
@@ -44,17 +44,19 @@ export default function KafalaRenew() {
     userId ? { kafalaId: id, userId } : 'skip'
   );
 
-  // ── Mutations ────────────────────────────────────────────────────────────────
+  // ── Mutations / Actions ─────────────────────────────────────────────────────
   const renewMut          = useMutation(api.kafala.renewKafalaDonation);
   const uploadReceiptMut  = useMutation(api.kafala.uploadKafalaReceipt);
   const generateUploadUrl = useMutation(api.storage.generateProjectImageUploadUrl);
+  const cancelKafala      = useAction(api.kafalaPayments.cancelKafalaSubscription);
 
   // ── Local state ──────────────────────────────────────────────────────────────
-  const [receipt, setReceipt]       = useState(null);
-  const [reference, setReference]   = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [done, setDone]             = useState(false);
-  const [dragActive, setDragActive] = useState(false);
+  const [receipt, setReceipt]         = useState(null);
+  const [reference, setReference]     = useState('');
+  const [submitting, setSubmitting]   = useState(false);
+  const [done, setDone]               = useState(false);
+  const [dragActive, setDragActive]   = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   const fileRef = useRef();
 
   // ── Derived ──────────────────────────────────────────────────────────────────
@@ -166,6 +168,24 @@ export default function KafalaRenew() {
 
   const latestUpdate = kafala.latestUpdate || (kafala.updates ? kafala.updates[0] : null);
 
+  const handleCancel = async () => {
+    if (!window.confirm('هل أنت متأكد من إلغاء الكفالة؟ سيتوقف الدعم الشهري لهذا اليتيم.')) return;
+    setIsCancelling(true);
+    try {
+      const result = await cancelKafala({ sponsorshipId: sponsorship._id });
+      if (result.success) {
+        showToast('تم إلغاء الكفالة بنجاح', 'success');
+        navigate('/kafala');
+      } else {
+        showToast(result.error || 'فشل إلغاء الكفالة', 'error');
+      }
+    } catch (e) {
+      showToast('حدث خطأ أثناء الإلغاء', 'error');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   const handleDrop = (e) => {
     e.preventDefault();
     setDragActive(false);
@@ -176,12 +196,8 @@ export default function KafalaRenew() {
   const handleSubmit = async () => {
     if (submitting) return;
 
-    if (payMethod === 'bank_transfer' && !receipt && !reference.trim()) {
-      showToast('يرجى رفع الوصل أو إدخال رقم المرجع', 'error');
-      return;
-    }
-    if (payMethod === 'cash_agency' && !reference.trim()) {
-      showToast('يرجى إدخال رقم المرجع / الوصل', 'error');
+    if ((payMethod === 'bank_transfer' || payMethod === 'cash_agency') && !receipt && !reference.trim()) {
+      showToast('يجب إرفاق وصل الدفع أو إدخال رقم المرجع', 'error');
       return;
     }
 
@@ -295,10 +311,11 @@ export default function KafalaRenew() {
               {submitting ? '⏳ جاري الإرسال...' : '🤲 جدّد الكفالة الآن'}
             </button>
             <button
-              onClick={() => navigate(`/kafala/${id}`)}
-              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,.7)', fontSize: 12, cursor: 'pointer', marginTop: 10, textDecoration: 'underline', fontFamily: 'Tajawal, sans-serif', display: 'block', width: '100%', textAlign: 'center' }}
+              onClick={handleCancel}
+              disabled={isCancelling}
+              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,.7)', fontSize: 12, cursor: isCancelling ? 'not-allowed' : 'pointer', marginTop: 10, textDecoration: 'underline', fontFamily: 'Tajawal, sans-serif', display: 'block', width: '100%', textAlign: 'center', opacity: isCancelling ? 0.5 : 1 }}
             >
-              إيقاف مؤقت أو إلغاء الكفالة
+              {isCancelling ? 'جاري الإلغاء...' : 'إيقاف مؤقت أو إلغاء الكفالة'}
             </button>
           </div>
 

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../../../convex/_generated/api';
 import { useApp } from '../../../../context/AppContext';
+import { convexFileUrl } from '../../../../lib/convex';
 
 // ============================================
 // ADMIN VERIFICATIONS — Split layout: pending list + detail panel
@@ -202,7 +203,7 @@ export default function AdminVerifications() {
               <div style={{ padding: 20 }}>
                 {selectedDonation.receiptImage ? (
                   <img
-                    src={selectedDonation.receiptImage}
+                    src={convexFileUrl(selectedDonation.receiptImage) || selectedDonation.receiptImage}
                     alt="الوصل"
                     onClick={() => setImageExpanded(true)}
                     style={{ width: '100%', height: 240, objectFit: 'cover', borderRadius: 12, cursor: 'zoom-in', border: '1px solid #E5E9EB' }}
@@ -224,7 +225,19 @@ export default function AdminVerifications() {
                       🔍 تكبير
                     </button>
                   )}
-                  <button style={{ flex: 1, height: 36, borderRadius: 10, background: '#E6F4F4', border: '1px solid #CCF0F0', color: '#0A5F62', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'Tajawal, sans-serif' }}>
+                  <button
+                    onClick={() => {
+                      const url = convexFileUrl(selectedDonation.receiptImage);
+                      if (!url) return;
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `receipt-${selectedDonation._id || 'doc'}.jpg`;
+                      a.target = '_blank';
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                    }}
+                    style={{ flex: 1, height: 36, borderRadius: 10, background: '#E6F4F4', border: '1px solid #CCF0F0', color: '#0A5F62', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'Tajawal, sans-serif' }}>
                     ⬇ تحميل
                   </button>
                 </div>
@@ -301,7 +314,7 @@ export default function AdminVerifications() {
           <button onClick={() => setImageExpanded(false)}
             style={{ position: 'absolute', top: 16, right: 16, color: 'rgba(255,255,255,.8)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 28 }}>✕</button>
           <img
-            src={selectedDonation.receiptImage}
+            src={convexFileUrl(selectedDonation.receiptImage) || selectedDonation.receiptImage}
             alt="الوصل"
             onClick={e => e.stopPropagation()}
             style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: 12 }}

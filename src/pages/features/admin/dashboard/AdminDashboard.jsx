@@ -37,6 +37,7 @@ export default function AdminDashboard() {
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [chartTab, setChartTab] = useState('30');
   const [hoveredPoint, setHoveredPoint] = useState(null);
+  const [hoveredPointKafala, setHoveredPointKafala] = useState(null);
 
   React.useEffect(() => {
     if (featuredProjectsData) setFeaturedProjects(featuredProjectsData);
@@ -96,9 +97,9 @@ export default function AdminDashboard() {
 
   const kpiCards = [
     { icon: '💰', bg: '#E6F4F4', num: totalCollected, label: 'درهم محصّل إجمالي', trend: 'إجمالي التبرعات', trendColor: '#0A5F62' },
-    { icon: '🎯', bg: '#F0FDF4', num: (stats?.donationCount || 0).toLocaleString(), label: 'عدد التبرعات', trend: 'جميع الوضعيات', trendColor: '#64748b' },
+    { icon: '🎯', bg: '#F0FDF4', num: (stats?.donationCount || 0).toLocaleString(), label: 'عدد التبرعات', trend: 'مؤكدة فقط', trendColor: '#64748b' },
     { icon: '🤲', bg: '#FFFBEB', num: stats?.activeKafala || 0, label: 'كفالة نشطة', trend: 'كفالات مفعّلة', trendColor: '#64748b' },
-    { icon: '⏳', bg: '#FEF3C7', num: stats?.pendingVerifications || 0, label: 'تحويلات تنتظر التحقق', trend: (stats?.pendingVerifications || 0) > 0 ? 'تحتاج مراجعة' : 'لا شيء في الانتظار', trendColor: (stats?.pendingVerifications || 0) > 0 ? '#f59e0b' : '#22c55e' },
+    { icon: '⏳', bg: '#FEF3C7', num: (stats?.pendingVerifications || 0) + (stats?.pendingKafalaVerifications || 0), label: 'تبرعات + كفالات', trend: ((stats?.pendingVerifications || 0) + (stats?.pendingKafalaVerifications || 0)) > 0 ? 'تحتاج مراجعة' : 'لا شيء في الانتظار', trendColor: ((stats?.pendingVerifications || 0) + (stats?.pendingKafalaVerifications || 0)) > 0 ? '#f59e0b' : '#22c55e' },
   ];
 
   const donationData = stats?.monthlyDonations || [];
@@ -107,6 +108,29 @@ export default function AdminDashboard() {
   // Chart geometry — computed once from real data
   const CHART_W = 600, CHART_H = 200, PAD_T = 20, PAD_B = 10;
   const maxAmt = hasChartData ? Math.max(...donationData.map(d => d.amount), 1) : 1;
+
+  // Kafala chart data
+  const kafalaData = stats?.monthlyKafala || [];
+  const hasKafalaChartData = kafalaData.length >= 2;
+  const maxKafala = hasKafalaChartData ? Math.max(...kafalaData.map(d => d.amount), 1) : 1;
+  const kafalaCoords = hasKafalaChartData
+    ? kafalaData.map((d, i) => ({
+        x: (i / (kafalaData.length - 1)) * CHART_W,
+        y: PAD_T + (1 - d.amount / maxKafala) * (CHART_H - PAD_T - PAD_B),
+        amount: d.amount,
+        label: d.label || d.month || `${i + 1}`,
+      }))
+    : [];
+  const kafalaPolyline = kafalaCoords.map(p => `${p.x},${p.y}`).join(' ');
+  const kafalaArea = kafalaCoords.length
+    ? `0,${CHART_H} ${kafalaPolyline} ${CHART_W},${CHART_H}`
+    : '';
+  const kafalaGridLines = hasKafalaChartData
+    ? [0.75, 0.5, 0.25].map(pct => ({
+        y: PAD_T + (1 - pct) * (CHART_H - PAD_T - PAD_B),
+        label: (maxKafala * pct / 100).toFixed(0) + ' د.م',
+      }))
+    : [];
   const chartCoords = hasChartData
     ? donationData.map((d, i) => ({
         x: (i / (donationData.length - 1)) * CHART_W,
@@ -124,7 +148,7 @@ export default function AdminDashboard() {
   const yGridLines = hasChartData
     ? [0.75, 0.5, 0.25].map(pct => ({
         y: PAD_T + (1 - pct) * (CHART_H - PAD_T - PAD_B),
-        label: ((maxAmt * pct) / 100).toLocaleString('fr-MA'),
+        label: (maxAmt * pct / 100).toFixed(0) + ' د.م',
       }))
     : [];
 
@@ -291,6 +315,91 @@ export default function AdminDashboard() {
             </Link>
           </div>
         </div>
+      </div>
+
+      {/* Kafala monthly chart */}
+      <div style={{ background: 'white', borderRadius: 16, padding: 20, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', marginBottom: isMobile ? 16 : 24 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 20 }}>🤲 كفالات شهرية (درهم)</div>
+        {hasKafalaChartData ? (
+          <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative', width: '100%', height: 200 }}>
+              {kafalaGridLines.map((g, i) => (
+                <div key={i} style={{ position: 'absolute', right: 0, top: g.y / 200 * 100 + '%', transform: 'translateY(-50%)', fontSize: 10, color: '#94a3b8', fontFamily: 'Inter, sans-serif', backgroundColor: 'white', paddingRight: 4, lineHeight: 1 }}>
+                  {g.label}
+                </div>
+              ))}
+              <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} preserveAspectRatio="none"
+                style={{ width: '100%', height: '100%', overflow: 'visible' }}
+                onMouseLeave={() => setHoveredPointKafala(null)}>
+                <defs>
+                  <linearGradient id="kafalaChartGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.25" />
+                    <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.02" />
+                  </linearGradient>
+                </defs>
+                {kafalaGridLines.map((g, i) => (
+                  <line key={i} x1="0" y1={g.y} x2={CHART_W} y2={g.y} stroke="#E5E9EB" strokeWidth="1" />
+                ))}
+                <polygon points={kafalaArea} fill="url(#kafalaChartGrad)" />
+                <polyline points={kafalaPolyline} fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                {kafalaCoords.map((p, i) => (
+                  <g key={i}>
+                    <rect
+                      x={p.x - CHART_W / kafalaCoords.length / 2}
+                      y={0} width={CHART_W / kafalaCoords.length} height={CHART_H}
+                      fill="transparent"
+                      style={{ cursor: 'crosshair' }}
+                      onMouseEnter={() => setHoveredPointKafala(i)}
+                    />
+                    <circle cx={p.x} cy={p.y} r={hoveredPointKafala === i ? 6 : 3.5}
+                      fill={hoveredPointKafala === i ? 'white' : '#f59e0b'}
+                      stroke="#f59e0b" strokeWidth="2.5"
+                      style={{ transition: 'r .1s' }} />
+                    {hoveredPointKafala === i && (
+                      <line x1={p.x} y1={0} x2={p.x} y2={CHART_H} stroke="#f59e0b" strokeWidth="1" strokeDasharray="4 3" opacity="0.5" />
+                    )}
+                  </g>
+                ))}
+              </svg>
+              {hoveredPointKafala !== null && kafalaCoords[hoveredPointKafala] && (
+                <div style={{
+                  position: 'absolute',
+                  left: `${(kafalaCoords[hoveredPointKafala].x / CHART_W) * 100}%`,
+                  top: `${(kafalaCoords[hoveredPointKafala].y / CHART_H) * 100}%`,
+                  transform: 'translate(-50%, -120%)',
+                  background: '#92400e',
+                  color: 'white',
+                  borderRadius: 8,
+                  padding: '6px 10px',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  fontFamily: 'Inter, sans-serif',
+                  whiteSpace: 'nowrap',
+                  pointerEvents: 'none',
+                  boxShadow: '0 4px 12px rgba(0,0,0,.2)',
+                  zIndex: 10,
+                }}>
+                  {(kafalaCoords[hoveredPointKafala].amount / 100).toLocaleString('fr-MA')} درهم
+                  <div style={{ fontSize: 10, fontWeight: 400, opacity: 0.8, fontFamily: 'Tajawal, sans-serif', marginTop: 2 }}>
+                    {kafalaCoords[hoveredPointKafala].label}
+                  </div>
+                  <div style={{ position: 'absolute', bottom: -5, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid #92400e' }} />
+                </div>
+              )}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#94a3b8', fontFamily: 'Inter, sans-serif', marginTop: 6 }}>
+              {kafalaCoords.filter((_, i) => i === 0 || i === Math.floor(kafalaCoords.length / 2) || i === kafalaCoords.length - 1).map((p, i) => (
+                <span key={i}>{p.label}</span>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div style={{ height: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 13 }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>🤲</div>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>لا توجد كفالات بعد</div>
+            <div style={{ fontSize: 12 }}>ستظهر الإحصائيات عند تفعيل أول كفالة</div>
+          </div>
+        )}
       </div>
 
       {/* Lower row: Projects + Activity */}

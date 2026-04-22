@@ -11,11 +11,13 @@
 import type * as admin from "../admin.js";
 import type * as auth from "../auth.js";
 import type * as config from "../config.js";
+import type * as contact from "../contact.js";
 import type * as crons from "../crons.js";
 import type * as donations from "../donations.js";
 import type * as errorLogs from "../errorLogs.js";
 import type * as http from "../http.js";
 import type * as kafala from "../kafala.js";
+import type * as kafalaExpiry from "../kafalaExpiry.js";
 import type * as kafalaNotifications from "../kafalaNotifications.js";
 import type * as kafalaPayments from "../kafalaPayments.js";
 import type * as notifications from "../notifications.js";
@@ -36,11 +38,13 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   auth: typeof auth;
   config: typeof config;
+  contact: typeof contact;
   crons: typeof crons;
   donations: typeof donations;
   errorLogs: typeof errorLogs;
   http: typeof http;
   kafala: typeof kafala;
+  kafalaExpiry: typeof kafalaExpiry;
   kafalaNotifications: typeof kafalaNotifications;
   kafalaPayments: typeof kafalaPayments;
   notifications: typeof notifications;

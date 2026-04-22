@@ -1,12 +1,20 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
+import { convexFileUrl } from '../../../lib/convex';
 
 // ============================================
 // USER PROFILE PAGE - User info & donation history
 // ============================================
+
+const statusLabels = {
+  active: { label: 'نشط', color: '#16a34a', bg: '#f0fdf4' },
+  pending_payment: { label: 'في انتظار التحقق', color: '#d97706', bg: '#fffbeb' },
+  expired: { label: 'منتهي', color: '#64748b', bg: '#f1f5f9' },
+  cancelled: { label: 'ملغي', color: '#ef4444', bg: '#fef2f2' },
+};
 
 const UserProfile = () => {
   const navigate = useNavigate();
@@ -15,9 +23,12 @@ const UserProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [editData, setEditData] = useState({ name: user?.name || '', email: user?.email || '', phone: user?.phone || '' });
+  const [cancellingId, setCancellingId] = useState(null);
 
   const updateUserConvex = useMutation(api.users.updateUser);
+  const cancelKafala = useAction(api.kafalaPayments.cancelKafalaSubscription);
   const userDonations = useQuery(api.donations.getDonationsByUser, user?._id ? { userId: user._id } : 'skip');
+  const kafalaSponsorships = useQuery(api.kafala.getUserKafalaSponsorship, user?._id ? { userId: user._id } : 'skip');
 
   const lang = currentLanguage.code;
   const translations = {
@@ -28,8 +39,11 @@ const UserProfile = () => {
   const tx = translations[lang] || translations.ar;
 
   const donations = userDonations || [];
+  const sponsorships = kafalaSponsorships || [];
+  const activeSponsorships = sponsorships.filter(s => s.status === 'active');
   const totalDonated = donations.reduce((sum, d) => sum + (d.amount || 0), 0);
   const isDonationsLoading = userDonations === undefined;
+  const isKafalaLoading = kafalaSponsorships === undefined;
 
   const handleEditToggle = () => {
     if (isEditing) setEditData({ name: user?.name || '', email: user?.email || '', phone: user?.phone || '' });
@@ -71,6 +85,23 @@ const UserProfile = () => {
     }
   };
 
+  const handleCancelKafala = async (sponsorshipId) => {
+    if (!window.confirm('هل أنت متأكد من إلغاء الكفالة؟ سيتوقف الدعم الشهري لهذا اليتيم.')) return;
+    setCancellingId(sponsorshipId);
+    try {
+      const result = await cancelKafala({ sponsorshipId });
+      if (result.success) {
+        showToast('تم إلغاء الكفالة بنجاح', 'success');
+      } else {
+        showToast(result.error || 'فشل إلغاء الكفالة', 'error');
+      }
+    } catch (e) {
+      showToast('حدث خطأ أثناء الإلغاء', 'error');
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
   const getStatusBadge = (status) => {
     const map = { verified: { bg: '#D1FAE5', color: '#16a34a', label: lang === 'ar' ? '✓ مقبول' : '✓ Verified' }, pending: { bg: '#FEF3C7', color: '#b45309', label: lang === 'ar' ? '⏳ قيد الانتظار' : 'Pending' }, rejected: { bg: '#FEE2E2', color: '#dc2626', label: lang === 'ar' ? '✗ مرفوض' : 'Rejected' } };
     const s = map[status] || map.pending;
@@ -80,6 +111,8 @@ const UserProfile = () => {
   const getInitials = (name) => { if (!name) return 'U'; return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2); };
 
   const inputStyle = { width: '100%', height: 48, padding: '0 16px', border: '1.5px solid #E5E9EB', borderRadius: 12, fontFamily: 'Tajawal, sans-serif', fontSize: 14, color: '#0e1a1b', outline: 'none', background: '#f6f8f8' };
+
+  const payMethodLabel = { card_whop: 'بطاقة بنكية', bank_transfer: 'تحويل بنكي', cash_agency: 'وكالة نقدية' };
 
   return (
     <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b' }}>
@@ -99,7 +132,6 @@ const UserProfile = () => {
             <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
               <span style={{ background: '#FEF3C7', color: '#b45309', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 100 }}>⭐ متبرع ذهبي</span>
               <span style={{ background: '#D1FAE5', color: '#16a34a', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 100 }}>✓ موثق</span>
-              <span style={{ background: 'rgba(255,255,255,.15)', color: 'rgba(255,255,255,.9)', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 100 }}>عضو منذ 2022</span>
             </div>
           </div>
           <div style={{ marginRight: 'auto', paddingBottom: 36 }}>
@@ -121,7 +153,7 @@ const UserProfile = () => {
             {[
               { icon: '💰', label: tx.totalDonated, value: formatCurrency ? formatCurrency(totalDonated / 100) : `${(totalDonated / 100).toFixed(0)}`, sub: 'درهم مغربي' },
               { icon: '📋', label: tx.donationsCount, value: donations.length.toString(), sub: 'مشروع مختلف' },
-              { icon: '🤲', label: 'كفالات نشطة', value: '1', sub: 'يتيم مكفول' },
+              { icon: '🤲', label: 'كفالات نشطة', value: activeSponsorships.length.toString(), sub: 'يتيم مكفول' },
             ].map((s, i) => (
               <div key={i} style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', padding: 20, boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
                 <div style={{ fontSize: 24, marginBottom: 10 }}>{s.icon}</div>
@@ -132,36 +164,70 @@ const UserProfile = () => {
             ))}
           </div>
 
-          {/* Kafala active */}
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 12, fontFamily: 'Inter, sans-serif' }}>كفالتي النشطة</div>
-          <div style={{ background: '#F5EBD9', borderRadius: 16, border: '1.5px solid #E8D4B0', padding: 20, marginBottom: 28 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#6B4F12', textTransform: 'uppercase', letterSpacing: '.1em', fontFamily: 'Inter, sans-serif' }}>🤲 KAFALA ACTIVE</div>
-              <span style={{ background: '#D1FAE5', color: '#16a34a', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 100 }}>✓ نشطة</span>
+          {/* Kafala sponsorships */}
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 12, fontFamily: 'Inter, sans-serif' }}>كفالاتي</div>
+          {isKafalaLoading ? (
+            <div style={{ background: '#F5EBD9', borderRadius: 16, border: '1.5px solid #E8D4B0', padding: 20, marginBottom: 28, textAlign: 'center', color: '#94a3b8' }}>جاري التحميل...</div>
+          ) : sponsorships.length === 0 ? (
+            <div style={{ background: '#F5EBD9', borderRadius: 16, border: '1.5px solid #E8D4B0', padding: 24, marginBottom: 28, textAlign: 'center' }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>🤲</div>
+              <div style={{ fontSize: 14, color: '#8B6914', marginBottom: 12 }}>لا توجد كفالات حالياً</div>
+              <Link to="/kafala" style={{ display: 'inline-flex', height: 38, padding: '0 18px', background: '#6B4F12', color: 'white', borderRadius: 100, fontSize: 13, fontWeight: 700, textDecoration: 'none', alignItems: 'center' }}>ابدأ كفالة يتيم</Link>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg,#8B6914,#C4A882)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>👦</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#3D2506' }}>محمد — 9 سنوات</div>
-                <div style={{ fontSize: 12, color: '#8B6914' }}>من منطقة درعة تافيلالت</div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: '#6B4F12', marginTop: 4 }}>300 د.م / شهر</div>
-              </div>
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: 11, color: '#8B6914' }}>الدفعة القادمة</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#6B4F12' }}>1 مايو 2026</div>
-                <Link to="/kafala/renew" style={{ display: 'inline-flex', marginTop: 6, height: 34, padding: '0 14px', background: '#6B4F12', color: 'white', borderRadius: 100, fontSize: 12, fontWeight: 700, textDecoration: 'none', alignItems: 'center' }}>تجديد</Link>
-              </div>
+          ) : (
+            <div style={{ marginBottom: 28, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {sponsorships.map((s) => {
+                const kafala = s.kafala;
+                const statusInfo = statusLabels[s.status] || statusLabels.expired;
+                const photo = kafala?.photo ? convexFileUrl(kafala.photo) : null;
+                const isCancelling = cancellingId === s._id;
+                return (
+                  <div key={s._id} style={{ background: '#F5EBD9', borderRadius: 16, border: '1.5px solid #E8D4B0', padding: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                      <span style={{ background: statusInfo.bg, color: statusInfo.color, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 100 }}>{statusInfo.label}</span>
+                      <span style={{ fontSize: 11, color: '#8B6914' }}>{payMethodLabel[s.paymentMethod] || s.paymentMethod}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg,#8B6914,#C4A882)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0, overflow: 'hidden' }}>
+                        {photo ? <img src={photo} alt={kafala?.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (kafala?.gender === 'female' ? '👧' : '👦')}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: '#3D2506' }}>{kafala?.name || '—'}{kafala?.age ? ` — ${kafala.age} سنوات` : ''}</div>
+                        {kafala?.location && <div style={{ fontSize: 12, color: '#8B6914' }}>من {kafala.location}</div>}
+                        <div style={{ fontSize: 16, fontWeight: 800, color: '#6B4F12', marginTop: 4 }}>{kafala?.monthlyPrice ? (kafala.monthlyPrice / 100).toFixed(0) : '—'} د.م / شهر</div>
+                      </div>
+                      <div style={{ textAlign: 'left', flexShrink: 0 }}>
+                        {s.status === 'active' && s.paymentMethod !== 'card_whop' && (
+                          <>
+                            <div style={{ fontSize: 11, color: '#8B6914' }}>الدفعة القادمة</div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: '#6B4F12' }}>{new Date(s.nextRenewalDate).toLocaleDateString('ar-MA')}</div>
+                          </>
+                        )}
+                        {s.status === 'active' && (
+                          <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                            <Link to={`/kafala/${s.kafalaId}/renew`} style={{ display: 'inline-flex', height: 30, padding: '0 12px', background: '#6B4F12', color: 'white', borderRadius: 100, fontSize: 11, fontWeight: 700, textDecoration: 'none', alignItems: 'center' }}>تجديد</Link>
+                            <button
+                              onClick={() => handleCancelKafala(s._id)}
+                              disabled={isCancelling}
+                              style={{ height: 30, padding: '0 12px', background: 'transparent', color: '#dc2626', border: '1px solid #dc2626', borderRadius: 100, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', opacity: isCancelling ? 0.5 : 1 }}>
+                              {isCancelling ? '...' : 'إلغاء'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </div>
+          )}
 
           {/* Donation history */}
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 12, fontFamily: 'Inter, sans-serif' }}>سجل التبرعات</div>
           <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', overflow: 'hidden' }}>
             <div style={{ padding: '18px 20px', borderBottom: '1px solid #E5E9EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ fontSize: 16, fontWeight: 700 }}>آخر التبرعات</div>
-              <button style={{ height: 36, padding: '0 16px', borderRadius: 100, fontSize: 13, fontWeight: 600, background: '#E6F4F4', color: '#0A5F62', border: 'none', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
-                عرض الكل ({donations.length})
-              </button>
+              <span style={{ fontSize: 13, color: '#64748b' }}>({donations.length})</span>
             </div>
 
             {isDonationsLoading ? (
@@ -177,7 +243,7 @@ const UserProfile = () => {
                 <div key={donation._id || index} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px', borderBottom: index < donations.length - 1 ? '1px solid #E5E9EB' : 'none' }}>
                   <div style={{ width: 40, height: 40, borderRadius: 12, background: '#E6F4F4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>💰</div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>{donation.projectTitle?.ar || donation.projectTitle?.en || 'مشروع'}</div>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>{donation.projectTitle?.ar || donation.projectTitle?.fr || donation.projectTitle?.en || 'مشروع'}</div>
                     <div style={{ fontSize: 12, color: '#94a3b8' }}>{formatDate ? formatDate(donation.createdAt) : new Date(donation.createdAt).toLocaleDateString('ar-MA')}</div>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: '#0A5F62', marginRight: 'auto', whiteSpace: 'nowrap' }}>{((donation.amount || 0) / 100).toFixed(0)} د.م</div>

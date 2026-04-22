@@ -107,6 +107,20 @@ http.route({
             }
             break;
           }
+          case "membership.cancelled": {
+            const cancelledMembershipId: string | undefined = data?.id ?? data?.membership_id;
+            if (cancelledMembershipId) {
+              try {
+                await ctx.runMutation(api.kafala.expireSponsorshipBySubscriptionId, {
+                  whopSubscriptionId: cancelledMembershipId,
+                });
+              } catch (e) {
+                console.error("membership.cancelled handler failed:", e);
+              }
+            }
+            break;
+          }
+
           default:
             console.log(`Unhandled Whop kafala event: ${event}`);
         }

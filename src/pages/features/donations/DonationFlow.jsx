@@ -1050,7 +1050,7 @@ export default function DonationFlow() {
     if (isLoading) return true;
     if (step === 1 && calculateTotal() <= 0) return true;
     if (step === 2 && !donationData.paymentMethod) return true;
-    if (step === 3 && !uploadedFile) return true;
+    if (step === 3 && !uploadedFile && !donationData.transactionReference?.trim()) return true;
     if (step === 4 && !isAuthenticated && (!donationData.donorName?.trim() || !donationData.donorPhone?.trim())) return true;
     if (step === 5 && !agreedTerms) return true;
     return false;

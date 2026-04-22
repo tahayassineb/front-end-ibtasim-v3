@@ -251,19 +251,38 @@ export default function AdminKafalaVerifications() {
                   <div className="space-y-2">
                     <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">صورة الوصل</p>
                     <div
-                      className="relative overflow-hidden rounded-2xl border border-border-light dark:border-white/10 cursor-pointer"
-                      onClick={() => setImageExpanded((v) => !v)}
+                      className="relative overflow-hidden rounded-2xl border border-border-light dark:border-white/10 cursor-zoom-in"
+                      onClick={() => setImageExpanded(true)}
                     >
                       <img
                         src={convexFileUrl(selected.receiptUrl) || selected.receiptUrl}
                         alt="وصل التحويل"
-                        className={`w-full object-cover transition-all duration-300 ${imageExpanded ? 'max-h-[500px]' : 'max-h-[180px]'}`}
+                        className="w-full object-cover max-h-[180px]"
                         onError={(e) => { e.target.style.display = 'none'; }}
                       />
                       <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/50 text-white text-[10px] px-3 py-1 rounded-full">
-                        {imageExpanded ? 'اضغط للتصغير' : 'اضغط للتكبير'}
+                        🔍 اضغط للتكبير
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* Full-screen receipt zoom modal */}
+                {imageExpanded && selected.receiptUrl && (
+                  <div
+                    onClick={() => setImageExpanded(false)}
+                    className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center cursor-zoom-out"
+                  >
+                    <img
+                      src={convexFileUrl(selected.receiptUrl) || selected.receiptUrl}
+                      alt="وصل"
+                      className="max-w-[90vw] max-h-[90vh] rounded-xl object-contain"
+                      onClick={e => e.stopPropagation()}
+                    />
+                    <button
+                      onClick={() => setImageExpanded(false)}
+                      className="absolute top-4 right-4 text-white/80 bg-transparent border-none text-3xl cursor-pointer"
+                    >✕</button>
                   </div>
                 )}
 

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../../context/AppContext';
+import { useMutation } from 'convex/react';
+import { api } from '../../../../convex/_generated/api';
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -22,6 +24,8 @@ const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  const submitContact = useMutation(api.contact.submitContactMessage);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -29,11 +33,23 @@ const Contact = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.name.trim() || !formData.message.trim()) return;
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    setFormData({ name: '', phone: '', email: '', subject: '', message: '' });
+    try {
+      await submitContact({
+        name: formData.name,
+        phone: formData.phone || undefined,
+        email: formData.email || undefined,
+        subject: formData.subject || undefined,
+        message: formData.message,
+      });
+      setIsSubmitted(true);
+      setFormData({ name: '', phone: '', email: '', subject: '', message: '' });
+    } catch (err) {
+      console.error('Contact form failed:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const inputStyle = {
@@ -203,7 +219,9 @@ const Contact = () => {
           </div>
 
           {/* Map Placeholder */}
-          <div style={{ background: 'linear-gradient(135deg,#E6F4F4,#F0F7F7)', borderRadius: 16, height: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, border: '1px solid #E5E9EB', cursor: 'pointer' }}>
+          <div
+            onClick={() => window.open('https://maps.google.com/?q=الرباط،المغرب', '_blank')}
+            style={{ background: 'linear-gradient(135deg,#E6F4F4,#F0F7F7)', borderRadius: 16, height: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, border: '1px solid #E5E9EB', cursor: 'pointer' }}>
             <div style={{ fontSize: 36 }}>📍</div>
             <div style={{ fontSize: 13, color: '#64748b' }}>حي الرياض، الرباط، المغرب</div>
             <div style={{ fontSize: 12, color: '#94a3b8' }}>انقر لعرض الخريطة</div>

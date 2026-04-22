@@ -408,8 +408,6 @@ const AdminSettings = () => {
               inviteLink={inviteLink}
               setInviteLink={setInviteLink}
               createAdminInvitation={createAdminInvitation}
-              user={user}
-              showToast={showToast}
             />
           )}
           {activeTab === 'profile' && (

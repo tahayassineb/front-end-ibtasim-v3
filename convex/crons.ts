@@ -23,6 +23,14 @@ crons.daily(
   {}
 );
 
+// Daily at 8:00 AM UTC — expire overdue bank/cash sponsorships (3-day grace period)
+crons.daily(
+  "expireOverdueSponsorships",
+  { hourUTC: 8, minuteUTC: 0 },
+  api.kafalaExpiry.expireOverdueSponsorships,
+  {}
+);
+
 // Auto-refresh disabled: QR is only fetched when the user explicitly clicks "Connect/Reconnect".
 // crons.interval(
 //   "autoRefreshWhatsAppQr",
