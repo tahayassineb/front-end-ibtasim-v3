@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 function htmlToBlocks(html) {
   if (!html) return [{ type: 'text', content: '' }];
@@ -15,12 +15,11 @@ function htmlToBlocks(html) {
       });
       return;
     }
-
-    const text = (node.textContent || '').trim();
-    if (text) blocks.push({ type: 'text', content: node.textContent || '' });
+    // Include all text nodes, even empty ones (so empty paragraphs survive round-trip)
+    blocks.push({ type: 'text', content: node.textContent || '' });
   });
 
-  return blocks.length > 0 ? blocks : [{ type: 'text', content: div.textContent || '' }];
+  return blocks.length > 0 ? blocks : [{ type: 'text', content: '' }];
 }
 
 function blocksToHtml(blocks) {
@@ -41,9 +40,24 @@ function blocksToHtml(blocks) {
 export default function RichTextEditor({ value, onChange, placeholder = 'اكتب هنا...', onInsertImage }) {
   const fileInputRef = useRef(null);
   const [isUploading, setIsUploading] = useState(false);
-  const blocks = useMemo(() => htmlToBlocks(value), [value]);
+  // Local state — avoids re-parsing HTML on every keystroke which would reset cursor
+  const [blocks, setBlocks] = useState(() => htmlToBlocks(value));
+  const lastCommittedRef = useRef(value || '');
 
-  const commit = (nextBlocks) => onChange(blocksToHtml(nextBlocks));
+  // Sync only when an external change drives the value (e.g. loading existing story)
+  useEffect(() => {
+    if (value !== lastCommittedRef.current) {
+      setBlocks(htmlToBlocks(value));
+      lastCommittedRef.current = value || '';
+    }
+  }, [value]);
+
+  const commit = (nextBlocks) => {
+    setBlocks(nextBlocks);
+    const html = blocksToHtml(nextBlocks);
+    lastCommittedRef.current = html;
+    onChange(html);
+  };
 
   const updateBlock = (index, nextBlock) => {
     commit(blocks.map((block, i) => (i === index ? nextBlock : block)));
@@ -103,7 +117,7 @@ export default function RichTextEditor({ value, onChange, placeholder = 'اكت�
       </div>
 
       {blocks.map((block, index) => (
-        <div key={`${block.type}-${index}`} style={styles.block}>
+        <div key={index} style={styles.block}>
           <div style={styles.controls}>
             <button type="button" style={styles.controlBtn} onClick={() => moveBlock(index, -1)} title="لأعلى">↑</button>
             <button type="button" style={styles.controlBtn} onClick={() => moveBlock(index, 1)} title="لأسفل">↓</button>

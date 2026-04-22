@@ -103,6 +103,13 @@ const EmojiPickerBtn = ({ value, onChange }) => {
           placeholder="😊"
           style={{ flex: 1, border: 'none', outline: 'none', fontSize: 22, textAlign: 'center', padding: '0 4px', fontFamily: 'sans-serif', background: 'transparent', minWidth: 0 }}
         />
+        {value && (
+          <button type="button" onClick={() => onChange('')}
+            style={{ width: 26, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 14, color: '#94a3b8', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            title="مسح">
+            ×
+          </button>
+        )}
         <button type="button" onClick={toggleOpen}
           style={{ width: 28, background: '#F0F7F7', border: 'none', cursor: 'pointer', fontSize: 11, color: TEXTM, borderRight: `1px solid ${BORDER}`, flexShrink: 0 }}>
           ▾
