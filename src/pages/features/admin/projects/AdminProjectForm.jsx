@@ -75,59 +75,6 @@ const ToggleRow = ({ title, desc, checked, onChange, last }) => (
   </div>
 );
 
-const BENEFIT_EMOJIS = ['🏠','🏫','💧','🍽️','❤️','👨‍👩‍👧','📚','🌟','🤲','🩺','🌱','⚡','🎓','🛖','🫀','🧒','👶','🌊','☀️','🐄','🍎','💊','🧑‍🏫','🪴','🏗️','🎒','✏️','👕','🩹','🔬','🌍','🕌','🤝','🎯','💰','📦','🚰','🛏️','🧹','🌾'];
-
-const EmojiPickerBtn = ({ value, onChange }) => {
-  const [open, setOpen] = React.useState(false);
-  const [pos, setPos] = React.useState({ top: 0, right: 0 });
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    const close = (e) => { if (e.target.closest?.('.benefit-emoji-picker')) return; if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', close);
-    return () => document.removeEventListener('mousedown', close);
-  }, []);
-  const toggleOpen = () => {
-    if (ref.current) {
-      const rect = ref.current.getBoundingClientRect();
-      setPos({ top: rect.bottom + 6, right: window.innerWidth - rect.right });
-    }
-    setOpen(o => !o);
-  };
-  return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <div style={{ display: 'flex', border: `1.5px solid ${open ? PRIMARY : BORDER}`, borderRadius: 12, overflow: 'hidden', height: 48, background: 'white' }}>
-        <input
-          type="text"
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          placeholder="😊"
-          style={{ flex: 1, border: 'none', outline: 'none', fontSize: 22, textAlign: 'center', padding: '0 4px', fontFamily: 'sans-serif', background: 'transparent', minWidth: 0 }}
-        />
-        {value && (
-          <button type="button" onClick={() => onChange('')}
-            style={{ width: 26, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 14, color: '#94a3b8', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            title="مسح">
-            ×
-          </button>
-        )}
-        <button type="button" onClick={toggleOpen}
-          style={{ width: 28, background: '#F0F7F7', border: 'none', cursor: 'pointer', fontSize: 11, color: TEXTM, borderRight: `1px solid ${BORDER}`, flexShrink: 0 }}>
-          ▾
-        </button>
-      </div>
-      {open && (
-        <div className="benefit-emoji-picker" style={{ position: 'fixed', top: pos.top, right: pos.right, zIndex: 1000, background: 'white', border: `1.5px solid ${BORDER}`, borderRadius: 14, padding: 10, boxShadow: '0 8px 24px rgba(0,0,0,.12)', width: 230, display: 'grid', gridTemplateColumns: 'repeat(8,1fr)', gap: 4 }}>
-          {BENEFIT_EMOJIS.map(e => (
-            <button key={e} type="button" onClick={() => { onChange(e); setOpen(false); }}
-              style={{ width: 26, height: 26, border: 'none', borderRadius: 6, background: value === e ? '#E6F4F4' : 'transparent', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {e}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
 
 // ─── Main component ────────────────────────────────────────────────────────────
 export default function AdminProjectForm() {
@@ -488,9 +435,13 @@ export default function AdminProjectForm() {
         </div>
         {(formData.benefitCards || []).map((card, i) => (
           <div key={i} style={{ display: 'grid', gridTemplateColumns: '60px 1fr 1fr auto', gap: 10, marginBottom: 10, alignItems: 'center' }}>
-            <EmojiPickerBtn
+            <input
+              type="text"
               value={card.icon}
-              onChange={v => { const c = [...formData.benefitCards]; c[i] = { ...c[i], icon: v }; set('benefitCards', c); }}
+              onChange={e => { const c = [...formData.benefitCards]; c[i] = { ...c[i], icon: e.target.value }; set('benefitCards', c); }}
+              placeholder="😊"
+              maxLength={2}
+              style={{ ...fieldInput, textAlign: 'center', fontSize: 22, padding: '0 4px', fontFamily: 'sans-serif' }}
             />
             <input
               value={card.value} onChange={e => { const c = [...formData.benefitCards]; c[i] = { ...c[i], value: e.target.value }; set('benefitCards', c); }}

@@ -3,6 +3,7 @@ import { useQuery } from 'convex/react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
+import { convexFileUrl } from '../../../lib/convex';
 
 // ============================================
 // BLOG PAGE - المدونة
@@ -156,8 +157,15 @@ const ImpactStories = () => {
             {sc.featured_badge}
           </div>
           <div style={{ background: 'white', borderRadius: 20, overflow: 'hidden', boxShadow: '0 10px 15px rgba(0,0,0,.10)', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
-            {/* Gradient side */}
-            <div style={{ background: featuredStory.gradient || 'linear-gradient(160deg,#052E2F,#0d7477)', minHeight: isMobile ? 220 : 360, position: 'relative', display: 'flex', alignItems: 'flex-end', padding: 32 }}>
+            {/* Image / Gradient side */}
+            <div style={{ background: featuredStory.gradient || 'linear-gradient(160deg,#052E2F,#0d7477)', minHeight: isMobile ? 220 : 360, position: 'relative', display: 'flex', alignItems: 'flex-end', padding: 32, overflow: 'hidden' }}>
+              {convexFileUrl(featuredStory.coverImage) && (
+                <img
+                  src={convexFileUrl(featuredStory.coverImage)}
+                  alt=""
+                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              )}
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,.6),transparent)' }} />
               <span style={{ position: 'relative', zIndex: 1, display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,.15)', backdropFilter: 'blur(8px)', color: 'white', padding: '6px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600 }}>
                 {featuredStory.badgeIcon} {featuredStory.badgeText}
@@ -223,7 +231,14 @@ const ImpactStories = () => {
               }}
             >
               {/* Image */}
-              <div style={{ height: isMobile ? 140 : 180, background: story.gradient, position: 'relative' }}>
+              <div style={{ height: isMobile ? 140 : 180, background: story.gradient || 'linear-gradient(135deg,#052E2F,#0d7477)', position: 'relative', overflow: 'hidden' }}>
+                {convexFileUrl(story.coverImage) && (
+                  <img
+                    src={convexFileUrl(story.coverImage)}
+                    alt=""
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                )}
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,.5),transparent)' }} />
                 <div style={{ position: 'absolute', bottom: 12, right: 12, zIndex: 1 }}>
                   <span style={{ background: story.badgeBg, color: story.badgeColor, fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 100 }}>
