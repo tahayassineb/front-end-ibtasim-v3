@@ -79,12 +79,20 @@ const BENEFIT_EMOJIS = ['🏠','🏫','💧','🍽️','❤️','👨‍👩‍�
 
 const EmojiPickerBtn = ({ value, onChange }) => {
   const [open, setOpen] = React.useState(false);
+  const [pos, setPos] = React.useState({ top: 0, right: 0 });
   const ref = React.useRef(null);
   React.useEffect(() => {
-    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const close = (e) => { if (e.target.closest?.('.benefit-emoji-picker')) return; if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
     document.addEventListener('mousedown', close);
     return () => document.removeEventListener('mousedown', close);
   }, []);
+  const toggleOpen = () => {
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 6, right: window.innerWidth - rect.right });
+    }
+    setOpen(o => !o);
+  };
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <div style={{ display: 'flex', border: `1.5px solid ${open ? PRIMARY : BORDER}`, borderRadius: 12, overflow: 'hidden', height: 48, background: 'white' }}>
@@ -95,13 +103,13 @@ const EmojiPickerBtn = ({ value, onChange }) => {
           placeholder="😊"
           style={{ flex: 1, border: 'none', outline: 'none', fontSize: 22, textAlign: 'center', padding: '0 4px', fontFamily: 'sans-serif', background: 'transparent', minWidth: 0 }}
         />
-        <button type="button" onClick={() => setOpen(o => !o)}
+        <button type="button" onClick={toggleOpen}
           style={{ width: 28, background: '#F0F7F7', border: 'none', cursor: 'pointer', fontSize: 11, color: TEXTM, borderRight: `1px solid ${BORDER}`, flexShrink: 0 }}>
           ▾
         </button>
       </div>
       {open && (
-        <div style={{ position: 'absolute', top: 54, right: 0, zIndex: 100, background: 'white', border: `1.5px solid ${BORDER}`, borderRadius: 14, padding: 10, boxShadow: '0 8px 24px rgba(0,0,0,.12)', width: 230, display: 'grid', gridTemplateColumns: 'repeat(8,1fr)', gap: 4 }}>
+        <div className="benefit-emoji-picker" style={{ position: 'fixed', top: pos.top, right: pos.right, zIndex: 1000, background: 'white', border: `1.5px solid ${BORDER}`, borderRadius: 14, padding: 10, boxShadow: '0 8px 24px rgba(0,0,0,.12)', width: 230, display: 'grid', gridTemplateColumns: 'repeat(8,1fr)', gap: 4 }}>
           {BENEFIT_EMOJIS.map(e => (
             <button key={e} type="button" onClick={() => { onChange(e); setOpen(false); }}
               style={{ width: 26, height: 26, border: 'none', borderRadius: 6, background: value === e ? '#E6F4F4' : 'transparent', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -231,7 +239,7 @@ export default function AdminProjectForm() {
 
   const removeGalleryImage = async (index) => {
     const storageId = formData.galleryStorageIds?.[index];
-    if (storageId) { try { await deleteImageMutation({ storageId }); } catch {} }
+    if (storageId) { try { await deleteImageMutation({ storageId }); } catch { /* ignore missing/deleted storage */ } }
     setFormData(prev => ({
       ...prev,
       gallery: prev.gallery.filter((_, i) => i !== index),

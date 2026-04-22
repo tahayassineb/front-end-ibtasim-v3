@@ -54,6 +54,7 @@ import AdminDonations from './pages/features/admin/donations/AdminDonations';
 import AdminVerifications from './pages/features/admin/donations/AdminVerifications';
 import AdminDonors from './pages/features/admin/donors/AdminDonors';
 import AdminDonorDetail from './pages/features/admin/donors/AdminDonorDetail';
+import AdminContacts from './pages/features/admin/contacts/AdminContacts';
 import AdminSettings from './pages/features/admin/settings/AdminSettings';
 import AdminRegister from './pages/features/admin/AdminRegister';
 import AdminErrorLogs from './pages/features/admin/AdminErrorLogs';
@@ -195,6 +196,8 @@ function AppContent() {
           <Route path="/contact" element={<ErrorBoundary><MainLayout><Contact /></MainLayout></ErrorBoundary>} />
 
           {/* Impact Stories */}
+          <Route path="/stories" element={<ErrorBoundary><MainLayout><ImpactStories /></MainLayout></ErrorBoundary>} />
+          <Route path="/stories/:id" element={<ErrorBoundary><MainLayout><StoryDetail /></MainLayout></ErrorBoundary>} />
           <Route path="/impact" element={<ErrorBoundary><MainLayout><ImpactStories /></MainLayout></ErrorBoundary>} />
           <Route path="/impact/:id" element={<ErrorBoundary><MainLayout><StoryDetail /></MainLayout></ErrorBoundary>} />
 
@@ -251,6 +254,7 @@ function AppContent() {
             {/* Donors / CRM */}
             <Route path="/admin/donors" element={<AdminDonors />} />
             <Route path="/admin/donors/:id" element={<AdminDonorDetail />} />
+            <Route path="/admin/contacts" element={<AdminContacts />} />
             
             {/* Verification */}
             <Route path="/admin/verification" element={<AdminVerifications />} />

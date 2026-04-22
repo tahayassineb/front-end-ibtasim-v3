@@ -1,214 +1,151 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useQuery, useMutation } from 'convex/react';
+import React, { useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../../../convex/_generated/api';
 import { useApp } from '../../../../context/AppContext';
 import { convexFileUrl } from '../../../../lib/convex';
+import { formatMAD } from '../../../../lib/money';
 import KafalaAvatar from '../../../../components/kafala/KafalaAvatar';
 
-// ─── Kafala design tokens ─────────────────────────────────────────────────────
-const K    = '#C4A882';
-const KDARK = '#8B6914';
-const KBG   = '#F5EBD9';
-const K100  = '#E8D4B0';
 const BORDER = '#E5E9EB';
-const TEXT2  = '#64748b';
-const TEXTM  = '#94a3b8';
+const K = '#8B6914';
+const TEXT = '#0e1a1b';
+const MUTED = '#64748b';
 const SHADOW = '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)';
 
-const STATUS_CFG = {
-  draft:     { label: '○ مسودة',  bg: '#F0F7F7',  color: TEXTM },
-  active:    { label: '⏳ متاح',  bg: KBG,        color: KDARK },
-  sponsored: { label: '✓ مكفول', bg: '#D1FAE5',  color: '#16a34a' },
-  inactive:  { label: '✗ غير نشط', bg: '#FEE2E2', color: '#dc2626' },
+const statusMeta = {
+  draft: { label: 'مسودة', color: MUTED, bg: '#F0F7F7' },
+  active: { label: 'متاح', color: K, bg: '#F5EBD9' },
+  sponsored: { label: 'مكفول', color: '#16a34a', bg: '#D1FAE5' },
+  inactive: { label: 'غير نشط', color: '#dc2626', bg: '#FEE2E2' },
 };
 
 export default function AdminKafala() {
   const navigate = useNavigate();
-  const { showToast } = useApp();
-
-  const [statusFilter, setStatusFilter] = useState('all');
+  const { showToast, currentLanguage } = useApp();
+  const lang = currentLanguage?.code || 'ar';
+  const [status, setStatus] = useState('all');
   const [search, setSearch] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [resetConfirm, setResetConfirm] = useState(null);
 
-  // ── Convex ────────────────────────────────────────────────────────────────
-  const kafalaList    = useQuery(api.kafala.getKafalaList, {});
-  const deleteMutation  = useMutation(api.kafala.deleteKafala);
-  const publishMutation = useMutation(api.kafala.publishKafala);
-  const resetMutation   = useMutation(api.kafala.resetKafala);
+  const kafalaList = useQuery(api.kafala.getKafalaList, { limit: 200 });
+  const stats = useQuery(api.admin.getDashboardStats, {});
+  const deleteKafala = useMutation(api.kafala.deleteKafala);
+  const publishKafala = useMutation(api.kafala.publishKafala);
+  const resetKafala = useMutation(api.kafala.resetKafala);
+  const updateKafala = useMutation(api.kafala.updateKafala);
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
-  const handleDelete = async (kafalaId) => {
-    try {
-      await deleteMutation({ kafalaId });
-      showToast?.('تم حذف الكفالة', 'success');
-    } catch (e) { showToast?.(e?.message || 'حدث خطأ', 'error'); }
-    setDeleteConfirm(null);
-  };
-
-  const handlePublish = async (kafalaId) => {
-    try {
-      await publishMutation({ kafalaId });
-      showToast?.('تم نشر الكفالة', 'success');
-    } catch (e) { showToast?.(e?.message || 'حدث خطأ', 'error'); }
-  };
-
-  const handleReset = async (kafalaId) => {
-    try {
-      await resetMutation({ kafalaId });
-      showToast?.('تم إعادة فتح كفالة اليتيم', 'success');
-    } catch (e) { showToast?.(e?.message || 'حدث خطأ', 'error'); }
-    setResetConfirm(null);
-  };
-
-  // ── Derived ───────────────────────────────────────────────────────────────
-  const list = kafalaList || [];
-  const sponsored = list.filter(k => k.status === 'sponsored');
-  const available  = list.filter(k => k.status === 'active');
-  const monthlyRevenue = sponsored.reduce((s, k) => s + (k.monthlyPrice || 0), 0) / 100;
-
-  const filtered = list.filter(k => {
-    if (statusFilter !== 'all' && k.status !== statusFilter) return false;
-    if (search && !k.name?.toLowerCase().includes(search.toLowerCase())) return false;
+  const list = useMemo(() => kafalaList || [], [kafalaList]);
+  const filtered = useMemo(() => list.filter((item) => {
+    if (status !== 'all' && item.status !== status) return false;
+    if (search && !item.name?.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
-  });
+  }), [list, search, status]);
+
+  const sponsored = list.filter((item) => item.status === 'sponsored');
+  const available = list.filter((item) => item.status === 'active');
+
+  const handleDelete = async (id) => {
+    if (deleteConfirm !== id) {
+      setDeleteConfirm(id);
+      setTimeout(() => setDeleteConfirm(null), 3000);
+      return;
+    }
+    try {
+      await deleteKafala({ kafalaId: id });
+      setDeleteConfirm(null);
+      showToast?.('تم حذف الكفالة', 'success');
+    } catch (error) {
+      showToast?.(error?.message || 'فشل الحذف', 'error');
+    }
+  };
+
+  const handlePublish = async (id) => {
+    try {
+      await publishKafala({ kafalaId: id });
+      showToast?.('تم نشر الكفالة', 'success');
+    } catch (error) {
+      showToast?.(error?.message || 'فشل النشر', 'error');
+    }
+  };
+
+  const handleReset = async (id) => {
+    try {
+      await resetKafala({ kafalaId: id });
+      setResetConfirm(null);
+      showToast?.('تمت إعادة فتح الكفالة', 'success');
+    } catch (error) {
+      showToast?.(error?.message || 'فشل إعادة الفتح', 'error');
+    }
+  };
+
+  const toggleFeatured = async (item) => {
+    try {
+      await updateKafala({ kafalaId: item._id, isFeatured: !item.isFeatured });
+      showToast?.(!item.isFeatured ? 'تم إظهار الكفالة في الرئيسية' : 'تم إخفاء الكفالة من الرئيسية', 'success');
+    } catch (error) {
+      showToast?.(error?.message || 'فشل التحديث', 'error');
+    }
+  };
+
+  if (kafalaList === undefined || stats === undefined) {
+    return <div style={{ padding: 60, textAlign: 'center', color: '#94a3b8', fontFamily: 'Tajawal, sans-serif' }}>جاري تحميل الكفالات...</div>;
+  }
 
   return (
-    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: 24 }} dir="rtl">
-
-      {/* ── KPIs ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 20 }}>
+    <div style={{ fontFamily: 'Tajawal, sans-serif', color: TEXT, padding: 24 }} dir="rtl">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 14, marginBottom: 20 }}>
         {[
-          { num: list.length, label: 'إجمالي الأيتام', color: KDARK },
-          { num: sponsored.length, label: 'مكفولون حالياً', color: '#16a34a' },
-          { num: available.length, label: 'ينتظرون كافلاً', color: KDARK },
-          { num: monthlyRevenue.toLocaleString('fr-MA'), label: 'درهم/شهر محصّل', color: KDARK },
-        ].map(({ num, label, color }) => (
-          <div key={label} style={{ background: 'white', borderRadius: 14, border: `1px solid ${BORDER}`, boxShadow: SHADOW, padding: 16 }}>
-            <div style={{ fontSize: 24, fontWeight: 900, fontFamily: 'Inter, sans-serif', color }}>{num}</div>
-            <div style={{ fontSize: 12, color: TEXT2, marginTop: 4 }}>{label}</div>
+          { value: list.length, label: 'إجمالي الكفالات', color: K },
+          { value: sponsored.length, label: 'كفالات نشطة', color: '#16a34a' },
+          { value: available.length, label: 'بدون كافل', color: K },
+          { value: formatMAD(stats.kafalaStats?.collected || 0, lang), label: 'محصل من الكفالة', color: K },
+          { value: stats.kafalaStats?.pendingVerifications || 0, label: 'تحتاج التحقق', color: '#f59e0b' },
+        ].map((card) => (
+          <div key={card.label} style={{ background: 'white', borderRadius: 16, border: `1px solid ${BORDER}`, boxShadow: SHADOW, padding: 18 }}>
+            <div style={{ fontSize: 25, fontWeight: 900, fontFamily: 'Inter, sans-serif', color: card.color }}>{card.value}</div>
+            <div style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>{card.label}</div>
           </div>
         ))}
       </div>
 
-      {/* ── Filter bar ── */}
-      <div style={{ background: 'white', borderRadius: 14, border: `1px solid ${BORDER}`, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="ابحث عن يتيم..."
-          style={{ flex: 1, minWidth: 200, height: 38, padding: '0 16px', border: `1.5px solid ${BORDER}`, borderRadius: 10, fontSize: 14, fontFamily: 'Tajawal, sans-serif', outline: 'none' }}
-          onFocus={e => e.target.style.borderColor = KDARK}
-          onBlur={e => e.target.style.borderColor = BORDER}
-        />
-        {[
-          ['all', `الكل (${list.length})`],
-          ['sponsored', `✓ مكفول (${sponsored.length})`],
-          ['active', `⏳ متاح (${available.length})`],
-          ['draft', 'مسودة'],
-        ].map(([val, label]) => (
-          <button key={val} onClick={() => setStatusFilter(val)}
-            style={{ height: 34, padding: '0 14px', borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: `1.5px solid ${statusFilter === val ? KDARK : BORDER}`, background: statusFilter === val ? KDARK : 'white', color: statusFilter === val ? 'white' : TEXT2, fontFamily: 'Tajawal, sans-serif' }}>
-            {label}
+      <div style={{ background: 'white', borderRadius: 16, border: `1px solid ${BORDER}`, boxShadow: SHADOW, padding: 14, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 20 }}>
+        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ابحث عن يتيم..." style={{ flex: 1, minWidth: 220, height: 38, border: `1.5px solid ${BORDER}`, borderRadius: 10, padding: '0 14px', fontFamily: 'Tajawal, sans-serif' }} />
+        {['all', 'active', 'sponsored', 'draft'].map((key) => (
+          <button key={key} type="button" onClick={() => setStatus(key)} style={{ height: 34, padding: '0 14px', borderRadius: 99, border: `1.5px solid ${status === key ? K : BORDER}`, background: status === key ? K : 'white', color: status === key ? 'white' : MUTED, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', fontWeight: 800 }}>
+            {key === 'all' ? 'الكل' : statusMeta[key]?.label}
           </button>
         ))}
-        <Link to="/admin/kafala/new"
-          style={{ height: 38, padding: '0 18px', background: KDARK, color: 'white', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', textDecoration: 'none', display: 'flex', alignItems: 'center', marginRight: 'auto' }}>
-          + إضافة يتيم
-        </Link>
+        <Link to="/admin/kafala/new" style={{ height: 38, padding: '0 18px', borderRadius: 10, background: K, color: 'white', display: 'flex', alignItems: 'center', textDecoration: 'none', fontWeight: 800 }}>+ إضافة يتيم</Link>
       </div>
 
-      {/* ── Loading / Empty ── */}
-      {kafalaList === undefined && (
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: TEXTM }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🤲</div>
-          <p>جاري التحميل...</p>
-        </div>
-      )}
-
-      {kafalaList !== undefined && filtered.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: TEXTM }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🤲</div>
-          <p>لا توجد كفالات تطابق البحث</p>
-        </div>
-      )}
-
-      {/* ── Cards grid ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
-        {filtered.map(kafala => {
-          const photoUrl = kafala.photo ? (convexFileUrl(kafala.photo) || kafala.photo) : null;
-          const isSponsored = kafala.status === 'sponsored';
-          const priceMAD = (kafala.monthlyPrice || 0) / 100;
-          const st = STATUS_CFG[kafala.status] || STATUS_CFG.active;
-          const nextRenewal = kafala.sponsorship?.nextRenewalDate
-            ? new Date(kafala.sponsorship.nextRenewalDate).toLocaleDateString('fr-MA')
-            : null;
-
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(250px,1fr))', gap: 16 }}>
+        {filtered.map((item) => {
+          const photoUrl = item.photo ? (convexFileUrl(item.photo) || item.photo) : null;
+          const st = statusMeta[item.status] || statusMeta.active;
           return (
-            <div key={kafala._id}
-              style={{ background: 'white', borderRadius: 16, border: `1.5px solid ${isSponsored ? '#BBF7D0' : K100}`, boxShadow: SHADOW, overflow: 'hidden', cursor: 'default', transition: 'box-shadow .15s' }}
-              onMouseEnter={e => e.currentTarget.style.boxShadow = '0 8px 24px rgba(196,168,130,.25)'}
-              onMouseLeave={e => e.currentTarget.style.boxShadow = SHADOW}
-            >
-              {/* Avatar header */}
-              <div style={{ height: 100, background: isSponsored ? 'linear-gradient(135deg,#166534,#16a34a)' : 'linear-gradient(135deg,#3D2506,#8B6914)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, position: 'relative' }}>
-                {photoUrl ? (
-                  <img src={photoUrl} alt={kafala.name} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
-                ) : (
-                  <KafalaAvatar gender={kafala.gender} photo={kafala.photo} photoUrl={null} size={56} />
-                )}
-                <span style={{ position: 'absolute', top: 8, right: 8, padding: '3px 8px', borderRadius: 100, fontSize: 10, fontWeight: 700, background: st.bg, color: st.color }}>
-                  {st.label.replace(/[○✓⏳✗] /, '')}
-                </span>
+            <div key={item._id} style={{ background: 'white', borderRadius: 16, border: `1px solid ${BORDER}`, boxShadow: SHADOW, overflow: 'hidden' }}>
+              <div style={{ height: 150, position: 'relative', background: 'linear-gradient(135deg,#3D2506,#8B6914)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {photoUrl ? <img src={photoUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <KafalaAvatar gender={item.gender} size={70} />}
+                <span style={{ position: 'absolute', top: 10, right: 10, borderRadius: 99, padding: '4px 10px', background: st.bg, color: st.color, fontSize: 11, fontWeight: 900 }}>{st.label}</span>
+                <button type="button" onClick={() => toggleFeatured(item)} style={{ position: 'absolute', top: 10, left: 10, height: 30, borderRadius: 99, border: 'none', padding: '0 10px', background: item.isFeatured ? '#FEF3C7' : 'rgba(255,255,255,.92)', color: item.isFeatured ? '#92400e' : MUTED, cursor: 'pointer', fontWeight: 900 }}>
+                  {item.isFeatured ? '★ الرئيسية' : '☆ الرئيسية'}
+                </button>
               </div>
-
-              {/* Card body */}
-              <div style={{ padding: 14 }}>
-                <div style={{ fontSize: 15, fontWeight: 800, color: KDARK, marginBottom: 4 }}>{kafala.name}</div>
-                <div style={{ fontSize: 12, color: TEXT2 }}>
-                  {kafala.age && <span>🎂 {kafala.age} سنة</span>}
-                  {kafala.age && kafala.location && ' · '}
-                  {kafala.location && <span>📍 {kafala.location}</span>}
-                </div>
-                <div style={{ marginTop: 8 }}>
-                  <span style={{ fontSize: 16, fontWeight: 800, color: KDARK, fontFamily: 'Inter, sans-serif' }}>{priceMAD}</span>
-                  <span style={{ fontSize: 11, color: TEXTM }}> درهم/شهر</span>
-                </div>
-
-                {/* Sponsor info */}
-                {isSponsored && kafala.sponsorship && (
-                  <div style={{ fontSize: 12, color: TEXT2, marginTop: 6, paddingTop: 8, borderTop: `1px solid ${K100}` }}>
-                    🤲 {kafala.sponsorship.sponsorName || 'كافل'} {nextRenewal && `· تجديد ${nextRenewal}`}
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
-                  <button onClick={() => navigate(`/admin/kafala/${kafala._id}/edit`)}
-                    style={{ flex: 1, height: 32, borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', border: 'none', background: KBG, color: KDARK }}>
-                    ✏️ تعديل
-                  </button>
-                  <button onClick={() => navigate(`/admin/kafala/${kafala._id}`)}
-                    style={{ flex: 1, height: 32, borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', border: 'none', background: '#E6F4F4', color: '#0A5F62' }}>
-                    👁 عرض
-                  </button>
-                  {kafala.status === 'draft' && (
-                    <button onClick={() => handlePublish(kafala._id)}
-                      style={{ flex: 1, height: 32, borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', border: 'none', background: '#D1FAE5', color: '#16a34a' }}>
-                      ▶ نشر
-                    </button>
+              <div style={{ padding: 16 }}>
+                <h3 style={{ margin: '0 0 6px', fontSize: 17, fontWeight: 900, color: K }}>{item.name}</h3>
+                <div style={{ color: MUTED, fontSize: 12, marginBottom: 8 }}>{item.age} سنة · {item.location}</div>
+                <div style={{ fontSize: 16, fontWeight: 900, color: K, marginBottom: 14 }}>{formatMAD(item.monthlyPrice || 0, lang)} / شهر</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <button type="button" onClick={() => navigate(`/admin/kafala/${item._id}/edit`)} style={{ height: 34, border: 'none', borderRadius: 9, background: '#F5EBD9', color: K, fontWeight: 800, cursor: 'pointer' }}>تعديل</button>
+                  {item.status === 'draft' ? (
+                    <button type="button" onClick={() => handlePublish(item._id)} style={{ height: 34, border: 'none', borderRadius: 9, background: '#D1FAE5', color: '#16a34a', fontWeight: 800, cursor: 'pointer' }}>نشر</button>
+                  ) : item.status === 'sponsored' ? (
+                    <button type="button" onClick={() => setResetConfirm(item._id)} style={{ height: 34, border: 'none', borderRadius: 9, background: '#FEF3C7', color: '#92400e', fontWeight: 800, cursor: 'pointer' }}>إعادة فتح</button>
+                  ) : (
+                    <button type="button" onClick={() => handleDelete(item._id)} style={{ height: 34, border: 'none', borderRadius: 9, background: deleteConfirm === item._id ? '#dc2626' : '#FEE2E2', color: deleteConfirm === item._id ? 'white' : '#dc2626', fontWeight: 800, cursor: 'pointer' }}>{deleteConfirm === item._id ? 'تأكيد' : 'حذف'}</button>
                   )}
-                  {kafala.status === 'sponsored' && (
-                    <button onClick={() => setResetConfirm(kafala._id)}
-                      style={{ height: 32, width: 32, borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', border: 'none', background: '#FFFBEB', color: '#92400e' }}>
-                      🔓
-                    </button>
-                  )}
-                  <button onClick={() => setDeleteConfirm(kafala._id)}
-                    style={{ height: 32, width: 32, borderRadius: 8, fontSize: 12, cursor: 'pointer', border: 'none', background: '#FEE2E2', color: '#dc2626' }}>
-                    🗑
-                  </button>
                 </div>
               </div>
             </div>
@@ -216,43 +153,14 @@ export default function AdminKafala() {
         })}
       </div>
 
-      {/* ── Delete confirm modal ── */}
-      {deleteConfirm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: 'white', borderRadius: 20, padding: 24, maxWidth: 380, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,.2)', fontFamily: 'Tajawal, sans-serif' }} dir="rtl">
-            <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
-            <h3 style={{ fontWeight: 700, marginBottom: 8 }}>تأكيد الحذف</h3>
-            <p style={{ fontSize: 14, color: TEXT2, marginBottom: 20 }}>سيتم حذف الكفالة وجميع بياناتها نهائياً. هل أنت متأكد؟</p>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button onClick={() => setDeleteConfirm(null)}
-                style={{ flex: 1, height: 44, borderRadius: 12, border: `1.5px solid ${BORDER}`, background: 'white', fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', color: TEXT2 }}>
-                إلغاء
-              </button>
-              <button onClick={() => handleDelete(deleteConfirm)}
-                style={{ flex: 1, height: 44, borderRadius: 12, background: '#ef4444', color: 'white', border: 'none', fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
-                حذف نهائياً
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Reset confirm modal ── */}
       {resetConfirm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: 'white', borderRadius: 20, padding: 24, maxWidth: 380, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,.2)', fontFamily: 'Tajawal, sans-serif' }} dir="rtl">
-            <div style={{ fontSize: 40, marginBottom: 12 }}>🔓</div>
-            <h3 style={{ fontWeight: 700, marginBottom: 8 }}>إعادة فتح الكفالة</h3>
-            <p style={{ fontSize: 14, color: TEXT2, marginBottom: 20 }}>سيتم إنهاء الاشتراك الحالي وإعادة فتح الكفالة للتبرع. هل تريد المتابعة؟</p>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button onClick={() => setResetConfirm(null)}
-                style={{ flex: 1, height: 44, borderRadius: 12, border: `1.5px solid ${BORDER}`, background: 'white', fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', color: TEXT2 }}>
-                إلغاء
-              </button>
-              <button onClick={() => handleReset(resetConfirm)}
-                style={{ flex: 1, height: 44, borderRadius: 12, background: '#f59e0b', color: 'white', border: 'none', fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
-                تأكيد
-              </button>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: 'white', borderRadius: 18, padding: 24, width: '100%', maxWidth: 380 }}>
+            <h3 style={{ marginTop: 0 }}>إعادة فتح الكفالة؟</h3>
+            <p style={{ color: MUTED, lineHeight: 1.7 }}>سيتم إنهاء الاشتراك الحالي وإعادة فتح الكفالة لكافل جديد.</p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button type="button" onClick={() => setResetConfirm(null)} style={{ flex: 1, height: 40, borderRadius: 10, border: `1px solid ${BORDER}`, background: 'white', cursor: 'pointer' }}>إلغاء</button>
+              <button type="button" onClick={() => handleReset(resetConfirm)} style={{ flex: 1, height: 40, borderRadius: 10, border: 'none', background: '#f59e0b', color: 'white', cursor: 'pointer', fontWeight: 800 }}>تأكيد</button>
             </div>
           </div>
         </div>

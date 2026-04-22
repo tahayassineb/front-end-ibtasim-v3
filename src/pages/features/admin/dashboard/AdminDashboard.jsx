@@ -1,521 +1,235 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from 'convex/react';
+import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useQuery } from 'convex/react';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api } from '../../../../../convex/_generated/api';
 import { useApp } from '../../../../context/AppContext';
 import { convexFileUrl } from '../../../../lib/convex';
+import { formatMAD } from '../../../../lib/money';
 
-const useIsMobile = () => {
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  useEffect(() => {
-    const h = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', h);
-    return () => window.removeEventListener('resize', h);
-  }, []);
-  return isMobile;
+const BORDER = '#E5E9EB';
+const PRIMARY = '#0d7477';
+const TEXT = '#0e1a1b';
+const MUTED = '#64748b';
+const SHADOW = '0 2px 4px rgba(0,0,0,.03), 0 4px 6px rgba(0,0,0,.05)';
+
+const startOfLocalDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+const endOfLocalDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999).getTime();
+
+const presets = [
+  { id: 'today', label: 'اليوم' },
+  { id: 'yesterday', label: 'أمس' },
+  { id: '7', label: 'آخر 7 أيام' },
+  { id: '30', label: 'آخر 30 يوم' },
+  { id: 'lifetime', label: 'مدى الحياة' },
+  { id: 'custom', label: 'فترة مخصصة' },
+];
+
+const getPresetRange = (preset, customStart, customEnd) => {
+  const now = new Date();
+  if (preset === 'lifetime') return {};
+  if (preset === 'today') return { startDate: startOfLocalDay(now), endDate: endOfLocalDay(now) };
+  if (preset === 'yesterday') {
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    return { startDate: startOfLocalDay(yesterday), endDate: endOfLocalDay(yesterday) };
+  }
+  if (preset === '7' || preset === '30') {
+    const start = new Date(now);
+    start.setDate(now.getDate() - Number(preset) + 1);
+    return { startDate: startOfLocalDay(start), endDate: endOfLocalDay(now) };
+  }
+  if (preset === 'custom') {
+    const range = {};
+    if (customStart) range.startDate = startOfLocalDay(new Date(customStart));
+    if (customEnd) range.endDate = endOfLocalDay(new Date(customEnd));
+    return range;
+  }
+  return {};
 };
 
-// ============================================
-// ADMIN DASHBOARD PAGE - Connected to Convex
-// ============================================
+const StatCard = ({ icon, label, value, hint, tone = PRIMARY }) => (
+  <div style={{ background: 'white', borderRadius: 16, border: `1px solid ${BORDER}`, boxShadow: SHADOW, padding: 18 }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+      <div style={{ width: 40, height: 40, borderRadius: 12, background: `${tone}18`, color: tone, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{icon}</div>
+      {hint && <div style={{ fontSize: 11, color: MUTED, fontWeight: 700 }}>{hint}</div>}
+    </div>
+    <div style={{ fontSize: 26, fontWeight: 900, fontFamily: 'Inter, sans-serif', color: TEXT }}>{value}</div>
+    <div style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>{label}</div>
+  </div>
+);
+
+const ChartPanel = ({ title, data, color, type = 'area' }) => {
+  const chartData = (data || []).map((row) => ({
+    ...row,
+    amountMAD: Math.round((row.amount || 0) / 100),
+  }));
+
+  return (
+    <div style={{ background: 'white', borderRadius: 16, border: `1px solid ${BORDER}`, boxShadow: SHADOW, padding: 20, minHeight: 320 }}>
+      <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 18 }}>{title}</div>
+      {chartData.length === 0 ? (
+        <div style={{ height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 13 }}>
+          لا توجد بيانات في هذه الفترة
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={240}>
+          {type === 'bar' ? (
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#edf2f7" />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip formatter={(value) => [`${value.toLocaleString('fr-MA')} درهم`, 'المبلغ']} />
+              <Bar dataKey="amountMAD" fill={color} radius={[8, 8, 0, 0]} />
+            </BarChart>
+          ) : (
+            <AreaChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#edf2f7" />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip formatter={(value) => [`${value.toLocaleString('fr-MA')} درهم`, 'المبلغ']} />
+              <Area type="monotone" dataKey="amountMAD" stroke={color} fill={color} fillOpacity={0.18} strokeWidth={2.5} />
+            </AreaChart>
+          )}
+        </ResponsiveContainer>
+      )}
+    </div>
+  );
+};
 
 export default function AdminDashboard() {
-  const { currentLanguage, showToast } = useApp();
-  const navigate = useNavigate();
-  const isMobile = useIsMobile();
+  const { currentLanguage } = useApp();
+  const lang = currentLanguage?.code || 'ar';
+  const [preset, setPreset] = useState('30');
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
 
-  const stats = useQuery(api.admin.getDashboardStats);
-  const pendingVerifications = useQuery(api.admin.getVerifications, {
-    status: 'awaiting_verification',
-    limit: 5,
-  });
-  const featuredProjectsData = useQuery(api.projects.getFeaturedProjects, { limit: 6 });
-
-  const [featuredProjects, setFeaturedProjects] = useState([]);
-  const [hasOrderChanged, setHasOrderChanged] = useState(false);
-  const [isSavingOrder, setIsSavingOrder] = useState(false);
-  const [draggedIndex, setDraggedIndex] = useState(null);
-  const [chartTab, setChartTab] = useState('30');
-  const [hoveredPoint, setHoveredPoint] = useState(null);
-  const [hoveredPointKafala, setHoveredPointKafala] = useState(null);
-
-  React.useEffect(() => {
-    if (featuredProjectsData) setFeaturedProjects(featuredProjectsData);
-  }, [featuredProjectsData]);
-
-  const updateFeaturedOrder = useMutation(api.projects.updateFeaturedOrder);
-
-  const handleSaveOrder = useCallback(async () => {
-    if (!hasOrderChanged) return;
-    setIsSavingOrder(true);
-    try {
-      const projectsWithOrder = featuredProjects.map((p, i) => ({ projectId: p._id, order: i + 1 }));
-      await updateFeaturedOrder({ projects: projectsWithOrder });
-      showToast('تم حفظ الترتيب', 'success');
-      setHasOrderChanged(false);
-    } catch {
-      showToast('فشل حفظ الترتيب', 'error');
-    } finally {
-      setIsSavingOrder(false);
-    }
-  }, [featuredProjects, hasOrderChanged, updateFeaturedOrder, showToast]);
+  const range = useMemo(() => getPresetRange(preset, customStart, customEnd), [preset, customStart, customEnd]);
+  const stats = useQuery(api.admin.getDashboardStats, range);
+  const pendingVerifications = useQuery(api.admin.getVerifications, { status: 'awaiting_verification', limit: 5 });
+  const featuredProjectsData = useQuery(api.projects.getFeaturedProjects, { limit: 4 });
 
   if (stats === undefined || pendingVerifications === undefined || featuredProjectsData === undefined) {
     return (
-      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Tajawal, sans-serif' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 36, marginBottom: 12 }}>📊</div>
-          <p style={{ color: '#94a3b8' }}>جاري تحميل البيانات...</p>
-        </div>
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Tajawal, sans-serif', color: '#94a3b8' }}>
+        جاري تحميل البيانات...
       </div>
     );
   }
 
-  const handleDragStart = (index) => setDraggedIndex(index);
-  const handleDragOver = (e, index) => {
-    e.preventDefault();
-    if (draggedIndex === null || draggedIndex === index) return;
-    const newProjects = [...featuredProjects];
-    const dragged = newProjects[draggedIndex];
-    newProjects.splice(draggedIndex, 1);
-    newProjects.splice(index, 0, dragged);
-    setFeaturedProjects(newProjects);
-    setDraggedIndex(index);
-    setHasOrderChanged(true);
+  const projectStats = stats.projectStats || {};
+  const kafalaStats = stats.kafalaStats || {};
+  const contactStats = stats.contactStats || {};
+  const pendingTotal = (projectStats.pendingVerifications || 0) + (kafalaStats.pendingVerifications || 0);
+
+  const getText = (value) => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    return value[lang] || value.ar || value.fr || value.en || '';
   };
-  const handleDragEnd = () => setDraggedIndex(null);
-
-  const getLocalizedText = (obj) => {
-    if (!obj) return '';
-    if (typeof obj === 'string') return obj;
-    return obj?.[currentLanguage?.code] || obj?.ar || obj?.en || '';
-  };
-
-  const totalCollected = stats?.totalDonations
-    ? (stats.totalDonations / 100).toLocaleString('fr-MA')
-    : '0';
-
-  const kpiCards = [
-    { icon: '💰', bg: '#E6F4F4', num: totalCollected, label: 'درهم محصّل إجمالي', trend: 'إجمالي التبرعات', trendColor: '#0A5F62' },
-    { icon: '🎯', bg: '#F0FDF4', num: (stats?.donationCount || 0).toLocaleString(), label: 'عدد التبرعات', trend: 'مؤكدة فقط', trendColor: '#64748b' },
-    { icon: '🤲', bg: '#FFFBEB', num: stats?.activeKafala || 0, label: 'كفالة نشطة', trend: 'كفالات مفعّلة', trendColor: '#64748b' },
-    { icon: '⏳', bg: '#FEF3C7', num: (stats?.pendingVerifications || 0) + (stats?.pendingKafalaVerifications || 0), label: 'تبرعات + كفالات', trend: ((stats?.pendingVerifications || 0) + (stats?.pendingKafalaVerifications || 0)) > 0 ? 'تحتاج مراجعة' : 'لا شيء في الانتظار', trendColor: ((stats?.pendingVerifications || 0) + (stats?.pendingKafalaVerifications || 0)) > 0 ? '#f59e0b' : '#22c55e' },
-  ];
-
-  const donationData = stats?.monthlyDonations || [];
-  const hasChartData = donationData.length >= 2;
-
-  // Chart geometry — computed once from real data
-  const CHART_W = 600, CHART_H = 200, PAD_T = 20, PAD_B = 10;
-  const maxAmt = hasChartData ? Math.max(...donationData.map(d => d.amount), 1) : 1;
-
-  // Kafala chart data
-  const kafalaData = stats?.monthlyKafala || [];
-  const hasKafalaChartData = kafalaData.length >= 2;
-  const maxKafala = hasKafalaChartData ? Math.max(...kafalaData.map(d => d.amount), 1) : 1;
-  const kafalaCoords = hasKafalaChartData
-    ? kafalaData.map((d, i) => ({
-        x: (i / (kafalaData.length - 1)) * CHART_W,
-        y: PAD_T + (1 - d.amount / maxKafala) * (CHART_H - PAD_T - PAD_B),
-        amount: d.amount,
-        label: d.label || d.month || `${i + 1}`,
-      }))
-    : [];
-  const kafalaPolyline = kafalaCoords.map(p => `${p.x},${p.y}`).join(' ');
-  const kafalaArea = kafalaCoords.length
-    ? `0,${CHART_H} ${kafalaPolyline} ${CHART_W},${CHART_H}`
-    : '';
-  const kafalaGridLines = hasKafalaChartData
-    ? [0.75, 0.5, 0.25].map(pct => ({
-        y: PAD_T + (1 - pct) * (CHART_H - PAD_T - PAD_B),
-        label: (maxKafala * pct / 100).toFixed(0) + ' د.م',
-      }))
-    : [];
-  const chartCoords = hasChartData
-    ? donationData.map((d, i) => ({
-        x: (i / (donationData.length - 1)) * CHART_W,
-        y: PAD_T + (1 - d.amount / maxAmt) * (CHART_H - PAD_T - PAD_B),
-        amount: d.amount,
-        label: d.label || d.date || `${i + 1}`,
-      }))
-    : [];
-  const chartPolyline = chartCoords.map(p => `${p.x},${p.y}`).join(' ');
-  const chartArea = chartCoords.length
-    ? `0,${CHART_H} ${chartPolyline} ${CHART_W},${CHART_H}`
-    : '';
-
-  // Y-axis grid lines (3 lines at 25%, 50%, 75% of max)
-  const yGridLines = hasChartData
-    ? [0.75, 0.5, 0.25].map(pct => ({
-        y: PAD_T + (1 - pct) * (CHART_H - PAD_T - PAD_B),
-        label: (maxAmt * pct / 100).toFixed(0) + ' د.م',
-      }))
-    : [];
 
   return (
-    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: isMobile ? 16 : 24, overflowX: 'hidden' }} dir="rtl">
-
-      {/* KPI row */}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: isMobile ? 12 : 16, marginBottom: isMobile ? 16 : 24 }}>
-        {kpiCards.map((c, i) => (
-          <div key={i} style={{ background: 'white', borderRadius: 16, padding: isMobile ? 14 : 20, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: c.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{c.icon}</div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: c.trendColor, display: 'flex', alignItems: 'center', gap: 2 }}>{c.trend}</div>
-            </div>
-            <div style={{ fontSize: isMobile ? 20 : 28, fontWeight: 900, fontFamily: 'Inter, sans-serif' }}>{c.num}</div>
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{c.label}</div>
-          </div>
+    <div style={{ fontFamily: 'Tajawal, sans-serif', color: TEXT, padding: 24 }} dir="rtl">
+      <div style={{ background: 'white', borderRadius: 16, border: `1px solid ${BORDER}`, boxShadow: SHADOW, padding: 16, marginBottom: 20, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 14, fontWeight: 800, marginLeft: 6 }}>الفترة:</div>
+        {presets.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => setPreset(item.id)}
+            style={{ height: 34, padding: '0 14px', borderRadius: 100, border: `1.5px solid ${preset === item.id ? PRIMARY : BORDER}`, background: preset === item.id ? PRIMARY : 'white', color: preset === item.id ? 'white' : MUTED, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', fontWeight: 700 }}
+          >
+            {item.label}
+          </button>
         ))}
-      </div>
-
-      {/* Chart + Pending */}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 360px', gap: isMobile ? 12 : 16, marginBottom: isMobile ? 16 : 24 }}>
-        {/* Area chart */}
-        <div style={{ background: 'white', borderRadius: 16, padding: 20, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-            <div style={{ fontSize: 15, fontWeight: 700 }}>📈 التبرعات الشهرية (درهم)</div>
-            <div style={{ display: 'flex', gap: 4 }}>
-              {[['7', '7 أيام'], ['30', '30 يوم'], ['90', '3 أشهر']].map(([v, label]) => (
-                <button key={v} onClick={() => setChartTab(v)}
-                  style={{ height: 28, padding: '0 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none', background: chartTab === v ? '#0d7477' : '#F0F7F7', color: chartTab === v ? 'white' : '#64748b', fontFamily: 'Tajawal, sans-serif' }}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-          {hasChartData ? (
-            <div style={{ position: 'relative' }}>
-              {/* Y-axis labels */}
-              <div style={{ position: 'relative', width: '100%', height: 200 }}>
-                {/* Y-axis value labels (absolute positioned over chart) */}
-                {yGridLines.map((g, i) => (
-                  <div key={i} style={{ position: 'absolute', right: 0, top: g.y / 200 * 100 + '%', transform: 'translateY(-50%)', fontSize: 10, color: '#94a3b8', fontFamily: 'Inter, sans-serif', backgroundColor: 'white', paddingRight: 4, lineHeight: 1 }}>
-                    {g.label}
-                  </div>
-                ))}
-                <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} preserveAspectRatio="none"
-                  style={{ width: '100%', height: '100%', overflow: 'visible' }}
-                  onMouseLeave={() => setHoveredPoint(null)}>
-                  <defs>
-                    <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#0d7477" stopOpacity="0.25" />
-                      <stop offset="100%" stopColor="#0d7477" stopOpacity="0.02" />
-                    </linearGradient>
-                  </defs>
-                  {/* Grid lines */}
-                  {yGridLines.map((g, i) => (
-                    <line key={i} x1="0" y1={g.y} x2={CHART_W} y2={g.y} stroke="#E5E9EB" strokeWidth="1" />
-                  ))}
-                  {/* Area fill */}
-                  <polygon points={chartArea} fill="url(#chartGrad)" />
-                  {/* Line */}
-                  <polyline points={chartPolyline} fill="none" stroke="#0d7477" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                  {/* Hover zones + dots */}
-                  {chartCoords.map((p, i) => (
-                    <g key={i}>
-                      {/* invisible hover zone */}
-                      <rect
-                        x={p.x - CHART_W / chartCoords.length / 2}
-                        y={0} width={CHART_W / chartCoords.length} height={CHART_H}
-                        fill="transparent"
-                        style={{ cursor: 'crosshair' }}
-                        onMouseEnter={() => setHoveredPoint(i)}
-                      />
-                      {/* dot */}
-                      <circle cx={p.x} cy={p.y} r={hoveredPoint === i ? 6 : 3.5}
-                        fill={hoveredPoint === i ? 'white' : '#0d7477'}
-                        stroke="#0d7477" strokeWidth="2.5"
-                        style={{ transition: 'r .1s' }} />
-                      {/* vertical line when hovered */}
-                      {hoveredPoint === i && (
-                        <line x1={p.x} y1={0} x2={p.x} y2={CHART_H} stroke="#0d7477" strokeWidth="1" strokeDasharray="4 3" opacity="0.5" />
-                      )}
-                    </g>
-                  ))}
-                </svg>
-                {/* Floating tooltip */}
-                {hoveredPoint !== null && chartCoords[hoveredPoint] && (
-                  <div style={{
-                    position: 'absolute',
-                    left: `${(chartCoords[hoveredPoint].x / CHART_W) * 100}%`,
-                    top: `${(chartCoords[hoveredPoint].y / CHART_H) * 100}%`,
-                    transform: 'translate(-50%, -120%)',
-                    background: '#0A5F62',
-                    color: 'white',
-                    borderRadius: 8,
-                    padding: '6px 10px',
-                    fontSize: 12,
-                    fontWeight: 700,
-                    fontFamily: 'Inter, sans-serif',
-                    whiteSpace: 'nowrap',
-                    pointerEvents: 'none',
-                    boxShadow: '0 4px 12px rgba(0,0,0,.2)',
-                    zIndex: 10,
-                  }}>
-                    {(chartCoords[hoveredPoint].amount / 100).toLocaleString('fr-MA')} درهم
-                    <div style={{ fontSize: 10, fontWeight: 400, opacity: 0.8, fontFamily: 'Tajawal, sans-serif', marginTop: 2 }}>
-                      {chartCoords[hoveredPoint].label}
-                    </div>
-                    {/* arrow */}
-                    <div style={{ position: 'absolute', bottom: -5, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid #0A5F62' }} />
-                  </div>
-                )}
-              </div>
-              {/* X-axis labels */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#94a3b8', fontFamily: 'Inter, sans-serif', marginTop: 6 }}>
-                {chartCoords.filter((_, i) => i === 0 || i === Math.floor(chartCoords.length / 2) || i === chartCoords.length - 1).map((p, i) => (
-                  <span key={i}>{p.label}</span>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div style={{ height: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 13 }}>
-              <div style={{ fontSize: 36, marginBottom: 12 }}>📈</div>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>لا توجد بيانات بعد</div>
-              <div style={{ fontSize: 12 }}>ستظهر الإحصائيات عند استلام أول تبرع</div>
-            </div>
-          )}
-        </div>
-
-        {/* Pending queue */}
-        <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', overflow: 'hidden' }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E9EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: 15, fontWeight: 700 }}>⏳ تنتظر التحقق</div>
-            <div style={{ background: '#FEF3C7', color: '#b45309', fontSize: 12, fontWeight: 700, padding: '2px 10px', borderRadius: 100 }}>
-              {stats?.pendingVerifications || 0} تحويلات
-            </div>
-          </div>
-          {(pendingVerifications || []).slice(0, 3).map((d, i) => (
-            <div key={d._id || i} style={{ padding: '12px 20px', borderBottom: '1px solid #E5E9EB', display: 'flex', alignItems: 'center', gap: 12, borderRight: '4px solid #f59e0b', background: '#FFFBEB' }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#F0F7F7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>👤</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{d.user?.fullName || d.donorName || 'متبرع'}</div>
-                <div style={{ fontSize: 11, color: '#94a3b8' }}>
-                  {getLocalizedText(d.project?.title) || 'مشروع'} · منذ {Math.floor((Date.now() - (d._creationTime || Date.now())) / 3600000)} ساعة
-                </div>
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: '#0A5F62', fontFamily: 'Inter, sans-serif', flexShrink: 0 }}>
-                {((d.amount || 0) / 100).toLocaleString('fr-MA')}
-              </div>
-              <Link to={`/admin/verifications`}
-                style={{ height: 28, padding: '0 12px', border: '1.5px solid #0d7477', color: '#0d7477', borderRadius: 8, fontSize: 11, fontWeight: 700, background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, fontFamily: 'Tajawal, sans-serif' }}>
-                راجع
-              </Link>
-            </div>
-          ))}
-          {(!pendingVerifications || pendingVerifications.length === 0) && (
-            <div style={{ padding: '24px 20px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
-              لا توجد تحويلات في الانتظار 🎉
-            </div>
-          )}
-          <div style={{ padding: '12px 20px', textAlign: 'center' }}>
-            <Link to="/admin/verifications" style={{ fontSize: 13, color: '#0d7477', fontWeight: 600, textDecoration: 'none' }}>
-              عرض كل التحقيقات ({stats?.pendingVerifications || 0}) ←
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Kafala monthly chart */}
-      <div style={{ background: 'white', borderRadius: 16, padding: 20, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', marginBottom: isMobile ? 16 : 24 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 20 }}>🤲 كفالات شهرية (درهم)</div>
-        {hasKafalaChartData ? (
-          <div style={{ position: 'relative' }}>
-            <div style={{ position: 'relative', width: '100%', height: 200 }}>
-              {kafalaGridLines.map((g, i) => (
-                <div key={i} style={{ position: 'absolute', right: 0, top: g.y / 200 * 100 + '%', transform: 'translateY(-50%)', fontSize: 10, color: '#94a3b8', fontFamily: 'Inter, sans-serif', backgroundColor: 'white', paddingRight: 4, lineHeight: 1 }}>
-                  {g.label}
-                </div>
-              ))}
-              <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} preserveAspectRatio="none"
-                style={{ width: '100%', height: '100%', overflow: 'visible' }}
-                onMouseLeave={() => setHoveredPointKafala(null)}>
-                <defs>
-                  <linearGradient id="kafalaChartGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.02" />
-                  </linearGradient>
-                </defs>
-                {kafalaGridLines.map((g, i) => (
-                  <line key={i} x1="0" y1={g.y} x2={CHART_W} y2={g.y} stroke="#E5E9EB" strokeWidth="1" />
-                ))}
-                <polygon points={kafalaArea} fill="url(#kafalaChartGrad)" />
-                <polyline points={kafalaPolyline} fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                {kafalaCoords.map((p, i) => (
-                  <g key={i}>
-                    <rect
-                      x={p.x - CHART_W / kafalaCoords.length / 2}
-                      y={0} width={CHART_W / kafalaCoords.length} height={CHART_H}
-                      fill="transparent"
-                      style={{ cursor: 'crosshair' }}
-                      onMouseEnter={() => setHoveredPointKafala(i)}
-                    />
-                    <circle cx={p.x} cy={p.y} r={hoveredPointKafala === i ? 6 : 3.5}
-                      fill={hoveredPointKafala === i ? 'white' : '#f59e0b'}
-                      stroke="#f59e0b" strokeWidth="2.5"
-                      style={{ transition: 'r .1s' }} />
-                    {hoveredPointKafala === i && (
-                      <line x1={p.x} y1={0} x2={p.x} y2={CHART_H} stroke="#f59e0b" strokeWidth="1" strokeDasharray="4 3" opacity="0.5" />
-                    )}
-                  </g>
-                ))}
-              </svg>
-              {hoveredPointKafala !== null && kafalaCoords[hoveredPointKafala] && (
-                <div style={{
-                  position: 'absolute',
-                  left: `${(kafalaCoords[hoveredPointKafala].x / CHART_W) * 100}%`,
-                  top: `${(kafalaCoords[hoveredPointKafala].y / CHART_H) * 100}%`,
-                  transform: 'translate(-50%, -120%)',
-                  background: '#92400e',
-                  color: 'white',
-                  borderRadius: 8,
-                  padding: '6px 10px',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  fontFamily: 'Inter, sans-serif',
-                  whiteSpace: 'nowrap',
-                  pointerEvents: 'none',
-                  boxShadow: '0 4px 12px rgba(0,0,0,.2)',
-                  zIndex: 10,
-                }}>
-                  {(kafalaCoords[hoveredPointKafala].amount / 100).toLocaleString('fr-MA')} درهم
-                  <div style={{ fontSize: 10, fontWeight: 400, opacity: 0.8, fontFamily: 'Tajawal, sans-serif', marginTop: 2 }}>
-                    {kafalaCoords[hoveredPointKafala].label}
-                  </div>
-                  <div style={{ position: 'absolute', bottom: -5, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid #92400e' }} />
-                </div>
-              )}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#94a3b8', fontFamily: 'Inter, sans-serif', marginTop: 6 }}>
-              {kafalaCoords.filter((_, i) => i === 0 || i === Math.floor(kafalaCoords.length / 2) || i === kafalaCoords.length - 1).map((p, i) => (
-                <span key={i}>{p.label}</span>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div style={{ height: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 13 }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>🤲</div>
-            <div style={{ fontWeight: 600, marginBottom: 4 }}>لا توجد كفالات بعد</div>
-            <div style={{ fontSize: 12 }}>ستظهر الإحصائيات عند تفعيل أول كفالة</div>
-          </div>
+        {preset === 'custom' && (
+          <>
+            <input type="date" value={customStart} onChange={(event) => setCustomStart(event.target.value)} style={{ height: 36, border: `1.5px solid ${BORDER}`, borderRadius: 10, padding: '0 10px' }} />
+            <input type="date" value={customEnd} onChange={(event) => setCustomEnd(event.target.value)} style={{ height: 36, border: `1.5px solid ${BORDER}`, borderRadius: 10, padding: '0 10px' }} />
+          </>
         )}
       </div>
 
-      {/* Lower row: Projects + Activity */}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 12 : 16, marginBottom: isMobile ? 16 : 24 }}>
-        {/* Active projects */}
-        <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', overflow: 'hidden' }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E9EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: 15, fontWeight: 700 }}>📁 المشاريع النشطة</div>
-            <Link to="/admin/projects" style={{ fontSize: 12, color: '#0d7477', fontWeight: 600, textDecoration: 'none' }}>عرض الكل ←</Link>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 14, marginBottom: 20 }}>
+        <StatCard icon="د.م" label="محصل من المشاريع" value={formatMAD(projectStats.collected || 0, lang)} hint="مؤكد" />
+        <StatCard icon="#" label="تبرعات المشاريع" value={(projectStats.donationCount || 0).toLocaleString('fr-MA')} hint="داخل الفترة" />
+        <StatCard icon="🤲" label="كفالات نشطة" value={(kafalaStats.activeSponsorships || 0).toLocaleString('fr-MA')} tone="#8B6914" />
+        <StatCard icon="!" label="تحتاج مراجعة" value={pendingTotal.toLocaleString('fr-MA')} hint="حالي" tone="#f59e0b" />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14, marginBottom: 20 }}>
+        <StatCard icon="💰" label="محصل من الكفالة" value={formatMAD(kafalaStats.collected || 0, lang)} tone="#8B6914" />
+        <StatCard icon="👤" label="بدون كافل" value={(kafalaStats.availableKafala || 0).toLocaleString('fr-MA')} tone="#8B6914" />
+        <StatCard icon="⏳" label="ينتظرون الكفالة" value={(kafalaStats.waitingPublished || 0).toLocaleString('fr-MA')} tone="#8B6914" />
+        <StatCard icon="✉" label="رسائل جديدة" value={(contactStats.newCount || 0).toLocaleString('fr-MA')} hint="تواصل" tone="#2563eb" />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 16, marginBottom: 20 }}>
+        <ChartPanel title="إحصائيات تبرعات المشاريع" data={stats.series?.donations || []} color={PRIMARY} />
+        <ChartPanel title="إحصائيات تحصيل الكفالة" data={stats.series?.kafala || []} color="#8B6914" type="bar" />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 360px', gap: 16, marginBottom: 20 }}>
+        <div style={{ background: 'white', borderRadius: 16, border: `1px solid ${BORDER}`, boxShadow: SHADOW, overflow: 'hidden' }}>
+          <div style={{ padding: 18, borderBottom: `1px solid ${BORDER}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 15, fontWeight: 800 }}>المشاريع المميزة في الرئيسية</div>
+            <Link to="/admin/projects" style={{ color: PRIMARY, fontWeight: 800, fontSize: 13, textDecoration: 'none' }}>إدارة المشاريع</Link>
           </div>
-          {(featuredProjects || []).slice(0, 3).map((p, i) => {
-            const pct = p.goalAmount ? Math.round((p.raisedAmount || 0) / p.goalAmount * 100) : 0;
-            const icons = ['🎓', '💧', '🏥', '🌱', '📚', '🤝'];
+          {featuredProjectsData.length === 0 ? (
+            <div style={{ padding: 24, color: '#94a3b8', textAlign: 'center' }}>لا توجد مشاريع مميزة</div>
+          ) : featuredProjectsData.map((project) => {
+            const pct = project.goalAmount ? Math.min(Math.round((project.raisedAmount || 0) / project.goalAmount * 100), 100) : 0;
+            const imageUrl = convexFileUrl(project.mainImage) || project.mainImage;
             return (
-              <div key={p._id || i} style={{ padding: '12px 20px', borderBottom: i < 2 ? '1px solid #E5E9EB' : 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#0A5F62,#33C0C0)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
-                  {icons[i % icons.length]}
+              <div key={project._id} style={{ padding: '14px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 46, height: 46, borderRadius: 10, background: '#E6F4F4', overflow: 'hidden', flexShrink: 0 }}>
+                  {imageUrl && <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{getLocalizedText(p.title)}</div>
-                  <div style={{ height: 4, background: '#E5E9EB', borderRadius: 100, marginTop: 6 }}>
-                    <div style={{ height: '100%', borderRadius: 100, background: '#0d7477', width: `${Math.min(pct, 100)}%` }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{getText(project.title)}</div>
+                  <div style={{ height: 6, background: '#E5E9EB', borderRadius: 99, marginTop: 8 }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: PRIMARY, borderRadius: 99 }} />
                   </div>
                 </div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#0A5F62', fontFamily: 'Inter, sans-serif', flexShrink: 0 }}>{pct}%</div>
+                <div style={{ fontSize: 12, fontWeight: 900, color: PRIMARY }}>{pct}%</div>
               </div>
             );
           })}
-          {(!featuredProjects || featuredProjects.length === 0) && (
-            <div style={{ padding: '24px 20px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>لا توجد مشاريع نشطة</div>
-          )}
         </div>
 
-        {/* Recent donations */}
-        <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', overflow: 'hidden' }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E9EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: 15, fontWeight: 700 }}>💰 آخر التبرعات</div>
-            <Link to="/admin/donations" style={{ fontSize: 12, color: '#0d7477', fontWeight: 600, textDecoration: 'none' }}>عرض الكل ←</Link>
-          </div>
-          {(pendingVerifications && pendingVerifications.length > 0) ? (
-            <div style={{ padding: '0 20px' }}>
-              {pendingVerifications.slice(0, 4).map((d, i, arr) => (
-                <div key={d._id || i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: i < arr.length - 1 ? '1px solid #E5E9EB' : 'none' }}>
-                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#FFFBEB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>⏳</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{d.user?.fullName || d.donorName || 'متبرع'}</div>
-                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{getLocalizedText(d.project?.title) || 'مشروع'}</div>
-                  </div>
-                  <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: '#0A5F62', fontFamily: 'Inter, sans-serif' }}>
-                      {((d.amount || 0) / 100).toLocaleString('fr-MA')} <span style={{ fontSize: 10, fontWeight: 500 }}>د.م</span>
-                    </div>
-                    <div style={{ fontSize: 10, color: '#f59e0b', fontWeight: 600 }}>في الانتظار</div>
-                  </div>
+        <div style={{ display: 'grid', gap: 16 }}>
+          <div style={{ background: 'white', borderRadius: 16, border: `1px solid ${BORDER}`, boxShadow: SHADOW, overflow: 'hidden' }}>
+            <div style={{ padding: 16, borderBottom: `1px solid ${BORDER}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: 15, fontWeight: 800 }}>تنتظر التحقق</div>
+              <Link to="/admin/verification" style={{ color: PRIMARY, fontWeight: 800, fontSize: 13, textDecoration: 'none' }}>عرض الكل</Link>
+            </div>
+            {(pendingVerifications || []).slice(0, 3).map((donation) => (
+              <Link key={donation._id} to="/admin/verification" style={{ padding: 14, borderBottom: `1px solid ${BORDER}`, display: 'flex', justifyContent: 'space-between', gap: 12, textDecoration: 'none', color: TEXT }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 800 }}>{donation.user?.fullName || donation.donorName || 'متبرع'}</div>
+                  <div style={{ fontSize: 11, color: MUTED }}>{getText(donation.project?.title) || 'مشروع'}</div>
                 </div>
-              ))}
+                <div style={{ fontSize: 13, fontWeight: 900, color: PRIMARY }}>{formatMAD(donation.amount || 0, lang)}</div>
+              </Link>
+            ))}
+            {(!pendingVerifications || pendingVerifications.length === 0) && <div style={{ padding: 22, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>لا توجد تحويلات في الانتظار</div>}
+          </div>
+
+          <div style={{ background: 'white', borderRadius: 16, border: `1px solid ${BORDER}`, boxShadow: SHADOW, overflow: 'hidden' }}>
+            <div style={{ padding: 16, borderBottom: `1px solid ${BORDER}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: 15, fontWeight: 800 }}>رسائل جديدة</div>
+              <Link to="/admin/contacts" style={{ color: PRIMARY, fontWeight: 800, fontSize: 13, textDecoration: 'none' }}>فتح الرسائل</Link>
             </div>
-          ) : (
-            <div style={{ padding: '40px 20px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
-              <div style={{ fontSize: 32, marginBottom: 10 }}>💰</div>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>لا توجد تبرعات بعد</div>
-              <div style={{ fontSize: 12 }}>ستظهر التبرعات الجديدة هنا فور وصولها</div>
-            </div>
-          )}
+            {(contactStats.recentNew || []).map((message) => (
+              <Link key={message._id} to="/admin/contacts" style={{ padding: 14, borderBottom: `1px solid ${BORDER}`, display: 'block', textDecoration: 'none', color: TEXT }}>
+                <div style={{ fontSize: 13, fontWeight: 800 }}>{message.name}</div>
+                <div style={{ fontSize: 11, color: MUTED, marginTop: 3 }}>{message.subject || message.phone || message.email || 'رسالة تواصل'}</div>
+              </Link>
+            ))}
+            {(!contactStats.recentNew || contactStats.recentNew.length === 0) && <div style={{ padding: 22, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>لا توجد رسائل جديدة</div>}
+          </div>
         </div>
       </div>
-
-      {/* Featured Projects drag-drop section */}
-      {featuredProjects.length > 0 && (
-        <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', overflow: 'hidden' }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E9EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700 }}>📌 المشاريع المميزة</div>
-              <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>اسحب لإعادة الترتيب</div>
-            </div>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              {hasOrderChanged && (
-                <button onClick={handleSaveOrder} disabled={isSavingOrder}
-                  style={{ height: 32, padding: '0 14px', background: '#0d7477', color: 'white', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
-                  {isSavingOrder ? '...' : 'حفظ الترتيب'}
-                </button>
-              )}
-              <Link to="/admin/projects"
-                style={{ height: 32, padding: '0 14px', background: '#E6F4F4', color: '#0d7477', borderRadius: 8, fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', textDecoration: 'none', fontFamily: 'Tajawal, sans-serif' }}>
-                إدارة المشاريع
-              </Link>
-            </div>
-          </div>
-          <div style={{ padding: isMobile ? 12 : 20, display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(3,1fr)', gap: isMobile ? 10 : 16 }}>
-            {featuredProjects.map((p, i) => (
-              <div key={p._id}
-                draggable
-                onDragStart={() => handleDragStart(i)}
-                onDragOver={(e) => handleDragOver(e, i)}
-                onDragEnd={handleDragEnd}
-                style={{ borderRadius: 14, overflow: 'hidden', background: '#f6f8f8', aspectRatio: '16/9', position: 'relative', cursor: 'move', opacity: draggedIndex === i ? 0.5 : 1, border: draggedIndex === i ? '2px solid #0d7477' : '2px solid transparent' }}>
-                <img src={convexFileUrl(p.mainImage) || p.mainImage || ''} alt={getLocalizedText(p.title)}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  onError={(e) => { e.target.style.display = 'none'; }} />
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,.7) 0%, transparent 60%)' }} />
-                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 12 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, background: '#0d7477', color: 'white', display: 'inline-block', padding: '2px 8px', borderRadius: 100, marginBottom: 4 }}>#{i + 1}</div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: 'white' }}>{getLocalizedText(p.title)}</div>
-                </div>
-              </div>
-            ))}
-            {featuredProjects.length < 6 && (
-              <button onClick={() => navigate('/admin/projects')}
-                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, border: '2px dashed #E5E9EB', background: 'none', aspectRatio: '16/9', cursor: 'pointer', color: '#94a3b8', fontSize: 13, fontFamily: 'Tajawal, sans-serif' }}>
-                <span style={{ fontSize: 24 }}>+</span>
-                إضافة مشروع مميز
-              </button>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

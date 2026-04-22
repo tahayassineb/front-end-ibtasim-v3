@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import MobileBottomNav from './MobileBottomNav';
 
 // ============================================
 // MAIN LAYOUT - Public Pages Layout
 // ============================================
 
 const MainLayout = ({ children }) => {
-  const { language, currentLanguage, changeLanguage, isAuthenticated, user, logout } = useApp();
+  const { language, changeLanguage, isAuthenticated, user, logout } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -31,7 +32,7 @@ const MainLayout = ({ children }) => {
     { path: '/', label: 'الرئيسية' },
     { path: '/projects', label: 'المشاريع' },
     { path: '/kafala', label: 'الكفالة' },
-    { path: '/impact', label: 'المدونة' },
+    { path: '/stories', label: 'المدونة' },
     { path: '/about', label: 'حول الجمعية' },
     { path: '/contact', label: 'تواصل معنا' },
   ];
@@ -261,6 +262,7 @@ const MainLayout = ({ children }) => {
       <main className="flex-1" role="main">
         {children}
       </main>
+      <MobileBottomNav />
 
       {/* ── FOOTER ── */}
       <footer style={{ background: '#0e1a1b', color: 'rgba(255,255,255,0.8)', padding: '56px 0 28px' }}>
@@ -292,7 +294,7 @@ const MainLayout = ({ children }) => {
                 { path: '/', label: 'الصفحة الرئيسية' },
                 { path: '/projects', label: 'المشاريع' },
                 { path: '/kafala', label: 'الكفالة' },
-                { path: '/impact', label: 'المدونة' },
+                { path: '/stories', label: 'المدونة' },
                 { path: '/about', label: 'حول الجمعية' },
               ].map((item) => (
                 <Link key={item.path} to={item.path} style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,0.55)', marginBottom: 10, textDecoration: 'none' }}>

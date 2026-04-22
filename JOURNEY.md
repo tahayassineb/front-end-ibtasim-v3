@@ -880,3 +880,110 @@ When an AI generates code quickly across many files, correctness bugs cluster in
 2. Checking pre-existing ESLint errors: use `git stash` only if you can immediately `pop` it; prefer copying the original file to a temp path for isolated checks.
 3. Import depth bugs only appear at build time, not in the editor — always do a build before considering a file done.
 4. The `remindersSent` pattern (record which notification levels have been sent, check before sending) is reusable for any tiered notification system where the cron may not run on exactly the right day.
+
+---
+
+## Session: 2026-04-22 - Admin Dashboard, Contacts, Featured Home Journey, Editor Recovery
+
+### Context
+
+Claude hit the limit after partially changing `convex/admin.ts`, `convex/schema.ts`, `src/components/RichTextEditor.jsx`, and generated Convex types. The follow-up work was to stabilize those partial changes first, then continue the larger admin/public-site plan without losing the existing donation/kafala behavior.
+
+### What Was Implemented
+
+**Backend and Convex**
+
+- Finished `getDashboardStats` in `convex/admin.ts` with optional `startDate` / `endDate` args.
+- Dashboard money now filters by `verifiedAt ?? createdAt`, so collected amounts follow the actual verification/paid date when available.
+- Added separate dashboard return objects for `projectStats`, `kafalaStats`, `contactStats`, and chronological `series` data.
+- Kept pending verification counts current/all-time instead of date-filtering them, because those are workflow queues.
+- Added contact admin queries/mutations in `convex/contact.ts`: list messages, stats, and update message status.
+- Finished kafala featured support in `convex/kafala.ts`: create/update/list/public-list now support `isFeatured` and `featuredOrder`.
+- Regenerated Convex generated types with `npx convex codegen`.
+
+**Admin dashboard**
+
+- Rebuilt `src/pages/features/admin/dashboard/AdminDashboard.jsx`.
+- Fixed the old total collected bug where the UI displayed `stats.totalDonations / 100`, causing values like `0.1 DH`.
+- Dashboard now uses real money fields like `projectStats.collected` / `totalRaised`.
+- Fixed the broken verification-card route from `/admin/verifications` to `/admin/verification`.
+- Added date presets: today, yesterday, last 7 days, last 30 days, lifetime, and custom date range.
+- Replaced the hand-built SVG chart with Recharts.
+- Added project and kafala stat cards on the same main dashboard.
+- Added a new contact messages card linked to the new contacts admin page.
+
+**Story editor**
+
+- Replaced the fragile `contentEditable`/`execCommand` editor in `src/components/RichTextEditor.jsx` with a block editor.
+- The editor now supports text blocks, image blocks, block deletion, block reordering, and existing HTML serialization.
+- Fixed Claude's broken image insertion contract: the editor now owns a hidden file input, calls `onInsertImage(file)`, waits for the returned URL, then appends an image block.
+- Existing public story rendering continues to use saved HTML.
+
+**Admin contacts**
+
+- Added `src/pages/features/admin/contacts/AdminContacts.jsx`.
+- Added `/admin/contacts` route in `src/App.jsx`.
+- Added contacts to the admin sidebar in `src/components/AdminLayout.jsx`.
+- Contacts page includes filters for all/new/read/replied, message cards, selected-message detail view, and status actions.
+
+**Admin projects**
+
+- Rebuilt `src/pages/features/admin/projects/AdminProjects.jsx` from a table into a kafala-style card grid.
+- Added mini dashboard stats: total projects, active projects, collected MAD, donation count, and featured count.
+- Kept search, status filter, edit, view, publish/unpublish, delete, and featured-home toggle behavior.
+- Uses existing project `isFeatured` / `featuredOrder` for homepage selection.
+
+**Admin kafala**
+
+- Rebuilt `src/pages/features/admin/kafala/AdminKafala.jsx` with a card-grid admin view.
+- Added stats for active sponsorships, available/waiting kafala, total collected, pending verification, and featured count.
+- Added "show on home" toggle using the new kafala `isFeatured` field.
+- Kept publish/unpublish, reset, delete, and edit behavior.
+
+**Home and public pages**
+
+- Rebuilt `src/pages/features/public/Home.jsx` as the intended journey: hero -> featured projects -> stats band -> featured kafala -> featured stories -> about CTA -> contact CTA.
+- Home now fetches featured projects, featured kafala, and featured stories.
+- Rebuilt `src/pages/features/projects/ProjectsList.jsx` so the projects page only shows projects and no kafala.
+- Added localized home copy for Arabic, French, and English in the new home sections.
+- Public project list now uses multilingual project title/description with fallback to Arabic.
+
+**Mobile navigation**
+
+- Replaced `src/components/MobileBottomNav.jsx`.
+- Bottom nav now exposes Home, Projects, Kafala, Stories, and More directly.
+- Added `/stories` and `/stories/:id` routes while keeping old `/impact` routes for compatibility.
+- Updated main public layout links that still pointed at `/impact` to use `/stories`.
+
+**Project creation and benefit icons**
+
+- Updated `EmojiPickerBtn` in `src/pages/features/admin/projects/AdminProjectForm.jsx` so the emoji picker uses fixed positioning and no longer gets clipped by parent sections.
+- Preserved custom pasted icon support.
+- Preserved benefit-card delete support.
+- Fixed `src/pages/features/projects/ProjectDetail.jsx` benefit icon rendering so larger emoji/icons are centered and not visually cropped.
+
+### Validation
+
+- `npx convex codegen` passed.
+- `npm run build` passed.
+- Smoke-tested the dev server with HTTP 200 responses for:
+  - `/`
+  - `/projects`
+  - `/kafala`
+  - `/stories`
+  - `/admin/contacts`
+- Dev server was started successfully at `http://127.0.0.1:5173/`.
+
+### Known Remaining Work
+
+- `npm run lint` still fails, but remaining errors are pre-existing/unrelated older issues across files such as auth, donations, settings, donor detail, and older public pages.
+- Public multilingual coverage is improved for the new home/mobile/projects flow, but full translation of About, Contact, Kafala, Stories, and StoryDetail still needs a dedicated pass.
+- Mobile "More" currently routes to contact instead of opening a full bottom sheet. The next UX pass should wire the exported More menu into `MainLayout`.
+- Browser visual testing was limited to HTTP smoke checks in this session. A follow-up should use a real browser pass for mobile dashboard/admin/home interactions.
+
+### Lessons
+
+1. Partial AI handoffs must be stabilized before adding new features. The story editor image callback mismatch would have shipped broken uploads if we continued blindly.
+2. Dashboard stats need clear semantics: money can be date-filtered, but workflow queues like pending verification should stay current.
+3. Featured-home behavior should reuse existing project fields when possible, but kafala needed matching backend support before the UI toggle could work.
+4. For large UI rewrites, `npm run build` is the reliable gate; lint can remain noisy when the repo already has unrelated legacy errors.

@@ -21,16 +21,27 @@ export const getKafalaList = query({
         v.literal("inactive")
       )
     ),
+    featured: v.optional(v.boolean()),
+    limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    let list;
+    if (args.featured) {
+      list = await ctx.db
+        .query("kafala")
+        .withIndex("by_featured", (q) => q.eq("isFeatured", true))
+        .take(args.limit ?? 100);
+      return [...list].sort((a, b) => (a.featuredOrder ?? 9999) - (b.featuredOrder ?? 9999));
+    }
     if (args.status) {
-      return await ctx.db
+      list = await ctx.db
         .query("kafala")
         .withIndex("by_status", (q) => q.eq("status", args.status!))
         .order("desc")
-        .collect();
+        .take(args.limit ?? 100);
+      return list;
     }
-    return await ctx.db.query("kafala").order("desc").collect();
+    return await ctx.db.query("kafala").order("desc").take(args.limit ?? 200);
   },
 });
 
@@ -38,8 +49,20 @@ export const getKafalaList = query({
  * Get all kafala visible on the public site (active + sponsored).
  */
 export const getPublicKafalaList = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    featured: v.optional(v.boolean()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    if (args.featured) {
+      const featured = await ctx.db
+        .query("kafala")
+        .withIndex("by_featured", (q) => q.eq("isFeatured", true))
+        .take(args.limit ?? 12);
+      return [...featured]
+        .filter((k) => k.status === "active" || k.status === "sponsored")
+        .sort((a, b) => (a.featuredOrder ?? 9999) - (b.featuredOrder ?? 9999));
+    }
     const active = await ctx.db
       .query("kafala")
       .withIndex("by_status", (q) => q.eq("status", "active"))
@@ -48,7 +71,9 @@ export const getPublicKafalaList = query({
       .query("kafala")
       .withIndex("by_status", (q) => q.eq("status", "sponsored"))
       .collect();
-    return [...active, ...sponsored].sort((a, b) => b.createdAt - a.createdAt);
+    return [...active, ...sponsored]
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, args.limit ?? 100);
   },
 });
 
@@ -183,9 +208,19 @@ export const createKafala = mutation({
     bio: v.object({ ar: v.string(), fr: v.string(), en: v.string() }),
     photo: v.optional(v.string()),
     monthlyPrice: v.number(), // In cents
+    isFeatured: v.optional(v.boolean()),
+    featuredOrder: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
+    let featuredOrder = args.featuredOrder;
+    if (args.isFeatured && !featuredOrder) {
+      const existingFeatured = await ctx.db
+        .query("kafala")
+        .withIndex("by_featured", (q) => q.eq("isFeatured", true))
+        .collect();
+      featuredOrder = existingFeatured.length + 1;
+    }
     return await ctx.db.insert("kafala", {
       name: args.name,
       gender: args.gender,
@@ -196,6 +231,8 @@ export const createKafala = mutation({
       monthlyPrice: args.monthlyPrice,
       currency: "MAD",
       status: "draft",
+      isFeatured: args.isFeatured ?? false,
+      featuredOrder,
       createdBy: args.adminId,
       createdAt: now,
       updatedAt: now,
@@ -213,6 +250,8 @@ export const updateKafala = mutation({
     bio: v.optional(v.object({ ar: v.string(), fr: v.string(), en: v.string() })),
     photo: v.optional(v.string()),
     monthlyPrice: v.optional(v.number()),
+    isFeatured: v.optional(v.boolean()),
+    featuredOrder: v.optional(v.number()),
     status: v.optional(
       v.union(
         v.literal("draft"),
@@ -224,9 +263,18 @@ export const updateKafala = mutation({
   },
   handler: async (ctx, args) => {
     const { kafalaId, ...fields } = args;
+    const current = await ctx.db.get(kafalaId);
+    if (!current) throw new Error("الكفالة غير موجودة");
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
     for (const [key, val] of Object.entries(fields)) {
       if (val !== undefined) updates[key] = val;
+    }
+    if (fields.isFeatured === true && !current.isFeatured && fields.featuredOrder === undefined) {
+      const existingFeatured = await ctx.db
+        .query("kafala")
+        .withIndex("by_featured", (q) => q.eq("isFeatured", true))
+        .collect();
+      updates.featuredOrder = existingFeatured.length + 1;
     }
     await ctx.db.patch(kafalaId, updates);
   },

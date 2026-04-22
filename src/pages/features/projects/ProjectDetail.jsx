@@ -41,6 +41,7 @@ const ProjectDetail = ({ preview = false }) => {
   const [previewData, setPreviewData] = useState(null);
   const [copied, setCopied] = useState(false);
   const isMobile = useIsMobile();
+  const [now] = useState(() => Date.now());
 
   // Fetch project from Convex backend — PRESERVED
   const convexProject = useQuery(api.projects.getProjectById, { projectId: id });
@@ -74,12 +75,12 @@ const ProjectDetail = ({ preview = false }) => {
       goal: convexProject.goalAmount / 100,
       progress: Math.min(progress, 100),
       daysLeft: convexProject.endDate
-        ? Math.max(0, Math.ceil((convexProject.endDate - Date.now()) / (1000 * 60 * 60 * 24)))
+        ? Math.max(0, Math.ceil((convexProject.endDate - now) / (1000 * 60 * 60 * 24)))
         : 30,
       category: convexProject.category,
       image: convexFileUrl(convexProject.mainImage) || convexProject.mainImage,
     };
-  }, [convexProject, previewData]);
+  }, [convexProject, previewData, now]);
 
   const handleDonateClick = () => {
     if (project) navigate(`/donate/${project.id}`);
@@ -217,7 +218,7 @@ const ProjectDetail = ({ preview = false }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-3" style={{ gap: 16 }}>
                   {project.benefitCards.map((card, i) => (
                     <div key={i} style={{ background: '#F0F7F7', borderRadius: 14, padding: 18, textAlign: 'center' }}>
-                      <div style={{ fontSize: 28, marginBottom: 6 }}>{card.icon}</div>
+                      <div style={{ width: 44, height: 44, margin: '0 auto 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible', fontSize: 28, lineHeight: 1 }}>{card.icon}</div>
                       <div style={{ fontSize: 22, fontWeight: 800, color: '#0A5F62', fontFamily: 'Inter, sans-serif' }}>{card.value}</div>
                       <div style={{ fontSize: 12, color: '#64748b', marginTop: 4, lineHeight: 1.5 }}>{card.label}</div>
                     </div>

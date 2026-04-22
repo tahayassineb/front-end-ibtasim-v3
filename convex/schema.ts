@@ -356,9 +356,12 @@ export default defineSchema({
     createdBy: v.id("admins"),
     createdAt: v.number(),
     updatedAt: v.number(),
+    isFeatured: v.optional(v.boolean()),
+    featuredOrder: v.optional(v.number()),
   })
     .index("by_status", ["status"])
-    .index("by_gender", ["gender"]),
+    .index("by_gender", ["gender"])
+    .index("by_featured", ["isFeatured", "featuredOrder"]),
 
   // ============================================
   // KAFALA SPONSORSHIP TABLE (Active sponsorship records)
