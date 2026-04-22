@@ -3,22 +3,22 @@ import { Link, useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 
 const labels = {
-  ar: { stories: 'القصص', more: 'المزيد', account: 'الحساب', close: 'إغلاق' },
-  fr: { stories: 'Histoires', more: 'Plus', account: 'Compte', close: 'Fermer' },
-  en: { stories: 'Stories', more: 'More', account: 'Account', close: 'Close' },
+  ar: { kafala: 'الكفالة', stories: 'المدونة', more: 'المزيد', account: 'الحساب', close: 'إغلاق' },
+  fr: { kafala: 'Kafala', stories: 'Actualités', more: 'Plus', account: 'Compte', close: 'Fermer' },
+  en: { kafala: 'Kafala', stories: 'Stories', more: 'More', account: 'Account', close: 'Close' },
 };
 
-export default function MobileBottomNav() {
+export default function MobileBottomNav({ onMoreClick }) {
   const { t, currentLanguage } = useApp();
   const location = useLocation();
   const lang = currentLanguage?.code || 'ar';
   const local = labels[lang] || labels.ar;
-  const items = [
+
+  const navItems = [
     { path: '/', label: t('home'), icon: 'home' },
     { path: '/projects', label: t('projects'), icon: 'volunteer_activism' },
-    { path: '/kafala', label: 'Kafala', icon: 'diversity_1' },
+    { path: '/kafala', label: local.kafala, icon: 'diversity_1' },
     { path: '/stories', label: local.stories, icon: 'newspaper' },
-    { path: '/contact', label: local.more, icon: 'menu' },
   ];
 
   const active = (path) => (path === '/' ? location.pathname === '/' : location.pathname.startsWith(path));
@@ -26,12 +26,21 @@ export default function MobileBottomNav() {
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-border-light safe-area-pb">
       <div className="flex items-center justify-around h-16 max-w-mobile mx-auto">
-        {items.map((item) => (
+        {navItems.map((item) => (
           <Link key={item.path} to={item.path} className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full ${active(item.path) ? 'text-primary' : 'text-text-muted'}`}>
             <span className={`material-symbols-outlined text-xl ${active(item.path) ? 'filled' : ''}`}>{item.icon}</span>
             <span className="text-[10px] font-medium">{item.label}</span>
           </Link>
         ))}
+        <button
+          type="button"
+          onClick={onMoreClick}
+          className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full text-text-muted bg-transparent border-0"
+          style={{ cursor: 'pointer' }}
+        >
+          <span className="material-symbols-outlined text-xl">menu</span>
+          <span className="text-[10px] font-medium">{local.more}</span>
+        </button>
       </div>
     </nav>
   );

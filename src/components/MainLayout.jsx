@@ -1,18 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import MobileBottomNav from './MobileBottomNav';
+import MobileBottomNav, { MobileMoreMenu } from './MobileBottomNav';
 
 // ============================================
 // MAIN LAYOUT - Public Pages Layout
 // ============================================
 
 const MainLayout = ({ children }) => {
-  const { language, changeLanguage, isAuthenticated, user, logout } = useApp();
+  const { language, changeLanguage, isAuthenticated, user, logout, t } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const prevPathnameRef = useRef(location.pathname);
 
   useEffect(() => {
@@ -29,12 +30,12 @@ const MainLayout = ({ children }) => {
   }, [location.pathname, isMobileMenuOpen]);
 
   const navItems = [
-    { path: '/', label: 'الرئيسية' },
-    { path: '/projects', label: 'المشاريع' },
-    { path: '/kafala', label: 'الكفالة' },
-    { path: '/stories', label: 'المدونة' },
-    { path: '/about', label: 'حول الجمعية' },
-    { path: '/contact', label: 'تواصل معنا' },
+    { path: '/', label: t('home') },
+    { path: '/projects', label: t('projects') },
+    { path: '/kafala', label: t('kafala') },
+    { path: '/stories', label: t('stories') },
+    { path: '/about', label: t('about_us') },
+    { path: '/contact', label: t('contact_us') },
   ];
 
   const isActive = (path) => {
@@ -154,17 +155,17 @@ const MainLayout = ({ children }) => {
                   </div>
                   <Link to="/profile" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', fontSize: 13, color: '#64748b', textDecoration: 'none' }}>
                     <span className="material-symbols-outlined" style={{ fontSize: 16 }}>person_outline</span>
-                    الملف الشخصي
+                    {t('profile')}
                   </Link>
                   {user?.role === 'admin' && (
                     <Link to="/admin" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', fontSize: 13, color: '#0d7477', textDecoration: 'none', fontWeight: 600 }}>
                       <span className="material-symbols-outlined" style={{ fontSize: 16 }}>admin_panel_settings</span>
-                      لوحة الإدارة
+                      {t('admin_panel')}
                     </Link>
                   )}
                   <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 16px', fontSize: 13, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
                     <span className="material-symbols-outlined" style={{ fontSize: 16 }}>logout</span>
-                    تسجيل الخروج
+                    {t('logout')}
                   </button>
                 </div>
               </div>
@@ -174,7 +175,7 @@ const MainLayout = ({ children }) => {
                 className="hidden md:flex"
                 style={{ height: 36, padding: '0 16px', fontSize: 13, fontWeight: 600, borderRadius: 100, border: '1.5px solid #0d7477', background: 'white', color: '#0d7477', textDecoration: 'none', alignItems: 'center' }}
               >
-                دخول
+                {t('login_short')}
               </Link>
             )}
 
@@ -184,7 +185,7 @@ const MainLayout = ({ children }) => {
               className="hidden md:flex"
               style={{ height: 36, padding: '0 18px', fontSize: 13, fontWeight: 700, borderRadius: 100, background: '#0d7477', color: 'white', textDecoration: 'none', alignItems: 'center', boxShadow: '0 4px 14px rgba(13,116,119,0.25)' }}
             >
-              تبرع الآن
+              {t('donate_now')}
             </Link>
 
             {/* Mobile Hamburger */}
@@ -262,7 +263,8 @@ const MainLayout = ({ children }) => {
       <main className="flex-1" role="main">
         {children}
       </main>
-      <MobileBottomNav />
+      <MobileBottomNav onMoreClick={() => setMoreMenuOpen(true)} />
+      <MobileMoreMenu isOpen={moreMenuOpen} onClose={() => setMoreMenuOpen(false)} />
 
       {/* ── FOOTER ── */}
       <footer style={{ background: '#0e1a1b', color: 'rgba(255,255,255,0.8)', padding: '56px 0 28px' }}>

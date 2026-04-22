@@ -18,8 +18,47 @@ const useIsMobile = () => {
   return isMobile;
 };
 
+const STORIES_COPY = {
+  ar: {
+    hero_badge: 'BLOG · المدونة',
+    title: 'مدونة الجمعية',
+    subtitle: 'قصص النجاح، الأنشطة والفعاليات، وآخر الأخبار من جمعية ابتسام',
+    all: 'الكل',
+    featured_badge: 'FEATURED · المنشور المميز',
+    all_posts: 'جميع المنشورات',
+    posts_count: (n) => `${n} منشور`,
+    loading: 'جاري التحميل...',
+    no_posts_title: 'لا توجد منشورات بعد',
+    no_posts_body: 'ستظهر المقالات والأخبار والفعاليات هنا بمجرد نشرها من لوحة الإدارة',
+  },
+  fr: {
+    hero_badge: 'BLOG · ACTUALITÉS',
+    title: "Blog de l'association",
+    subtitle: "Histoires de succès, activités et dernières nouvelles d'Ibtasim",
+    all: 'Tous',
+    featured_badge: 'À LA UNE',
+    all_posts: 'Tous les articles',
+    posts_count: (n) => `${n} article${n > 1 ? 's' : ''}`,
+    loading: 'Chargement...',
+    no_posts_title: 'Aucun article pour le moment',
+    no_posts_body: 'Les articles, actualités et événements apparaîtront ici une fois publiés depuis le tableau de bord.',
+  },
+  en: {
+    hero_badge: 'BLOG · STORIES',
+    title: 'Association Blog',
+    subtitle: 'Success stories, activities, and latest news from Ibtasim',
+    all: 'All',
+    featured_badge: 'FEATURED',
+    all_posts: 'All Posts',
+    posts_count: (n) => `${n} post${n !== 1 ? 's' : ''}`,
+    loading: 'Loading...',
+    no_posts_title: 'No posts yet',
+    no_posts_body: 'Articles, news, and events will appear here once published from the admin dashboard.',
+  },
+};
+
 const ImpactStories = () => {
-  const { t, language } = useApp();
+  const { language } = useApp();
   const navigate = useNavigate();
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [selectedPostType, setSelectedPostType] = useState('all');
@@ -40,8 +79,10 @@ const ImpactStories = () => {
   const CAT_LABELS = { education: 'التعليم', water: 'المياه', health: 'الصحة', kafala: 'الكفالة', food: 'الغذاء', housing: 'السكن' };
   const CAT_ICONS  = { education: '🎓', water: '💧', health: '❤️', kafala: '🤲', food: '🍞', housing: '🏠' };
 
+  const sc = STORIES_COPY[language] || STORIES_COPY.ar;
+
   const filters = [
-    { id: 'all', label: `الكل (${stories.length})`, icon: '' },
+    { id: 'all', label: `${sc.all} (${stories.length})`, icon: '' },
     ...CATEGORIES.map(c => ({
       id: c,
       label: `${CAT_LABELS[c]} (${stories.filter(s => s.category === c).length})`,
@@ -66,11 +107,11 @@ const ImpactStories = () => {
       <div style={{ background: 'linear-gradient(135deg,#052E2F,#0A5F62,#0d7477)', padding: isMobile ? '40px 20px' : '60px 0' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '0' : '0 28px', textAlign: 'center' }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#33C0C0', marginBottom: 12, fontFamily: 'Inter, sans-serif' }}>
-            BLOG · المدونة
+            {sc.hero_badge}
           </div>
-          <h1 style={{ fontSize: 40, fontWeight: 900, color: 'white', marginBottom: 12 }}>مدونة الجمعية</h1>
+          <h1 style={{ fontSize: 40, fontWeight: 900, color: 'white', marginBottom: 12 }}>{sc.title}</h1>
           <p style={{ fontSize: 16, color: 'rgba(255,255,255,.7)', lineHeight: 1.7, maxWidth: 500, margin: '0 auto 28px' }}>
-            قصص النجاح، الأنشطة والفعاليات، وآخر الأخبار من جمعية ابتسام
+            {sc.subtitle}
           </p>
           {/* Filter chips */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -112,7 +153,7 @@ const ImpactStories = () => {
       {featuredStory && (
         <div style={{ maxWidth: 1200, margin: isMobile ? '28px auto 0' : '48px auto 0', padding: isMobile ? '0 16px' : '0 28px' }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 16, fontFamily: 'Inter, sans-serif' }}>
-            FEATURED · المنشور المميز
+            {sc.featured_badge}
           </div>
           <div style={{ background: 'white', borderRadius: 20, overflow: 'hidden', boxShadow: '0 10px 15px rgba(0,0,0,.10)', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
             {/* Gradient side */}
@@ -144,20 +185,18 @@ const ImpactStories = () => {
       {/* Stories Grid */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '28px 16px 48px' : '40px 28px 60px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 700 }}>جميع المنشورات</h2>
-          <div style={{ fontSize: 13, color: '#94a3b8' }}>{filteredStories.length} منشور</div>
+          <h2 style={{ fontSize: 22, fontWeight: 700 }}>{sc.all_posts}</h2>
+          <div style={{ fontSize: 13, color: '#94a3b8' }}>{sc.posts_count(filteredStories.length)}</div>
         </div>
 
         {convexStories === undefined && (
-          <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8', fontSize: 13 }}>جاري التحميل...</div>
+          <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8', fontSize: 13 }}>{sc.loading}</div>
         )}
         {convexStories !== undefined && filteredStories.length === 0 && (
           <div style={{ textAlign: 'center', padding: '60px 20px', background: 'white', borderRadius: 20, border: '1px solid #E5E9EB' }}>
             <div style={{ fontSize: 48, marginBottom: 14 }}>📖</div>
-            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>لا توجد منشورات بعد</div>
-            <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7 }}>
-              ستظهر المقالات والأخبار والفعاليات هنا بمجرد نشرها من لوحة الإدارة
-            </div>
+            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>{sc.no_posts_title}</div>
+            <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7 }}>{sc.no_posts_body}</div>
           </div>
         )}
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${isMobile ? '100%' : '300px'}, 1fr))`, gap: isMobile ? 16 : 24 }}>
