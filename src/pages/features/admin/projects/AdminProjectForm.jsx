@@ -440,7 +440,6 @@ export default function AdminProjectForm() {
               value={card.icon}
               onChange={e => { const c = [...formData.benefitCards]; c[i] = { ...c[i], icon: e.target.value }; set('benefitCards', c); }}
               placeholder="😊"
-              maxLength={2}
               style={{ ...fieldInput, textAlign: 'center', fontSize: 22, padding: '0 4px', fontFamily: 'sans-serif' }}
             />
             <input
