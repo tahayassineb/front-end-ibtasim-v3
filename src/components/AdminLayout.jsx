@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useQuery } from 'convex/react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
-import { canAccessPath, roleLabels } from '../lib/adminPermissions';
+import { canAccessPath, normalizeAdminRole, roleLabels } from '../lib/adminPermissions';
 
 const sections = [
   { label: 'الرئيسية', items: [{ path: '/admin', label: 'لوحة التحكم', icon: 'dashboard', exact: true }] },
@@ -41,6 +43,14 @@ const sections = [
 ];
 
 function SidebarContent({ user, onLogout, onNavigate, isActive }) {
+  const normalizedRole = normalizeAdminRole(user?.role);
+  const visibleSections = sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => canAccessPath(normalizedRole, item.path)),
+    }))
+    .filter((section) => section.items.length > 0);
+
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Link to="/admin" onClick={onNavigate} style={{ padding: 20, borderBottom: '1px solid #E5E9EB', display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', color: '#0e1a1b' }}>
@@ -52,34 +62,34 @@ function SidebarContent({ user, onLogout, onNavigate, isActive }) {
       </Link>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '10px 0' }}>
-        {sections.map((section) => {
-          const visibleItems = section.items.filter((item) => canAccessPath(user?.role, item.path));
-          if (visibleItems.length === 0) return null;
-          return (
-            <div key={section.label}>
-              <div style={{ padding: '14px 14px 5px', fontSize: 10, color: '#94a3b8', fontWeight: 900 }}>{section.label}</div>
-              {visibleItems.map((item) => {
-                const active = isActive(item);
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={onNavigate}
-                    style={{ margin: '3px 8px', padding: '10px 12px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', fontSize: 14, fontWeight: active ? 800 : 600, background: active ? '#0d7477' : 'transparent', color: active ? 'white' : '#64748b' }}
-                  >
-                    <span className="material-symbols-outlined no-flip" style={{ fontSize: 20 }}>{item.icon}</span>
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          );
-        })}
+        {visibleSections.length === 0 ? (
+          <div style={{ margin: 14, padding: 12, borderRadius: 10, background: '#F8FAFC', color: '#64748b', fontSize: 12, fontWeight: 700, lineHeight: 1.8 }}>
+            لا توجد صلاحيات ظاهرة. أعد تسجيل الدخول أو تواصل مع المالك.
+          </div>
+        ) : visibleSections.map((section) => (
+          <div key={section.label}>
+            <div style={{ padding: '14px 14px 5px', fontSize: 10, color: '#94a3b8', fontWeight: 900 }}>{section.label}</div>
+            {section.items.map((item) => {
+              const active = isActive(item);
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={onNavigate}
+                  style={{ margin: '3px 8px', padding: '10px 12px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', fontSize: 14, fontWeight: active ? 800 : 600, background: active ? '#0d7477' : 'transparent', color: active ? 'white' : '#64748b' }}
+                >
+                  <span className="material-symbols-outlined no-flip" style={{ fontSize: 20 }}>{item.icon}</span>
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </div>
 
       <div style={{ borderTop: '1px solid #E5E9EB', padding: 14 }}>
         <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 2 }}>{user?.name || 'المدير'}</div>
-        <div style={{ fontSize: 11, color: '#64748b', marginBottom: 8 }}>{roleLabels[user?.role] || 'مالك'}</div>
+        <div style={{ fontSize: 11, color: '#64748b', marginBottom: 8 }}>{roleLabels[normalizedRole] || roleLabels.owner}</div>
         <button type="button" onClick={onLogout} style={{ width: '100%', height: 36, borderRadius: 10, border: 'none', background: '#FEE2E2', color: '#dc2626', fontWeight: 800, cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>تسجيل الخروج</button>
       </div>
     </div>
@@ -87,10 +97,47 @@ function SidebarContent({ user, onLogout, onNavigate, isActive }) {
 }
 
 export default function AdminLayout() {
-  const { user, logout } = useApp();
+  const { user, logout, updateUser } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const adminSession = useQuery(api.admin.getAdminSession, user?.id ? { adminId: user.id } : 'skip');
+
+  const hydratedUser = useMemo(() => {
+    if (!user) return user;
+
+    const session = adminSession || null;
+    return {
+      ...user,
+      role: normalizeAdminRole(session?.role ?? user.role),
+      name: session?.fullName ?? user.name,
+      email: session?.email ?? user.email,
+      phone: session?.phoneNumber ?? user.phone,
+      isActive: session?.isActive ?? user.isActive,
+    };
+  }, [adminSession, user]);
+
+  useEffect(() => {
+    if (!user || !adminSession || !updateUser) return;
+
+    const nextUser = {
+      role: normalizeAdminRole(adminSession.role),
+      name: adminSession.fullName ?? user.name,
+      email: adminSession.email ?? user.email,
+      phone: adminSession.phoneNumber ?? user.phone,
+      isActive: adminSession.isActive ?? user.isActive,
+    };
+
+    if (
+      user.role !== nextUser.role
+      || user.name !== nextUser.name
+      || user.email !== nextUser.email
+      || user.phone !== nextUser.phone
+      || user.isActive !== nextUser.isActive
+    ) {
+      updateUser(nextUser);
+    }
+  }, [adminSession, updateUser, user]);
 
   const isActive = (item) => {
     if (item.exact) return location.pathname === item.path || location.pathname === '/admin/dashboard';
@@ -107,12 +154,12 @@ export default function AdminLayout() {
   return (
     <div style={{ minHeight: '100vh', background: '#f6f8f8', fontFamily: 'var(--font-arabic)', color: '#0e1a1b' }} dir="rtl">
       <aside className="hidden lg:block" style={{ position: 'fixed', right: 0, top: 0, bottom: 0, width: 248, background: 'white', borderLeft: '1px solid #E5E9EB', zIndex: 40 }}>
-        <SidebarContent user={user} onLogout={handleLogout} onNavigate={() => setOpen(false)} isActive={isActive} />
+        <SidebarContent user={hydratedUser} onLogout={handleLogout} onNavigate={() => setOpen(false)} isActive={isActive} />
       </aside>
 
       {open && <div className="fixed inset-0 lg:hidden" style={{ background: 'rgba(0,0,0,.45)', zIndex: 45 }} onClick={() => setOpen(false)} />}
       <aside className="lg:hidden" style={{ position: 'fixed', top: 0, bottom: 0, right: open ? 0 : -285, width: 280, background: 'white', zIndex: 50, transition: 'right .2s', boxShadow: open ? '-10px 0 30px rgba(0,0,0,.16)' : 'none' }}>
-        <SidebarContent user={user} onLogout={handleLogout} onNavigate={() => setOpen(false)} isActive={isActive} />
+        <SidebarContent user={hydratedUser} onLogout={handleLogout} onNavigate={() => setOpen(false)} isActive={isActive} />
       </aside>
 
       <main style={{ marginRight: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 248 : 0, minHeight: '100vh' }}>
@@ -128,4 +175,3 @@ export default function AdminLayout() {
     </div>
   );
 }
-

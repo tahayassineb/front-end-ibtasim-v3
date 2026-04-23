@@ -395,3 +395,25 @@ Fix:
 - `npx convex codegen` passes after the fixes.
 - `npm run build` passes after the fixes.
 - Focused ESLint check for the affected frontend files passes. Convex `.ts` files are ignored by the current ESLint config, so Convex validation was verified through `npx convex codegen`.
+
+## 14. Admin Sidebar Blank Fix
+
+The admin sidebar became blank after the role system update because older saved admin sessions could still contain role values such as `admin`, or no fresh role from Convex. The sidebar filtered every item through the new role matrix, so unknown roles hid the whole navigation.
+
+### Changes
+
+- Added `normalizeAdminRole()` in `src/lib/adminPermissions.js`.
+- Preserved valid roles: `owner`, `manager`, `validator`, and `viewer`.
+- Mapped legacy/stale admin roles such as `admin`, `super_admin`, and unknown admin role strings to `owner` for backward compatibility.
+- Updated `can()` and `canAccessPath()` to normalize roles before checking permissions.
+- Updated `src/components/AdminLayout.jsx` to query `api.admin.getAdminSession({ adminId: user.id })`.
+- The sidebar now uses the Convex session role as the source of truth once loaded, with normalized local user role as the loading fallback.
+- The saved local auth user is refreshed with the current Convex role, name, email, phone, and active status when the session query returns.
+- Added a defensive sidebar empty state: `لا توجد صلاحيات ظاهرة. أعد تسجيل الدخول أو تواصل مع المالك.`
+- Rewrote the admin layout Arabic labels with clean UTF-8 text while preserving the same route structure.
+
+### Verification
+
+- `npx eslint src\components\AdminLayout.jsx src\lib\adminPermissions.js` passed.
+- `npm run build` passed.
+- Build warning remains only the existing large bundle warning from Vite, not a new failure.
