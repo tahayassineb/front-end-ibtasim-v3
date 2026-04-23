@@ -1,6 +1,8 @@
 import { query, mutation, action } from "./_generated/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
+import { requireAdmin } from "./permissions";
+import { excerpt, slugify } from "./seo";
 
 // ============================================
 // PROJECT QUERIES
@@ -147,6 +149,20 @@ export const getProjectById = query({
   },
 });
 
+export const getProjectBySlugOrId = query({
+  args: { ref: v.string() },
+  handler: async (ctx, args) => {
+    const normalizedId = ctx.db.normalizeId("projects", args.ref);
+    if (normalizedId) {
+      const byId = await ctx.db.get(normalizedId);
+      if (byId) return byId;
+    }
+
+    const projects = await ctx.db.query("projects").collect();
+    return projects.find((project) => project.slug === args.ref) ?? null;
+  },
+});
+
 export const getFeaturedProjects = query({
   args: { limit: v.optional(v.number()) },
   returns: v.array(v.object({
@@ -218,9 +234,14 @@ export const createProject = mutation({
     featuredOrder: v.optional(v.number()),
     createdBy: v.id("admins"),
     benefitCards: v.optional(v.array(v.object({ icon: v.string(), value: v.string(), label: v.string() }))),
+    slug: v.optional(v.string()),
+    metaTitle: v.optional(v.string()),
+    metaDescription: v.optional(v.string()),
+    imageAlt: v.optional(v.string()),
   },
   returns: v.id("projects"),
   handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.createdBy, "content:write");
     const now = Date.now();
 
     // Auto-assign featuredOrder when isFeatured=true and no order is given
@@ -253,6 +274,19 @@ export const createProject = mutation({
       isFeatured: args.isFeatured || false,
       featuredOrder: featuredOrder,
       benefitCards: args.benefitCards,
+      slug: args.slug || slugify(args.title.ar || args.title.fr || args.title.en),
+      metaTitle: args.metaTitle || args.title.ar || args.title.fr || args.title.en,
+      metaDescription: args.metaDescription || excerpt(args.description.ar || args.description.fr || args.description.en),
+      imageAlt: args.imageAlt || args.title.ar || args.title.fr || args.title.en,
+      canonicalPath: `/projects/${args.slug || slugify(args.title.ar || args.title.fr || args.title.en)}`,
+    });
+    await ctx.db.insert("activities", {
+      actorId: args.createdBy,
+      actorType: "admin",
+      action: "project.created",
+      entityType: "project",
+      entityId: String(projectId),
+      createdAt: now,
     });
 
     // Schedule notification if published directly as active
@@ -299,15 +333,28 @@ export const updateProject = mutation({
       isFeatured: v.optional(v.boolean()),
       featuredOrder: v.optional(v.number()),
       benefitCards: v.optional(v.array(v.object({ icon: v.string(), value: v.string(), label: v.string() }))),
+      slug: v.optional(v.string()),
+      metaTitle: v.optional(v.string()),
+      metaDescription: v.optional(v.string()),
+      imageAlt: v.optional(v.string()),
     }),
+    adminId: v.optional(v.id("admins")),
   },
   returns: v.boolean(),
   handler: async (ctx, args) => {
+    if (args.adminId) await requireAdmin(ctx, args.adminId, "content:write");
     const project = await ctx.db.get(args.projectId);
     if (!project) return false;
 
     // Map storage IDs to database field names
     const updates: any = { ...args.updates };
+    if (updates.title && !updates.slug && !project.slug) {
+      updates.slug = slugify(updates.title.ar || updates.title.fr || updates.title.en);
+    }
+    if (updates.description && !updates.metaDescription && !project.metaDescription) {
+      updates.metaDescription = excerpt(updates.description.ar || updates.description.fr || updates.description.en);
+    }
+    if (updates.slug) updates.canonicalPath = `/projects/${updates.slug}`;
     if (updates.mainImageStorageId !== undefined) {
       updates.mainImage = updates.mainImageStorageId;
       delete updates.mainImageStorageId;
@@ -329,6 +376,14 @@ export const updateProject = mutation({
     await ctx.db.patch(args.projectId, {
       ...updates,
       updatedAt: Date.now(),
+    });
+    if (args.adminId) await ctx.db.insert("activities", {
+      actorId: args.adminId,
+      actorType: "admin",
+      action: "project.updated",
+      entityType: "project",
+      entityId: String(args.projectId),
+      createdAt: Date.now(),
     });
 
     // Schedule notification if project is being published (draft → active)

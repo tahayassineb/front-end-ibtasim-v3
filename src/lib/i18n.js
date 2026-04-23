@@ -3,19 +3,19 @@ export const LANGUAGES = {
     code: 'ar',
     name: 'العربية',
     dir: 'rtl',
-    fontFamily: "'Tajawal', sans-serif",
+    fontFamily: "var(--font-arabic)",
   },
   fr: {
     code: 'fr',
     name: 'Français',
     dir: 'ltr',
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: "var(--font-brand)",
   },
   en: {
     code: 'en',
     name: 'English',
     dir: 'ltr',
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: "var(--font-brand)",
   },
 };
 

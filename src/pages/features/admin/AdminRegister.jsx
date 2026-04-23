@@ -19,11 +19,12 @@ const fieldInput = {
   color: '#0e1a1b', outline: 'none', transition: 'border-color .15s', boxSizing: 'border-box',
 };
 
-const ROLES = [
-  { key: 'admin',     icon: '🛡️', label: 'مدير',   desc: 'صلاحيات كاملة' },
-  { key: 'viewer',    icon: '👁️', label: 'مراجع',  desc: 'عرض فقط' },
-  { key: 'verifier',  icon: '✅', label: 'محقق',   desc: 'تحقق التبرعات' },
-];
+const ROLES = {
+  owner: { icon: '🔑', label: 'مالك', desc: 'صلاحيات كاملة' },
+  manager: { icon: '🛡️', label: 'مدير', desc: 'إدارة المحتوى والعمليات' },
+  validator: { icon: '✅', label: 'محقق', desc: 'التحقق من التبرعات والكفالات' },
+  viewer: { icon: '👁️', label: 'مشاهد', desc: 'عرض فقط' },
+};
 
 export default function AdminRegister() {
   const { token } = useParams();
@@ -39,7 +40,6 @@ export default function AdminRegister() {
   const [password, setPassword]             = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword]     = useState(false);
-  const [role, setRole]                     = useState('admin');
   const [isLoading, setIsLoading]           = useState(false);
   const [error, setError]                   = useState('');
 
@@ -165,18 +165,20 @@ export default function AdminRegister() {
               onFocus={e => e.target.style.borderColor = PRIMARY} onBlur={e => e.target.style.borderColor = BORDER} />
           </div>
 
-          {/* Role selection */}
+          {/* Assigned role */}
           <div style={{ fontSize: 12, fontWeight: 700, color: TEXT2, marginBottom: 10 }}>الدور في الفريق</div>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
-            {ROLES.map(({ key, icon, label, desc }) => (
-              <div key={key} onClick={() => setRole(key)}
-                style={{ flex: 1, border: `2px solid ${role === key ? PRIMARY : BORDER}`, borderRadius: 14, padding: 12, textAlign: 'center', cursor: 'pointer', background: role === key ? P50 : 'white', transition: 'all .15s' }}>
-                <div style={{ fontSize: 22, marginBottom: 6 }}>{icon}</div>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>{label}</div>
-                <div style={{ fontSize: 11, color: TEXTM, marginTop: 2 }}>{desc}</div>
+          {(() => {
+            const roleInfo = ROLES[validation.role] || ROLES.viewer;
+            return (
+              <div style={{ border: `1.5px solid ${BORDER}`, borderRadius: 14, padding: 12, marginBottom: 16, background: P50, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ fontSize: 22 }}>{roleInfo.icon}</div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 800 }}>{roleInfo.label}</div>
+                  <div style={{ fontSize: 11, color: TEXTM, marginTop: 2 }}>{roleInfo.desc}</div>
+                </div>
               </div>
-            ))}
-          </div>
+            );
+          })()}
 
           {/* Error */}
           {error && (

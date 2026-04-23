@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as activities from "../activities.js";
 import type * as admin from "../admin.js";
 import type * as auth from "../auth.js";
 import type * as config from "../config.js";
@@ -22,7 +23,10 @@ import type * as kafalaNotifications from "../kafalaNotifications.js";
 import type * as kafalaPayments from "../kafalaPayments.js";
 import type * as notifications from "../notifications.js";
 import type * as payments from "../payments.js";
+import type * as permissions from "../permissions.js";
 import type * as projects from "../projects.js";
+import type * as receipts from "../receipts.js";
+import type * as seo from "../seo.js";
 import type * as storage from "../storage.js";
 import type * as stories from "../stories.js";
 import type * as users from "../users.js";
@@ -35,6 +39,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  activities: typeof activities;
   admin: typeof admin;
   auth: typeof auth;
   config: typeof config;
@@ -49,7 +54,10 @@ declare const fullApi: ApiFromModules<{
   kafalaPayments: typeof kafalaPayments;
   notifications: typeof notifications;
   payments: typeof payments;
+  permissions: typeof permissions;
   projects: typeof projects;
+  receipts: typeof receipts;
+  seo: typeof seo;
   storage: typeof storage;
   stories: typeof stories;
   users: typeof users;

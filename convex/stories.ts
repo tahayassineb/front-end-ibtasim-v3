@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
+import { excerpt, slugify } from "./seo";
 
 // ── Admin: get all stories ──────────────────────────────────────────────────
 export const getAllStories = query({
@@ -21,6 +22,23 @@ export const getPublishedStories = query({
       .withIndex("by_published", (q) => q.eq("isPublished", true))
       .collect();
     return all.sort((a, b) => (b.publishedAt ?? 0) - (a.publishedAt ?? 0));
+  },
+});
+
+export const getPublishedStoryBySlugOrId = query({
+  args: { ref: v.string() },
+  handler: async (ctx, args) => {
+    const normalizedId = ctx.db.normalizeId("stories", args.ref);
+    if (normalizedId) {
+      const byId = await ctx.db.get(normalizedId);
+      if (byId?.isPublished) return byId;
+    }
+
+    const published = await ctx.db
+      .query("stories")
+      .withIndex("by_published", (q) => q.eq("isPublished", true))
+      .collect();
+    return published.find((story) => story.slug === args.ref) ?? null;
   },
 });
 
@@ -51,10 +69,18 @@ export const createStory = mutation({
     postType: v.optional(v.union(v.literal("story"), v.literal("activity"), v.literal("update"))),
     slug: v.optional(v.string()),
     metaDescription: v.optional(v.string()),
+    metaTitle: v.optional(v.string()),
+    imageAlt: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const slug = args.slug || slugify(args.title);
     return await ctx.db.insert("stories", {
       ...args,
+      slug,
+      metaTitle: args.metaTitle || args.title,
+      metaDescription: args.metaDescription || excerpt(args.excerpt || args.body || ""),
+      imageAlt: args.imageAlt || args.title,
+      canonicalPath: `/stories/${slug}`,
       publishedAt: args.isPublished ? Date.now() : undefined,
     });
   },
@@ -79,8 +105,13 @@ export const updateStory = mutation({
     postType: v.optional(v.union(v.literal("story"), v.literal("activity"), v.literal("update"))),
     slug: v.optional(v.string()),
     metaDescription: v.optional(v.string()),
+    metaTitle: v.optional(v.string()),
+    imageAlt: v.optional(v.string()),
   },
   handler: async (ctx, { id, ...fields }) => {
+    if (fields.title && !fields.slug) fields.slug = slugify(fields.title);
+    if (fields.slug) (fields as any).canonicalPath = `/stories/${fields.slug}`;
+    if (fields.excerpt && !fields.metaDescription) fields.metaDescription = excerpt(fields.excerpt);
     await ctx.db.patch(id, fields);
   },
 });

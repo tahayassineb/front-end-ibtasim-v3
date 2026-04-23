@@ -34,7 +34,15 @@ export default function AdminLogin() {
     try {
       const result = await loginAdmin({ email: formData.email, password: formData.password });
       if (result.success) {
-        login({ id: result.adminId, userId: result.userId, email: result.email, name: 'Admin', role: 'admin' });
+        login({
+          id: result.adminId,
+          userId: result.userId,
+          email: result.email,
+          name: result.fullName || 'Admin',
+          phone: result.phoneNumber || '',
+          role: result.role || 'owner',
+          isAdmin: true,
+        });
         navigate('/admin');
       } else {
         setError(result.message || 'البريد الإلكتروني أو كلمة المرور غير صحيحة');

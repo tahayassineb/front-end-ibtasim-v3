@@ -9,6 +9,62 @@
 
 /* Material Symbols Outlined Font */
 @font-face {
+  font-family: 'Thmanyah Sans';
+  font-style: normal;
+  font-weight: 300;
+  src: url('/fonts/thmanyah/sans/thmanyahsans-Light.woff2') format('woff2');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/fonts/thmanyah/sans/thmanyahsans-Regular.woff2') format('woff2');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Sans';
+  font-style: normal;
+  font-weight: 500;
+  src: url('/fonts/thmanyah/sans/thmanyahsans-Medium.woff2') format('woff2');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Sans';
+  font-style: normal;
+  font-weight: 700;
+  src: url('/fonts/thmanyah/sans/thmanyahsans-Bold.woff2') format('woff2');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Sans';
+  font-style: normal;
+  font-weight: 900;
+  src: url('/fonts/thmanyah/sans/thmanyahsans-Black.woff2') format('woff2');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Serif Display';
+  font-style: normal;
+  font-weight: 400 900;
+  src: url('/fonts/thmanyah/serif-display/thmanyahserifdisplay-Bold.woff2') format('woff2');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Serif Text';
+  font-style: normal;
+  font-weight: 400 700;
+  src: url('/fonts/thmanyah/serif-text/thmanyahseriftext-Regular.woff2') format('woff2');
+  font-display: swap;
+}
+
+@font-face {
   font-family: 'Material Symbols Outlined';
   font-style: normal;
   font-weight: 100 700;
@@ -102,8 +158,11 @@
     --color-border-primary: rgba(13, 116, 119, 0.2);
     
     /* Typography */
-    --font-display: 'Inter', sans-serif;
-    --font-arabic: 'Tajawal', sans-serif;
+    --font-brand: 'Thmanyah Sans', 'Inter', system-ui, sans-serif;
+    --font-display: var(--font-brand);
+    --font-arabic: 'Thmanyah Sans', 'Tajawal', sans-serif;
+    --font-display-arabic: 'Thmanyah Serif Display', 'Thmanyah Sans', serif;
+    --font-text-arabic: 'Thmanyah Serif Text', 'Thmanyah Sans', serif;
     --font-light: 300;
     --font-normal: 400;
     --font-medium: 500;
@@ -215,6 +274,26 @@
     font-feature-settings: "kern" 1, "liga" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  html[data-font-system="legacy"] {
+    --font-brand: 'Inter', 'Tajawal', system-ui, sans-serif;
+    --font-display: 'Inter', sans-serif;
+    --font-arabic: 'Tajawal', sans-serif;
+    --font-display-arabic: 'Tajawal', serif;
+    --font-text-arabic: 'Tajawal', sans-serif;
+  }
+
+  [dir="rtl"] body,
+  [dir="rtl"] input,
+  [dir="rtl"] textarea,
+  [dir="rtl"] button,
+  [dir="rtl"] select {
+    font-family: var(--font-arabic);
+  }
+
+  .font-premium-display {
+    font-family: var(--font-display-arabic);
   }
 
   /* Selection */

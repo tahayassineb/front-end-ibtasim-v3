@@ -1,6 +1,7 @@
 import { query, mutation, action } from "./_generated/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
+import { requireAdmin } from "./permissions";
 
 // ============================================
 // DONATION QUERIES
@@ -99,7 +100,10 @@ export const getDonationsByProject = query({
 });
 
 export const getDonationById = query({
-  args: { donationId: v.id("donations") },
+  args: {
+    donationId: v.id("donations"),
+    adminId: v.optional(v.id("admins")),
+  },
   returns: v.union(
     v.object({
       _id: v.id("donations"),
@@ -123,6 +127,7 @@ export const getDonationById = query({
     v.null()
   ),
   handler: async (ctx, args) => {
+    if (args.adminId) await requireAdmin(ctx, args.adminId, "verification:write");
     const donation = await ctx.db.get(args.donationId);
     if (!donation) return null;
     
@@ -360,6 +365,17 @@ export const verifyDonation = mutation({
       notes: args.notes,
       createdAt: now,
     });
+    if (args.adminId) {
+      await ctx.db.insert("activities", {
+        actorId: args.adminId,
+        actorType: "admin",
+        action: args.verified ? "verification.donation_approved" : "verification.donation_rejected",
+        entityType: "donation",
+        entityId: String(args.donationId),
+        metadata: { amount: donation.amount, projectId: String(donation.projectId) },
+        createdAt: now,
+      });
+    }
 
     // If verified, update project raised amount and user totals
     if (args.verified) {
@@ -419,6 +435,7 @@ export const rejectDonation = mutation({
   },
   returns: v.boolean(),
   handler: async (ctx, args) => {
+    if (args.adminId) await requireAdmin(ctx, args.adminId, "verification:write");
     const donation = await ctx.db.get(args.donationId);
     if (!donation) return false;
     if (donation.status !== "awaiting_verification") return false;
@@ -440,6 +457,17 @@ export const rejectDonation = mutation({
       notes: args.reason,
       createdAt: now,
     });
+    if (args.adminId) {
+      await ctx.db.insert("activities", {
+        actorId: args.adminId,
+        actorType: "admin",
+        action: "verification.donation_rejected",
+        entityType: "donation",
+        entityId: String(args.donationId),
+        metadata: { reason: args.reason },
+        createdAt: now,
+      });
+    }
 
     return true;
   },

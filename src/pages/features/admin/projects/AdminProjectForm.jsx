@@ -3,30 +3,22 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../../../convex/_generated/api';
 import { useApp } from '../../../../context/AppContext';
+import { convexFileUrl } from '../../../../lib/convex';
+import { formatBytes, optimizeImageFile } from '../../../../lib/imageOptimization';
 
 // ─── Convex storage helpers ───────────────────────────────────────────────────
 const uploadFileToConvex = async (file, getUploadUrlMutation) => {
+  const optimized = await optimizeImageFile(file, { maxWidth: 1800, maxHeight: 1800, quality: 0.82 });
+  const uploadFile = optimized.file;
   const uploadUrl = await getUploadUrlMutation();
   const response = await fetch(uploadUrl, {
     method: 'POST',
-    headers: { 'Content-Type': file.type },
-    body: file,
+    headers: { 'Content-Type': uploadFile.type },
+    body: uploadFile,
   });
   if (!response.ok) throw new Error(`Upload failed: ${response.statusText}`);
   const result = await response.json();
-  return result.storageId;
-};
-
-const convexFileUrl = (storageId) => {
-  if (!storageId) return null;
-  if (storageId.startsWith('http') || storageId.startsWith('data:')) return storageId;
-  const siteUrl = import.meta.env.VITE_CONVEX_SITE_URL;
-  if (siteUrl) return `${siteUrl.replace(/\/$/, '')}/storage/${storageId}`;
-  const cloudUrl = import.meta.env.VITE_CONVEX_URL;
-  if (!cloudUrl) return null;
-  const derived = cloudUrl.replace('.convex.cloud', '.convex.site');
-  if (!derived.includes('.convex.site')) return null;
-  return `${derived.replace(/\/$/, '')}/storage/${storageId}`;
+  return { storageId: result.storageId, optimization: optimized };
 };
 
 // ─── Reusable field components ────────────────────────────────────────────────
@@ -120,6 +112,10 @@ export default function AdminProjectForm() {
     updates: [],
     transformationStage: '',
     benefitCards: [],
+    slug: '',
+    metaTitle: '',
+    metaDescription: '',
+    imageAlt: '',
   });
 
   // Load existing project in edit mode
@@ -140,6 +136,10 @@ export default function AdminProjectForm() {
         status: existingProject.status || 'draft',
         transformationStage: existingProject.transformationStage || '',
         benefitCards: existingProject.benefitCards || [],
+        slug: existingProject.slug || '',
+        metaTitle: existingProject.metaTitle || '',
+        metaDescription: existingProject.metaDescription || '',
+        imageAlt: existingProject.imageAlt || '',
       }));
     }
   }, [isEditMode, existingProject]);
@@ -160,9 +160,9 @@ export default function AdminProjectForm() {
     try {
       const previewUrl = URL.createObjectURL(file);
       setFormData(prev => ({ ...prev, mainImage: previewUrl }));
-      const storageId = await uploadFileToConvex(file, getUploadUrlMutation);
+      const { storageId, optimization } = await uploadFileToConvex(file, getUploadUrlMutation);
       setFormData(prev => ({ ...prev, mainImage: previewUrl, mainImageStorageId: storageId }));
-      showToast('تم رفع الصورة', 'success');
+      showToast(optimization.optimized ? `Image optimized ${formatBytes(optimization.originalSize)} -> ${formatBytes(optimization.finalSize)}` : 'Image uploaded', 'success');
     } catch {
       showToast('خطأ في رفع الصورة', 'error');
       setFormData(prev => ({ ...prev, mainImage: '', mainImageStorageId: null }));
@@ -180,7 +180,10 @@ export default function AdminProjectForm() {
       const previews = files.map(f => URL.createObjectURL(f));
       setFormData(prev => ({ ...prev, gallery: [...prev.gallery, ...previews], galleryStorageIds: [...prev.galleryStorageIds, ...Array(files.length).fill(null)] }));
       const results = await Promise.all(files.map(async (file, i) => {
-        try { return { i, id: await uploadFileToConvex(file, getUploadUrlMutation) }; }
+        try {
+          const uploaded = await uploadFileToConvex(file, getUploadUrlMutation);
+          return { i, id: uploaded.storageId };
+        }
         catch { return { i, id: null }; }
       }));
       setFormData(prev => {
@@ -242,7 +245,12 @@ export default function AdminProjectForm() {
             beneficiaries: parseInt(formData.beneficiaries) || 0,
             ...(formData.transformationStage ? { transformationStage: formData.transformationStage } : {}),
             ...(formData.benefitCards?.length ? { benefitCards: formData.benefitCards } : { benefitCards: [] }),
+            slug: formData.slug || undefined,
+            metaTitle: formData.metaTitle || undefined,
+            metaDescription: formData.metaDescription || undefined,
+            imageAlt: formData.imageAlt || undefined,
           },
+          adminId: user?.id,
         });
       } else {
         const adminId = user?.id;
@@ -259,6 +267,10 @@ export default function AdminProjectForm() {
           beneficiaries: parseInt(formData.beneficiaries) || 0,
           isFeatured: formData.featured,
           createdBy: adminId,
+          slug: formData.slug || undefined,
+          metaTitle: formData.metaTitle || undefined,
+          metaDescription: formData.metaDescription || undefined,
+          imageAlt: formData.imageAlt || undefined,
           ...(formData.transformationStage ? { transformationStage: formData.transformationStage } : {}),
           ...(formData.benefitCards?.length ? { benefitCards: formData.benefitCards } : {}),
         });

@@ -14,6 +14,7 @@ import { useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
 import { convexFileUrl } from '../../../lib/convex';
+import { updatePageSeo } from '../../../lib/seo';
 
 // ============================================
 // PROJECT DETAIL PAGE
@@ -44,7 +45,7 @@ const ProjectDetail = ({ preview = false }) => {
   const [now] = useState(() => Date.now());
 
   // Fetch project from Convex backend — PRESERVED
-  const convexProject = useQuery(api.projects.getProjectById, { projectId: id });
+  const convexProject = useQuery(api.projects.getProjectBySlugOrId, id ? { ref: id } : 'skip');
 
   // Fetch recent verified donations for donors section — PRESERVED
   const convexDonations = useQuery(
@@ -79,8 +80,33 @@ const ProjectDetail = ({ preview = false }) => {
         : 30,
       category: convexProject.category,
       image: convexFileUrl(convexProject.mainImage) || convexProject.mainImage,
+      slug: convexProject.slug,
+      metaTitle: convexProject.metaTitle,
+      metaDescription: convexProject.metaDescription,
+      imageAlt: convexProject.imageAlt,
+      canonicalPath: convexProject.canonicalPath,
     };
   }, [convexProject, previewData, now]);
+
+  useEffect(() => {
+    if (!project || preview) return;
+    const title = getLocalizedText(project.metaTitle || project.title, language);
+    const description = getLocalizedText(project.metaDescription || project.description, language);
+    updatePageSeo({
+      title: title ? `${title} | Association Espoir` : undefined,
+      description,
+      canonicalPath: project.canonicalPath || `/projects/${project.slug || project.id}`,
+      image: project.image,
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'DonateAction',
+        name: title,
+        description,
+        url: `${window.location.origin}/projects/${project.slug || project.id}`,
+        recipient: { '@type': 'NGO', name: 'Association Espoir' },
+      },
+    });
+  }, [project, preview, language]);
 
   const handleDonateClick = () => {
     if (project) navigate(`/donate/${project.id}`);

@@ -4,6 +4,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../../../convex/_generated/api';
 import { useApp } from '../../../../context/AppContext';
 import { convexFileUrl } from '../../../../lib/convex';
+import { optimizeImageFile } from '../../../../lib/imageOptimization';
 import KafalaAvatar from '../../../../components/kafala/KafalaAvatar';
 
 // ─── Kafala design tokens ─────────────────────────────────────────────────────
@@ -95,8 +96,9 @@ export default function AdminKafalaForm() {
 
   const uploadPhoto = async () => {
     if (!photo) return existingPhoto;
+    const optimized = await optimizeImageFile(photo, { maxWidth: 1400, maxHeight: 1400, quality: 0.82 });
     const uploadUrl = await generateUploadUrl();
-    const res = await fetch(uploadUrl, { method: 'POST', body: photo, headers: { 'Content-Type': photo.type } });
+    const res = await fetch(uploadUrl, { method: 'POST', body: optimized.file, headers: { 'Content-Type': optimized.file.type } });
     const { storageId } = await res.json();
     return storageId;
   };
@@ -120,6 +122,7 @@ export default function AdminKafalaForm() {
 
       if (isEdit) {
         await updateKafala({
+          adminId: adminUser?.id,
           kafalaId: id, name, gender, age: Number(age),
           location, bio, photo: photoStorageId || undefined,
           monthlyPrice: priceInCents,

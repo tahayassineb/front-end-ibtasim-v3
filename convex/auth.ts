@@ -1,6 +1,7 @@
 import { query, mutation, action } from "./_generated/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
+import { adminRole, effectiveRole } from "./permissions";
 
 // ============================================
 // PASSWORD HASHING (PBKDF2 via Web Crypto API)
@@ -316,6 +317,10 @@ export const loginAdmin = mutation({
       adminId: v.id("admins"),
       userId: v.id("users"),
       email: v.string(),
+      role: adminRole,
+      fullName: v.string(),
+      phoneNumber: v.string(),
+      isActive: v.boolean(),
     }),
     v.object({
       success: v.literal(false),
@@ -337,6 +342,7 @@ export const loginAdmin = mutation({
       return { success: false, message: "Invalid credentials." } as const;
     }
 
+    const user = await ctx.db.get(admin.userId);
     await ctx.db.patch(admin._id, { lastLoginAt: Date.now() });
 
     return {
@@ -344,6 +350,10 @@ export const loginAdmin = mutation({
       adminId: admin._id,
       userId: admin.userId,
       email: admin.email,
+      role: effectiveRole(admin.role),
+      fullName: user?.fullName ?? "Admin",
+      phoneNumber: user?.phoneNumber ?? "",
+      isActive: admin.isActive,
     } as const;
   },
 });

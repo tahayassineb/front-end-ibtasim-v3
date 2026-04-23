@@ -27,8 +27,8 @@ const UserProfile = () => {
 
   const updateUserConvex = useMutation(api.users.updateUser);
   const cancelKafala = useAction(api.kafalaPayments.cancelKafalaSubscription);
-  const userDonations = useQuery(api.donations.getDonationsByUser, user?._id ? { userId: user._id } : 'skip');
-  const kafalaSponsorships = useQuery(api.kafala.getUserKafalaSponsorship, user?._id ? { userId: user._id } : 'skip');
+  const userDonations = useQuery(api.donations.getDonationsByUser, user?.id ? { userId: user.id } : 'skip');
+  const kafalaSponsorships = useQuery(api.kafala.getUserKafalaSponsorship, user?.id ? { userId: user.id } : 'skip');
 
   const lang = currentLanguage.code;
   const translations = {
@@ -245,6 +245,14 @@ const UserProfile = () => {
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 600 }}>{donation.projectTitle?.ar || donation.projectTitle?.fr || donation.projectTitle?.en || 'مشروع'}</div>
                     <div style={{ fontSize: 12, color: '#94a3b8' }}>{formatDate ? formatDate(donation.createdAt) : new Date(donation.createdAt).toLocaleDateString('ar-MA')}</div>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                      {donation.receiptUrl ? (
+                        <a href={convexFileUrl(donation.receiptUrl) || donation.receiptUrl} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#0A5F62', fontWeight: 700, textDecoration: 'none' }}>Download receipt</a>
+                      ) : (
+                        <span style={{ fontSize: 11, color: '#d97706', fontWeight: 700 }}>Receipt pending</span>
+                      )}
+                      {donation.verifiedAt && <span style={{ fontSize: 11, color: '#16a34a' }}>Verified {new Date(donation.verifiedAt).toLocaleDateString('ar-MA')}</span>}
+                    </div>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: '#0A5F62', marginRight: 'auto', whiteSpace: 'nowrap' }}>{((donation.amount || 0) / 100).toFixed(0)} د.م</div>
                   {getStatusBadge(donation.status)}

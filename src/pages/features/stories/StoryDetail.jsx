@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { convexFileUrl } from '../../../lib/convex';
+import { updatePageSeo } from '../../../lib/seo';
 
 // ============================================
 // STORY DETAIL PAGE — Full story view
@@ -23,10 +24,10 @@ export default function StoryDetail() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
-  const allStories = useQuery(api.stories.getPublishedStories);
+  const story = useQuery(api.stories.getPublishedStoryBySlugOrId, id ? { ref: id } : 'skip');
 
-  if (allStories === undefined) {
-    return (
+  {
+    void (
       <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Tajawal, sans-serif' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>📖</div>
@@ -36,9 +37,38 @@ export default function StoryDetail() {
     );
   }
 
-  const story = allStories.find(s => s._id === id);
+  useEffect(() => {
+    if (!story) return;
+    const image = story.coverImage ? convexFileUrl(story.coverImage) : undefined;
+    updatePageSeo({
+      title: `${story.metaTitle || story.title} | Association Espoir`,
+      description: story.metaDescription || story.excerpt,
+      canonicalPath: story.canonicalPath || `/stories/${story.slug || story._id}`,
+      image,
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: story.title,
+        description: story.metaDescription || story.excerpt,
+        image,
+        datePublished: story.publishedAt ? new Date(story.publishedAt).toISOString() : undefined,
+        publisher: { '@type': 'NGO', name: 'Association Espoir' },
+      },
+    });
+  }, [story]);
 
-  if (!story) {
+  if (story === undefined) {
+    return (
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Tajawal, sans-serif' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>...</div>
+          <p style={{ color: '#94a3b8' }}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (story === null) {
     return (
       <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Tajawal, sans-serif', gap: 16 }}>
         <div style={{ fontSize: 48 }}>📭</div>

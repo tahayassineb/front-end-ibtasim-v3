@@ -58,6 +58,9 @@ import AdminContacts from './pages/features/admin/contacts/AdminContacts';
 import AdminSettings from './pages/features/admin/settings/AdminSettings';
 import AdminRegister from './pages/features/admin/AdminRegister';
 import AdminErrorLogs from './pages/features/admin/AdminErrorLogs';
+import AdminActivity from './pages/features/admin/AdminActivity';
+import AdminTeamPerformance from './pages/features/admin/AdminTeamPerformance';
+import AdminReceipts from './pages/features/admin/AdminReceipts';
 
 // ============================================
 // SCROLL TO TOP ON ROUTE CHANGE
@@ -171,6 +174,12 @@ const AdminRoute = ({ children }) => {
 
 function AppContent() {
   const { currentLanguage } = useUI();
+  const fontSystemConfig = useQuery(api.config.getConfig, { key: 'font_system' });
+
+  React.useEffect(() => {
+    const value = fontSystemConfig === 'legacy' ? 'legacy' : 'thmanyah';
+    document.documentElement.dataset.fontSystem = value;
+  }, [fontSystemConfig]);
 
   return (
     <Router>
@@ -250,6 +259,7 @@ function AppContent() {
             
             {/* Donations */}
             <Route path="/admin/donations" element={<AdminDonations />} />
+            <Route path="/admin/receipts" element={<AdminReceipts />} />
             
             {/* Donors / CRM */}
             <Route path="/admin/donors" element={<AdminDonors />} />
@@ -262,6 +272,8 @@ function AppContent() {
             {/* Settings */}
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/settings/config" element={<AdminSettings />} />
+            <Route path="/admin/activity" element={<AdminActivity />} />
+            <Route path="/admin/team-performance" element={<AdminTeamPerformance />} />
 
             {/* Stories */}
             <Route path="/admin/stories" element={<AdminStories />} />

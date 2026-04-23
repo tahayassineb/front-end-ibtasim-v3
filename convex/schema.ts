@@ -49,6 +49,12 @@ export default defineSchema({
     userId: v.id("users"),
     email: v.string(),
     passwordHash: v.string(), // bcrypt hashed password
+    role: v.optional(v.union(
+      v.literal("owner"),
+      v.literal("manager"),
+      v.literal("validator"),
+      v.literal("viewer")
+    )),
     
     // Status
     isActive: v.boolean(),
@@ -134,6 +140,13 @@ export default defineSchema({
       value: v.string(),   // e.g. "10"
       label: v.string(),   // e.g. "أسرة مستفيدة"
     }))),
+
+    // SEO / GEO publishing
+    slug: v.optional(v.string()),
+    metaTitle: v.optional(v.string()),
+    metaDescription: v.optional(v.string()),
+    imageAlt: v.optional(v.string()),
+    canonicalPath: v.optional(v.string()),
   })
     .index("by_status", ["status"])
     .index("by_category", ["category"])
@@ -299,6 +312,11 @@ export default defineSchema({
     phone: v.string(),           // WhatsApp number of invitee
     token: v.string(),           // UUID token
     invitedBy: v.id("admins"),
+    role: v.optional(v.union(
+      v.literal("manager"),
+      v.literal("validator"),
+      v.literal("viewer")
+    )),
     status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("expired")),
     expiresAt: v.number(),       // Date.now() + 7 days
     acceptedAt: v.optional(v.number()),
@@ -358,6 +376,11 @@ export default defineSchema({
     updatedAt: v.number(),
     isFeatured: v.optional(v.boolean()),
     featuredOrder: v.optional(v.number()),
+    slug: v.optional(v.string()),
+    metaTitle: v.optional(v.string()),
+    metaDescription: v.optional(v.string()),
+    imageAlt: v.optional(v.string()),
+    canonicalPath: v.optional(v.string()),
   })
     .index("by_status", ["status"])
     .index("by_gender", ["gender"])
@@ -456,6 +479,9 @@ export default defineSchema({
     postType: v.optional(v.union(v.literal("story"), v.literal("activity"), v.literal("update"))),
     slug: v.optional(v.string()),
     metaDescription: v.optional(v.string()),
+    metaTitle: v.optional(v.string()),
+    imageAlt: v.optional(v.string()),
+    canonicalPath: v.optional(v.string()),
   }).index('by_published', ['isPublished']),
 
   // ============================================
@@ -477,7 +503,7 @@ export default defineSchema({
   // ACTIVITY LOG TABLE (Audit Trail)
   // ============================================
   activities: defineTable({
-    actorId: v.optional(v.id("users")), // null for system actions
+    actorId: v.optional(v.union(v.id("users"), v.id("admins"))), // null for system actions
     actorType: v.union(v.literal("user"), v.literal("admin"), v.literal("system")),
     action: v.string(),
     entityType: v.union(
@@ -486,7 +512,12 @@ export default defineSchema({
       v.literal("donation"),
       v.literal("payment"),
       v.literal("admin"),
-      v.literal("kafala")
+      v.literal("kafala"),
+      v.literal("kafalaDonation"),
+      v.literal("story"),
+      v.literal("receipt"),
+      v.literal("contact"),
+      v.literal("config")
     ),
     entityId: v.string(),
     metadata: v.optional(v.record(v.string(), v.any())),

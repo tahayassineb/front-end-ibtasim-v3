@@ -3,6 +3,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../../../convex/_generated/api';
 import { useApp } from '../../../../context/AppContext';
 import { convexFileUrl } from '../../../../lib/convex';
+import { optimizeImageFile } from '../../../../lib/imageOptimization';
 import RichTextEditor from '../../../../components/RichTextEditor';
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
@@ -34,7 +35,7 @@ const EMPTY_FORM = {
   ...POST_TYPE_DEFAULTS.story,
   isPublished: false, isFeatured: false,
   coverImage: '', body: '',
-  postType: 'story', slug: '', metaDescription: '',
+  postType: 'story', slug: '', metaDescription: '', metaTitle: '', imageAlt: '',
 };
 
 const FieldLabel = ({ children }) => (
@@ -86,6 +87,8 @@ export default function AdminStories() {
       postType: pt,
       slug: story.slug || '',
       metaDescription: story.metaDescription || '',
+      metaTitle: story.metaTitle || '',
+      imageAlt: story.imageAlt || '',
     });
     setCoverPreview(story.coverImage ? convexFileUrl(story.coverImage) : null);
     setEditingId(story._id);
@@ -96,19 +99,21 @@ export default function AdminStories() {
     if (!file) return;
     setUploadingCover(true);
     try {
+      const optimized = await optimizeImageFile(file, { maxWidth: 1600, maxHeight: 1200, quality: 0.82 });
       const uploadUrl = await generateUploadUrl();
-      const res = await fetch(uploadUrl, { method: 'POST', headers: { 'Content-Type': file.type }, body: file });
+      const res = await fetch(uploadUrl, { method: 'POST', headers: { 'Content-Type': optimized.file.type }, body: optimized.file });
       const { storageId } = await res.json();
       handleField('coverImage', storageId);
       setCoverPreview(URL.createObjectURL(file));
-    } catch (e) {
+    } catch {
       showToast?.('فشل رفع الصورة', 'error');
     } finally { setUploadingCover(false); }
   };
 
   const handleInlineImageUpload = async (file) => {
+    const optimized = await optimizeImageFile(file, { maxWidth: 1400, maxHeight: 1400, quality: 0.82 });
     const uploadUrl = await generateUploadUrl();
-    const res = await fetch(uploadUrl, { method: 'POST', headers: { 'Content-Type': file.type }, body: file });
+    const res = await fetch(uploadUrl, { method: 'POST', headers: { 'Content-Type': optimized.file.type }, body: optimized.file });
     const { storageId } = await res.json();
     return convexFileUrl(storageId);
   };
@@ -129,6 +134,8 @@ export default function AdminStories() {
         postType: form.postType || 'story',
         slug: form.slug || undefined,
         metaDescription: form.metaDescription || undefined,
+        metaTitle: form.metaTitle || undefined,
+        imageAlt: form.imageAlt || undefined,
       };
       if (editingId) {
         await updateStory({ id: editingId, ...payload });
@@ -273,6 +280,8 @@ export default function AdminStories() {
                     <FieldLabel>الرابط (Slug) — يُملأ تلقائياً</FieldLabel>
                     <input style={{ ...fieldInput, fontFamily: 'Inter, monospace', fontSize: 12 }} value={form.slug}
                       onChange={e => handleField('slug', e.target.value)} placeholder="my-post-slug" dir="ltr" />
+                    <input style={{ ...fieldInput, marginTop: 10 }} value={form.metaTitle} onChange={e => handleField('metaTitle', e.target.value)} placeholder="Meta title" />
+                    <input style={{ ...fieldInput, marginTop: 10 }} value={form.imageAlt} onChange={e => handleField('imageAlt', e.target.value)} placeholder="Image alt text" />
                   </div>
                   <div>
                     <FieldLabel>وصف الصفحة (Meta Description) — حتى 160 حرفاً</FieldLabel>

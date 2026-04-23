@@ -5,6 +5,7 @@ import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
 import { convexFileUrl } from '../../../lib/convex';
 import KafalaAvatar from '../../../components/kafala/KafalaAvatar';
+import { updatePageSeo } from '../../../lib/seo';
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -27,7 +28,7 @@ export default function KafalaDetail() {
   const isMobile = useIsMobile();
   const lang = currentLanguage?.code || 'ar';
 
-  const data = useQuery(api.kafala.getKafalaById, { kafalaId: id });
+  const data = useQuery(api.kafala.getKafalaBySlugOrId, id ? { ref: id } : 'skip');
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -51,6 +52,32 @@ export default function KafalaDetail() {
     return bio[lang] || bio.ar || bio.en || '';
   };
 
+  const kafala = data;
+  const photoUrl = kafala?.photo ? (convexFileUrl(kafala.photo) || kafala.photo) : null;
+
+  useEffect(() => {
+    if (!kafala) return;
+    const bio = !kafala.bio
+      ? ''
+      : typeof kafala.bio === 'string'
+        ? kafala.bio
+        : kafala.bio[lang] || kafala.bio.ar || kafala.bio.en || '';
+    updatePageSeo({
+      title: `${kafala.metaTitle || kafala.name} | Kafala | Association Espoir`,
+      description: kafala.metaDescription || bio,
+      canonicalPath: kafala.canonicalPath || `/kafala/${kafala.slug || kafala._id}`,
+      image: photoUrl,
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'DonateAction',
+        name: kafala.name,
+        description: kafala.metaDescription || bio,
+        url: `${window.location.origin}/kafala/${kafala.slug || kafala._id}`,
+        recipient: { '@type': 'NGO', name: 'Association Espoir' },
+      },
+    });
+  }, [kafala, photoUrl, lang]);
+
   if (data === undefined) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8', fontFamily: 'Tajawal, sans-serif' }}>
@@ -70,9 +97,7 @@ export default function KafalaDetail() {
     );
   }
 
-  const kafala = data;
   const isSponsored = kafala.status === 'sponsored';
-  const photoUrl = kafala.photo ? (convexFileUrl(kafala.photo) || kafala.photo) : null;
   const params = new URLSearchParams(window.location.search);
   const justSponsored = params.get('sponsored') === 'true';
   const monthlyAmount = ((kafala.monthlyPrice || 30000) / 100).toLocaleString('fr-MA');

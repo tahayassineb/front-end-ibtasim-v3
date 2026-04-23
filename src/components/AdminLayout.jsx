@@ -1,37 +1,41 @@
 import React, { useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { canAccessPath, roleLabels } from '../lib/adminPermissions';
 
 const sections = [
-  { label: 'الرئيسية', items: [{ path: '/admin', label: 'لوحة التحكم', icon: '📊', exact: true }] },
+  { label: 'الرئيسية', items: [{ path: '/admin', label: 'لوحة التحكم', icon: 'dashboard', exact: true }] },
   {
     label: 'المحتوى',
     items: [
-      { path: '/admin/projects', label: 'المشاريع', icon: '📁' },
-      { path: '/admin/kafala', label: 'الكفالة', icon: '🤲' },
-      { path: '/admin/stories', label: 'القصص', icon: '📖' },
+      { path: '/admin/projects', label: 'المشاريع', icon: 'folder_open' },
+      { path: '/admin/kafala', label: 'الكفالة', icon: 'diversity_1' },
+      { path: '/admin/stories', label: 'القصص', icon: 'auto_stories' },
     ],
   },
   {
     label: 'المالية',
     items: [
-      { path: '/admin/donations', label: 'التبرعات', icon: '💰' },
-      { path: '/admin/verification', label: 'التحقق', icon: '✅' },
-      { path: '/admin/kafala/verifications', label: 'تجديدات الكفالة', icon: '🔄' },
+      { path: '/admin/donations', label: 'التبرعات', icon: 'payments' },
+      { path: '/admin/verification', label: 'التحقق', icon: 'verified' },
+      { path: '/admin/kafala/verifications', label: 'تجديدات الكفالة', icon: 'published_with_changes' },
+      { path: '/admin/receipts', label: 'الوصولات', icon: 'receipt_long' },
     ],
   },
   {
     label: 'العلاقات',
     items: [
-      { path: '/admin/donors', label: 'المتبرعون', icon: '👥' },
-      { path: '/admin/contacts', label: 'رسائل التواصل', icon: '✉️' },
+      { path: '/admin/donors', label: 'المتبرعون', icon: 'groups' },
+      { path: '/admin/contacts', label: 'رسائل التواصل', icon: 'mail' },
     ],
   },
   {
     label: 'النظام',
     items: [
-      { path: '/admin/settings', label: 'الإعدادات', icon: '⚙️' },
-      { path: '/admin/error-logs', label: 'سجل الأخطاء', icon: '🔴' },
+      { path: '/admin/settings', label: 'الإعدادات', icon: 'settings' },
+      { path: '/admin/activity', label: 'سجل النشاط', icon: 'manage_history' },
+      { path: '/admin/team-performance', label: 'أداء الفريق', icon: 'monitoring' },
+      { path: '/admin/error-logs', label: 'سجل الأخطاء', icon: 'report' },
     ],
   },
 ];
@@ -48,30 +52,35 @@ function SidebarContent({ user, onLogout, onNavigate, isActive }) {
       </Link>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '10px 0' }}>
-        {sections.map((section) => (
-          <div key={section.label}>
-            <div style={{ padding: '14px 14px 5px', fontSize: 10, color: '#94a3b8', fontWeight: 900, letterSpacing: '.08em' }}>{section.label}</div>
-            {section.items.map((item) => {
-              const active = isActive(item);
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={onNavigate}
-                  style={{ margin: '3px 8px', padding: '10px 12px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', fontSize: 14, fontWeight: active ? 800 : 600, background: active ? '#0d7477' : 'transparent', color: active ? 'white' : '#64748b' }}
-                >
-                  <span style={{ width: 22, textAlign: 'center' }}>{item.icon}</span>
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        ))}
+        {sections.map((section) => {
+          const visibleItems = section.items.filter((item) => canAccessPath(user?.role, item.path));
+          if (visibleItems.length === 0) return null;
+          return (
+            <div key={section.label}>
+              <div style={{ padding: '14px 14px 5px', fontSize: 10, color: '#94a3b8', fontWeight: 900 }}>{section.label}</div>
+              {visibleItems.map((item) => {
+                const active = isActive(item);
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={onNavigate}
+                    style={{ margin: '3px 8px', padding: '10px 12px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', fontSize: 14, fontWeight: active ? 800 : 600, background: active ? '#0d7477' : 'transparent', color: active ? 'white' : '#64748b' }}
+                  >
+                    <span className="material-symbols-outlined no-flip" style={{ fontSize: 20 }}>{item.icon}</span>
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
 
       <div style={{ borderTop: '1px solid #E5E9EB', padding: 14 }}>
-        <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 8 }}>{user?.name || 'المدير'}</div>
-        <button type="button" onClick={onLogout} style={{ width: '100%', height: 36, borderRadius: 10, border: 'none', background: '#FEE2E2', color: '#dc2626', fontWeight: 800, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>تسجيل الخروج</button>
+        <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 2 }}>{user?.name || 'المدير'}</div>
+        <div style={{ fontSize: 11, color: '#64748b', marginBottom: 8 }}>{roleLabels[user?.role] || 'مالك'}</div>
+        <button type="button" onClick={onLogout} style={{ width: '100%', height: 36, borderRadius: 10, border: 'none', background: '#FEE2E2', color: '#dc2626', fontWeight: 800, cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>تسجيل الخروج</button>
       </div>
     </div>
   );
@@ -96,8 +105,8 @@ export default function AdminLayout() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f6f8f8', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b' }} dir="rtl">
-      <aside className="hidden lg:block" style={{ position: 'fixed', right: 0, top: 0, bottom: 0, width: 240, background: 'white', borderLeft: '1px solid #E5E9EB', zIndex: 40 }}>
+    <div style={{ minHeight: '100vh', background: '#f6f8f8', fontFamily: 'var(--font-arabic)', color: '#0e1a1b' }} dir="rtl">
+      <aside className="hidden lg:block" style={{ position: 'fixed', right: 0, top: 0, bottom: 0, width: 248, background: 'white', borderLeft: '1px solid #E5E9EB', zIndex: 40 }}>
         <SidebarContent user={user} onLogout={handleLogout} onNavigate={() => setOpen(false)} isActive={isActive} />
       </aside>
 
@@ -106,9 +115,11 @@ export default function AdminLayout() {
         <SidebarContent user={user} onLogout={handleLogout} onNavigate={() => setOpen(false)} isActive={isActive} />
       </aside>
 
-      <main style={{ marginRight: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 240 : 0, minHeight: '100vh' }}>
+      <main style={{ marginRight: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 248 : 0, minHeight: '100vh' }}>
         <header style={{ height: 64, background: 'white', borderBottom: '1px solid #E5E9EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', position: 'sticky', top: 0, zIndex: 30 }}>
-          <button type="button" className="lg:hidden" onClick={() => setOpen(true)} style={{ width: 38, height: 38, borderRadius: 10, border: '1px solid #E5E9EB', background: 'white', cursor: 'pointer' }}>☰</button>
+          <button type="button" className="lg:hidden" onClick={() => setOpen(true)} style={{ width: 38, height: 38, borderRadius: 10, border: '1px solid #E5E9EB', background: 'white', cursor: 'pointer' }}>
+            <span className="material-symbols-outlined no-flip">menu</span>
+          </button>
           <h1 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>{current}</h1>
           <Link to="/" style={{ color: '#0d7477', fontSize: 13, fontWeight: 800, textDecoration: 'none' }}>عرض الموقع</Link>
         </header>
@@ -117,3 +128,4 @@ export default function AdminLayout() {
     </div>
   );
 }
+

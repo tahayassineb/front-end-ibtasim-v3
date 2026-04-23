@@ -2,6 +2,7 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
 import { hashPassword } from "./auth";
+import { adminRole, invitationRole, canInviteRole, canChangeRole, effectiveRole, requireAdmin } from "./permissions";
 
 // ============================================
 // ADMIN DASHBOARD QUERIES
@@ -503,6 +504,7 @@ export const createAdmin = mutation({
     userId: v.id("users"),
     email: v.string(),
     passwordHash: v.string(),
+    role: v.optional(adminRole),
     createdBy: v.optional(v.id("admins")),
   },
   returns: v.id("admins"),
@@ -513,6 +515,7 @@ export const createAdmin = mutation({
       userId: args.userId,
       email: args.email,
       passwordHash: args.passwordHash,
+      role: args.role ?? "manager",
       isActive: true,
       lastLoginAt: now,
       createdAt: now,
@@ -531,6 +534,7 @@ export const getAdminByEmail = query({
       userId: v.id("users"),
       email: v.string(),
       passwordHash: v.string(),
+      role: adminRole,
       isActive: v.boolean(),
       lastLoginAt: v.number(),
     }),
@@ -549,6 +553,7 @@ export const getAdminByEmail = query({
       userId: admin.userId,
       email: admin.email,
       passwordHash: admin.passwordHash,
+      role: effectiveRole(admin.role),
       isActive: admin.isActive,
       lastLoginAt: admin.lastLoginAt,
     };
@@ -615,6 +620,7 @@ export const createSuperAdmin = mutation({
       userId,
       email: args.email,
       passwordHash,
+      role: "owner",
       isActive: true,
       lastLoginAt: now,
       createdAt: now,
@@ -632,24 +638,39 @@ export const createAdminInvitation = mutation({
   args: {
     email: v.string(),
     phone: v.string(),
+    role: invitationRole,
     invitedBy: v.id("admins"),
     siteUrl: v.string(),
   },
   returns: v.object({ token: v.string() }),
   handler: async (ctx, args) => {
     const now = Date.now();
+    const inviter = await requireAdmin(ctx, args.invitedBy, "admin:invite");
+    if (!canInviteRole(inviter.role, args.role)) {
+      throw new Error("You cannot invite a member with this role.");
+    }
 
     // Generate a UUID token using Web Crypto
     const token = crypto.randomUUID();
     const expiresAt = now + 7 * 24 * 60 * 60 * 1000; // 7 days
 
-    await ctx.db.insert("adminInvitations", {
+    const invitationId = await ctx.db.insert("adminInvitations", {
       email: args.email,
       phone: args.phone,
       token,
       invitedBy: args.invitedBy,
+      role: args.role,
       status: "pending",
       expiresAt,
+      createdAt: now,
+    });
+    await ctx.db.insert("activities", {
+      actorId: args.invitedBy,
+      actorType: "admin",
+      action: "admin.invitation_created",
+      entityType: "admin",
+      entityId: String(invitationId),
+      metadata: { email: args.email, role: args.role },
       createdAt: now,
     });
 
@@ -672,7 +693,7 @@ export const createAdminInvitation = mutation({
 export const validateInvitationToken = query({
   args: { token: v.string() },
   returns: v.union(
-    v.object({ valid: v.literal(true), email: v.string() }),
+    v.object({ valid: v.literal(true), email: v.string(), role: invitationRole }),
     v.object({ valid: v.literal(false), reason: v.string() })
   ),
   handler: async (ctx, args) => {
@@ -690,7 +711,7 @@ export const validateInvitationToken = query({
     if (Date.now() > inv.expiresAt) {
       return { valid: false, reason: "Invitation has expired." } as const;
     }
-    return { valid: true, email: inv.email } as const;
+    return { valid: true, email: inv.email, role: inv.role ?? "viewer" } as const;
   },
 });
 
@@ -746,6 +767,7 @@ export const acceptAdminInvitation = mutation({
       userId,
       email: inv.email,
       passwordHash,
+      role: inv.role ?? "viewer",
       isActive: true,
       lastLoginAt: now,
       createdAt: now,
@@ -768,5 +790,173 @@ export const verifyAdminSession = query({
   handler: async (ctx, args) => {
     const admin = await ctx.db.get(args.adminId);
     return !!(admin && admin.isActive);
+  },
+});
+
+export const getAdminSession = query({
+  args: { adminId: v.id("admins") },
+  returns: v.union(
+    v.object({
+      _id: v.id("admins"),
+      userId: v.id("users"),
+      email: v.string(),
+      role: adminRole,
+      isActive: v.boolean(),
+      fullName: v.string(),
+      phoneNumber: v.string(),
+      lastLoginAt: v.number(),
+      createdAt: v.number(),
+    }),
+    v.null()
+  ),
+  handler: async (ctx, args) => {
+    const admin = await ctx.db.get(args.adminId);
+    if (!admin || !admin.isActive) return null;
+    const user = await ctx.db.get(admin.userId);
+    return {
+      _id: admin._id,
+      userId: admin.userId,
+      email: admin.email,
+      role: effectiveRole(admin.role),
+      isActive: admin.isActive,
+      fullName: user?.fullName ?? admin.email,
+      phoneNumber: user?.phoneNumber ?? "",
+      lastLoginAt: admin.lastLoginAt,
+      createdAt: admin.createdAt,
+    };
+  },
+});
+
+export const migrateExistingAdminsToOwner = mutation({
+  args: { adminId: v.id("admins") },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.adminId, "admin:manage_team");
+    const admins = await ctx.db.query("admins").collect();
+    let updated = 0;
+    for (const admin of admins) {
+      if (!admin.role) {
+        await ctx.db.patch(admin._id, { role: "owner" });
+        updated++;
+      }
+    }
+    return updated;
+  },
+});
+
+export const listTeamMembers = query({
+  args: { adminId: v.id("admins") },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.adminId, "admin:read");
+    const admins = await ctx.db.query("admins").collect();
+    const members = await Promise.all(admins.map(async (admin) => {
+      const user = await ctx.db.get(admin.userId);
+      const createdBy = admin.createdBy ? await ctx.db.get(admin.createdBy) : null;
+      return {
+        _id: admin._id,
+        userId: admin.userId,
+        email: admin.email,
+        role: effectiveRole(admin.role),
+        isActive: admin.isActive,
+        fullName: user?.fullName ?? admin.email,
+        phoneNumber: user?.phoneNumber ?? "",
+        lastLoginAt: admin.lastLoginAt,
+        createdAt: admin.createdAt,
+        createdBy: admin.createdBy,
+        createdByEmail: createdBy?.email,
+      };
+    }));
+    const invitations = await ctx.db.query("adminInvitations").collect();
+    return {
+      members: members.sort((a, b) => b.createdAt - a.createdAt),
+      invitations: invitations
+        .filter((i) => i.status === "pending")
+        .sort((a, b) => b.createdAt - a.createdAt)
+        .map((i) => ({
+          _id: i._id,
+          email: i.email,
+          phone: i.phone,
+          role: i.role ?? "viewer",
+          invitedBy: i.invitedBy,
+          status: i.status,
+          expiresAt: i.expiresAt,
+          createdAt: i.createdAt,
+          token: i.token,
+        })),
+    };
+  },
+});
+
+export const updateAdminRole = mutation({
+  args: {
+    actorAdminId: v.id("admins"),
+    targetAdminId: v.id("admins"),
+    role: invitationRole,
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const actor = await requireAdmin(ctx, args.actorAdminId, "admin:manage_team");
+    if (!canChangeRole(actor.role, args.role)) throw new Error("You cannot assign this role.");
+    if (args.actorAdminId === args.targetAdminId) throw new Error("You cannot change your own role.");
+    await ctx.db.patch(args.targetAdminId, { role: args.role });
+    await ctx.db.insert("activities", {
+      actorId: args.actorAdminId,
+      actorType: "admin",
+      action: "admin.role_changed",
+      entityType: "admin",
+      entityId: String(args.targetAdminId),
+      metadata: { role: args.role },
+      createdAt: Date.now(),
+    });
+    return true;
+  },
+});
+
+export const setAdminActive = mutation({
+  args: {
+    actorAdminId: v.id("admins"),
+    targetAdminId: v.id("admins"),
+    isActive: v.boolean(),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.actorAdminId, "admin:manage_team");
+    if (args.actorAdminId === args.targetAdminId && !args.isActive) {
+      throw new Error("You cannot deactivate your own account.");
+    }
+    await ctx.db.patch(args.targetAdminId, { isActive: args.isActive });
+    await ctx.db.insert("activities", {
+      actorId: args.actorAdminId,
+      actorType: "admin",
+      action: args.isActive ? "admin.reactivated" : "admin.deactivated",
+      entityType: "admin",
+      entityId: String(args.targetAdminId),
+      createdAt: Date.now(),
+    });
+    return true;
+  },
+});
+
+export const cancelInvitation = mutation({
+  args: {
+    actorAdminId: v.id("admins"),
+    invitationId: v.id("adminInvitations"),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.actorAdminId, "admin:invite");
+    const inv = await ctx.db.get(args.invitationId);
+    if (!inv || inv.status !== "pending") return false;
+    await ctx.db.patch(args.invitationId, { status: "expired" });
+    await ctx.db.insert("activities", {
+      actorId: args.actorAdminId,
+      actorType: "admin",
+      action: "admin.invitation_cancelled",
+      entityType: "admin",
+      entityId: String(args.invitationId),
+      metadata: { email: inv.email },
+      createdAt: Date.now(),
+    });
+    return true;
   },
 });

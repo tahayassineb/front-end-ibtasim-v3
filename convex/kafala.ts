@@ -1,6 +1,8 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
+import { requireAdmin } from "./permissions";
+import { excerpt, slugify } from "./seo";
 
 // ============================================
 // QUERIES
@@ -210,8 +212,13 @@ export const createKafala = mutation({
     monthlyPrice: v.number(), // In cents
     isFeatured: v.optional(v.boolean()),
     featuredOrder: v.optional(v.number()),
+    slug: v.optional(v.string()),
+    metaTitle: v.optional(v.string()),
+    metaDescription: v.optional(v.string()),
+    imageAlt: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.adminId, "content:write");
     const now = Date.now();
     let featuredOrder = args.featuredOrder;
     if (args.isFeatured && !featuredOrder) {
@@ -221,7 +228,7 @@ export const createKafala = mutation({
         .collect();
       featuredOrder = existingFeatured.length + 1;
     }
-    return await ctx.db.insert("kafala", {
+    const kafalaId = await ctx.db.insert("kafala", {
       name: args.name,
       gender: args.gender,
       age: args.age,
@@ -233,16 +240,64 @@ export const createKafala = mutation({
       status: "draft",
       isFeatured: args.isFeatured ?? false,
       featuredOrder,
+      slug: args.slug || slugify(args.name),
+      metaTitle: args.metaTitle || args.name,
+      metaDescription: args.metaDescription || excerpt(args.bio.ar || args.bio.fr || args.bio.en),
+      imageAlt: args.imageAlt || args.name,
+      canonicalPath: `/kafala/${args.slug || slugify(args.name)}`,
       createdBy: args.adminId,
       createdAt: now,
       updatedAt: now,
     });
+    await ctx.db.insert("activities", {
+      actorId: args.adminId,
+      actorType: "admin",
+      action: "kafala.created",
+      entityType: "kafala",
+      entityId: String(kafalaId),
+      createdAt: now,
+    });
+    return kafalaId;
+  },
+});
+
+export const getKafalaBySlugOrId = query({
+  args: { ref: v.string() },
+  handler: async (ctx, args) => {
+    const normalizedId = ctx.db.normalizeId("kafala", args.ref);
+    let kafala = normalizedId ? await ctx.db.get(normalizedId) : null;
+
+    if (!kafala) {
+      const all = await ctx.db.query("kafala").collect();
+      kafala = all.find((item) => item.slug === args.ref) ?? null;
+    }
+    if (!kafala) return null;
+
+    const sponsorship = await ctx.db
+      .query("kafalaSponsorship")
+      .withIndex("by_kafala", (q) => q.eq("kafalaId", kafala._id))
+      .filter((q) =>
+        q.or(
+          q.eq(q.field("status"), "active"),
+          q.eq(q.field("status"), "pending_payment")
+        )
+      )
+      .first();
+
+    let sponsor = null;
+    if (sponsorship) {
+      const user = await ctx.db.get(sponsorship.userId);
+      sponsor = user ? { fullName: user.fullName, isAnonymous: false } : null;
+    }
+
+    return { ...kafala, sponsorship, sponsor };
   },
 });
 
 export const updateKafala = mutation({
   args: {
     kafalaId: v.id("kafala"),
+    adminId: v.optional(v.id("admins")),
     name: v.optional(v.string()),
     gender: v.optional(v.union(v.literal("male"), v.literal("female"))),
     age: v.optional(v.number()),
@@ -262,7 +317,8 @@ export const updateKafala = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const { kafalaId, ...fields } = args;
+    if (args.adminId) await requireAdmin(ctx, args.adminId, "content:write");
+    const { kafalaId, adminId, ...fields } = args;
     const current = await ctx.db.get(kafalaId);
     if (!current) throw new Error("الكفالة غير موجودة");
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
@@ -277,22 +333,42 @@ export const updateKafala = mutation({
       updates.featuredOrder = existingFeatured.length + 1;
     }
     await ctx.db.patch(kafalaId, updates);
+    if (adminId) {
+      await ctx.db.insert("activities", {
+        actorId: adminId,
+        actorType: "admin",
+        action: "kafala.updated",
+        entityType: "kafala",
+        entityId: String(kafalaId),
+        createdAt: Date.now(),
+      });
+    }
   },
 });
 
 export const publishKafala = mutation({
-  args: { kafalaId: v.id("kafala") },
+  args: { kafalaId: v.id("kafala"), adminId: v.optional(v.id("admins")) },
   handler: async (ctx, args) => {
+    if (args.adminId) await requireAdmin(ctx, args.adminId, "content:write");
     await ctx.db.patch(args.kafalaId, {
       status: "active",
       updatedAt: Date.now(),
+    });
+    if (args.adminId) await ctx.db.insert("activities", {
+      actorId: args.adminId,
+      actorType: "admin",
+      action: "kafala.published",
+      entityType: "kafala",
+      entityId: String(args.kafalaId),
+      createdAt: Date.now(),
     });
   },
 });
 
 export const deleteKafala = mutation({
-  args: { kafalaId: v.id("kafala") },
+  args: { kafalaId: v.id("kafala"), adminId: v.optional(v.id("admins")) },
   handler: async (ctx, args) => {
+    if (args.adminId) await requireAdmin(ctx, args.adminId, "content:write");
     // Remove all related donations and sponsorships first
     const sponsorships = await ctx.db
       .query("kafalaSponsorship")
@@ -307,6 +383,14 @@ export const deleteKafala = mutation({
       await ctx.db.delete(s._id);
     }
     await ctx.db.delete(args.kafalaId);
+    if (args.adminId) await ctx.db.insert("activities", {
+      actorId: args.adminId,
+      actorType: "admin",
+      action: "kafala.deleted",
+      entityType: "kafala",
+      entityId: String(args.kafalaId),
+      createdAt: Date.now(),
+    });
   },
 });
 
@@ -505,6 +589,7 @@ export const verifyKafalaDonation = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.adminId, "verification:write");
     const donation = await ctx.db.get(args.donationId);
     if (!donation) throw new Error("التبرع غير موجود");
 
@@ -517,6 +602,15 @@ export const verifyKafalaDonation = mutation({
         verifiedBy: args.adminId,
         verifiedAt: now,
         updatedAt: now,
+      });
+      await ctx.db.insert("activities", {
+        actorId: args.adminId,
+        actorType: "admin",
+        action: "verification.kafala_approved",
+        entityType: "kafalaDonation",
+        entityId: String(args.donationId),
+        metadata: { kafalaId: String(donation.kafalaId), amount: donation.amount },
+        createdAt: now,
       });
 
       // Activate sponsorship + extend renewal date (reset reminder tracking)
@@ -549,6 +643,15 @@ export const verifyKafalaDonation = mutation({
         verifiedBy: args.adminId,
         verifiedAt: now,
         updatedAt: now,
+      });
+      await ctx.db.insert("activities", {
+        actorId: args.adminId,
+        actorType: "admin",
+        action: "verification.kafala_rejected",
+        entityType: "kafalaDonation",
+        entityId: String(args.donationId),
+        metadata: { kafalaId: String(donation.kafalaId), notes: args.notes },
+        createdAt: now,
       });
 
       // Cancel sponsorship
