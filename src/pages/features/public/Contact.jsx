@@ -155,7 +155,7 @@ const Contact = () => {
     padding: '0 16px',
     border: '1.5px solid #E5E9EB',
     borderRadius: 12,
-    fontFamily: 'Tajawal, sans-serif',
+    fontFamily: 'var(--font-arabic)',
     fontSize: 14,
     color: '#0e1a1b',
     background: 'white',
@@ -172,7 +172,7 @@ const Contact = () => {
   ];
 
   return (
-    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', overflowX: 'hidden' }}>
+    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'var(--font-arabic)', color: '#0e1a1b', overflowX: 'hidden' }}>
 
       {/* Hero */}
       <div style={{ background: 'linear-gradient(135deg,#052E2F,#0A5F62)', padding: isMobile ? '40px 20px' : '60px 0', textAlign: 'center' }}>
@@ -195,7 +195,7 @@ const Contact = () => {
               <div style={{ fontSize: 15, color: '#64748b', lineHeight: 1.7, marginBottom: 24 }}>{c.sent_body}</div>
               <button
                 onClick={() => setIsSubmitted(false)}
-                style={{ height: 44, padding: '0 22px', borderRadius: 100, fontSize: 14, fontWeight: 600, background: '#E6F4F4', color: '#0A5F62', border: 'none', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}
+                style={{ height: 44, padding: '0 22px', borderRadius: 100, fontSize: 14, fontWeight: 600, background: '#E6F4F4', color: '#0A5F62', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}
               >
                 {c.send_another}
               </button>
@@ -262,7 +262,7 @@ const Contact = () => {
               <div style={{ marginBottom: 24 }}>
                 <label style={labelStyle}>{c.message}</label>
                 <textarea
-                  style={{ width: '100%', padding: '14px 16px', border: '1.5px solid #E5E9EB', borderRadius: 12, fontFamily: 'Tajawal, sans-serif', fontSize: 14, color: '#0e1a1b', background: 'white', outline: 'none', resize: 'vertical', minHeight: 140, lineHeight: 1.7 }}
+                  style={{ width: '100%', padding: '14px 16px', border: '1.5px solid #E5E9EB', borderRadius: 12, fontFamily: 'var(--font-arabic)', fontSize: 14, color: '#0e1a1b', background: 'white', outline: 'none', resize: 'vertical', minHeight: 140, lineHeight: 1.7 }}
                   name="message"
                   value={formData.message}
                   onChange={handleChange}
@@ -274,7 +274,7 @@ const Contact = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                style={{ width: '100%', height: 54, background: '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 17, fontWeight: 700, cursor: isSubmitting ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'Tajawal, sans-serif', opacity: isSubmitting ? 0.7 : 1 }}
+                style={{ width: '100%', height: 54, background: '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 17, fontWeight: 700, cursor: isSubmitting ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'var(--font-arabic)', opacity: isSubmitting ? 0.7 : 1 }}
               >
                 {isSubmitting ? c.sending : c.send}
               </button>

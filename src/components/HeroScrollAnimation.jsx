@@ -116,7 +116,7 @@ export default function HeroScrollAnimation({ onDonate }) {
         >
           <span
             style={{
-              fontFamily: "'Noto Naskh Arabic', 'Tajawal', serif",
+              fontFamily: "'Noto Naskh Arabic', 'Thmanyah Sans', serif",
               fontSize: '64px', fontWeight: 900, color: '#FAFAF7',
               letterSpacing: '0.04em',
             }}
@@ -181,7 +181,7 @@ export default function HeroScrollAnimation({ onDonate }) {
             >
               <h1
                 style={{
-                  fontFamily: "'Noto Naskh Arabic', 'Tajawal', serif",
+                  fontFamily: "'Noto Naskh Arabic', 'Thmanyah Sans', serif",
                   fontSize: 'clamp(34px, 4.5vw, 62px)',
                   fontWeight: 900, color: '#FAFAF7',
                   lineHeight: 1.3, marginBottom: '14px',
@@ -193,7 +193,7 @@ export default function HeroScrollAnimation({ onDonate }) {
               </h1>
               <p
                 style={{
-                  fontFamily: "'Noto Naskh Arabic', 'Tajawal', serif",
+                  fontFamily: "'Noto Naskh Arabic', 'Thmanyah Sans', serif",
                   fontSize: '18px', color: 'rgba(250,250,247,0.72)',
                   lineHeight: 1.8, marginBottom: '24px',
                 }}
@@ -207,7 +207,7 @@ export default function HeroScrollAnimation({ onDonate }) {
                   border: 'none', borderRadius: '10px',
                   fontSize: '18px', fontWeight: 700,
                   padding: '13px 38px', cursor: 'pointer',
-                  fontFamily: "'Noto Naskh Arabic', 'Tajawal', serif",
+                  fontFamily: "'Noto Naskh Arabic', 'Thmanyah Sans', serif",
                   transition: 'background 0.2s',
                 }}
                 onMouseEnter={e => e.target.style.background = '#2a7a50'}
@@ -243,7 +243,7 @@ export default function HeroScrollAnimation({ onDonate }) {
                       }}
                     />
                   )}
-                  <div style={{ flex: 1, textAlign: 'center', fontFamily: "'Noto Naskh Arabic','Tajawal',serif" }}>
+                  <div style={{ flex: 1, textAlign: 'center', fontFamily: "'Noto Naskh Arabic','Thmanyah Sans',serif" }}>
                     <div style={{ fontSize: '28px', fontWeight: 900, color: '#FAFAF7' }}>{s.num}</div>
                     <div style={{ fontSize: '13px', color: 'rgba(250,250,247,0.6)' }}>{s.lbl}</div>
                   </div>
@@ -264,7 +264,7 @@ export default function HeroScrollAnimation({ onDonate }) {
             <div style={{ textAlign: 'center', padding: '0 24px', pointerEvents: 'auto' }}>
               <h2
                 style={{
-                  fontFamily: "'Noto Naskh Arabic', 'Tajawal', serif",
+                  fontFamily: "'Noto Naskh Arabic', 'Thmanyah Sans', serif",
                   fontSize: 'clamp(36px, 5.5vw, 68px)',
                   fontWeight: 900, color: '#FAFAF7',
                   lineHeight: 1.25, marginBottom: '14px',
@@ -275,7 +275,7 @@ export default function HeroScrollAnimation({ onDonate }) {
               </h2>
               <p
                 style={{
-                  fontFamily: "'Noto Naskh Arabic', 'Tajawal', serif",
+                  fontFamily: "'Noto Naskh Arabic', 'Thmanyah Sans', serif",
                   fontSize: '22px', color: '#4ade80',
                   fontWeight: 700, marginBottom: '36px',
                 }}
@@ -290,7 +290,7 @@ export default function HeroScrollAnimation({ onDonate }) {
                   fontSize: '22px', fontWeight: 900,
                   width: '300px', height: '62px',
                   cursor: 'pointer',
-                  fontFamily: "'Noto Naskh Arabic', 'Tajawal', serif",
+                  fontFamily: "'Noto Naskh Arabic', 'Thmanyah Sans', serif",
                   boxShadow: '0 0 32px rgba(201,168,76,0.35)',
                   transition: 'box-shadow 0.2s, transform 0.15s',
                 }}

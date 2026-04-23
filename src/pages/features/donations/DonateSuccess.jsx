@@ -30,7 +30,7 @@ export default function DonateSuccess() {
 
   if (!paid) {
     return (
-      <div style={{ minHeight: '100vh', background: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'Tajawal, sans-serif' }} dir="rtl">
+      <div style={{ minHeight: '100vh', background: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'var(--font-arabic)' }} dir="rtl">
         <div style={{ background: 'white', borderRadius: 24, boxShadow: '0 10px 15px rgba(0,0,0,.1)', padding: 48, maxWidth: 420, width: '100%', textAlign: 'center' }}>
           <div style={{ fontSize: 64, marginBottom: 16 }}>❌</div>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: '#dc2626', marginBottom: 8 }}>فشل الدفع</h1>
@@ -44,7 +44,7 @@ export default function DonateSuccess() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F0F7F7', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', display: 'flex', justifyContent: 'center' }} dir="rtl">
+    <div style={{ minHeight: '100vh', background: '#F0F7F7', fontFamily: 'var(--font-arabic)', color: '#0e1a1b', display: 'flex', justifyContent: 'center' }} dir="rtl">
       <div style={{ width: '100%', maxWidth: 430, minHeight: '100vh', background: 'white', display: 'flex', flexDirection: 'column' }}>
 
         {/* Success hero */}
@@ -76,7 +76,7 @@ export default function DonateSuccess() {
             {amount && (
               <div style={{ fontSize: 28, fontWeight: 900, color: '#0d7477', fontFamily: 'Inter, sans-serif', marginTop: 8 }}>{amount} <span style={{ fontSize: 14, color: '#94a3b8', fontWeight: 500 }}>درهم</span></div>
             )}
-            <button onClick={handleCopyRef} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#0d7477', background: 'white', padding: '4px 12px', borderRadius: 100, cursor: 'pointer', marginTop: 8, border: '1px solid #CCF0F0', fontFamily: 'Tajawal, sans-serif' }}>
+            <button onClick={handleCopyRef} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#0d7477', background: 'white', padding: '4px 12px', borderRadius: 100, cursor: 'pointer', marginTop: 8, border: '1px solid #CCF0F0', fontFamily: 'var(--font-arabic)' }}>
               📋 نسخ الرقم
             </button>
           </div>
@@ -117,21 +117,21 @@ export default function DonateSuccess() {
             <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 10 }}>شارك معروفك مع الآخرين</div>
             <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
               <button onClick={() => handleShare('whatsapp')}
-                style={{ flex: 1, height: 44, border: '1.5px solid #25D366', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', background: 'white', color: '#25D366', fontFamily: 'Tajawal, sans-serif' }}>
+                style={{ flex: 1, height: 44, border: '1.5px solid #25D366', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', background: 'white', color: '#25D366', fontFamily: 'var(--font-arabic)' }}>
                 💬 واتساب
               </button>
               <button onClick={() => handleShare('copy')}
-                style={{ flex: 1, height: 44, border: '1.5px solid #33C0C0', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', background: 'white', color: '#0d7477', fontFamily: 'Tajawal, sans-serif' }}>
+                style={{ flex: 1, height: 44, border: '1.5px solid #33C0C0', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', background: 'white', color: '#0d7477', fontFamily: 'var(--font-arabic)' }}>
                 🔗 نسخ الرابط
               </button>
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
               <Link to="/profile"
-                style={{ flex: 1, height: 48, border: '1.5px solid #E5E9EB', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', background: 'white', color: '#0e1a1b', textDecoration: 'none', fontFamily: 'Tajawal, sans-serif' }}>
+                style={{ flex: 1, height: 48, border: '1.5px solid #E5E9EB', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', background: 'white', color: '#0e1a1b', textDecoration: 'none', fontFamily: 'var(--font-arabic)' }}>
                 📋 ملفي الشخصي
               </Link>
               <Link to="/projects"
-                style={{ flex: 1, height: 48, background: '#0d7477', border: 'none', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', color: 'white', textDecoration: 'none', boxShadow: '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'Tajawal, sans-serif' }}>
+                style={{ flex: 1, height: 48, background: '#0d7477', border: 'none', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', color: 'white', textDecoration: 'none', boxShadow: '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'var(--font-arabic)' }}>
                 🔍 مشاريع أخرى
               </Link>
             </div>

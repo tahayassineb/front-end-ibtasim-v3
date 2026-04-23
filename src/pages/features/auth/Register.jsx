@@ -172,11 +172,11 @@ const Register = () => {
 
   const currentStep = otpSent ? 2 : 1; // 1 = register form, 2 = OTP
 
-  const inputStyle = { width: '100%', height: 50, padding: '0 16px', border: '1.5px solid #E5E9EB', borderRadius: 12, fontFamily: 'Tajawal, sans-serif', fontSize: 14, color: '#0e1a1b', outline: 'none', background: 'white' };
+  const inputStyle = { width: '100%', height: 50, padding: '0 16px', border: '1.5px solid #E5E9EB', borderRadius: 12, fontFamily: 'var(--font-arabic)', fontSize: 14, color: '#0e1a1b', outline: 'none', background: 'white' };
   const labelStyle = { display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F0F7F7', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 20px', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b' }}>
+    <div style={{ minHeight: '100vh', background: '#F0F7F7', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 20px', fontFamily: 'var(--font-arabic)', color: '#0e1a1b' }}>
       <div style={{ width: '100%', maxWidth: 390 }}>
 
         {/* Top bar */}
@@ -260,7 +260,7 @@ const Register = () => {
                         showToast(lang === 'ar' ? 'تم إرسال الرمز' : 'Code resent', 'success');
                       } catch (e) { showToast('Failed to resend', 'error'); }
                     }}
-                    style={{ color: '#0d7477', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', fontSize: 13 }}
+                    style={{ color: '#0d7477', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-arabic)', fontSize: 13 }}
                   >
                     {tx.resendLink}
                   </button>
@@ -270,7 +270,7 @@ const Register = () => {
               <button
                 onClick={handleOtpVerify}
                 disabled={!otpValues.every((v) => v.length === 1) || isLoading}
-                style={{ width: '100%', height: 50, background: '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'Tajawal, sans-serif', marginTop: 8, opacity: isLoading ? 0.7 : 1 }}
+                style={{ width: '100%', height: 50, background: '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'var(--font-arabic)', marginTop: 8, opacity: isLoading ? 0.7 : 1 }}
               >
                 {isLoading ? '...' : tx.verifyOtp}
               </button>
@@ -286,7 +286,7 @@ const Register = () => {
                 <label style={labelStyle}>{tx.phoneLabel}</label>
                 <div style={{ display: 'flex', height: 50, border: `1.5px solid ${errors.phone ? '#ef4444' : '#E5E9EB'}`, borderRadius: 12, overflow: 'hidden' }}>
                   <CountryCodeSelector value={countryCode} onChange={setCountryCode} lang={lang} disabled={isLoading} />
-                  <input ref={phoneInputRef} type="tel" value={phone} onChange={handlePhoneChange} placeholder={tx.phonePlaceholder} maxLength={15} style={{ flex: 1, border: 'none', outline: 'none', padding: '0 12px', fontFamily: 'Tajawal, sans-serif', fontSize: 14, background: 'transparent', direction: 'ltr' }} inputMode="numeric" pattern="[0-9]*" />
+                  <input ref={phoneInputRef} type="tel" value={phone} onChange={handlePhoneChange} placeholder={tx.phonePlaceholder} maxLength={15} style={{ flex: 1, border: 'none', outline: 'none', padding: '0 12px', fontFamily: 'var(--font-arabic)', fontSize: 14, background: 'transparent', direction: 'ltr' }} inputMode="numeric" pattern="[0-9]*" />
                 </div>
                 {errors.phone && <p style={{ color: '#ef4444', fontSize: 12, marginTop: 4 }}>{errors.phone}</p>}
               </div>
@@ -333,7 +333,7 @@ const Register = () => {
               <button
                 onClick={handleRegister}
                 disabled={!fullName || !email || !phone || !password || !confirmPassword || isLoading}
-                style={{ width: '100%', height: 50, background: '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'Tajawal, sans-serif', marginTop: 8, opacity: isLoading ? 0.7 : 1 }}
+                style={{ width: '100%', height: 50, background: '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'var(--font-arabic)', marginTop: 8, opacity: isLoading ? 0.7 : 1 }}
               >
                 {isLoading ? '...' : tx.sendOtp}
               </button>

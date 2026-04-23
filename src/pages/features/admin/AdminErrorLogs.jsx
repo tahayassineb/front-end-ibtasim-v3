@@ -78,7 +78,7 @@ export default function AdminErrorLogs() {
 
   if (logs === undefined) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'Tajawal, sans-serif' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'var(--font-arabic)' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 36, marginBottom: 12 }}>🔴</div>
           <p style={{ color: TEXTM }}>جاري التحميل...</p>
@@ -88,7 +88,7 @@ export default function AdminErrorLogs() {
   }
 
   return (
-    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: 24 }} dir="rtl">
+    <div style={{ fontFamily: 'var(--font-arabic)', color: '#0e1a1b', padding: 24 }} dir="rtl">
 
       {/* ── Summary pills ── */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -110,7 +110,7 @@ export default function AdminErrorLogs() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="ابحث في السجل..."
-          style={{ flex: 1, minWidth: 200, height: 36, padding: '0 14px', border: `1.5px solid ${BORDER}`, borderRadius: 10, fontSize: 13, fontFamily: 'Tajawal, sans-serif', outline: 'none' }}
+          style={{ flex: 1, minWidth: 200, height: 36, padding: '0 14px', border: `1.5px solid ${BORDER}`, borderRadius: 10, fontSize: 13, fontFamily: 'var(--font-arabic)', outline: 'none' }}
           onFocus={e => e.target.style.borderColor = '#0d7477'}
           onBlur={e => e.target.style.borderColor = BORDER}
         />
@@ -123,20 +123,20 @@ export default function AdminErrorLogs() {
           const active = levelFilter === val;
           return (
             <button key={val} onClick={() => setLevelFilter(val)}
-              style={{ height: 32, padding: '0 12px', borderRadius: 100, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: `1.5px solid ${active ? activeC : BORDER}`, background: active ? activeBg : 'white', color: active ? activeC : TEXT2, fontFamily: 'Tajawal, sans-serif' }}>
+              style={{ height: 32, padding: '0 12px', borderRadius: 100, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: `1.5px solid ${active ? activeC : BORDER}`, background: active ? activeBg : 'white', color: active ? activeC : TEXT2, fontFamily: 'var(--font-arabic)' }}>
               {label}
             </button>
           );
         })}
         {sources.length > 0 && (
           <select value={sourceFilter} onChange={e => setSourceFilter(e.target.value)}
-            style={{ height: 32, border: `1.5px solid ${BORDER}`, borderRadius: 100, padding: '0 12px', fontSize: 12, fontFamily: 'Tajawal, sans-serif', outline: 'none', cursor: 'pointer' }}>
+            style={{ height: 32, border: `1.5px solid ${BORDER}`, borderRadius: 100, padding: '0 12px', fontSize: 12, fontFamily: 'var(--font-arabic)', outline: 'none', cursor: 'pointer' }}>
             <option value="">جميع المصادر</option>
             {sources.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         )}
         <button onClick={handleClearAll}
-          style={{ height: 32, padding: '0 14px', border: `1.5px solid ${clearConfirm ? '#ef4444' : BORDER}`, borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', background: clearConfirm ? '#ef4444' : 'white', color: clearConfirm ? 'white' : TEXT2, marginRight: 'auto', transition: 'all .2s' }}>
+          style={{ height: 32, padding: '0 14px', border: `1.5px solid ${clearConfirm ? '#ef4444' : BORDER}`, borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-arabic)', background: clearConfirm ? '#ef4444' : 'white', color: clearConfirm ? 'white' : TEXT2, marginRight: 'auto', transition: 'all .2s' }}>
           {clearConfirm ? '⚠ تأكيد المسح' : '🗑 مسح السجل'}
         </button>
       </div>

@@ -55,7 +55,7 @@ export default function AdminLogin() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b' }} dir="rtl">
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'var(--font-arabic)', color: '#0e1a1b' }} dir="rtl">
 
       {/* Left decorative panel */}
       <div style={{ flex: 1, background: 'linear-gradient(160deg,#010C0D,#0A5F62,#0d7477)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 60, position: 'relative', overflow: 'hidden' }}>
@@ -132,7 +132,7 @@ export default function AdminLogin() {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••••"
-                style={{ width: '100%', height: 52, border: '1.5px solid #E5E9EB', borderRadius: 14, padding: '0 16px', fontSize: 16, fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', outline: 'none', direction: 'ltr', textAlign: 'left' }}
+                style={{ width: '100%', height: 52, border: '1.5px solid #E5E9EB', borderRadius: 14, padding: '0 16px', fontSize: 16, fontFamily: 'var(--font-arabic)', color: '#0e1a1b', outline: 'none', direction: 'ltr', textAlign: 'left' }}
                 onFocus={(e) => { e.target.style.borderColor = '#0d7477'; e.target.style.boxShadow = '0 0 0 3px rgba(13,116,119,.1)'; }}
                 onBlur={(e) => { e.target.style.borderColor = '#E5E9EB'; e.target.style.boxShadow = 'none'; }}
                 dir="ltr"
@@ -145,7 +145,7 @@ export default function AdminLogin() {
                 {showPassword ? '🙈' : '👁'}
               </button>
             </div>
-            <button type="button" style={{ fontSize: 12, color: '#0d7477', background: 'none', border: 'none', padding: 0, cursor: 'pointer', marginTop: 6, display: 'block', fontFamily: 'Tajawal, sans-serif' }}>
+            <button type="button" style={{ fontSize: 12, color: '#0d7477', background: 'none', border: 'none', padding: 0, cursor: 'pointer', marginTop: 6, display: 'block', fontFamily: 'var(--font-arabic)' }}>
               نسيت كلمة المرور؟
             </button>
           </div>
@@ -161,7 +161,7 @@ export default function AdminLogin() {
           <button
             type="submit"
             disabled={loading}
-            style={{ width: '100%', height: 52, background: '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'Tajawal, sans-serif', marginTop: 4, opacity: loading ? 0.7 : 1 }}
+            style={{ width: '100%', height: 52, background: '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'var(--font-arabic)', marginTop: 4, opacity: loading ? 0.7 : 1 }}
           >
             {loading ? '⏳ جاري الدخول...' : 'دخول لوحة التحكم'}
           </button>

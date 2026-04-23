@@ -237,21 +237,21 @@ export default function KafalaFlow() {
   // ── Loading / guards ──
   if (kafalaData === undefined) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: K.kbg, fontFamily: 'Tajawal, sans-serif' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: K.kbg, fontFamily: 'var(--font-arabic)' }}>
         <div style={{ textAlign: 'center' }}><div style={{ fontSize: 40, marginBottom: 12 }}>🤲</div><p style={{ color: '#94a3b8' }}>جاري التحميل...</p></div>
       </div>
     );
   }
   if (!kafalaData) {
-    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Tajawal, sans-serif' }}>الكفالة غير موجودة</div>;
+    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-arabic)' }}>الكفالة غير موجودة</div>;
   }
   if (kafalaData.status === 'sponsored') {
     return (
-      <div style={{ minHeight: '100vh', background: K.kbg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'Tajawal, sans-serif' }} dir="rtl">
+      <div style={{ minHeight: '100vh', background: K.kbg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'var(--font-arabic)' }} dir="rtl">
         <div style={{ textAlign: 'center', maxWidth: 360 }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>🤲</div>
           <p style={{ fontSize: 17, fontWeight: 700, color: K.kdark, marginBottom: 20 }}>هذا اليتيم مكفول بالفعل. الرجاء اختيار يتيم آخر.</p>
-          <button onClick={() => navigate('/kafala')} style={{ background: K.kdark, color: 'white', padding: '12px 28px', borderRadius: 14, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>العودة للقائمة</button>
+          <button onClick={() => navigate('/kafala')} style={{ background: K.kdark, color: 'white', padding: '12px 28px', borderRadius: 14, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>العودة للقائمة</button>
         </div>
       </div>
     );
@@ -261,7 +261,7 @@ export default function KafalaFlow() {
   if (done) {
     const isPending = paymentMethod !== 'card_whop';
     return (
-      <div style={{ minHeight: '100vh', background: K.kbg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'Tajawal, sans-serif' }} dir="rtl">
+      <div style={{ minHeight: '100vh', background: K.kbg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'var(--font-arabic)' }} dir="rtl">
         <div style={{ background: 'white', borderRadius: 28, boxShadow: '0 10px 40px rgba(0,0,0,.12)', padding: 40, maxWidth: 380, width: '100%', textAlign: 'center' }}>
           <div style={{ width: 88, height: 88, background: isPending ? '#FEF3C7' : '#D1FAE5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 40 }}>{isPending ? '⏳' : '✅'}</div>
           <h2 style={{ fontSize: 22, fontWeight: 900, color: K.kdark, marginBottom: 12 }}>
@@ -273,7 +273,7 @@ export default function KafalaFlow() {
               : 'جزاك الله خيراً على هذا العمل الصالح. ستتلقى رسالة تأكيد عبر واتساب.'
             }
           </p>
-          <button onClick={() => navigate('/')} style={{ background: K.kdark, color: 'white', padding: '14px 32px', borderRadius: 14, fontWeight: 700, border: 'none', cursor: 'pointer', fontSize: 15, fontFamily: 'Tajawal, sans-serif', boxShadow: `0 4px 14px rgba(196,168,130,.4)` }}>
+          <button onClick={() => navigate('/')} style={{ background: K.kdark, color: 'white', padding: '14px 32px', borderRadius: 14, fontWeight: 700, border: 'none', cursor: 'pointer', fontSize: 15, fontFamily: 'var(--font-arabic)', boxShadow: `0 4px 14px rgba(196,168,130,.4)` }}>
             العودة للرئيسية
           </button>
         </div>
@@ -287,10 +287,10 @@ export default function KafalaFlow() {
   const annualPrice = Math.round(kafala.monthlyPrice * 12 * 0.9 / 100).toLocaleString('fr-MA');
   const isFemale = kafala.gender === 'female';
   const donorName = isAnonymous ? 'مجهول الهوية' : (appUser?.name || '—');
-  const inputStyle = { width: '100%', height: 52, border: `1.5px solid ${K.k100}`, borderRadius: 14, padding: '0 16px', fontSize: 15, fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', background: 'white', outline: 'none', boxSizing: 'border-box' };
+  const inputStyle = { width: '100%', height: 52, border: `1.5px solid ${K.k100}`, borderRadius: 14, padding: '0 16px', fontSize: 15, fontFamily: 'var(--font-arabic)', color: '#0e1a1b', background: 'white', outline: 'none', boxSizing: 'border-box' };
 
   return (
-    <div style={{ minHeight: '100vh', background: K.kbg, fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', display: 'flex', justifyContent: 'center' }} dir="rtl">
+    <div style={{ minHeight: '100vh', background: K.kbg, fontFamily: 'var(--font-arabic)', color: '#0e1a1b', display: 'flex', justifyContent: 'center' }} dir="rtl">
       <div style={{ width: '100%', maxWidth: 430, minHeight: '100vh', background: 'white', display: 'flex', flexDirection: 'column' }}>
 
         {/* Top bar */}
@@ -340,7 +340,7 @@ export default function KafalaFlow() {
               {authMode ? (
                 <>
                   <button onClick={() => setAuthMode(null)}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: K.kdark, fontSize: 13, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', marginBottom: 20, padding: 0, fontFamily: 'Tajawal, sans-serif' }}>
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: K.kdark, fontSize: 13, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', marginBottom: 20, padding: 0, fontFamily: 'var(--font-arabic)' }}>
                     ← تغيير الخيار
                   </button>
 
@@ -366,7 +366,7 @@ export default function KafalaFlow() {
                       {otpTimer > 0 ? (
                         <div style={{ fontSize: 13, color: '#94a3b8' }}>إعادة الإرسال بعد {Math.floor(otpTimer / 60)}:{String(otpTimer % 60).padStart(2, '0')}</div>
                       ) : (
-                        <button onClick={() => setOtpTimer(120)} style={{ fontSize: 13, color: K.kdark, fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>إعادة إرسال الرمز</button>
+                        <button onClick={() => setOtpTimer(120)} style={{ fontSize: 13, color: K.kdark, fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>إعادة إرسال الرمز</button>
                       )}
                     </div>
                   ) : (
@@ -542,7 +542,7 @@ export default function KafalaFlow() {
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText((bankInfo.rib || '').replace(/\s/g, '')); showToast('تم نسخ الرقم', 'success'); }}
-                        style={{ fontSize: 11, background: K.kbg, color: K.kdark, border: `1px solid ${K.k100}`, padding: '4px 14px', borderRadius: 100, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}
+                        style={{ fontSize: 11, background: K.kbg, color: K.kdark, border: `1px solid ${K.k100}`, padding: '4px 14px', borderRadius: 100, cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}
                       >
                         📋 نسخ رقم الحساب
                       </button>
@@ -557,7 +557,7 @@ export default function KafalaFlow() {
                         <button
                           key={sub.id}
                           onClick={(e) => { e.stopPropagation(); setPaymentMethod(sub.id); }}
-                          style={{ flex: 1, height: 38, borderRadius: 10, fontSize: 12, fontWeight: 700, border: `1.5px solid ${paymentMethod === sub.id ? K.kdark : K.k100}`, background: paymentMethod === sub.id ? K.kdark : 'white', color: paymentMethod === sub.id ? 'white' : '#64748b', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', transition: 'all .15s' }}
+                          style={{ flex: 1, height: 38, borderRadius: 10, fontSize: 12, fontWeight: 700, border: `1.5px solid ${paymentMethod === sub.id ? K.kdark : K.k100}`, background: paymentMethod === sub.id ? K.kdark : 'white', color: paymentMethod === sub.id ? 'white' : '#64748b', cursor: 'pointer', fontFamily: 'var(--font-arabic)', transition: 'all .15s' }}
                         >
                           {sub.label}
                         </button>
@@ -574,7 +574,7 @@ export default function KafalaFlow() {
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
-                          style={{ width: '100%', border: `2px dashed ${K.k100}`, borderRadius: 12, padding: '14px', textAlign: 'center', background: 'white', cursor: 'pointer', fontSize: 13, color: receipt ? '#16a34a' : '#64748b', fontFamily: 'Tajawal, sans-serif' }}
+                          style={{ width: '100%', border: `2px dashed ${K.k100}`, borderRadius: 12, padding: '14px', textAlign: 'center', background: 'white', cursor: 'pointer', fontSize: 13, color: receipt ? '#16a34a' : '#64748b', fontFamily: 'var(--font-arabic)' }}
                         >
                           {receipt ? `✓ ${receipt.name}` : '📷 أرفق وصل الدفع *'}
                         </button>
@@ -600,7 +600,7 @@ export default function KafalaFlow() {
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
-                          style={{ width: '100%', border: `2px dashed ${K.k100}`, borderRadius: 12, padding: '14px', textAlign: 'center', background: 'white', cursor: 'pointer', fontSize: 13, color: receipt ? '#16a34a' : '#64748b', fontFamily: 'Tajawal, sans-serif', marginBottom: 10 }}
+                          style={{ width: '100%', border: `2px dashed ${K.k100}`, borderRadius: 12, padding: '14px', textAlign: 'center', background: 'white', cursor: 'pointer', fontSize: 13, color: receipt ? '#16a34a' : '#64748b', fontFamily: 'var(--font-arabic)', marginBottom: 10 }}
                         >
                           {receipt ? `✓ ${receipt.name}` : '📷 أرفق وصل الدفع *'}
                         </button>
@@ -676,18 +676,18 @@ export default function KafalaFlow() {
           {step === 0 ? (
             <button onClick={otpSent ? handleOtpVerify : (authMode === 'login' ? handleLogin : handleRegister)}
               disabled={isAuthLoading}
-              style={{ width: '100%', height: 52, background: isAuthLoading ? '#94a3b8' : K.kdark, color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: isAuthLoading ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: `0 4px 14px rgba(196,168,130,.35)` }}>
+              style={{ width: '100%', height: 52, background: isAuthLoading ? '#94a3b8' : K.kdark, color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: isAuthLoading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: `0 4px 14px rgba(196,168,130,.35)` }}>
               {isAuthLoading ? '...' : otpSent ? 'تحقق من الرمز' : authMode === 'login' ? 'تسجيل الدخول' : 'إنشاء حساب'}
             </button>
           ) : step < 3 ? (
             <button onClick={() => setStep(s => s + 1)}
-              style={{ width: '100%', height: 56, background: K.kdark, color: 'white', border: 'none', borderRadius: 16, fontSize: 17, fontWeight: 800, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: `0 4px 14px rgba(196,168,130,.35)` }}>
+              style={{ width: '100%', height: 56, background: K.kdark, color: 'white', border: 'none', borderRadius: 16, fontSize: 17, fontWeight: 800, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: `0 4px 14px rgba(196,168,130,.35)` }}>
               {step === 1 ? `🤲 اكفل${isFemale ? 'ها' : 'ه'} — ${priceMAD} درهم/شهر` : 'التالي: مراجعة التفاصيل →'}
             </button>
           ) : (
             <div>
               <button onClick={handleSubmit} disabled={submitting}
-                style={{ width: '100%', height: 56, background: submitting ? '#94a3b8' : K.kdark, color: 'white', border: 'none', borderRadius: 16, fontSize: 17, fontWeight: 800, cursor: submitting ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: submitting ? 'none' : `0 4px 14px rgba(196,168,130,.35)` }}>
+                style={{ width: '100%', height: 56, background: submitting ? '#94a3b8' : K.kdark, color: 'white', border: 'none', borderRadius: 16, fontSize: 17, fontWeight: 800, cursor: submitting ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: submitting ? 'none' : `0 4px 14px rgba(196,168,130,.35)` }}>
                 {submitting ? (paymentMethod === 'card_whop' ? 'جاري التحويل...' : 'جاري الإرسال...') : (paymentMethod === 'card_whop' ? '💳 الدفع بالبطاقة' : `🤲 إرسال طلب الكفالة`)}
               </button>
               <div style={{ textAlign: 'center', fontSize: 11, color: '#94a3b8', marginTop: 8 }}>بدون التزام طويل المدى · إلغاء مجاني في أي وقت</div>

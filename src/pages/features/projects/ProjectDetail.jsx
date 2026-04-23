@@ -122,7 +122,7 @@ const ProjectDetail = ({ preview = false }) => {
   // ── Loading state ──
   if (!preview && convexProject === undefined) {
     return (
-      <div dir="rtl" style={{ fontFamily: 'Tajawal, sans-serif', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8' }}>
+      <div dir="rtl" style={{ fontFamily: 'var(--font-arabic)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8' }}>
         <div style={{ textAlign: 'center', color: '#94a3b8' }}>
           <div style={{ width: 40, height: 40, border: '3px solid #E5E9EB', borderTopColor: '#0d7477', borderRadius: '50%', margin: '0 auto 12px', animation: 'spin 0.8s linear infinite' }} />
           جاري التحميل...
@@ -134,11 +134,11 @@ const ProjectDetail = ({ preview = false }) => {
   // ── Not found ──
   if (!preview && convexProject === null) {
     return (
-      <div dir="rtl" style={{ fontFamily: 'Tajawal, sans-serif', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8', padding: 24 }}>
+      <div dir="rtl" style={{ fontFamily: 'var(--font-arabic)', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8', padding: 24 }}>
         <div style={{ fontSize: 64, marginBottom: 16 }}>🔍</div>
         <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0e1a1b', marginBottom: 8 }}>المشروع غير موجود</h1>
         <p style={{ color: '#64748b', marginBottom: 24 }}>المشروع الذي تبحث عنه غير متوفر</p>
-        <button onClick={() => navigate('/projects')} style={{ height: 44, padding: '0 24px', background: '#0d7477', color: 'white', border: 'none', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: '0 4px 14px rgba(13,116,119,0.25)' }}>
+        <button onClick={() => navigate('/projects')} style={{ height: 44, padding: '0 24px', background: '#0d7477', color: 'white', border: 'none', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: '0 4px 14px rgba(13,116,119,0.25)' }}>
           عرض جميع المشاريع
         </button>
       </div>
@@ -147,7 +147,7 @@ const ProjectDetail = ({ preview = false }) => {
 
   if (!project) {
     return (
-      <div dir="rtl" style={{ fontFamily: 'Tajawal, sans-serif', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8' }}>
+      <div dir="rtl" style={{ fontFamily: 'var(--font-arabic)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8' }}>
         <div style={{ color: '#94a3b8' }}>جاري التحميل...</div>
       </div>
     );
@@ -164,7 +164,7 @@ const ProjectDetail = ({ preview = false }) => {
     : { background: 'linear-gradient(160deg,#021718,#052E2F,#0d7477)' };
 
   return (
-    <div dir="rtl" style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', background: '#f6f8f8', minHeight: '100vh' }}>
+    <div dir="rtl" style={{ fontFamily: 'var(--font-arabic)', color: '#0e1a1b', background: '#f6f8f8', minHeight: '100vh' }}>
 
       {/* Preview Banner */}
       {preview && (
@@ -210,7 +210,7 @@ const ProjectDetail = ({ preview = false }) => {
           <div style={{ fontSize: 14, fontWeight: 700, color: '#64748b', whiteSpace: 'nowrap' }}>{pct}% من الهدف</div>
           <button
             onClick={handleDonateClick}
-            style={{ height: 44, padding: '0 22px', background: '#0d7477', color: 'white', border: 'none', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: '0 4px 14px rgba(13,116,119,0.25)', flexShrink: 0 }}
+            style={{ height: 44, padding: '0 22px', background: '#0d7477', color: 'white', border: 'none', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: '0 4px 14px rgba(13,116,119,0.25)', flexShrink: 0 }}
           >
             تبرع الآن
           </button>
@@ -286,7 +286,7 @@ const ProjectDetail = ({ preview = false }) => {
 
             <div style={{ marginTop: 16 }}>
               <button
-                style={{ height: 36, padding: '0 16px', background: '#E6F4F4', color: '#0A5F62', border: 'none', borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}
+                style={{ height: 36, padding: '0 16px', background: '#E6F4F4', color: '#0A5F62', border: 'none', borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}
               >
                 عرض جميع المتبرعين →
               </button>
@@ -335,7 +335,7 @@ const ProjectDetail = ({ preview = false }) => {
             {/* Donate button */}
             <button
               onClick={handleDonateClick}
-              style={{ width: '100%', height: 56, background: '#0d7477', color: 'white', border: 'none', borderRadius: 16, fontSize: 17, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,0.25)', fontFamily: 'Tajawal, sans-serif', marginBottom: 12 }}
+              style={{ width: '100%', height: 56, background: '#0d7477', color: 'white', border: 'none', borderRadius: 16, fontSize: 17, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,0.25)', fontFamily: 'var(--font-arabic)', marginBottom: 12 }}
             >
               تبرع الآن 💚
             </button>
@@ -353,7 +353,7 @@ const ProjectDetail = ({ preview = false }) => {
                 <button
                   key={i}
                   onClick={i === 2 ? handleCopyLink : undefined}
-                  style={{ flex: 1, height: 38, borderRadius: 10, fontSize: 13, fontWeight: 600, border: '1.5px solid #E5E9EB', background: 'white', color: '#64748b', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+                  style={{ flex: 1, height: 38, borderRadius: 10, fontSize: 13, fontWeight: 600, border: '1.5px solid #E5E9EB', background: 'white', color: '#64748b', cursor: 'pointer', fontFamily: 'var(--font-arabic)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                 >
                   {btn.icon} {btn.label}
                 </button>

@@ -157,7 +157,7 @@ const Login = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F0F7F7', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 20px', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b' }}>
+    <div style={{ minHeight: '100vh', background: '#F0F7F7', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 20px', fontFamily: 'var(--font-arabic)', color: '#0e1a1b' }}>
       <div style={{ width: '100%', maxWidth: 390, display: 'flex', flexDirection: 'column' }}>
 
         {/* Top bar */}
@@ -201,7 +201,7 @@ const Login = () => {
                   onChange={handlePhoneChange}
                   placeholder={tx.phonePlaceholder}
                   maxLength={15}
-                  style={{ flex: 1, border: 'none', outline: 'none', padding: '0 12px', fontFamily: 'Tajawal, sans-serif', fontSize: 14, background: 'transparent', direction: 'ltr' }}
+                  style={{ flex: 1, border: 'none', outline: 'none', padding: '0 12px', fontFamily: 'var(--font-arabic)', fontSize: 14, background: 'transparent', direction: 'ltr' }}
                   inputMode="numeric"
                   pattern="[0-9]*"
                 />
@@ -218,7 +218,7 @@ const Login = () => {
                   value={password}
                   onChange={handlePasswordChange}
                   placeholder={tx.passwordPlaceholder}
-                  style={{ width: '100%', height: 52, padding: '0 48px 0 16px', border: `1.5px solid ${errors.password ? '#ef4444' : '#E5E9EB'}`, borderRadius: 12, fontFamily: 'Tajawal, sans-serif', fontSize: 14, color: '#0e1a1b', outline: 'none', background: 'white' }}
+                  style={{ width: '100%', height: 52, padding: '0 48px 0 16px', border: `1.5px solid ${errors.password ? '#ef4444' : '#E5E9EB'}`, borderRadius: 12, fontFamily: 'var(--font-arabic)', fontSize: 14, color: '#0e1a1b', outline: 'none', background: 'white' }}
                 />
                 <button
                   type="button"
@@ -242,7 +242,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={!phone || !password || isLoading}
-              style={{ width: '100%', height: 52, background: '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: isLoading ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'Tajawal, sans-serif', marginBottom: 16, opacity: isLoading ? 0.7 : 1 }}
+              style={{ width: '100%', height: 52, background: '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: isLoading ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'var(--font-arabic)', marginBottom: 16, opacity: isLoading ? 0.7 : 1 }}
             >
               {isLoading ? '...' : tx.loginButton}
             </button>

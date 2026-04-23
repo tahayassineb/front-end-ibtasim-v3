@@ -36,11 +36,11 @@ export default function AdminContacts() {
   };
 
   if (stats === undefined || messages === undefined) {
-    return <div style={{ padding: 60, textAlign: 'center', color: '#94a3b8', fontFamily: 'Tajawal, sans-serif' }}>جاري تحميل الرسائل...</div>;
+    return <div style={{ padding: 60, textAlign: 'center', color: '#94a3b8', fontFamily: 'var(--font-arabic)' }}>جاري تحميل الرسائل...</div>;
   }
 
   return (
-    <div style={{ fontFamily: 'Tajawal, sans-serif', color: TEXT, padding: 24 }} dir="rtl">
+    <div style={{ fontFamily: 'var(--font-arabic)', color: TEXT, padding: 24 }} dir="rtl">
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 14, marginBottom: 20 }}>
         {[
           { key: 'new', value: stats.new, label: 'رسائل جديدة' },
@@ -61,7 +61,7 @@ export default function AdminContacts() {
             key={key}
             type="button"
             onClick={() => { setFilter(key); setSelectedId(null); }}
-            style={{ height: 34, padding: '0 14px', borderRadius: 100, border: `1.5px solid ${filter === key ? meta.color : BORDER}`, background: filter === key ? meta.color : 'white', color: filter === key ? 'white' : MUTED, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', fontWeight: 700 }}
+            style={{ height: 34, padding: '0 14px', borderRadius: 100, border: `1.5px solid ${filter === key ? meta.color : BORDER}`, background: filter === key ? meta.color : 'white', color: filter === key ? 'white' : MUTED, cursor: 'pointer', fontFamily: 'var(--font-arabic)', fontWeight: 700 }}
           >
             {meta.label}
           </button>
@@ -79,7 +79,7 @@ export default function AdminContacts() {
                 key={message._id}
                 type="button"
                 onClick={() => setSelectedId(message._id)}
-                style={{ width: '100%', textAlign: 'right', padding: 16, border: 'none', borderBottom: `1px solid ${BORDER}`, background: active ? '#E6F4F4' : 'white', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}
+                style={{ width: '100%', textAlign: 'right', padding: 16, border: 'none', borderBottom: `1px solid ${BORDER}`, background: active ? '#E6F4F4' : 'white', cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 6 }}>
                   <div style={{ fontSize: 14, fontWeight: 900, color: TEXT }}>{message.name}</div>
@@ -113,9 +113,9 @@ export default function AdminContacts() {
               <div style={{ background: '#f8fafc', borderRadius: 14, padding: 16, color: TEXT, lineHeight: 1.9, whiteSpace: 'pre-wrap', marginBottom: 20 }}>{selected.message}</div>
 
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <button type="button" onClick={() => handleStatus(selected._id, 'read')} style={{ height: 38, padding: '0 16px', borderRadius: 10, border: `1.5px solid ${BORDER}`, background: 'white', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', fontWeight: 800 }}>تمت القراءة</button>
-                <button type="button" onClick={() => handleStatus(selected._id, 'replied')} style={{ height: 38, padding: '0 16px', borderRadius: 10, border: 'none', background: '#16a34a', color: 'white', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', fontWeight: 800 }}>تم التواصل</button>
-                <button type="button" onClick={() => handleStatus(selected._id, 'new')} style={{ height: 38, padding: '0 16px', borderRadius: 10, border: 'none', background: '#dc2626', color: 'white', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', fontWeight: 800 }}>إرجاع كجديد</button>
+                <button type="button" onClick={() => handleStatus(selected._id, 'read')} style={{ height: 38, padding: '0 16px', borderRadius: 10, border: `1.5px solid ${BORDER}`, background: 'white', cursor: 'pointer', fontFamily: 'var(--font-arabic)', fontWeight: 800 }}>تمت القراءة</button>
+                <button type="button" onClick={() => handleStatus(selected._id, 'replied')} style={{ height: 38, padding: '0 16px', borderRadius: 10, border: 'none', background: '#16a34a', color: 'white', cursor: 'pointer', fontFamily: 'var(--font-arabic)', fontWeight: 800 }}>تم التواصل</button>
+                <button type="button" onClick={() => handleStatus(selected._id, 'new')} style={{ height: 38, padding: '0 16px', borderRadius: 10, border: 'none', background: '#dc2626', color: 'white', cursor: 'pointer', fontFamily: 'var(--font-arabic)', fontWeight: 800 }}>إرجاع كجديد</button>
               </div>
             </>
           )}

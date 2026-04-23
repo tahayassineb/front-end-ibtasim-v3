@@ -28,7 +28,7 @@ export default function StoryDetail() {
 
   {
     void (
-      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Tajawal, sans-serif' }}>
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-arabic)' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>📖</div>
           <p style={{ color: '#94a3b8' }}>جاري التحميل...</p>
@@ -59,7 +59,7 @@ export default function StoryDetail() {
 
   if (story === undefined) {
     return (
-      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Tajawal, sans-serif' }}>
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-arabic)' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>...</div>
           <p style={{ color: '#94a3b8' }}>Loading...</p>
@@ -70,12 +70,12 @@ export default function StoryDetail() {
 
   if (story === null) {
     return (
-      <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Tajawal, sans-serif', gap: 16 }}>
+      <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-arabic)', gap: 16 }}>
         <div style={{ fontSize: 48 }}>📭</div>
         <div style={{ fontSize: 18, fontWeight: 700 }}>القصة غير موجودة</div>
         <button
           onClick={() => navigate('/impact')}
-          style={{ height: 44, padding: '0 22px', borderRadius: 100, fontSize: 14, fontWeight: 600, background: '#E6F4F4', color: '#0A5F62', border: 'none', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}
+          style={{ height: 44, padding: '0 22px', borderRadius: 100, fontSize: 14, fontWeight: 600, background: '#E6F4F4', color: '#0A5F62', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}
         >
           ← العودة للقصص
         </button>
@@ -88,7 +88,7 @@ export default function StoryDetail() {
     : '';
 
   return (
-    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', overflowX: 'hidden' }}>
+    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'var(--font-arabic)', color: '#0e1a1b', overflowX: 'hidden' }}>
 
       {/* Hero — use cover image if available, otherwise gradient */}
       <div style={{
@@ -115,7 +115,7 @@ export default function StoryDetail() {
       <div style={{ maxWidth: 800, margin: '0 auto', padding: isMobile ? '16px 20px 0' : '20px 28px 0' }}>
         <button
           onClick={() => navigate('/impact')}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#0A5F62', fontSize: 13, fontWeight: 600, cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'Tajawal, sans-serif', padding: 0 }}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#0A5F62', fontSize: 13, fontWeight: 600, cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'var(--font-arabic)', padding: 0 }}
         >
           ← العودة لجميع القصص
         </button>
@@ -156,7 +156,7 @@ export default function StoryDetail() {
         <div style={{ marginTop: 32, display: 'flex', justifyContent: 'center' }}>
           <button
             onClick={() => navigate('/impact')}
-            style={{ height: 48, padding: '0 28px', background: '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: '0 4px 14px rgba(13,116,119,.25)' }}
+            style={{ height: 48, padding: '0 28px', background: '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: '0 4px 14px rgba(13,116,119,.25)' }}
           >
             ← اقرأ قصصاً أخرى
           </button>

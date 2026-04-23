@@ -90,7 +90,7 @@ const WhatsAppTab = ({
           </div>
           <div style={{ marginTop: 10 }}>
             <button onClick={handleRefreshQr} disabled={isRefreshingQr}
-              style={{ fontSize: 12, color: TEXT2, background: 'none', border: 'none', cursor: isRefreshingQr ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: 'Tajawal, sans-serif' }}>
+              style={{ fontSize: 12, color: TEXT2, background: 'none', border: 'none', cursor: isRefreshingQr ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: 'var(--font-arabic)' }}>
               🔄 {isRefreshingQr ? 'جارٍ التجديد...' : 'تجديد رمز QR'}
             </button>
           </div>
@@ -116,28 +116,28 @@ const WhatsAppTab = ({
         {/* Connect — no session */}
         {!whatsappSession.instanceId && !whatsappSession.isConnected && (
           <button onClick={handleConnect} disabled={whatsappSession.isLoading}
-            style={{ flex: 1, height: 38, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: whatsappSession.isLoading ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', border: 'none', background: PRIMARY, color: 'white', boxShadow: SHADOW_P, opacity: whatsappSession.isLoading ? 0.7 : 1 }}>
+            style={{ flex: 1, height: 38, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: whatsappSession.isLoading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-arabic)', border: 'none', background: PRIMARY, color: 'white', boxShadow: SHADOW_P, opacity: whatsappSession.isLoading ? 0.7 : 1 }}>
             {whatsappSession.isLoading ? '...' : '📱 اتصال'}
           </button>
         )}
         {/* Reconnect — session exists, not connected */}
         {whatsappSession.instanceId && !whatsappSession.isConnected && (
           <button onClick={handleReconnect} disabled={whatsappSession.isLoading}
-            style={{ flex: 1, height: 38, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: whatsappSession.isLoading ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', border: 'none', background: PRIMARY, color: 'white', boxShadow: SHADOW_P, opacity: whatsappSession.isLoading ? 0.7 : 1 }}>
+            style={{ flex: 1, height: 38, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: whatsappSession.isLoading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-arabic)', border: 'none', background: PRIMARY, color: 'white', boxShadow: SHADOW_P, opacity: whatsappSession.isLoading ? 0.7 : 1 }}>
             {whatsappSession.isLoading ? '...' : '🔄 إعادة الاتصال'}
           </button>
         )}
         {/* Sync status — any session */}
         {(whatsappSession.instanceId || whatsappSession.isConnected) && (
           <button onClick={handleSyncStatus} disabled={whatsappSession.isLoading}
-            style={{ flex: 1, height: 38, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: whatsappSession.isLoading ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', background: TEAL_WASH, color: P600, border: `1px solid ${P100}`, opacity: whatsappSession.isLoading ? 0.7 : 1 }}>
+            style={{ flex: 1, height: 38, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: whatsappSession.isLoading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-arabic)', background: TEAL_WASH, color: P600, border: `1px solid ${P100}`, opacity: whatsappSession.isLoading ? 0.7 : 1 }}>
             🔄 مزامنة الحالة
           </button>
         )}
         {/* Disconnect — connected */}
         {whatsappSession.isConnected && (
           <button onClick={handleDisconnect} disabled={whatsappSession.isLoading}
-            style={{ flex: 1, height: 38, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: whatsappSession.isLoading ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', border: 'none', background: '#FEE2E2', color: '#dc2626', opacity: whatsappSession.isLoading ? 0.7 : 1 }}>
+            style={{ flex: 1, height: 38, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: whatsappSession.isLoading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-arabic)', border: 'none', background: '#FEE2E2', color: '#dc2626', opacity: whatsappSession.isLoading ? 0.7 : 1 }}>
             ⊘ قطع الاتصال
           </button>
         )}
@@ -147,7 +147,7 @@ const WhatsAppTab = ({
       <div style={{ background: '#FFF7ED', borderRadius: 12, padding: 14, border: '1px solid #fed7aa', marginBottom: 12 }}>
         <div style={{ fontSize: 13, color: '#92400e', fontWeight: 600, marginBottom: 10 }}>📡 تحديد جلسة الإرسال — اختر الجلسة الصحيحة من حساب WaSender</div>
         <button onClick={handleListWaSenderSessions} disabled={waSessionsLoading}
-          style={{ height: 34, padding: '0 14px', border: '1.5px solid #fed7aa', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: waSessionsLoading ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', background: 'white', color: '#92400e', marginBottom: waSessionsList !== null ? 10 : 0, opacity: waSessionsLoading ? 0.7 : 1 }}>
+          style={{ height: 34, padding: '0 14px', border: '1.5px solid #fed7aa', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: waSessionsLoading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-arabic)', background: 'white', color: '#92400e', marginBottom: waSessionsList !== null ? 10 : 0, opacity: waSessionsLoading ? 0.7 : 1 }}>
           {waSessionsList === null ? 'عرض جلسات WaSender' : 'تحديث القائمة'}
         </button>
         {waSessionsList !== null && (
@@ -165,7 +165,7 @@ const WhatsAppTab = ({
                       <div style={{ fontSize: 11, fontWeight: 600, color: isConn ? '#16a34a' : '#ef4444' }}>{isConn ? '● متصل' : '○ غير متصل'}</div>
                     </div>
                     <button onClick={() => handleSelectSession(session.id)} disabled={waSessionsLoading || !session.apiKey}
-                      style={{ height: 28, padding: '0 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: (waSessionsLoading || !session.apiKey) ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', background: session.apiKey ? '#f97316' : '#e2e8f0', color: session.apiKey ? 'white' : TEXTM, border: 'none' }}>
+                      style={{ height: 28, padding: '0 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: (waSessionsLoading || !session.apiKey) ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-arabic)', background: session.apiKey ? '#f97316' : '#e2e8f0', color: session.apiKey ? 'white' : TEXTM, border: 'none' }}>
                       {session.apiKey ? 'استخدام هذه' : 'لا يوجد مفتاح'}
                     </button>
                   </div>
@@ -179,7 +179,7 @@ const WhatsAppTab = ({
       {/* Resync API key */}
       {(whatsappSession.instanceId || whatsappSession.isConnected) && (
         <button onClick={handleResyncApiKey} disabled={whatsappSession.isLoading}
-          style={{ width: '100%', height: 36, borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: whatsappSession.isLoading ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', border: `1.5px solid ${BORDER}`, background: 'white', color: TEXT2, marginBottom: 8, opacity: whatsappSession.isLoading ? 0.7 : 1 }}>
+          style={{ width: '100%', height: 36, borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: whatsappSession.isLoading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-arabic)', border: `1.5px solid ${BORDER}`, background: 'white', color: TEXT2, marginBottom: 8, opacity: whatsappSession.isLoading ? 0.7 : 1 }}>
           🔑 إعادة مزامنة مفتاح API
         </button>
       )}
@@ -187,7 +187,7 @@ const WhatsAppTab = ({
       {/* Delete session */}
       {(whatsappSession.instanceId || whatsappSession.isConnected) && (
         <button onClick={handleDeleteSession} disabled={whatsappSession.isLoading}
-          style={{ width: '100%', height: 38, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: whatsappSession.isLoading ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', border: '1.5px solid #fca5a5', background: 'white', color: '#dc2626', marginBottom: 16, opacity: whatsappSession.isLoading ? 0.7 : 1 }}>
+          style={{ width: '100%', height: 38, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: whatsappSession.isLoading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-arabic)', border: '1.5px solid #fca5a5', background: 'white', color: '#dc2626', marginBottom: 16, opacity: whatsappSession.isLoading ? 0.7 : 1 }}>
           🗑 حذف الجلسة نهائياً
         </button>
       )}
@@ -203,7 +203,7 @@ const WhatsAppTab = ({
             onFocus={e => e.target.style.borderColor = PRIMARY}
             onBlur={e => e.target.style.borderColor = BORDER} />
           <button onClick={handlePhoneChange}
-            style={{ height: 48, padding: '0 16px', border: `1.5px solid ${BORDER}`, borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', background: 'white', color: TEXT2, flexShrink: 0 }}>
+            style={{ height: 48, padding: '0 16px', border: `1.5px solid ${BORDER}`, borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', background: 'white', color: TEXT2, flexShrink: 0 }}>
             تحديث
           </button>
         </div>

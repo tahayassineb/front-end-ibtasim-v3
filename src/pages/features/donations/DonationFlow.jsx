@@ -37,7 +37,7 @@ const getImpactItems = (amount) => {
 const TopBar = ({ onBack }) => (
   <div style={{ height: 56, display: 'flex', alignItems: 'center', padding: '0 20px', justifyContent: 'space-between', borderBottom: '1px solid #E5E9EB', flexShrink: 0, background: 'white' }}>
     <button onClick={onBack} style={{ width: 36, height: 36, borderRadius: '50%', background: '#F0F7F7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, border: 'none', cursor: 'pointer' }}>←</button>
-    <div style={{ fontSize: 15, fontWeight: 700, fontFamily: 'Tajawal, sans-serif' }}>إتمام التبرع</div>
+    <div style={{ fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-arabic)' }}>إتمام التبرع</div>
     <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#F0F7F7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#64748b' }}>?</div>
   </div>
 );
@@ -96,7 +96,7 @@ const Step0Auth = ({ authMode, setAuthMode, authFormData, handleAuthChange, hand
     }
   }, [otpSent, otpTimer, setOtpTimer]);
 
-  const inputStyle = { width: '100%', height: 52, border: '1.5px solid #E5E9EB', borderRadius: 14, padding: '0 16px', fontSize: 15, fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', background: 'white', outline: 'none', boxSizing: 'border-box' };
+  const inputStyle = { width: '100%', height: 52, border: '1.5px solid #E5E9EB', borderRadius: 14, padding: '0 16px', fontSize: 15, fontFamily: 'var(--font-arabic)', color: '#0e1a1b', background: 'white', outline: 'none', boxSizing: 'border-box' };
 
   const AUTH_OPTIONS = [
     { id: 'login', icon: '🔑', title: 'تسجيل الدخول', desc: 'لديك حساب؟ سجّل دخولك لتتبع تبرعاتك', badge: '✓ الأسرع' },
@@ -138,7 +138,7 @@ const Step0Auth = ({ authMode, setAuthMode, authFormData, handleAuthChange, hand
       <div style={{ flex: 1, padding: '20px 16px', overflowY: 'auto' }}>
         {/* Back to options */}
         <button onClick={() => setAuthMode(null)}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#0d7477', fontSize: 13, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', marginBottom: 20, padding: 0, fontFamily: 'Tajawal, sans-serif' }}>
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#0d7477', fontSize: 13, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', marginBottom: 20, padding: 0, fontFamily: 'var(--font-arabic)' }}>
           ← تغيير الخيار
         </button>
 
@@ -295,7 +295,7 @@ const Step1Amount = ({ donationData, setDonationData }) => {
         <input type="number" inputMode="numeric" value={donationData.customAmount}
           onChange={e => { const v = e.target.value; if (v === '' || /^\d*$/.test(v)) setDonationData(p => ({ ...p, customAmount: v, amount: 0 })); }}
           placeholder="0"
-          style={{ width: '100%', height: 60, padding: '0 56px 0 16px', border: `2px solid ${donationData.customAmount ? '#0d7477' : '#E5E9EB'}`, borderRadius: 14, fontSize: 26, fontWeight: 800, color: '#0A5F62', outline: 'none', background: donationData.customAmount ? '#E6F4F4' : 'white', fontFamily: 'Inter, Tajawal, sans-serif', boxSizing: 'border-box', boxShadow: donationData.customAmount ? '0 0 0 3px rgba(13,116,119,.1)' : 'none' }}
+          style={{ width: '100%', height: 60, padding: '0 56px 0 16px', border: `2px solid ${donationData.customAmount ? '#0d7477' : '#E5E9EB'}`, borderRadius: 14, fontSize: 26, fontWeight: 800, color: '#0A5F62', outline: 'none', background: donationData.customAmount ? '#E6F4F4' : 'white', fontFamily: 'Inter, var(--font-arabic), sans-serif', boxSizing: 'border-box', boxShadow: donationData.customAmount ? '0 0 0 3px rgba(13,116,119,.1)' : 'none' }}
           dir="ltr"
         />
         <span style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 14, fontWeight: 700, color: '#94a3b8', fontFamily: 'Inter, sans-serif' }}>د.م</span>
@@ -368,7 +368,7 @@ const Step2Payment = ({ donationData, setDonationData, bankInfo, showToast, lang
                 <div style={{ display: 'flex', background: '#F0F7F7', borderRadius: 10, padding: 4, marginBottom: 14, border: '1px solid #CCF0F0' }}>
                   {[{ id: 'bank', label: '🏦 تحويل بنكي' }, { id: 'cash', label: '💳 Wafacash · Cash Plus' }].map(t => (
                     <button key={t.id} onClick={e => { e.stopPropagation(); setDonationData(p => ({ ...p, transferType: t.id })); }}
-                      style={{ flex: 1, height: 34, borderRadius: 8, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif',
+                      style={{ flex: 1, height: 34, borderRadius: 8, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'var(--font-arabic)',
                         background: transferType === t.id ? 'white' : 'transparent',
                         color: transferType === t.id ? '#0A5F62' : '#64748b',
                         boxShadow: transferType === t.id ? '0 1px 3px rgba(0,0,0,.1)' : 'none',
@@ -389,7 +389,7 @@ const Step2Payment = ({ donationData, setDonationData, bankInfo, showToast, lang
                       <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>رقم الحساب (RIB)</div>
                       <div style={{ fontSize: 18, fontWeight: 800, color: '#0A5F62', fontFamily: 'Inter, sans-serif', letterSpacing: '.08em', margin: '2px 0' }} dir="ltr">{bankInfo.rib || '—'}</div>
                       <button onClick={e => { e.stopPropagation(); copyToClipboard((bankInfo.rib || '').replace(/\s/g, '')); }}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#0d7477', background: '#E6F4F4', padding: '3px 10px', borderRadius: 100, cursor: 'pointer', border: 'none', fontFamily: 'Tajawal, sans-serif', marginTop: 4 }}>
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#0d7477', background: '#E6F4F4', padding: '3px 10px', borderRadius: 100, cursor: 'pointer', border: 'none', fontFamily: 'var(--font-arabic)', marginTop: 4 }}>
                         📋 نسخ الرقم
                       </button>
                     </div>
@@ -469,7 +469,7 @@ const Step3Receipt = ({ uploadedFile, setUploadedFile, dragActive, setDragActive
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>{uploadedFile.name}</div>
             <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 8, fontFamily: 'Inter, sans-serif' }}>{(uploadedFile.size / 1024 / 1024).toFixed(2)} MB</div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, background: '#D1FAE5', color: '#16a34a', padding: '3px 10px', borderRadius: 100 }}>✓ تم الرفع بنجاح</div>
-            <button onClick={() => setUploadedFile(null)} style={{ display: 'block', fontSize: 11, color: '#ef4444', cursor: 'pointer', textDecoration: 'underline', marginTop: 6, background: 'none', border: 'none', fontFamily: 'Tajawal, sans-serif' }}>× حذف والاستبدال</button>
+            <button onClick={() => setUploadedFile(null)} style={{ display: 'block', fontSize: 11, color: '#ef4444', cursor: 'pointer', textDecoration: 'underline', marginTop: 6, background: 'none', border: 'none', fontFamily: 'var(--font-arabic)' }}>× حذف والاستبدال</button>
           </div>
         </div>
       ) : (
@@ -495,7 +495,7 @@ const Step3Receipt = ({ uploadedFile, setUploadedFile, dragActive, setDragActive
           <select
             value={donationData?.bankName || ''}
             onChange={e => setDonationData(p => ({ ...p, bankName: e.target.value }))}
-            style={{ width: '100%', height: 52, border: `1.5px solid ${donationData?.bankName ? '#33C0C0' : '#E5E9EB'}`, borderRadius: 14, padding: '0 16px', fontSize: 14, fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', background: 'white', outline: 'none', boxSizing: 'border-box', appearance: 'none', cursor: 'pointer' }}
+            style={{ width: '100%', height: 52, border: `1.5px solid ${donationData?.bankName ? '#33C0C0' : '#E5E9EB'}`, borderRadius: 14, padding: '0 16px', fontSize: 14, fontFamily: 'var(--font-arabic)', color: '#0e1a1b', background: 'white', outline: 'none', boxSizing: 'border-box', appearance: 'none', cursor: 'pointer' }}
           >
             <option value="">-- اختر البنك أو الوكالة --</option>
             {MOROCCAN_BANKS.map(b => <option key={b} value={b}>{b}</option>)}
@@ -509,7 +509,7 @@ const Step3Receipt = ({ uploadedFile, setUploadedFile, dragActive, setDragActive
             value={donationData?.senderName || ''}
             onChange={e => setDonationData(p => ({ ...p, senderName: e.target.value }))}
             placeholder="الاسم الكامل كما هو في البطاقة البنكية"
-            style={{ width: '100%', height: 52, border: '1.5px solid #E5E9EB', borderRadius: 14, padding: '0 16px', fontSize: 14, fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', background: 'white', outline: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', height: 52, border: '1.5px solid #E5E9EB', borderRadius: 14, padding: '0 16px', fontSize: 14, fontFamily: 'var(--font-arabic)', color: '#0e1a1b', background: 'white', outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
 
@@ -545,7 +545,7 @@ const Step3Receipt = ({ uploadedFile, setUploadedFile, dragActive, setDragActive
 
 // ─── Step 4: Personal Info ────────────────────────────────────────────────────
 const Step4Info = ({ donationData, setDonationData, lang }) => {
-  const inputStyle = { width: '100%', height: 52, border: '1.5px solid #E5E9EB', borderRadius: 14, padding: '0 16px', fontSize: 15, fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', background: 'white', outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s' };
+  const inputStyle = { width: '100%', height: 52, border: '1.5px solid #E5E9EB', borderRadius: 14, padding: '0 16px', fontSize: 15, fontFamily: 'var(--font-arabic)', color: '#0e1a1b', background: 'white', outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s' };
   const labelStyle = { fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 };
 
   return (
@@ -594,7 +594,7 @@ const Step4Info = ({ donationData, setDonationData, lang }) => {
         <div style={labelStyle}>إهداء التبرع <span style={{ color: '#94a3b8', fontWeight: 500 }}>(اختياري)</span></div>
         <textarea value={donationData.dedication || ''} onChange={e => setDonationData(p => ({ ...p, dedication: e.target.value.slice(0, 150) }))}
           placeholder="مثال: باسم والدي رحمه الله..."
-          style={{ width: '100%', minHeight: 80, border: '1.5px solid #E5E9EB', borderRadius: 14, padding: '14px 16px', fontSize: 14, fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', background: 'white', outline: 'none', resize: 'none', lineHeight: 1.6, boxSizing: 'border-box' }} />
+          style={{ width: '100%', minHeight: 80, border: '1.5px solid #E5E9EB', borderRadius: 14, padding: '14px 16px', fontSize: 14, fontFamily: 'var(--font-arabic)', color: '#0e1a1b', background: 'white', outline: 'none', resize: 'none', lineHeight: 1.6, boxSizing: 'border-box' }} />
         <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'left', marginTop: 4, fontFamily: 'Inter, sans-serif' }}>{(donationData.dedication || '').length} / 150</div>
       </div>
 
@@ -646,9 +646,9 @@ const Step5Review = ({ donationData, project, uploadedFile, amount, agreedTerms,
               {row.isFile ? (
                 <div style={{ width: 36, height: 36, borderRadius: 8, background: 'linear-gradient(135deg,#e0e7ff,#c7d2fe)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🧾</div>
               ) : null}
-              <div style={{ fontSize: row.isFile ? 12 : 14, fontWeight: 700, color: row.teal ? '#0A5F62' : '#0e1a1b', maxWidth: 150, textAlign: 'left', direction: row.label === 'رقم الهاتف' ? 'ltr' : 'rtl', fontFamily: row.label === 'رقم الهاتف' ? 'Inter, sans-serif' : 'Tajawal, sans-serif' }}>{row.value}</div>
+              <div style={{ fontSize: row.isFile ? 12 : 14, fontWeight: 700, color: row.teal ? '#0A5F62' : '#0e1a1b', maxWidth: 150, textAlign: 'left', direction: row.label === 'رقم الهاتف' ? 'ltr' : 'rtl', fontFamily: row.label === 'رقم الهاتف' ? 'Inter, sans-serif' : 'var(--font-arabic)' }}>{row.value}</div>
               {row.editStep != null && (
-                <button onClick={() => setStep(row.editStep)} style={{ fontSize: 12, fontWeight: 600, color: '#0d7477', padding: '3px 8px', background: '#E6F4F4', borderRadius: 100, cursor: 'pointer', border: 'none', fontFamily: 'Tajawal, sans-serif' }}>تعديل</button>
+                <button onClick={() => setStep(row.editStep)} style={{ fontSize: 12, fontWeight: 600, color: '#0d7477', padding: '3px 8px', background: '#E6F4F4', borderRadius: 100, cursor: 'pointer', border: 'none', fontFamily: 'var(--font-arabic)' }}>تعديل</button>
               )}
             </div>
           </div>
@@ -727,18 +727,18 @@ const Step6Success = ({ donationReference, project, navigate, resetDonation, lan
         <div style={{ textAlign: 'center', fontSize: 13, color: '#64748b', marginBottom: 12 }}>انشر الخير مع أصدقائك</div>
         <div style={{ display: 'flex', gap: 12 }}>
           <button onClick={() => handleShare('whatsapp')}
-            style={{ flex: 1, height: 48, background: '#25D366', border: 'none', borderRadius: 14, color: 'white', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: '0 4px 14px rgba(37,211,102,.3)' }}>
+            style={{ flex: 1, height: 48, background: '#25D366', border: 'none', borderRadius: 14, color: 'white', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: '0 4px 14px rgba(37,211,102,.3)' }}>
             واتساب
           </button>
           <button onClick={() => handleShare('facebook')}
-            style={{ flex: 1, height: 48, background: '#1877F2', border: 'none', borderRadius: 14, color: 'white', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: '0 4px 14px rgba(24,119,242,.3)' }}>
+            style={{ flex: 1, height: 48, background: '#1877F2', border: 'none', borderRadius: 14, color: 'white', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: '0 4px 14px rgba(24,119,242,.3)' }}>
             فيسبوك
           </button>
         </div>
       </div>
 
       <button onClick={() => { resetDonation(); navigate('/', { replace: true }); }}
-        style={{ width: '100%', height: 52, background: '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: '0 4px 14px rgba(13,116,119,.25)' }}>
+        style={{ width: '100%', height: 52, background: '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: '0 4px 14px rgba(13,116,119,.25)' }}>
         العودة للرئيسية
       </button>
     </div>
@@ -1068,7 +1068,7 @@ export default function DonationFlow() {
 
   // ── Render ──
   return (
-    <div style={{ height: '100dvh', background: '#F0F7F7', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', display: 'flex', justifyContent: 'center', overflow: 'hidden' }}>
+    <div style={{ height: '100dvh', background: '#F0F7F7', fontFamily: 'var(--font-arabic)', color: '#0e1a1b', display: 'flex', justifyContent: 'center', overflow: 'hidden' }}>
       <div style={{ width: '100%', maxWidth: 430, height: '100%', background: 'white', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
 
         {/* Top bar */}
@@ -1109,13 +1109,13 @@ export default function DonationFlow() {
           <div style={{ flexShrink: 0, padding: '14px 16px', background: 'white', borderTop: '1px solid #E5E9EB' }}>
             {step === 0 ? (
               <button onClick={handleNext} disabled={isLoading}
-                style={{ width: '100%', height: 52, background: isLoading ? '#94a3b8' : '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: isLoading ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'Tajawal, sans-serif' }}>
+                style={{ width: '100%', height: 52, background: isLoading ? '#94a3b8' : '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: isLoading ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'var(--font-arabic)' }}>
                 {isLoading ? '...' : getNextLabel()}
               </button>
             ) : step === 5 ? (
               <div>
                 <button onClick={handleNext} disabled={isNextDisabled()}
-                  style={{ width: '100%', height: 56, background: isNextDisabled() ? '#E5E9EB' : '#0d7477', color: isNextDisabled() ? '#94a3b8' : 'white', border: 'none', borderRadius: 16, fontSize: 17, fontWeight: 800, cursor: isNextDisabled() ? 'not-allowed' : 'pointer', boxShadow: isNextDisabled() ? 'none' : '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'Tajawal, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  style={{ width: '100%', height: 56, background: isNextDisabled() ? '#E5E9EB' : '#0d7477', color: isNextDisabled() ? '#94a3b8' : 'white', border: 'none', borderRadius: 16, fontSize: 17, fontWeight: 800, cursor: isNextDisabled() ? 'not-allowed' : 'pointer', boxShadow: isNextDisabled() ? 'none' : '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'var(--font-arabic)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                   {getNextLabel()}
                 </button>
                 <div style={{ textAlign: 'center', fontSize: 11, color: '#94a3b8', marginTop: 8 }}>ستصلك رسالة تأكيد فور إرسال التبرع</div>
@@ -1128,7 +1128,7 @@ export default function DonationFlow() {
                   <span style={{ fontSize: 11 }}>د.م</span>
                 </div>
                 <button onClick={handleNext} disabled={isNextDisabled()}
-                  style={{ flex: 1, height: 52, background: isNextDisabled() ? '#E5E9EB' : '#0d7477', color: isNextDisabled() ? '#94a3b8' : 'white', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: isNextDisabled() ? 'not-allowed' : 'pointer', boxShadow: isNextDisabled() ? 'none' : '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'Tajawal, sans-serif' }}>
+                  style={{ flex: 1, height: 52, background: isNextDisabled() ? '#E5E9EB' : '#0d7477', color: isNextDisabled() ? '#94a3b8' : 'white', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: isNextDisabled() ? 'not-allowed' : 'pointer', boxShadow: isNextDisabled() ? 'none' : '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'var(--font-arabic)' }}>
                   {isLoading ? '...' : getNextLabel()}
                 </button>
               </div>

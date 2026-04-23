@@ -19,7 +19,7 @@ const SHADOW_K = '0 4px 14px rgba(196,168,130,.35)';
 
 const fieldInput = {
   width: '100%', height: 48, border: `1.5px solid ${BORDER}`, borderRadius: 12,
-  padding: '0 14px', fontSize: 14, fontFamily: 'Tajawal, sans-serif',
+  padding: '0 14px', fontSize: 14, fontFamily: 'var(--font-arabic)',
   color: '#0e1a1b', outline: 'none', background: 'white', boxSizing: 'border-box',
 };
 const fieldLabel = { fontSize: 12, fontWeight: 700, color: TEXT2, marginBottom: 7, display: 'flex', alignItems: 'center', gap: 4 };
@@ -147,7 +147,7 @@ export default function AdminKafalaForm() {
 
   if (isEdit && existingKafala === undefined) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'Tajawal, sans-serif' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'var(--font-arabic)' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 36, marginBottom: 12 }}>🤲</div>
           <p style={{ color: TEXTM }}>جاري التحميل...</p>
@@ -157,7 +157,7 @@ export default function AdminKafalaForm() {
   }
 
   return (
-    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: 24, paddingBottom: 100, maxWidth: 800 }} dir="rtl">
+    <div style={{ fontFamily: 'var(--font-arabic)', color: '#0e1a1b', padding: 24, paddingBottom: 100, maxWidth: 800 }} dir="rtl">
 
       {/* ── Section 1: Personal Info ── */}
       <Section icon="👦" title="المعلومات الشخصية">
@@ -210,7 +210,7 @@ export default function AdminKafalaForm() {
               onChange={e => setBio(prev => ({ ...prev, [bioTab]: e.target.value }))}
               rows={4}
               placeholder="قصة اليتيم وظروفه..."
-              style={{ width: '100%', minHeight: 100, border: `1.5px solid ${BORDER}`, borderRadius: 12, padding: '12px 14px', fontSize: 14, fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', outline: 'none', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' }}
+              style={{ width: '100%', minHeight: 100, border: `1.5px solid ${BORDER}`, borderRadius: 12, padding: '12px 14px', fontSize: 14, fontFamily: 'var(--font-arabic)', color: '#0e1a1b', outline: 'none', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' }}
               onFocus={e => e.target.style.borderColor = KDARK}
               onBlur={e => e.target.style.borderColor = BORDER}
             />
@@ -225,7 +225,7 @@ export default function AdminKafalaForm() {
             <img src={currentPhotoUrl} alt="photo" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${K100}` }} />
             <div>
               <button type="button" onClick={() => fileRef.current?.click()}
-                style={{ height: 38, padding: '0 16px', background: KBG, color: KDARK, border: `1px solid ${K100}`, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+                style={{ height: 38, padding: '0 16px', background: KBG, color: KDARK, border: `1px solid ${K100}`, borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>
                 تغيير الصورة
               </button>
               <div style={{ fontSize: 11, color: TEXTM, marginTop: 6 }}>JPG أو PNG — إذا لم ترفع صورة سيظهر رمز الجنس</div>
@@ -282,7 +282,7 @@ export default function AdminKafalaForm() {
 
         {/* Add need button */}
         <button type="button" onClick={addNeed}
-          style={{ width: '100%', height: 44, border: `2px dashed ${K100}`, borderRadius: 12, background: KBG, color: KDARK, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', marginTop: 4 }}>
+          style={{ width: '100%', height: 44, border: `2px dashed ${K100}`, borderRadius: 12, background: KBG, color: KDARK, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', marginTop: 4 }}>
           + إضافة احتياج
         </button>
 
@@ -294,18 +294,18 @@ export default function AdminKafalaForm() {
       </Section>
 
       {/* ── Sticky action bar ── */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'white', borderTop: `1px solid ${BORDER}`, padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 50, fontFamily: 'Tajawal, sans-serif' }}>
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'white', borderTop: `1px solid ${BORDER}`, padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 50, fontFamily: 'var(--font-arabic)' }}>
         <button type="button" onClick={() => navigate('/admin/kafala')}
-          style={{ height: 44, padding: '0 20px', border: `1.5px solid ${BORDER}`, borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', background: 'white', color: TEXT2 }}>
+          style={{ height: 44, padding: '0 20px', border: `1.5px solid ${BORDER}`, borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-arabic)', background: 'white', color: TEXT2 }}>
           ← إلغاء
         </button>
         <div style={{ display: 'flex', gap: 8 }}>
           <button type="button" onClick={() => handleSave(false)} disabled={saving}
-            style={{ height: 44, padding: '0 20px', border: `1.5px solid ${BORDER}`, borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', background: 'white', color: TEXT2, opacity: saving ? 0.6 : 1 }}>
+            style={{ height: 44, padding: '0 20px', border: `1.5px solid ${BORDER}`, borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-arabic)', background: 'white', color: TEXT2, opacity: saving ? 0.6 : 1 }}>
             {saving ? '...' : '💾 حفظ كمسودة'}
           </button>
           <button type="button" onClick={() => handleSave(true)} disabled={saving}
-            style={{ height: 44, padding: '0 24px', background: KDARK, color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: SHADOW_K, opacity: saving ? 0.6 : 1 }}>
+            style={{ height: 44, padding: '0 24px', background: KDARK, color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: SHADOW_K, opacity: saving ? 0.6 : 1 }}>
             {saving ? '...' : '🤲 نشر للكفالة'}
           </button>
         </div>

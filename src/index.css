@@ -160,7 +160,7 @@
     /* Typography */
     --font-brand: 'Thmanyah Sans', 'Inter', system-ui, sans-serif;
     --font-display: var(--font-brand);
-    --font-arabic: 'Thmanyah Sans', 'Tajawal', sans-serif;
+    --font-arabic: 'Thmanyah Sans', sans-serif;
     --font-display-arabic: 'Thmanyah Serif Display', 'Thmanyah Sans', serif;
     --font-text-arabic: 'Thmanyah Serif Text', 'Thmanyah Sans', serif;
     --font-light: 300;
@@ -277,11 +277,11 @@
   }
 
   html[data-font-system="legacy"] {
-    --font-brand: 'Inter', 'Tajawal', system-ui, sans-serif;
-    --font-display: 'Inter', sans-serif;
-    --font-arabic: 'Tajawal', sans-serif;
-    --font-display-arabic: 'Tajawal', serif;
-    --font-text-arabic: 'Tajawal', sans-serif;
+    --font-brand: 'Inter', system-ui, sans-serif;
+    --font-display: 'Inter', system-ui, sans-serif;
+    --font-arabic: 'Thmanyah Sans', sans-serif;
+    --font-display-arabic: 'Thmanyah Sans', serif;
+    --font-text-arabic: 'Thmanyah Sans', sans-serif;
   }
 
   [dir="rtl"] body,
@@ -290,6 +290,16 @@
   [dir="rtl"] button,
   [dir="rtl"] select {
     font-family: var(--font-arabic);
+  }
+
+  html[data-font-system="thmanyah"] body,
+  html[data-font-system="thmanyah"] body *:not(.material-symbols-outlined) {
+    font-family: var(--font-brand) !important;
+  }
+
+  html[data-font-system="thmanyah"] [dir="rtl"],
+  html[data-font-system="thmanyah"] [dir="rtl"] *:not(.material-symbols-outlined) {
+    font-family: var(--font-arabic) !important;
   }
 
   .font-premium-display {

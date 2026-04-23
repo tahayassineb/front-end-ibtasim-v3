@@ -93,11 +93,11 @@ export default function AdminProjects() {
   };
 
   if (data === undefined) {
-    return <div style={{ padding: 60, textAlign: 'center', color: '#94a3b8', fontFamily: 'Tajawal, sans-serif' }}>جاري تحميل المشاريع...</div>;
+    return <div style={{ padding: 60, textAlign: 'center', color: '#94a3b8', fontFamily: 'var(--font-arabic)' }}>جاري تحميل المشاريع...</div>;
   }
 
   return (
-    <div style={{ fontFamily: 'Tajawal, sans-serif', color: TEXT, padding: 24 }} dir="rtl">
+    <div style={{ fontFamily: 'var(--font-arabic)', color: TEXT, padding: 24 }} dir="rtl">
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 14, marginBottom: 20 }}>
         {[
           { label: 'إجمالي المشاريع', value: stats.total },
@@ -113,9 +113,9 @@ export default function AdminProjects() {
       </div>
 
       <div style={{ background: 'white', borderRadius: 16, border: `1px solid ${BORDER}`, boxShadow: SHADOW, padding: 14, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
-        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ابحث عن مشروع..." style={{ flex: 1, minWidth: 220, height: 38, border: `1.5px solid ${BORDER}`, borderRadius: 10, padding: '0 14px', fontFamily: 'Tajawal, sans-serif' }} />
+        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ابحث عن مشروع..." style={{ flex: 1, minWidth: 220, height: 38, border: `1.5px solid ${BORDER}`, borderRadius: 10, padding: '0 14px', fontFamily: 'var(--font-arabic)' }} />
         {['all', 'active', 'draft', 'funded', 'completed'].map((key) => (
-          <button key={key} type="button" onClick={() => setStatus(key)} style={{ height: 34, padding: '0 14px', borderRadius: 99, border: `1.5px solid ${status === key ? PRIMARY : BORDER}`, background: status === key ? PRIMARY : 'white', color: status === key ? 'white' : MUTED, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', fontWeight: 800 }}>
+          <button key={key} type="button" onClick={() => setStatus(key)} style={{ height: 34, padding: '0 14px', borderRadius: 99, border: `1.5px solid ${status === key ? PRIMARY : BORDER}`, background: status === key ? PRIMARY : 'white', color: status === key ? 'white' : MUTED, cursor: 'pointer', fontFamily: 'var(--font-arabic)', fontWeight: 800 }}>
             {key === 'all' ? 'الكل' : statusMeta[key]?.label}
           </button>
         ))}

@@ -102,7 +102,7 @@ const ImpactStories = () => {
   const featuredStory = stories.find(s => s.isFeatured) || stories[0] || null;
 
   return (
-    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b' }}>
+    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'var(--font-arabic)', color: '#0e1a1b' }}>
 
       {/* Hero */}
       <div style={{ background: 'linear-gradient(135deg,#052E2F,#0A5F62,#0d7477)', padding: isMobile ? '40px 20px' : '60px 0' }}>
@@ -131,7 +131,7 @@ const ImpactStories = () => {
                   background: selectedFilter === f.id ? 'white' : 'transparent',
                   color: selectedFilter === f.id ? '#0A5F62' : 'white',
                   cursor: 'pointer',
-                  fontFamily: 'Tajawal, sans-serif',
+                  fontFamily: 'var(--font-arabic)',
                 }}
               >
                 {f.icon && <>{f.icon} </>}{f.label}
@@ -142,7 +142,7 @@ const ImpactStories = () => {
           <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
             {[{ id: 'all', label: 'الكل' }, ...Object.entries(POST_TYPE_LABELS).map(([id, label]) => ({ id, label }))].map(pt => (
               <button key={pt.id} onClick={() => setSelectedPostType(pt.id)}
-                style={{ height: 30, padding: '0 14px', borderRadius: 100, fontSize: 12, fontWeight: 600, border: '1px solid', borderColor: selectedPostType === pt.id ? 'rgba(255,255,255,.8)' : 'rgba(255,255,255,.2)', background: selectedPostType === pt.id ? 'rgba(255,255,255,.15)' : 'transparent', color: 'white', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+                style={{ height: 30, padding: '0 14px', borderRadius: 100, fontSize: 12, fontWeight: 600, border: '1px solid', borderColor: selectedPostType === pt.id ? 'rgba(255,255,255,.8)' : 'rgba(255,255,255,.2)', background: selectedPostType === pt.id ? 'rgba(255,255,255,.15)' : 'transparent', color: 'white', cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>
                 {pt.label}
               </button>
             ))}

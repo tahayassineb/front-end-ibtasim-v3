@@ -44,7 +44,7 @@ const FieldLabel = ({ children }) => (
 
 const fieldInput = {
   width: '100%', height: 44, border: `1.5px solid ${BORDER}`, borderRadius: 10,
-  padding: '0 12px', fontSize: 13, fontFamily: 'Tajawal, sans-serif',
+  padding: '0 12px', fontSize: 13, fontFamily: 'var(--font-arabic)',
   color: '#0e1a1b', outline: 'none', background: 'white', boxSizing: 'border-box',
 };
 
@@ -171,7 +171,7 @@ export default function AdminStories() {
   };
 
   return (
-    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: 24 }} dir="rtl">
+    <div style={{ fontFamily: 'var(--font-arabic)', color: '#0e1a1b', padding: 24 }} dir="rtl">
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
@@ -179,7 +179,7 @@ export default function AdminStories() {
           <div style={{ fontSize: 13, color: TEXT2, marginTop: 4 }}>{stories?.length ?? 0} منشور في قاعدة البيانات</div>
         </div>
         <button onClick={handleOpenNew}
-          style={{ height: 40, padding: '0 18px', background: PRIMARY, color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: SHADOW_P }}>
+          style={{ height: 40, padding: '0 18px', background: PRIMARY, color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: SHADOW_P }}>
           ➕ منشور جديد
         </button>
       </div>
@@ -220,7 +220,7 @@ export default function AdminStories() {
                 {POST_TYPES.map(pt => (
                   <button key={pt.id} type="button"
                     onClick={() => setForm(p => ({ ...p, postType: pt.id, ...POST_TYPE_DEFAULTS[pt.id] }))}
-                    style={{ flex: 1, height: 38, borderRadius: 10, border: `1.5px solid ${form.postType === pt.id ? PRIMARY : BORDER}`, background: form.postType === pt.id ? P50 : 'white', color: form.postType === pt.id ? P600 : TEXT2, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+                    style={{ flex: 1, height: 38, borderRadius: 10, border: `1.5px solid ${form.postType === pt.id ? PRIMARY : BORDER}`, background: form.postType === pt.id ? P50 : 'white', color: form.postType === pt.id ? P600 : TEXT2, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>
                     {pt.label}
                   </button>
                 ))}
@@ -270,7 +270,7 @@ export default function AdminStories() {
             {/* SEO collapsible */}
             <div style={{ border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
               <button type="button" onClick={() => setSeoOpen(o => !o)}
-                style={{ width: '100%', padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F8FAFC', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: TEXT2, fontFamily: 'Tajawal, sans-serif' }}>
+                style={{ width: '100%', padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F8FAFC', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: TEXT2, fontFamily: 'var(--font-arabic)' }}>
                 <span>🔍 إعدادات SEO</span>
                 <span>{seoOpen ? '▲' : '▼'}</span>
               </button>
@@ -295,9 +295,9 @@ export default function AdminStories() {
             </div>
 
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button onClick={() => setShowForm(false)} style={{ height: 40, padding: '0 18px', border: `1.5px solid ${BORDER}`, borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', background: 'white', color: TEXT2 }}>إلغاء</button>
+              <button onClick={() => setShowForm(false)} style={{ height: 40, padding: '0 18px', border: `1.5px solid ${BORDER}`, borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-arabic)', background: 'white', color: TEXT2 }}>إلغاء</button>
               <button onClick={handleSave} disabled={saving}
-                style={{ height: 40, padding: '0 20px', background: PRIMARY, color: 'white', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: SHADOW_P, opacity: saving ? 0.7 : 1 }}>
+                style={{ height: 40, padding: '0 20px', background: PRIMARY, color: 'white', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: SHADOW_P, opacity: saving ? 0.7 : 1 }}>
                 {saving ? '...' : editingId ? '💾 حفظ' : '✅ إنشاء'}
               </button>
             </div>
@@ -337,11 +337,11 @@ export default function AdminStories() {
               {/* Actions */}
               <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                 <button onClick={() => handleTogglePublish(story)}
-                  style={{ height: 34, padding: '0 12px', borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', border: 'none', background: story.isPublished ? '#FEE2E2' : P50, color: story.isPublished ? '#dc2626' : P600 }}>
+                  style={{ height: 34, padding: '0 12px', borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', border: 'none', background: story.isPublished ? '#FEE2E2' : P50, color: story.isPublished ? '#dc2626' : P600 }}>
                   {story.isPublished ? 'إلغاء النشر' : 'نشر'}
                 </button>
                 <button onClick={() => handleOpenEdit(story)}
-                  style={{ height: 34, padding: '0 12px', borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', border: `1px solid ${BORDER}`, background: 'white', color: TEXT2 }}>
+                  style={{ height: 34, padding: '0 12px', borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', border: `1px solid ${BORDER}`, background: 'white', color: TEXT2 }}>
                   تعديل
                 </button>
                 <button onClick={() => handleDelete(story._id)}

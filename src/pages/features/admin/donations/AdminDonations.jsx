@@ -105,7 +105,7 @@ export default function AdminDonations() {
   ];
 
   return (
-    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: 24 }} dir="rtl">
+    <div style={{ fontFamily: 'var(--font-arabic)', color: '#0e1a1b', padding: 24 }} dir="rtl">
 
       {/* KPI row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 20 }}>
@@ -123,7 +123,7 @@ export default function AdminDonations() {
           value={search}
           onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
           placeholder="ابحث بالاسم، رقم المرجع..."
-          style={{ flex: 1, minWidth: 200, height: 38, padding: '0 16px', border: '1.5px solid #E5E9EB', borderRadius: 10, fontSize: 14, fontFamily: 'Tajawal, sans-serif', outline: 'none' }}
+          style={{ flex: 1, minWidth: 200, height: 38, padding: '0 16px', border: '1.5px solid #E5E9EB', borderRadius: 10, fontSize: 14, fontFamily: 'var(--font-arabic)', outline: 'none' }}
           onFocus={e => e.target.style.borderColor = '#0d7477'}
           onBlur={e => e.target.style.borderColor = '#E5E9EB'}
         />
@@ -135,7 +135,7 @@ export default function AdminDonations() {
         ].map(([val, label]) => (
           <button key={val} onClick={() => { setStatusFilter(val); setCurrentPage(1); }}
             style={{
-              height: 34, padding: '0 14px', borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif',
+              height: 34, padding: '0 14px', borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-arabic)',
               border: `1.5px solid ${statusFilter === val ? (val === 'pending' ? '#f59e0b' : '#0d7477') : '#E5E9EB'}`,
               background: statusFilter === val ? (val === 'pending' ? '#FEF3C7' : '#0d7477') : 'white',
               color: statusFilter === val ? (val === 'pending' ? '#92400e' : 'white') : '#64748b',
@@ -202,7 +202,7 @@ export default function AdminDonations() {
               <div style={{ padding: '12px 14px' }}>
                 <button
                   onClick={() => setViewingDonation(d)}
-                  style={{ height: 28, padding: '0 10px', borderRadius: 8, border: `1px solid ${pend ? '#0d7477' : '#E5E9EB'}`, color: pend ? '#0d7477' : '#64748b', background: 'white', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+                  style={{ height: 28, padding: '0 10px', borderRadius: 8, border: `1px solid ${pend ? '#0d7477' : '#E5E9EB'}`, color: pend ? '#0d7477' : '#64748b', background: 'white', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>
                   {pend ? 'راجع' : 'عرض'}
                 </button>
               </div>
@@ -231,15 +231,15 @@ export default function AdminDonations() {
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 40, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', background: '#0e1a1b', borderRadius: 16, boxShadow: '0 10px 15px rgba(0,0,0,.2)', border: '1px solid rgba(255,255,255,.1)', fontFamily: 'Tajawal, sans-serif' }}>
+        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 40, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', background: '#0e1a1b', borderRadius: 16, boxShadow: '0 10px 15px rgba(0,0,0,.2)', border: '1px solid rgba(255,255,255,.1)', fontFamily: 'var(--font-arabic)' }}>
           <span style={{ color: 'rgba(255,255,255,.7)', fontSize: 14 }}>{selectedIds.size} محدد</span>
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,.2)' }} />
           <button onClick={handleBulkVerify} disabled={isBulkLoading}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 10, background: '#0d7477', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 10, background: '#0d7477', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>
             ✓ تحقق من المحدد
           </button>
           <button onClick={handleBulkReject} disabled={isBulkLoading}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 10, background: '#ef4444', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 10, background: '#ef4444', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>
             ✗ رفض المحدد
           </button>
           <button onClick={() => setSelectedIds(new Set())}
@@ -293,7 +293,7 @@ export default function AdminDonations() {
 
             <div style={{ padding: '14px 20px', borderTop: '1px solid #E5E9EB' }}>
               <button onClick={() => setViewingDonation(null)}
-                style={{ width: '100%', height: 44, background: '#F0F7F7', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#64748b', fontFamily: 'Tajawal, sans-serif' }}>
+                style={{ width: '100%', height: 44, background: '#F0F7F7', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#64748b', fontFamily: 'var(--font-arabic)' }}>
                 إغلاق
               </button>
             </div>

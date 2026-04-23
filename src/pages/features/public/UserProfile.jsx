@@ -110,12 +110,12 @@ const UserProfile = () => {
 
   const getInitials = (name) => { if (!name) return 'U'; return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2); };
 
-  const inputStyle = { width: '100%', height: 48, padding: '0 16px', border: '1.5px solid #E5E9EB', borderRadius: 12, fontFamily: 'Tajawal, sans-serif', fontSize: 14, color: '#0e1a1b', outline: 'none', background: '#f6f8f8' };
+  const inputStyle = { width: '100%', height: 48, padding: '0 16px', border: '1.5px solid #E5E9EB', borderRadius: 12, fontFamily: 'var(--font-arabic)', fontSize: 14, color: '#0e1a1b', outline: 'none', background: '#f6f8f8' };
 
   const payMethodLabel = { card_whop: 'بطاقة بنكية', bank_transfer: 'تحويل بنكي', cash_agency: 'وكالة نقدية' };
 
   return (
-    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b' }}>
+    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'var(--font-arabic)', color: '#0e1a1b' }}>
 
       {/* Profile Hero */}
       <div style={{ background: 'linear-gradient(160deg,#021718,#0A5F62)', padding: '48px 0 0' }}>
@@ -135,7 +135,7 @@ const UserProfile = () => {
             </div>
           </div>
           <div style={{ marginRight: 'auto', paddingBottom: 36 }}>
-            <button onClick={handleEditToggle} style={{ height: 36, padding: '0 16px', borderRadius: 100, fontSize: 13, fontWeight: 600, background: 'rgba(255,255,255,.15)', color: 'white', border: '1px solid rgba(255,255,255,.3)', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+            <button onClick={handleEditToggle} style={{ height: 36, padding: '0 16px', borderRadius: 100, fontSize: 13, fontWeight: 600, background: 'rgba(255,255,255,.15)', color: 'white', border: '1px solid rgba(255,255,255,.3)', cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>
               {isEditing ? tx.cancel : `✏️ ${tx.editProfile}`}
             </button>
           </div>
@@ -209,7 +209,7 @@ const UserProfile = () => {
                             <button
                               onClick={() => handleCancelKafala(s._id)}
                               disabled={isCancelling}
-                              style={{ height: 30, padding: '0 12px', background: 'transparent', color: '#dc2626', border: '1px solid #dc2626', borderRadius: 100, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', opacity: isCancelling ? 0.5 : 1 }}>
+                              style={{ height: 30, padding: '0 12px', background: 'transparent', color: '#dc2626', border: '1px solid #dc2626', borderRadius: 100, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', opacity: isCancelling ? 0.5 : 1 }}>
                               {isCancelling ? '...' : 'إلغاء'}
                             </button>
                           </div>
@@ -281,7 +281,7 @@ const UserProfile = () => {
                 <label style={{ fontSize: 12, color: '#94a3b8', display: 'block', marginBottom: 6 }}>{tx.phoneLabel}</label>
                 <input style={{ ...inputStyle, direction: 'ltr' }} name="phone" type="tel" value={editData.phone} onChange={handleChange} />
               </div>
-              <button onClick={handleSave} disabled={isLoading} style={{ width: '100%', height: 44, background: '#0d7477', color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: '0 4px 14px rgba(13,116,119,.25)', opacity: isLoading ? 0.7 : 1 }}>
+              <button onClick={handleSave} disabled={isLoading} style={{ width: '100%', height: 44, background: '#0d7477', color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: '0 4px 14px rgba(13,116,119,.25)', opacity: isLoading ? 0.7 : 1 }}>
                 {isLoading ? '...' : tx.saveChanges}
               </button>
             </div>

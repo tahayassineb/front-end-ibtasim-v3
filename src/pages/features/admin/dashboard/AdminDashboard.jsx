@@ -111,7 +111,7 @@ export default function AdminDashboard() {
 
   if (stats === undefined || pendingVerifications === undefined || featuredProjectsData === undefined) {
     return (
-      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Tajawal, sans-serif', color: '#94a3b8' }}>
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-arabic)', color: '#94a3b8' }}>
         جاري تحميل البيانات...
       </div>
     );
@@ -129,7 +129,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div style={{ fontFamily: 'Tajawal, sans-serif', color: TEXT, padding: 24 }} dir="rtl">
+    <div style={{ fontFamily: 'var(--font-arabic)', color: TEXT, padding: 24 }} dir="rtl">
       <div style={{ background: 'white', borderRadius: 16, border: `1px solid ${BORDER}`, boxShadow: SHADOW, padding: 16, marginBottom: 20, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ fontSize: 14, fontWeight: 800, marginLeft: 6 }}>الفترة:</div>
         {presets.map((item) => (
@@ -137,7 +137,7 @@ export default function AdminDashboard() {
             key={item.id}
             type="button"
             onClick={() => setPreset(item.id)}
-            style={{ height: 34, padding: '0 14px', borderRadius: 100, border: `1.5px solid ${preset === item.id ? PRIMARY : BORDER}`, background: preset === item.id ? PRIMARY : 'white', color: preset === item.id ? 'white' : MUTED, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', fontWeight: 700 }}
+            style={{ height: 34, padding: '0 14px', borderRadius: 100, border: `1.5px solid ${preset === item.id ? PRIMARY : BORDER}`, background: preset === item.id ? PRIMARY : 'white', color: preset === item.id ? 'white' : MUTED, cursor: 'pointer', fontFamily: 'var(--font-arabic)', fontWeight: 700 }}
           >
             {item.label}
           </button>

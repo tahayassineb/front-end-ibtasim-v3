@@ -31,12 +31,12 @@ const SHADOW_PRIMARY = '0 4px 14px rgba(13,116,119,.25)';
 
 const fieldInput = {
   width: '100%', height: 48, border: `1.5px solid ${BORDER}`, borderRadius: 12,
-  padding: '0 14px', fontSize: 14, fontFamily: 'Tajawal, sans-serif',
+  padding: '0 14px', fontSize: 14, fontFamily: 'var(--font-arabic)',
   color: '#0e1a1b', outline: 'none', background: 'white', boxSizing: 'border-box',
 };
 const fieldTextarea = {
   width: '100%', minHeight: 100, border: `1.5px solid ${BORDER}`, borderRadius: 12,
-  padding: '12px 14px', fontSize: 14, fontFamily: 'Tajawal, sans-serif',
+  padding: '12px 14px', fontSize: 14, fontFamily: 'var(--font-arabic)',
   color: '#0e1a1b', outline: 'none', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box',
 };
 const fieldLabel = { fontSize: 12, fontWeight: 700, color: TEXT2, marginBottom: 7, display: 'flex', alignItems: 'center', gap: 4 };
@@ -286,7 +286,7 @@ export default function AdminProjectForm() {
 
   if (isEditMode && existingProject === undefined) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'Tajawal, sans-serif' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'var(--font-arabic)' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 36, marginBottom: 12 }}>📁</div>
           <p style={{ color: TEXTM }}>جاري التحميل...</p>
@@ -308,7 +308,7 @@ export default function AdminProjectForm() {
   );
 
   return (
-    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: 24, paddingBottom: 100 }} dir="rtl">
+    <div style={{ fontFamily: 'var(--font-arabic)', color: '#0e1a1b', padding: 24, paddingBottom: 100 }} dir="rtl">
 
       {/* ── Section 1: Basic Info ── */}
       <Section icon="📝" title="المعلومات الأساسية">
@@ -472,7 +472,7 @@ export default function AdminProjectForm() {
         {(formData.benefitCards || []).length < 6 && (
           <button type="button"
             onClick={() => set('benefitCards', [...(formData.benefitCards || []), { icon: '', value: '', label: '' }])}
-            style={{ height: 40, padding: '0 18px', border: `1.5px dashed ${BORDER}`, borderRadius: 10, background: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', color: PRIMARY, fontFamily: 'Tajawal, sans-serif' }}>
+            style={{ height: 40, padding: '0 18px', border: `1.5px dashed ${BORDER}`, borderRadius: 10, background: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', color: PRIMARY, fontFamily: 'var(--font-arabic)' }}>
             ➕ إضافة بطاقة
           </button>
         )}
@@ -497,7 +497,7 @@ export default function AdminProjectForm() {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              style={{ position: 'absolute', bottom: 12, left: 12, height: 34, padding: '0 14px', background: 'white', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+              style={{ position: 'absolute', bottom: 12, left: 12, height: 34, padding: '0 14px', background: 'white', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>
               تغيير الصورة
             </button>
           </div>
@@ -548,7 +548,7 @@ export default function AdminProjectForm() {
         )}
         {formData.gallery.length === 0 && (
           <button type="button" onClick={() => galleryInputRef.current?.click()}
-            style={{ height: 38, padding: '0 16px', border: `1.5px solid ${BORDER}`, borderRadius: 10, background: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', color: TEXT2, marginTop: 4 }}>
+            style={{ height: 38, padding: '0 16px', border: `1.5px solid ${BORDER}`, borderRadius: 10, background: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-arabic)', color: TEXT2, marginTop: 4 }}>
             + إضافة صور للمعرض
           </button>
         )}
@@ -579,18 +579,18 @@ export default function AdminProjectForm() {
       </Section>
 
       {/* ── Sticky action bar ── */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'white', borderTop: `1px solid ${BORDER}`, padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 50, fontFamily: 'Tajawal, sans-serif' }}>
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'white', borderTop: `1px solid ${BORDER}`, padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 50, fontFamily: 'var(--font-arabic)' }}>
         <button type="button" onClick={() => navigate('/admin/projects')}
-          style={{ height: 44, padding: '0 20px', border: `1.5px solid ${BORDER}`, borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', background: 'white', color: '#64748b' }}>
+          style={{ height: 44, padding: '0 20px', border: `1.5px solid ${BORDER}`, borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-arabic)', background: 'white', color: '#64748b' }}>
           ← إلغاء
         </button>
         <div style={{ display: 'flex', gap: 8 }}>
           <button type="button" onClick={() => handleSubmit('draft')} disabled={isLoading}
-            style={{ height: 44, padding: '0 28px', background: PRIMARY, color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: isLoading ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: SHADOW_PRIMARY, opacity: isLoading ? 0.6 : 1 }}>
+            style={{ height: 44, padding: '0 28px', background: PRIMARY, color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: isLoading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: SHADOW_PRIMARY, opacity: isLoading ? 0.6 : 1 }}>
             {isLoading ? '...' : '💾 حفظ كمسودة'}
           </button>
           <button type="button" onClick={() => handleSubmit('active')} disabled={isLoading}
-            style={{ height: 44, padding: '0 28px', background: '#16a34a', color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: isLoading ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', opacity: isLoading ? 0.6 : 1 }}>
+            style={{ height: 44, padding: '0 28px', background: '#16a34a', color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: isLoading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-arabic)', opacity: isLoading ? 0.6 : 1 }}>
             {isLoading ? '...' : '✅ نشر المشروع'}
           </button>
         </div>

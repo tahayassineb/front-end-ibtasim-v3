@@ -15,7 +15,7 @@ const SHADOW_P = '0 4px 14px rgba(13,116,119,.25)';
 
 const fieldInput = {
   width: '100%', height: 50, border: `1.5px solid ${BORDER}`, borderRadius: 14,
-  padding: '0 16px', fontSize: 15, fontFamily: 'Tajawal, sans-serif',
+  padding: '0 16px', fontSize: 15, fontFamily: 'var(--font-arabic)',
   color: '#0e1a1b', outline: 'none', transition: 'border-color .15s', boxSizing: 'border-box',
 };
 
@@ -68,7 +68,7 @@ export default function AdminRegister() {
   // ── Loading ───────────────────────────────────────────────────────────────
   if (validation === undefined) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F0F7F7', fontFamily: 'Tajawal, sans-serif' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F0F7F7', fontFamily: 'var(--font-arabic)' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 36, marginBottom: 12 }}>⏳</div>
           <p style={{ color: TEXTM }}>جاري التحقق من الدعوة...</p>
@@ -80,7 +80,7 @@ export default function AdminRegister() {
   // ── Invalid invitation ────────────────────────────────────────────────────
   if (!validation.valid) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F0F7F7', fontFamily: 'Tajawal, sans-serif', padding: 20 }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F0F7F7', fontFamily: 'var(--font-arabic)', padding: 20 }}>
         <div style={{ background: 'white', borderRadius: 24, padding: 40, maxWidth: 400, width: '100%', textAlign: 'center', boxShadow: '0 24px 60px rgba(0,0,0,.12)' }} dir="rtl">
           <div style={{ fontSize: 56, marginBottom: 16 }}>❌</div>
           <h1 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>رابط غير صالح</h1>
@@ -93,7 +93,7 @@ export default function AdminRegister() {
 
   // ── Registration form ─────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F0F7F7', fontFamily: 'Tajawal, sans-serif', padding: '40px 20px' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F0F7F7', fontFamily: 'var(--font-arabic)', padding: '40px 20px' }}>
       <div style={{ background: 'white', borderRadius: 24, boxShadow: '0 24px 60px rgba(0,0,0,.12),0 0 0 1px rgba(0,0,0,.05)', width: '100%', maxWidth: 460, overflow: 'hidden' }} dir="rtl">
 
         {/* ── Dark teal header ── */}
@@ -191,7 +191,7 @@ export default function AdminRegister() {
 
           {/* Submit */}
           <button type="submit" disabled={isLoading}
-            style={{ width: '100%', height: 52, background: PRIMARY, color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: isLoading ? 'not-allowed' : 'pointer', boxShadow: SHADOW_P, fontFamily: 'Tajawal, sans-serif', opacity: isLoading ? 0.7 : 1 }}>
+            style={{ width: '100%', height: 52, background: PRIMARY, color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: isLoading ? 'not-allowed' : 'pointer', boxShadow: SHADOW_P, fontFamily: 'var(--font-arabic)', opacity: isLoading ? 0.7 : 1 }}>
             {isLoading ? '...' : '✅ إنشاء الحساب'}
           </button>
 

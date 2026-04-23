@@ -73,12 +73,12 @@ export default function KafalaRenew() {
   // ── Auth guard ────────────────────────────────────────────────────────────────
   if (!isAuthenticated) {
     return (
-      <div style={{ minHeight: '100vh', background: K.kbg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'Tajawal, sans-serif' }} dir="rtl">
+      <div style={{ minHeight: '100vh', background: K.kbg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'var(--font-arabic)' }} dir="rtl">
         <div style={{ background: 'white', borderRadius: 24, boxShadow: '0 10px 15px rgba(0,0,0,.1)', padding: 48, maxWidth: 420, width: '100%', textAlign: 'center' }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
           <p style={{ fontSize: 15, fontWeight: 600, color: '#0e1a1b', marginBottom: 20 }}>يجب تسجيل الدخول للوصول إلى هذه الصفحة.</p>
           <button onClick={() => navigate('/login')}
-            style={{ background: K.kdark, color: 'white', border: 'none', padding: '12px 32px', borderRadius: 14, fontWeight: 700, fontSize: 15, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+            style={{ background: K.kdark, color: 'white', border: 'none', padding: '12px 32px', borderRadius: 14, fontWeight: 700, fontSize: 15, cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>
             تسجيل الدخول
           </button>
         </div>
@@ -89,7 +89,7 @@ export default function KafalaRenew() {
   // ── Loading ───────────────────────────────────────────────────────────────────
   if (kafalaData === undefined || sponsorship === undefined) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: K.kbg, fontFamily: 'Tajawal, sans-serif' }} dir="rtl">
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: K.kbg, fontFamily: 'var(--font-arabic)' }} dir="rtl">
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>🤲</div>
           <p style={{ color: '#94a3b8' }}>جاري التحميل...</p>
@@ -100,7 +100,7 @@ export default function KafalaRenew() {
 
   if (!kafalaData) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Tajawal, sans-serif' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-arabic)' }}>
         <p style={{ color: '#94a3b8' }}>الكفالة غير موجودة</p>
       </div>
     );
@@ -109,12 +109,12 @@ export default function KafalaRenew() {
   // ── Not the current sponsor ───────────────────────────────────────────────────
   if (!sponsorship) {
     return (
-      <div style={{ minHeight: '100vh', background: K.kbg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'Tajawal, sans-serif' }} dir="rtl">
+      <div style={{ minHeight: '100vh', background: K.kbg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'var(--font-arabic)' }} dir="rtl">
         <div style={{ background: 'white', borderRadius: 24, boxShadow: '0 10px 15px rgba(0,0,0,.1)', padding: 48, maxWidth: 420, width: '100%', textAlign: 'center' }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
           <p style={{ fontSize: 15, fontWeight: 600, color: '#0e1a1b', marginBottom: 20 }}>أنت لست الكافل الحالي لهذا اليتيم.</p>
           <button onClick={() => navigate('/kafala')}
-            style={{ background: K.kdark, color: 'white', border: 'none', padding: '12px 32px', borderRadius: 14, fontWeight: 700, fontSize: 15, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+            style={{ background: K.kdark, color: 'white', border: 'none', padding: '12px 32px', borderRadius: 14, fontWeight: 700, fontSize: 15, cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>
             العودة للكفالات
           </button>
         </div>
@@ -125,13 +125,13 @@ export default function KafalaRenew() {
   // ── Renewal already pending ───────────────────────────────────────────────────
   if (sponsorship.status === 'pending_payment') {
     return (
-      <div style={{ minHeight: '100vh', background: K.kbg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'Tajawal, sans-serif' }} dir="rtl">
+      <div style={{ minHeight: '100vh', background: K.kbg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'var(--font-arabic)' }} dir="rtl">
         <div style={{ background: 'white', borderRadius: 24, boxShadow: '0 10px 15px rgba(0,0,0,.1)', padding: 48, maxWidth: 420, width: '100%', textAlign: 'center' }}>
           <div style={{ width: 64, height: 64, background: '#FFFBEB', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 32 }}>⏳</div>
           <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0e1a1b', marginBottom: 12 }}>طلب قيد المراجعة</h2>
           <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7, marginBottom: 24 }}>يوجد طلب تجديد قيد المراجعة. سيتواصل معك الفريق قريباً.</p>
           <button onClick={() => navigate('/')}
-            style={{ background: K.kdark, color: 'white', border: 'none', padding: '12px 32px', borderRadius: 14, fontWeight: 700, fontSize: 15, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+            style={{ background: K.kdark, color: 'white', border: 'none', padding: '12px 32px', borderRadius: 14, fontWeight: 700, fontSize: 15, cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>
             العودة للرئيسية
           </button>
         </div>
@@ -142,13 +142,13 @@ export default function KafalaRenew() {
   // ── Success ────────────────────────────────────────────────────────────────────
   if (done) {
     return (
-      <div style={{ minHeight: '100vh', background: K.kbg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'Tajawal, sans-serif' }} dir="rtl">
+      <div style={{ minHeight: '100vh', background: K.kbg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'var(--font-arabic)' }} dir="rtl">
         <div style={{ background: 'white', borderRadius: 24, boxShadow: '0 10px 15px rgba(0,0,0,.1)', padding: 48, maxWidth: 420, width: '100%', textAlign: 'center' }}>
           <div style={{ width: 80, height: 80, background: '#D1FAE5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 40 }}>✅</div>
           <h2 style={{ fontSize: 22, fontWeight: 900, color: K.kdark, marginBottom: 12 }}>تم إرسال طلب التجديد!</h2>
           <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7, marginBottom: 28 }}>سيراجع فريقنا الوصل ويؤكد تجديد كفالتك خلال 24 ساعة. جزاك الله خيراً.</p>
           <button onClick={() => navigate('/')}
-            style={{ background: K.kdark, color: 'white', border: 'none', padding: '14px 40px', borderRadius: 16, fontWeight: 800, fontSize: 16, cursor: 'pointer', boxShadow: `0 4px 14px rgba(196,168,130,.35)`, fontFamily: 'Tajawal, sans-serif' }}>
+            style={{ background: K.kdark, color: 'white', border: 'none', padding: '14px 40px', borderRadius: 16, fontWeight: 800, fontSize: 16, cursor: 'pointer', boxShadow: `0 4px 14px rgba(196,168,130,.35)`, fontFamily: 'var(--font-arabic)' }}>
             العودة للرئيسية
           </button>
         </div>
@@ -235,7 +235,7 @@ export default function KafalaRenew() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F0F7F7', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', display: 'flex', justifyContent: 'center' }} dir="rtl">
+    <div style={{ minHeight: '100vh', background: '#F0F7F7', fontFamily: 'var(--font-arabic)', color: '#0e1a1b', display: 'flex', justifyContent: 'center' }} dir="rtl">
       <div style={{ width: '100%', maxWidth: 430, minHeight: '100vh', background: 'white', display: 'flex', flexDirection: 'column' }}>
 
         {/* Renewal hero */}
@@ -306,14 +306,14 @@ export default function KafalaRenew() {
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              style={{ width: '100%', height: 52, background: 'white', color: K.kdark, border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 800, cursor: submitting ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', opacity: submitting ? 0.7 : 1 }}
+              style={{ width: '100%', height: 52, background: 'white', color: K.kdark, border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 800, cursor: submitting ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-arabic)', opacity: submitting ? 0.7 : 1 }}
             >
               {submitting ? '⏳ جاري الإرسال...' : '🤲 جدّد الكفالة الآن'}
             </button>
             <button
               onClick={handleCancel}
               disabled={isCancelling}
-              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,.7)', fontSize: 12, cursor: isCancelling ? 'not-allowed' : 'pointer', marginTop: 10, textDecoration: 'underline', fontFamily: 'Tajawal, sans-serif', display: 'block', width: '100%', textAlign: 'center', opacity: isCancelling ? 0.5 : 1 }}
+              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,.7)', fontSize: 12, cursor: isCancelling ? 'not-allowed' : 'pointer', marginTop: 10, textDecoration: 'underline', fontFamily: 'var(--font-arabic)', display: 'block', width: '100%', textAlign: 'center', opacity: isCancelling ? 0.5 : 1 }}
             >
               {isCancelling ? 'جاري الإلغاء...' : 'إيقاف مؤقت أو إلغاء الكفالة'}
             </button>
@@ -332,7 +332,7 @@ export default function KafalaRenew() {
                   <div style={{ marginBottom: 10 }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.08em', fontFamily: 'Inter, sans-serif', marginBottom: 6 }}>صاحب الحساب</div>
                     <button onClick={() => copy(bankInfo.name)}
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: K.kbg, border: `1px solid ${K.k100}`, borderRadius: 12, padding: '10px 14px', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: K.kbg, border: `1px solid ${K.k100}`, borderRadius: 12, padding: '10px 14px', cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>
                       <span style={{ fontSize: 14, fontWeight: 700, color: '#0e1a1b' }}>{bankInfo.name}</span>
                       <span style={{ fontSize: 16, color: K.kdark }}>📋</span>
                     </button>
@@ -472,13 +472,13 @@ export default function KafalaRenew() {
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            style={{ flex: 1, height: 52, background: K.kdark, color: 'white', border: 'none', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(196,168,130,.35)', fontFamily: 'Tajawal, sans-serif', opacity: submitting ? 0.7 : 1 }}
+            style={{ flex: 1, height: 52, background: K.kdark, color: 'white', border: 'none', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(196,168,130,.35)', fontFamily: 'var(--font-arabic)', opacity: submitting ? 0.7 : 1 }}
           >
             {submitting ? '⏳ جاري الإرسال...' : `🤲 تجديد — ${priceMAD} درهم`}
           </button>
           <button
             onClick={() => navigate(`/kafala/${id}`)}
-            style={{ height: 52, padding: '0 16px', border: '1.5px solid #E5E9EB', borderRadius: 14, fontSize: 13, fontWeight: 600, color: '#64748b', background: 'white', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}
+            style={{ height: 52, padding: '0 16px', border: '1.5px solid #E5E9EB', borderRadius: 14, fontSize: 13, fontWeight: 600, color: '#64748b', background: 'white', cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}
           >
             إيقاف
           </button>

@@ -56,7 +56,7 @@ export default function AdminProjectDetail() {
   // ── Loading / not-found ────────────────────────────────────────────────────
   if (project === undefined) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'Tajawal, sans-serif' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'var(--font-arabic)' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 36, marginBottom: 12 }}>📁</div>
           <p style={{ color: TEXTM }}>جاري التحميل...</p>
@@ -67,12 +67,12 @@ export default function AdminProjectDetail() {
 
   if (!project) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'Tajawal, sans-serif' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'var(--font-arabic)' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 36, marginBottom: 12 }}>❌</div>
           <p style={{ color: TEXTM, marginBottom: 16 }}>المشروع غير موجود</p>
           <button onClick={() => navigate('/admin/projects')}
-            style={{ height: 40, padding: '0 20px', background: PRIMARY, color: 'white', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+            style={{ height: 40, padding: '0 20px', background: PRIMARY, color: 'white', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>
             ← المشاريع
           </button>
         </div>
@@ -97,22 +97,22 @@ export default function AdminProjectDetail() {
   const icon = ICONS[Math.abs([...String(id)].reduce((a, c) => a + c.charCodeAt(0), 0)) % ICONS.length];
 
   return (
-    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: 24 }} dir="rtl">
+    <div style={{ fontFamily: 'var(--font-arabic)', color: '#0e1a1b', padding: 24 }} dir="rtl">
 
       {/* ── Action row ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div style={{ fontSize: 18, fontWeight: 800 }}>📁 {title}</div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => navigate('/admin/projects')}
-            style={{ height: 38, padding: '0 16px', border: `1.5px solid ${BORDER}`, borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', background: 'white', color: TEXT2 }}>
+            style={{ height: 38, padding: '0 16px', border: `1.5px solid ${BORDER}`, borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-arabic)', background: 'white', color: TEXT2 }}>
             ← المشاريع
           </button>
           <button onClick={() => navigate(`/admin/projects/${id}/edit`)}
-            style={{ height: 38, padding: '0 18px', background: PRIMARY, color: 'white', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: SHADOW_P }}>
+            style={{ height: 38, padding: '0 18px', background: PRIMARY, color: 'white', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: SHADOW_P }}>
             ✏️ تعديل
           </button>
           <button onClick={handleDelete}
-            style={{ height: 38, padding: '0 16px', background: '#FEE2E2', color: '#dc2626', border: '1px solid #FCA5A5', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+            style={{ height: 38, padding: '0 16px', background: '#FEE2E2', color: '#dc2626', border: '1px solid #FCA5A5', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>
             🗑️ حذف
           </button>
         </div>
@@ -186,7 +186,7 @@ export default function AdminProjectDetail() {
         <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 15, fontWeight: 700 }}>💰 آخر التبرعات</span>
           <button onClick={() => navigate('/admin/donations')}
-            style={{ fontSize: 12, color: PRIMARY, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+            style={{ fontSize: 12, color: PRIMARY, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>
             عرض الكل ←
           </button>
         </div>

@@ -16,7 +16,7 @@ export const FieldLabel = ({ children }) => (
 
 export const SaveBtn = ({ onClick, loading, children, fullWidth }) => (
   <button onClick={onClick} disabled={loading}
-    style={{ height: 44, padding: '0 28px', background: PRIMARY, color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: SHADOW_P, opacity: loading ? 0.7 : 1, width: fullWidth ? '100%' : 'auto' }}>
+    style={{ height: 44, padding: '0 28px', background: PRIMARY, color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: SHADOW_P, opacity: loading ? 0.7 : 1, width: fullWidth ? '100%' : 'auto' }}>
     {loading ? 'جاري الحفظ...' : children}
   </button>
 );

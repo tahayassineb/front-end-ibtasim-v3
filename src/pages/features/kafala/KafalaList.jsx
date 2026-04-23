@@ -103,7 +103,7 @@ export default function KafalaList() {
 
   if (kafalaList === undefined) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8', fontFamily: 'Tajawal, sans-serif' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8', fontFamily: 'var(--font-arabic)' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>🤲</div>
           <p style={{ color: '#94a3b8' }}>{tx.loading}</p>
@@ -113,7 +113,7 @@ export default function KafalaList() {
   }
 
   return (
-    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b' }}>
+    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'var(--font-arabic)', color: '#0e1a1b' }}>
 
       {/* Kafala Hero — warm sand, NOT teal */}
       <div style={{ background: 'linear-gradient(160deg,#3D2506,#6B4F12,#C4A882)', padding: isMobile ? '48px 20px' : '68px 0', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
@@ -129,7 +129,7 @@ export default function KafalaList() {
           </p>
           <button
             onClick={() => setFilter('available')}
-            style={{ height: 56, padding: '0 36px', background: 'white', color: '#6B4F12', border: 'none', borderRadius: 100, fontSize: 17, fontWeight: 800, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: '0 6px 20px rgba(0,0,0,.2)' }}
+            style={{ height: 56, padding: '0 36px', background: 'white', color: '#6B4F12', border: 'none', borderRadius: 100, fontSize: 17, fontWeight: 800, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: '0 6px 20px rgba(0,0,0,.2)' }}
           >
             🤲 ابدأ الكفالة الآن
           </button>
@@ -166,7 +166,7 @@ export default function KafalaList() {
                 color: filter === f.id ? 'white' : '#64748b',
                 cursor: 'pointer',
                 boxShadow: filter === f.id ? '0 4px 14px rgba(196,168,130,.35)' : 'none',
-                fontFamily: 'Tajawal, sans-serif',
+                fontFamily: 'var(--font-arabic)',
               }}
             >
               {f.label}
@@ -246,11 +246,11 @@ export default function KafalaList() {
                         {((kafala.monthlyPrice || 30000) / 100).toLocaleString('fr-MA')} <span style={{ fontSize: 13, fontWeight: 500, color: '#94a3b8' }}>درهم / شهر</span>
                       </div>
                       {isSponsored ? (
-                        <button disabled style={{ width: '100%', height: 44, background: '#E8D4B0', color: '#8B6914', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'not-allowed', fontFamily: 'Tajawal, sans-serif' }}>
+                        <button disabled style={{ width: '100%', height: 44, background: '#E8D4B0', color: '#8B6914', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'not-allowed', fontFamily: 'var(--font-arabic)' }}>
                           مكفول بالفعل
                         </button>
                       ) : (
-                        <button style={{ width: '100%', height: 44, background: '#8B6914', color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: '0 4px 14px rgba(196,168,130,.35)' }}>
+                        <button style={{ width: '100%', height: 44, background: '#8B6914', color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: '0 4px 14px rgba(196,168,130,.35)' }}>
                           {isFemale ? tx.sponsor_btn_f : tx.sponsor_btn}
                         </button>
                       )}
@@ -270,7 +270,7 @@ export default function KafalaList() {
           </div>
           <button
             onClick={() => setFilter('available')}
-            style={{ height: 56, padding: '0 36px', background: 'white', color: '#6B4F12', border: 'none', borderRadius: 100, fontSize: 17, fontWeight: 800, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: '0 6px 20px rgba(0,0,0,.2)' }}
+            style={{ height: 56, padding: '0 36px', background: 'white', color: '#6B4F12', border: 'none', borderRadius: 100, fontSize: 17, fontWeight: 800, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: '0 6px 20px rgba(0,0,0,.2)' }}
           >
             ابدأ الكفالة الآن →
           </button>

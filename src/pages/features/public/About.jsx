@@ -197,7 +197,7 @@ const About = () => {
   const innerStyle = { maxWidth: 1200, margin: '0 auto', padding: isMobile ? '0 16px' : '0 28px' };
 
   return (
-    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', overflowX: 'hidden' }}>
+    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'var(--font-arabic)', color: '#0e1a1b', overflowX: 'hidden' }}>
 
       {/* Hero */}
       <div style={{ background: 'linear-gradient(160deg,#021718,#052E2F 60%,#0d7477)', padding: isMobile ? '48px 20px' : '80px 0', textAlign: 'center' }}>

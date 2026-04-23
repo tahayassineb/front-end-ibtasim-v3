@@ -344,13 +344,13 @@ const AdminSettings = () => {
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: 24 }} dir="rtl">
+    <div style={{ fontFamily: 'var(--font-arabic)', color: '#0e1a1b', padding: 24 }} dir="rtl">
 
       {/* ── Tab bar ── */}
       <div style={{ display: 'flex', gap: 4, background: 'white', borderRadius: 14, border: `1px solid ${BORDER}`, padding: 6, marginBottom: 20, boxShadow: SHADOW }}>
         {TABS.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            style={{ flex: 1, height: 36, borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', background: activeTab === tab.id ? PRIMARY : 'none', color: activeTab === tab.id ? 'white' : TEXT2, fontFamily: 'Tajawal, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: activeTab === tab.id ? SHADOW_P : 'none', transition: 'all .15s' }}>
+            style={{ flex: 1, height: 36, borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', background: activeTab === tab.id ? PRIMARY : 'none', color: activeTab === tab.id ? 'white' : TEXT2, fontFamily: 'var(--font-arabic)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: activeTab === tab.id ? SHADOW_P : 'none', transition: 'all .15s' }}>
             {tab.icon} {tab.label}
           </button>
         ))}

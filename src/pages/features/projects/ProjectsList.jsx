@@ -44,11 +44,11 @@ export default function ProjectsList() {
   });
 
   if (projectsData === undefined) {
-    return <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Tajawal, sans-serif', color: '#94a3b8' }}>جاري تحميل المشاريع...</div>;
+    return <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-arabic)', color: '#94a3b8' }}>جاري تحميل المشاريع...</div>;
   }
 
   return (
-    <div dir={lang === 'ar' ? 'rtl' : 'ltr'} style={{ fontFamily: lang === 'ar' ? 'Tajawal, sans-serif' : 'Inter, sans-serif', background: '#f6f8f8', minHeight: '100vh', color: '#0e1a1b', paddingBottom: 80 }}>
+    <div dir={lang === 'ar' ? 'rtl' : 'ltr'} style={{ fontFamily: lang === 'ar' ? 'var(--font-arabic)' : 'Inter, sans-serif', background: '#f6f8f8', minHeight: '100vh', color: '#0e1a1b', paddingBottom: 80 }}>
       <div style={{ background: 'linear-gradient(135deg,#0A5F62,#0d7477)', padding: '52px 24px', color: 'white' }}>
         <div style={{ maxWidth: 1180, margin: '0 auto' }}>
           <div style={{ fontSize: 12, letterSpacing: '.16em', fontWeight: 900, color: '#8ee4e4' }}>PROJECTS</div>

@@ -49,7 +49,7 @@ const MainLayout = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#f6f8f8', color: '#0e1a1b', fontFamily: 'Tajawal, sans-serif' }} dir="rtl">
+    <div className="min-h-screen flex flex-col" style={{ background: '#f6f8f8', color: '#0e1a1b', fontFamily: 'var(--font-arabic)' }} dir="rtl">
       {/* ── HEADER ── */}
       <header
         className="sticky top-0 z-50 bg-white transition-shadow duration-300"
@@ -105,7 +105,7 @@ const MainLayout = ({ children }) => {
                   color: '#0A5F62',
                   border: 'none',
                   cursor: 'pointer',
-                  fontFamily: 'Tajawal, sans-serif',
+                  fontFamily: 'var(--font-arabic)',
                   whiteSpace: 'nowrap',
                 }}
               >
@@ -129,7 +129,7 @@ const MainLayout = ({ children }) => {
                       color: language === langCode ? '#0d7477' : '#64748b',
                       border: 'none',
                       cursor: 'pointer',
-                      fontFamily: 'Tajawal, sans-serif',
+                      fontFamily: 'var(--font-arabic)',
                     }}
                   >
                     {langCode === 'ar' ? 'العربية' : langCode === 'fr' ? 'Français' : 'English'}
@@ -141,7 +141,7 @@ const MainLayout = ({ children }) => {
             {/* Auth: Login button or user dropdown */}
             {isAuthenticated ? (
               <div className="relative group hidden md:block">
-                <button style={{ height: 36, padding: '0 16px', fontSize: 13, fontWeight: 600, borderRadius: 100, border: '1.5px solid #0d7477', background: 'white', color: '#0d7477', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button style={{ height: 36, padding: '0 16px', fontSize: 13, fontWeight: 600, borderRadius: 100, border: '1.5px solid #0d7477', background: 'white', color: '#0d7477', cursor: 'pointer', fontFamily: 'var(--font-arabic)', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span className="material-symbols-outlined" style={{ fontSize: 16 }}>person</span>
                   {user?.name || 'حسابي'}
                 </button>
@@ -163,7 +163,7 @@ const MainLayout = ({ children }) => {
                       {t('admin_panel')}
                     </Link>
                   )}
-                  <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 16px', fontSize: 13, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+                  <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 16px', fontSize: 13, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>
                     <span className="material-symbols-outlined" style={{ fontSize: 16 }}>logout</span>
                     {t('logout')}
                   </button>
@@ -242,7 +242,7 @@ const MainLayout = ({ children }) => {
                         ⚙️ لوحة الإدارة
                       </Link>
                     )}
-                    <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', borderRadius: 10, fontSize: 15, fontWeight: 500, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', width: '100%' }}>
+                    <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', borderRadius: 10, fontSize: 15, fontWeight: 500, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-arabic)', width: '100%' }}>
                       تسجيل الخروج
                     </button>
                   </>

@@ -12,7 +12,7 @@ export const TEAL_WASH = '#F0F7F7';
 
 export const fieldInput = {
   width: '100%', height: 48, border: `1.5px solid ${BORDER}`, borderRadius: 12,
-  padding: '0 14px', fontSize: 14, fontFamily: 'Tajawal, sans-serif',
+  padding: '0 14px', fontSize: 14, fontFamily: 'var(--font-arabic)',
   color: '#0e1a1b', outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s',
 };
 

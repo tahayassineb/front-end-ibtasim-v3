@@ -101,9 +101,9 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Thmanyah Sans', 'Inter', 'Tajawal', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: ['Thmanyah Sans', 'Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
         display: ['Thmanyah Sans', 'Inter', 'sans-serif'],
-        arabic: ['Thmanyah Sans', 'Tajawal', 'sans-serif'],
+        arabic: ['Thmanyah Sans', 'sans-serif'],
         premium: ['Thmanyah Serif Display', 'Thmanyah Sans', 'serif'],
       },
       fontSize: {

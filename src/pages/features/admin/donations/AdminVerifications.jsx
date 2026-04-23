@@ -97,7 +97,7 @@ export default function AdminVerifications() {
 
   if (rawDonations === undefined) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'Tajawal, sans-serif' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'var(--font-arabic)' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 36, marginBottom: 12 }}>✅</div>
           <p style={{ color: '#94a3b8' }}>جاري التحميل...</p>
@@ -107,7 +107,7 @@ export default function AdminVerifications() {
   }
 
   return (
-    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', display: 'flex', height: 'calc(100vh - 56px)', overflow: 'hidden' }} dir="rtl">
+    <div style={{ fontFamily: 'var(--font-arabic)', color: '#0e1a1b', display: 'flex', height: 'calc(100vh - 56px)', overflow: 'hidden' }} dir="rtl">
 
       {/* Left: pending list */}
       <div style={{ width: 360, borderLeft: '1px solid #E5E9EB', flexShrink: 0, overflowY: 'auto', background: 'white', display: 'flex', flexDirection: 'column' }}>
@@ -125,7 +125,7 @@ export default function AdminVerifications() {
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="ابحث..."
-            style={{ width: '100%', height: 34, padding: '0 12px', border: '1.5px solid #E5E9EB', borderRadius: 8, fontSize: 13, fontFamily: 'Tajawal, sans-serif', outline: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', height: 34, padding: '0 12px', border: '1.5px solid #E5E9EB', borderRadius: 8, fontSize: 13, fontFamily: 'var(--font-arabic)', outline: 'none', boxSizing: 'border-box' }}
             onFocus={e => e.target.style.borderColor = '#0d7477'}
             onBlur={e => e.target.style.borderColor = '#E5E9EB'}
           />
@@ -221,7 +221,7 @@ export default function AdminVerifications() {
                 <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                   {selectedDonation.receiptImage && (
                     <button onClick={() => setImageExpanded(true)}
-                      style={{ flex: 1, height: 36, borderRadius: 10, background: '#F0F7F7', border: '1px solid #E5E9EB', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'Tajawal, sans-serif' }}>
+                      style={{ flex: 1, height: 36, borderRadius: 10, background: '#F0F7F7', border: '1px solid #E5E9EB', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'var(--font-arabic)' }}>
                       🔍 تكبير
                     </button>
                   )}
@@ -237,7 +237,7 @@ export default function AdminVerifications() {
                       a.click();
                       document.body.removeChild(a);
                     }}
-                    style={{ flex: 1, height: 36, borderRadius: 10, background: '#E6F4F4', border: '1px solid #CCF0F0', color: '#0A5F62', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'Tajawal, sans-serif' }}>
+                    style={{ flex: 1, height: 36, borderRadius: 10, background: '#E6F4F4', border: '1px solid #CCF0F0', color: '#0A5F62', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'var(--font-arabic)' }}>
                     ⬇ تحميل
                   </button>
                 </div>
@@ -279,7 +279,7 @@ export default function AdminVerifications() {
               value={rejectionReason}
               onChange={e => setRejectionReason(e.target.value)}
               placeholder="سبب الرفض (سيُرسَل للمتبرع عبر واتساب)..."
-              style={{ width: '100%', minHeight: 72, border: '1.5px solid #E5E9EB', borderRadius: 12, padding: '10px 14px', fontSize: 13, fontFamily: 'Tajawal, sans-serif', outline: 'none', resize: 'none', marginBottom: 16, boxSizing: 'border-box' }}
+              style={{ width: '100%', minHeight: 72, border: '1.5px solid #E5E9EB', borderRadius: 12, padding: '10px 14px', fontSize: 13, fontFamily: 'var(--font-arabic)', outline: 'none', resize: 'none', marginBottom: 16, boxSizing: 'border-box' }}
               onFocus={e => e.target.style.borderColor = '#ef4444'}
               onBlur={e => e.target.style.borderColor = '#E5E9EB'}
             />
@@ -289,14 +289,14 @@ export default function AdminVerifications() {
               <button
                 onClick={handleVerify}
                 disabled={isSubmitting}
-                style={{ flex: 1, height: 52, background: '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: isSubmitting ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'Tajawal, sans-serif', opacity: isSubmitting ? 0.7 : 1 }}
+                style={{ flex: 1, height: 52, background: '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: isSubmitting ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'var(--font-arabic)', opacity: isSubmitting ? 0.7 : 1 }}
               >
                 {isSubmitting ? '⏳ جاري المعالجة...' : '✅ قبول التبرع وإرسال تأكيد واتساب'}
               </button>
               <button
                 onClick={handleReject}
                 disabled={isSubmitting}
-                style={{ flexShrink: 0, height: 52, padding: '0 20px', background: '#FEE2E2', color: '#dc2626', border: '1px solid #FCA5A5', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: isSubmitting ? 'not-allowed' : 'pointer', fontFamily: 'Tajawal, sans-serif' }}
+                style={{ flexShrink: 0, height: 52, padding: '0 20px', background: '#FEE2E2', color: '#dc2626', border: '1px solid #FCA5A5', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: isSubmitting ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-arabic)' }}
               >
                 ✗ رفض
               </button>

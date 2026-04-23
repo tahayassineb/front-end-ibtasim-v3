@@ -58,7 +58,7 @@ export default function AdminDonorDetail() {
 
   if (donorData === undefined) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'Tajawal, sans-serif' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'var(--font-arabic)' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 36, marginBottom: 12 }}>👥</div>
           <p style={{ color: TEXTM }}>جاري التحميل...</p>
@@ -69,12 +69,12 @@ export default function AdminDonorDetail() {
 
   if (!donorData) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'Tajawal, sans-serif' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, fontFamily: 'var(--font-arabic)' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 36, marginBottom: 12 }}>❌</div>
           <p style={{ color: TEXTM, marginBottom: 16 }}>المتبرع غير موجود</p>
           <button onClick={() => navigate('/admin/donors')}
-            style={{ height: 40, padding: '0 20px', background: PRIMARY, color: 'white', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+            style={{ height: 40, padding: '0 20px', background: PRIMARY, color: 'white', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>
             ← المتبرعون
           </button>
         </div>
@@ -92,13 +92,13 @@ export default function AdminDonorDetail() {
   const donations = donorData.donations || [];
 
   return (
-    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: 24 }} dir="rtl">
+    <div style={{ fontFamily: 'var(--font-arabic)', color: '#0e1a1b', padding: 24 }} dir="rtl">
 
       {/* ── Action row ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div style={{ fontSize: 18, fontWeight: 800 }}>👥 {donorData.fullName}</div>
         <button onClick={() => navigate('/admin/donors')}
-          style={{ height: 38, padding: '0 16px', border: `1.5px solid ${BORDER}`, borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', background: 'white', color: TEXT2 }}>
+          style={{ height: 38, padding: '0 16px', border: `1.5px solid ${BORDER}`, borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-arabic)', background: 'white', color: TEXT2 }}>
           ← قائمة المتبرعين
         </button>
       </div>
@@ -149,7 +149,7 @@ export default function AdminDonorDetail() {
               { key: 'donations', label: `💰 التبرعات (${donations.length})` },
             ].map(({ key, label }) => (
               <button key={key} onClick={() => setActiveTab(key)}
-                style={{ height: 36, padding: '0 16px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', border: `1px solid ${activeTab === key ? PRIMARY : BORDER}`, background: activeTab === key ? PRIMARY : 'white', color: activeTab === key ? 'white' : TEXT2 }}>
+                style={{ height: 36, padding: '0 16px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-arabic)', border: `1px solid ${activeTab === key ? PRIMARY : BORDER}`, background: activeTab === key ? PRIMARY : 'white', color: activeTab === key ? 'white' : TEXT2 }}>
                 {label}
               </button>
             ))}
@@ -220,7 +220,7 @@ export default function AdminDonorDetail() {
                   if (phone) { window.open(`https://wa.me/${phone}`, '_blank'); }
                   else { showToast('لا يوجد رقم هاتف', 'error'); }
                 }}
-                style={{ width: '100%', height: 40, background: '#25D366', color: 'white', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 14 }}>
+                style={{ width: '100%', height: 40, background: '#25D366', color: 'white', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 14 }}>
                 💬 إرسال رسالة واتساب
               </button>
             </div>

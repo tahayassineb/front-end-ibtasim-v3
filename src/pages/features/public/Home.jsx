@@ -86,7 +86,7 @@ export default function Home() {
   const featuredStories = useMemo(() => (stories || []).filter((story) => story.isFeatured).slice(0, 3), [stories]);
 
   return (
-    <div dir={lang === 'ar' ? 'rtl' : 'ltr'} style={{ fontFamily: lang === 'ar' ? 'Tajawal, sans-serif' : 'Inter, sans-serif', color: '#0e1a1b', background: 'white' }}>
+    <div dir={lang === 'ar' ? 'rtl' : 'ltr'} style={{ fontFamily: lang === 'ar' ? 'var(--font-arabic)' : 'Inter, sans-serif', color: '#0e1a1b', background: 'white' }}>
       <HeroScrollAnimation onDonate={() => navigate('/projects')} />
 
       <section style={sectionStyle}>

@@ -78,7 +78,7 @@ export default function AdminDonors() {
   const page = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
   return (
-    <div style={{ fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b', padding: 24 }} dir="rtl">
+    <div style={{ fontFamily: 'var(--font-arabic)', color: '#0e1a1b', padding: 24 }} dir="rtl">
 
       {/* ── KPIs ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 20 }}>
@@ -101,7 +101,7 @@ export default function AdminDonors() {
           value={search}
           onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
           placeholder="ابحث بالاسم أو رقم الهاتف..."
-          style={{ flex: 1, minWidth: 200, height: 38, padding: '0 16px', border: `1.5px solid ${BORDER}`, borderRadius: 10, fontSize: 14, fontFamily: 'Tajawal, sans-serif', outline: 'none' }}
+          style={{ flex: 1, minWidth: 200, height: 38, padding: '0 16px', border: `1.5px solid ${BORDER}`, borderRadius: 10, fontSize: 14, fontFamily: 'var(--font-arabic)', outline: 'none' }}
           onFocus={e => e.target.style.borderColor = PRIMARY}
           onBlur={e => e.target.style.borderColor = BORDER}
         />
@@ -113,13 +113,13 @@ export default function AdminDonors() {
           ['new', '✨ جديد'],
         ].map(([val, label]) => (
           <button key={val} onClick={() => { setTierFilter(val); setCurrentPage(1); }}
-            style={{ height: 34, padding: '0 14px', borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: `1.5px solid ${tierFilter === val ? PRIMARY : BORDER}`, background: tierFilter === val ? PRIMARY : 'white', color: tierFilter === val ? 'white' : TEXT2, fontFamily: 'Tajawal, sans-serif' }}>
+            style={{ height: 34, padding: '0 14px', borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: `1.5px solid ${tierFilter === val ? PRIMARY : BORDER}`, background: tierFilter === val ? PRIMARY : 'white', color: tierFilter === val ? 'white' : TEXT2, fontFamily: 'var(--font-arabic)' }}>
             {label}
           </button>
         ))}
         <button
           onClick={() => showToast('تصدير CSV — قريباً', 'info')}
-          style={{ height: 38, padding: '0 16px', border: `1.5px solid ${BORDER}`, borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', background: 'white', color: TEXT2, marginRight: 'auto' }}>
+          style={{ height: 38, padding: '0 16px', border: `1.5px solid ${BORDER}`, borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-arabic)', background: 'white', color: TEXT2, marginRight: 'auto' }}>
           📋 تصدير CSV
         </button>
       </div>
@@ -189,7 +189,7 @@ export default function AdminDonors() {
               {/* View button */}
               <div style={{ padding: '12px 16px' }}>
                 <button onClick={() => navigate(`/admin/donors/${d._id}`)}
-                  style={{ height: 28, padding: '0 10px', borderRadius: 8, border: `1px solid ${BORDER}`, background: 'white', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', color: TEXT2 }}>
+                  style={{ height: 28, padding: '0 10px', borderRadius: 8, border: `1px solid ${BORDER}`, background: 'white', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-arabic)', color: TEXT2 }}>
                   عرض
                 </button>
               </div>

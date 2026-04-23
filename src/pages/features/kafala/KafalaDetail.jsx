@@ -80,7 +80,7 @@ export default function KafalaDetail() {
 
   if (data === undefined) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8', fontFamily: 'Tajawal, sans-serif' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8', fontFamily: 'var(--font-arabic)' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>🤲</div>
           <p style={{ color: '#94a3b8' }}>{tx.loading}</p>
@@ -91,7 +91,7 @@ export default function KafalaDetail() {
 
   if (!data) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8', fontFamily: 'Tajawal, sans-serif', color: '#64748b' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8', fontFamily: 'var(--font-arabic)', color: '#64748b' }}>
         {tx.notfound}
       </div>
     );
@@ -103,7 +103,7 @@ export default function KafalaDetail() {
   const monthlyAmount = ((kafala.monthlyPrice || 30000) / 100).toLocaleString('fr-MA');
 
   return (
-    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'Tajawal, sans-serif', color: '#0e1a1b' }}>
+    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'var(--font-arabic)', color: '#0e1a1b' }}>
 
       {/* Hero */}
       <div style={{ background: 'linear-gradient(160deg,#3D2506,#6B4F12,#C4A882)', padding: isMobile ? '36px 0 28px' : '60px 0' }}>
@@ -116,7 +116,7 @@ export default function KafalaDetail() {
           </div>
           {/* Text */}
           <div style={{ width: isMobile ? '100%' : 'auto' }}>
-            <button onClick={() => navigate('/kafala')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,.75)', fontSize: 13, fontWeight: 600, marginBottom: 14, cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'Tajawal, sans-serif' }}>
+            <button onClick={() => navigate('/kafala')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,.75)', fontSize: 13, fontWeight: 600, marginBottom: 14, cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'var(--font-arabic)' }}>
               {tx.back}
             </button>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,.15)', border: '1px solid rgba(255,255,255,.25)', color: 'rgba(255,255,255,.9)', borderRadius: 100, padding: '5px 14px', fontSize: 12, fontWeight: 600, marginBottom: 10 }}>
@@ -146,7 +146,7 @@ export default function KafalaDetail() {
             <div style={{ flex: 1 }} />
             <button
               onClick={() => navigate(`/kafala/${kafala._id}/sponsor`)}
-              style={{ height: 44, padding: '0 22px', background: '#8B6914', color: 'white', border: 'none', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: '0 4px 14px rgba(196,168,130,.35)', flexShrink: 0 }}
+              style={{ height: 44, padding: '0 22px', background: '#8B6914', color: 'white', border: 'none', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: '0 4px 14px rgba(196,168,130,.35)', flexShrink: 0 }}
             >
               🤲 اكفله الآن
             </button>
@@ -241,7 +241,7 @@ export default function KafalaDetail() {
             <div style={{ margin: '24px 0', background: '#F5EBD9', borderRadius: 18, padding: '20px 24px', border: '1.5px solid #E8D4B0', textAlign: 'center' }}>
               <button
                 onClick={() => navigate(`/kafala/${kafala._id}/sponsor`)}
-                style={{ width: '100%', height: 52, background: '#8B6914', color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif', boxShadow: '0 4px 14px rgba(196,168,130,.35)', marginBottom: 8 }}
+                style={{ width: '100%', height: 52, background: '#8B6914', color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: '0 4px 14px rgba(196,168,130,.35)', marginBottom: 8 }}
               >
                 اكفل {kafala.name} بـ {monthlyAmount} درهم/شهر
               </button>
@@ -299,7 +299,7 @@ export default function KafalaDetail() {
               </div>
               <button
                 onClick={() => navigate(`/kafala/${kafala._id}/sponsor`)}
-                style={{ width: '100%', height: 56, background: '#8B6914', color: 'white', border: 'none', borderRadius: 14, fontSize: 17, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(196,168,130,.35)', fontFamily: 'Tajawal, sans-serif', margin: '20px 0 8px' }}
+                style={{ width: '100%', height: 56, background: '#8B6914', color: 'white', border: 'none', borderRadius: 14, fontSize: 17, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(196,168,130,.35)', fontFamily: 'var(--font-arabic)', margin: '20px 0 8px' }}
               >
                 🤲 اكفل {kafala.name} الآن
               </button>
