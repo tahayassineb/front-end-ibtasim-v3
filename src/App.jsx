@@ -8,6 +8,7 @@ import { useUI } from './context/UIContext';
 // Layouts
 import MainLayout from './components/MainLayout';
 import AdminLayout from './components/AdminLayout';
+import HomeShell from './components/HomeShell';
 
 // Public Pages
 import Home from './pages/features/public/Home';
@@ -193,7 +194,7 @@ function AppContent() {
               ============================================ */}
           
           {/* Home Page */}
-          <Route path="/" element={<ErrorBoundary><MainLayout><Home /></MainLayout></ErrorBoundary>} />
+          <Route path="/" element={<ErrorBoundary><HomeShell><Home /></HomeShell></ErrorBoundary>} />
 
           {/* Projects */}
           <Route path="/projects" element={<ErrorBoundary><MainLayout><ProjectsList /></MainLayout></ErrorBoundary>} />

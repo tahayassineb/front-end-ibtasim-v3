@@ -159,11 +159,11 @@ export default function KafalaRenew() {
   // ── Main render ───────────────────────────────────────────────────────────────
   const kafala    = kafalaData;
   const photoUrl  = kafala.photo ? (convexFileUrl(kafala.photo) || kafala.photo) : null;
-  const priceMAD  = ((kafala.monthlyPrice || 30000) / 100).toLocaleString('fr-MA');
+  const priceMAD  = Number(kafala.monthlyPrice || 300).toLocaleString('fr-MA');
   const payMethod = sponsorship.paymentMethod; // bank_transfer | cash_agency
 
   const monthsCount  = monthsAgo(sponsorship._creationTime || sponsorship.createdAt);
-  const totalSpent   = (monthsCount * (kafala.monthlyPrice || 30000) / 100).toLocaleString('fr-MA');
+  const totalSpent   = (monthsCount * Number(kafala.monthlyPrice || 300)).toLocaleString('fr-MA');
   const reportsCount = kafala.reports?.length || sponsorship.reportsCount || Math.min(Math.floor(monthsCount / 3), 3);
 
   const latestUpdate = kafala.latestUpdate || (kafala.updates ? kafala.updates[0] : null);
@@ -179,7 +179,7 @@ export default function KafalaRenew() {
       } else {
         showToast(result.error || 'فشل إلغاء الكفالة', 'error');
       }
-    } catch (e) {
+    } catch {
       showToast('حدث خطأ أثناء الإلغاء', 'error');
     } finally {
       setIsCancelling(false);
@@ -439,7 +439,7 @@ export default function KafalaRenew() {
             {(sponsorship.renewals || []).slice(0, 3).map((r, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #E5E9EB' }}>
                 <div style={{ fontSize: 13, fontWeight: 600 }}>{formatDate(r._creationTime || r.date)}</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: K.kdark, fontFamily: 'Inter, sans-serif' }}>{((kafala.monthlyPrice || 30000) / 100).toLocaleString('fr-MA')} د.م</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: K.kdark, fontFamily: 'Inter, sans-serif' }}>{Number(kafala.monthlyPrice || 300).toLocaleString('fr-MA')} د.م</div>
                 <div style={{ fontSize: 11, fontWeight: 600, color: '#16a34a' }}>✓ مؤكد</div>
               </div>
             ))}

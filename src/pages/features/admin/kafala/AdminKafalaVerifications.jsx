@@ -45,8 +45,8 @@ export default function AdminKafalaVerifications() {
   const formatDate = (ts) =>
     ts ? new Date(ts).toLocaleDateString('ar-MA', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
 
-  const formatMAD = (cents) =>
-    cents != null ? `${(cents / 100).toLocaleString('fr-MA')} MAD` : '—';
+  const formatMAD = (amount) =>
+    amount != null ? `${Number(amount).toLocaleString('fr-MA')} MAD` : '—';
 
   const methodLabel = (m) =>
     m === 'bank_transfer' ? 'تحويل بنكي' : m === 'cash_agency' ? 'وكالة نقدية' : m;

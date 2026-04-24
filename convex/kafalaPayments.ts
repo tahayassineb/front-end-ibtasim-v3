@@ -55,8 +55,7 @@ export const createKafalaWhopCheckout = action({
     });
     if (!kafala) throw new Error("الكفالة غير موجودة");
 
-    // monthlyPrice is in cents → convert to actual MAD amount
-    const priceInMAD = Math.round(kafala.monthlyPrice / 100);
+    const priceInMAD = kafala.monthlyPrice;
 
     // ── Determine currency and amount ────────────────────────────────────────
     const isMorocco = !args.userCountry || args.userCountry === "MA";

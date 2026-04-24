@@ -13,11 +13,11 @@ const TEXTM = '#94a3b8';
 const SHADOW = '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)';
 const SHADOW_P = '0 4px 14px rgba(13,116,119,.25)';
 
-// Tier thresholds (amounts stored as centimes ×100)
+// Tier thresholds in MAD.
 const getTier = (totalDonated, donationCount) => {
-  if (totalDonated >= 500000) return 'gold';   // ≥ 5000 MAD
-  if (totalDonated >= 100000) return 'silver';  // ≥ 1000 MAD
-  if (donationCount <= 1 && totalDonated < 50000) return 'new'; // first donation
+  if (totalDonated >= 5000) return 'gold';   // ≥ 5000 MAD
+  if (totalDonated >= 1000) return 'silver'; // ≥ 1000 MAD
+  if (donationCount <= 1 && totalDonated < 500) return 'new'; // first donation
   return 'bronze';
 };
 
@@ -61,10 +61,10 @@ export default function AdminDonors() {
     ...d,
     tier: getTier(d.totalDonated, d.donationCount),
     avatarGrad: AVATAR_GRADS[i % AVATAR_GRADS.length],
-    totalMAD: (d.totalDonated || 0) / 100,
+    totalMAD: d.totalDonated || 0,
   }));
 
-  const now = Date.now();
+  const [now] = useState(() => Date.now());
   const thirtyDays = 30 * 24 * 60 * 60 * 1000;
   const goldCount   = enriched.filter(d => d.tier === 'gold').length;
   const newCount    = enriched.filter(d => now - (d.lastLoginAt || 0) < thirtyDays).length;

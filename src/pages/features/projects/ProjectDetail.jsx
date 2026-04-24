@@ -72,8 +72,8 @@ const ProjectDetail = ({ preview = false }) => {
       title: convexProject.title,
       location: convexProject.location || 'المغرب',
       description: convexProject.description,
-      raised: convexProject.raisedAmount / 100,
-      goal: convexProject.goalAmount / 100,
+      raised: convexProject.raisedAmount,
+      goal: convexProject.goalAmount,
       progress: Math.min(progress, 100),
       daysLeft: convexProject.endDate
         ? Math.max(0, Math.ceil((convexProject.endDate - now) / (1000 * 60 * 60 * 24)))
@@ -276,7 +276,7 @@ const ProjectDetail = ({ preview = false }) => {
                     </div>
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#0A5F62', fontFamily: 'Inter, sans-serif', marginRight: 'auto', marginLeft: 0 }}>
-                    {((donation.amount || 0) / 100).toLocaleString('en-US')} د.م
+                    {Number(donation.amount || 0).toLocaleString('en-US')} د.م
                   </div>
                 </div>
               ))

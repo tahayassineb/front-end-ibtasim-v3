@@ -243,7 +243,7 @@ export default function KafalaList() {
                     {/* Card body */}
                     <div style={{ padding: 16 }}>
                       <div style={{ fontSize: 20, fontWeight: 900, color: isSponsored ? '#94a3b8' : '#8B6914', textAlign: 'center', marginBottom: 12 }}>
-                        {((kafala.monthlyPrice || 30000) / 100).toLocaleString('fr-MA')} <span style={{ fontSize: 13, fontWeight: 500, color: '#94a3b8' }}>درهم / شهر</span>
+                        {Number(kafala.monthlyPrice || 300).toLocaleString('fr-MA')} <span style={{ fontSize: 13, fontWeight: 500, color: '#94a3b8' }}>درهم / شهر</span>
                       </div>
                       {isSponsored ? (
                         <button disabled style={{ width: '100%', height: 44, background: '#E8D4B0', color: '#8B6914', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'not-allowed', fontFamily: 'var(--font-arabic)' }}>

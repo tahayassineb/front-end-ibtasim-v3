@@ -3,18 +3,18 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../../../convex/_generated/api';
 import { useApp } from '../../../../context/AppContext';
 import { convexFileUrl } from '../../../../lib/convex';
+import { getDonationReference } from '../../../../lib/donationUi';
 
 // ============================================
 // ADMIN VERIFICATIONS — Split layout: pending list + detail panel
 // ============================================
 
 export default function AdminVerifications() {
-  const { currentLanguage, showToast } = useApp();
+  const { currentLanguage, showToast, user } = useApp();
   const lang = currentLanguage?.code || 'ar';
 
   const [searchQuery, setSearchQuery]       = useState('');
   const [selectedDonation, setSelectedDonation] = useState(null);
-  const [editedAmount, setEditedAmount]     = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
   const [verificationChecks, setChecks]     = useState({
     receiptClear:   false,
@@ -34,27 +34,31 @@ export default function AdminVerifications() {
   // ── Transform ─────────────────────────────────────────────────────────────────
   const donations = useMemo(() => {
     if (!rawDonations) return [];
-    return rawDonations.map(d => ({
-      id:               d._id,
-      _id:              d._id,
-      donor:            d.donorName || 'مجهول',
-      phone:            d.donorPhone || '—',
-      amount:           d.amount || 0,
-      trxId:            `IB-${String(d._id).slice(-8).toUpperCase()}`,
-      project:          (typeof d.projectTitle === 'string' ? d.projectTitle : d.projectTitle?.[lang] || d.projectTitle?.ar) || '—',
-      paymentMethodRaw: d.paymentMethod,
-      method:           d.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' : d.paymentMethod === 'cash_agency' ? 'وكالة' : 'بطاقة',
-      receiptImage:     d.receiptUrl || null,
-      referenceNumber:  d.message || d.transactionReference || null,
-      agencyName:       d.bankName || null,
-      createdAt:        d.createdAt || Date.now(),
-    }));
+    return rawDonations.map((d) => {
+      const reference = getDonationReference(d);
+      return {
+        id: d._id,
+        _id: d._id,
+        donor: d.donorName || 'مجهول',
+        phone: d.donorPhone || '—',
+        amount: d.amount || 0,
+        referenceLabel: reference.label,
+        referenceValue: reference.value,
+        project: (typeof d.projectTitle === 'string' ? d.projectTitle : d.projectTitle?.[lang] || d.projectTitle?.ar) || '—',
+        paymentMethodRaw: d.paymentMethod,
+        method: d.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' : d.paymentMethod === 'cash_agency' ? 'وكالة' : 'بطاقة',
+        receiptImage: d.receiptUrl || null,
+        referenceNumber: d.transactionReference || null,
+        agencyName: d.bankName || null,
+        createdAt: d.createdAt || Date.now(),
+      };
+    });
   }, [rawDonations, lang]);
 
   const filtered = donations.filter(d => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
-    return d.donor.toLowerCase().includes(q) || d.trxId.toLowerCase().includes(q) || d.phone.includes(q);
+    return d.donor.toLowerCase().includes(q) || String(d.referenceValue || '').toLowerCase().includes(q) || d.phone.includes(q);
   });
 
   const timeAgo = (ts) => {
@@ -66,7 +70,6 @@ export default function AdminVerifications() {
 
   const handleSelect = (d) => {
     setSelectedDonation(d);
-    setEditedAmount((d.amount / 100).toFixed(2));
     setRejectionReason('');
     setChecks({ receiptClear: false, amountMatches: false, accountCorrect: false, dateRecent: false, referenceVisible: false });
     setImageExpanded(false);
@@ -74,9 +77,10 @@ export default function AdminVerifications() {
 
   const handleVerify = async () => {
     if (!selectedDonation || isSubmitting) return;
+    if (!user?.id) { showToast('تعذر تحديد المشرف الحالي', 'error'); return; }
     setIsSubmitting(true);
     try {
-      const ok = await verifyDonationMut({ donationId: selectedDonation._id, verified: true });
+      const ok = await verifyDonationMut({ donationId: selectedDonation._id, adminId: user.id, verified: true });
       if (!ok) { showToast('فشل التحقق', 'error'); return; }
       showToast('تم التحقق من التبرع بنجاح ✅', 'success');
       setSelectedDonation(null);
@@ -86,9 +90,10 @@ export default function AdminVerifications() {
 
   const handleReject = async () => {
     if (!selectedDonation || isSubmitting) return;
+    if (!user?.id) { showToast('تعذر تحديد المشرف الحالي', 'error'); return; }
     setIsSubmitting(true);
     try {
-      await rejectDonationMut({ donationId: selectedDonation._id, reason: rejectionReason || undefined });
+      await rejectDonationMut({ donationId: selectedDonation._id, adminId: user.id, reason: rejectionReason || undefined });
       showToast('تم رفض التبرع', 'error');
       setSelectedDonation(null);
     } catch { showToast('حدث خطأ أثناء الرفض', 'error'); }
@@ -155,7 +160,7 @@ export default function AdminVerifications() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
               <div style={{ fontSize: 14, fontWeight: 700 }}>{d.donor}</div>
               <div style={{ fontSize: 14, fontWeight: 800, color: '#0A5F62', fontFamily: 'Inter, sans-serif' }}>
-                {(d.amount / 100).toLocaleString('fr-MA')} د.م
+                {Number(d.amount || 0).toLocaleString('fr-MA')} د.م
               </div>
             </div>
             <div style={{ fontSize: 12, color: '#94a3b8' }}>{d.project}</div>
@@ -183,13 +188,13 @@ export default function AdminVerifications() {
                   ['الاسم', selectedDonation.donor],
                   ['الهاتف', selectedDonation.phone],
                   ['المشروع', selectedDonation.project],
-                  ['المبلغ', `${(selectedDonation.amount / 100).toLocaleString('fr-MA')} درهم`],
-                  ['رقم المرجع', `#${selectedDonation.trxId}`],
+                  ['المبلغ', `${Number(selectedDonation.amount || 0).toLocaleString('fr-MA')} درهم`],
+                  [selectedDonation.referenceLabel, selectedDonation.referenceValue],
                   ['وقت الإرسال', new Date(selectedDonation.createdAt).toLocaleString('ar-MA')],
                 ].map(([label, value], i, arr) => (
                   <div key={label} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '10px 0', borderBottom: i < arr.length - 1 ? '1px solid #E5E9EB' : 'none' }}>
                     <div style={{ fontSize: 12, color: '#94a3b8' }}>{label}</div>
-                    <div style={{ fontSize: label === 'المبلغ' ? 20 : 14, fontWeight: 700, textAlign: 'left', color: label === 'المبلغ' ? '#0A5F62' : '#0e1a1b', fontFamily: label === 'الهاتف' || label === 'رقم المرجع' ? 'Inter, sans-serif' : 'inherit' }}>
+                    <div style={{ fontSize: label === 'المبلغ' ? 20 : 14, fontWeight: 700, textAlign: 'left', color: label === 'المبلغ' ? '#0A5F62' : '#0e1a1b', fontFamily: label === 'الهاتف' || label === selectedDonation.referenceLabel ? 'Inter, sans-serif' : 'inherit' }}>
                       {value}
                     </div>
                   </div>
@@ -250,7 +255,7 @@ export default function AdminVerifications() {
               <div style={{ padding: '0 20px' }}>
                 {[
                   ['receiptClear',      'الوصل واضح وقابل للقراءة'],
-                  ['amountMatches',     `المبلغ يطابق: ${(selectedDonation.amount / 100).toLocaleString('fr-MA')} درهم`],
+                  ['amountMatches',     `المبلغ يطابق: ${Number(selectedDonation.amount || 0).toLocaleString('fr-MA')} درهم`],
                   ['accountCorrect',    'رقم الحساب المستفيد مطابق'],
                   ['dateRecent',        'تاريخ التحويل ضمن 48 ساعة'],
                   ['referenceVisible',  'الرقم المرجعي للعملية موجود'],

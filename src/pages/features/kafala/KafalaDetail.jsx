@@ -100,7 +100,7 @@ export default function KafalaDetail() {
   const isSponsored = kafala.status === 'sponsored';
   const params = new URLSearchParams(window.location.search);
   const justSponsored = params.get('sponsored') === 'true';
-  const monthlyAmount = ((kafala.monthlyPrice || 30000) / 100).toLocaleString('fr-MA');
+  const monthlyAmount = Number(kafala.monthlyPrice || 300).toLocaleString('fr-MA');
 
   return (
     <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'var(--font-arabic)', color: '#0e1a1b' }}>

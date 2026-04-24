@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { api } from '../../../../../convex/_generated/api';
 import { useApp } from '../../../../context/AppContext';
+import { isHiddenLegacyDonation } from '../../../../lib/donationUi';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const BORDER = '#E5E9EB';
@@ -14,9 +15,9 @@ const SHADOW = '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)';
 const SHADOW_P = '0 4px 14px rgba(13,116,119,.25)';
 
 const getTier = (totalDonated, donationCount) => {
-  if (totalDonated >= 500000) return 'gold';
-  if (totalDonated >= 100000) return 'silver';
-  if (donationCount <= 1 && totalDonated < 50000) return 'new';
+  if (totalDonated >= 5000) return 'gold';
+  if (totalDonated >= 1000) return 'silver';
+  if (donationCount <= 1 && totalDonated < 500) return 'new';
   return 'bronze';
 };
 
@@ -85,11 +86,11 @@ export default function AdminDonorDetail() {
   // ── Derived ───────────────────────────────────────────────────────────────
   const tier = getTier(donorData.totalDonated, donorData.donationCount);
   const tierCfg = TIER_CFG[tier];
-  const totalMAD = (donorData.totalDonated || 0) / 100;
+  const totalMAD = donorData.totalDonated || 0;
   const memberSince = donorData.createdAt
     ? new Date(donorData.createdAt).toLocaleDateString('ar-MA', { year: 'numeric', month: 'long' })
     : '—';
-  const donations = donorData.donations || [];
+  const donations = (donorData.donations || []).filter((donation) => !isHiddenLegacyDonation(donation));
 
   return (
     <div style={{ fontFamily: 'var(--font-arabic)', color: '#0e1a1b', padding: 24 }} dir="rtl">
@@ -171,7 +172,7 @@ export default function AdminDonorDetail() {
               </div>
             ) : donations.map((d, i) => {
               const ds = DONATION_STATUS[d.status] || DONATION_STATUS.pending;
-              const amtMAD = ((d.amount || 0) / 100).toLocaleString('fr-MA');
+              const amtMAD = Number(d.amount || 0).toLocaleString('fr-MA');
               const dateStr = d.createdAt ? new Date(d.createdAt).toLocaleDateString('fr-MA') : '—';
               const isPend = d.status === 'pending' || d.status === 'awaiting_verification';
               return (

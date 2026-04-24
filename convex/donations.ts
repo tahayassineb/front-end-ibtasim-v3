@@ -25,15 +25,18 @@ export const getDonationsByUser = query({
     createdAt: v.number(),
     verifiedAt: v.optional(v.number()),
     receiptUrl: v.optional(v.string()),
+    transactionReference: v.optional(v.string()),
+    whopPaymentId: v.optional(v.string()),
     projectTitle: v.optional(v.object({ ar: v.string(), fr: v.string(), en: v.string() })),
     projectPhoto: v.optional(v.union(v.string(), v.null())),
   })),
   handler: async (ctx, args) => {
-    const donations = await ctx.db
+    const donations = (await ctx.db
       .query("donations")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .order("desc")
-      .take(args.limit || 50);
+      .take(args.limit || 50))
+      .filter((d) => d.status !== "cancelled");
 
     const enriched = await Promise.all(
       donations.map(async (d) => {
@@ -51,6 +54,8 @@ export const getDonationsByUser = query({
           createdAt: d.createdAt,
           verifiedAt: d.verifiedAt,
           receiptUrl: d.receiptUrl,
+          transactionReference: d.transactionReference,
+          whopPaymentId: d.whopPaymentId,
           projectTitle: project?.title ?? { ar: 'مشروع', fr: 'Projet', en: 'Project' },
           projectPhoto: project?.mainImage ?? null,
         };
@@ -85,7 +90,8 @@ export const getDonationsByProject = query({
       query = query.filter((q) => q.eq(q.field("status"), args.status));
     }
     
-    const donations = await query.order("desc").take(args.limit || 100);
+    const donations = (await query.order("desc").take(args.limit || 100))
+      .filter((d) => d.status !== "cancelled");
     
     return donations.map(d => ({
       _id: d._id,
@@ -119,6 +125,7 @@ export const getDonationById = query({
       receiptUrl: v.optional(v.string()),
       bankName: v.optional(v.string()),
       transactionReference: v.optional(v.string()),
+      whopPaymentId: v.optional(v.string()),
       createdAt: v.number(),
       verifiedAt: v.optional(v.number()),
       verifiedBy: v.optional(v.id("admins")),
@@ -145,6 +152,7 @@ export const getDonationById = query({
       receiptUrl: donation.receiptUrl,
       bankName: donation.bankName,
       transactionReference: donation.transactionReference,
+      whopPaymentId: donation.whopPaymentId,
       createdAt: donation.createdAt,
       verifiedAt: donation.verifiedAt,
       verifiedBy: donation.verifiedBy,
@@ -168,6 +176,7 @@ export const getPendingVerifications = query({
     status: v.string(),
     receiptUrl: v.optional(v.string()),
     bankName: v.optional(v.string()),
+    transactionReference: v.optional(v.string()),
     message: v.optional(v.string()),
     createdAt: v.number(),
   })),
@@ -197,6 +206,7 @@ export const getPendingVerifications = query({
           ? (await ctx.storage.getUrl(d.receiptUrl as any)) ?? undefined
           : undefined,
         bankName: d.bankName,
+        transactionReference: d.transactionReference,
         message: d.message,
         createdAt: d.createdAt,
       };
@@ -207,7 +217,11 @@ export const getPendingVerifications = query({
 });
 
 export const getAllDonations = query({
-  args: { limit: v.optional(v.number()) },
+  args: {
+    limit: v.optional(v.number()),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+  },
   returns: v.array(v.object({
     _id: v.id("donations"),
     _creationTime: v.number(),
@@ -221,13 +235,21 @@ export const getAllDonations = query({
     status: v.string(),
     receiptUrl: v.optional(v.string()),
     bankName: v.optional(v.string()),
+    transactionReference: v.optional(v.string()),
+    whopPaymentId: v.optional(v.string()),
     createdAt: v.number(),
   })),
   handler: async (ctx, args) => {
-    const donations = await ctx.db
+    const donations = (await ctx.db
       .query("donations")
       .order("desc")
-      .take(args.limit ?? 100);
+      .take(args.limit ?? 250))
+      .filter((d) => {
+        if (d.status === "cancelled") return false;
+        if (args.startDate && d.createdAt < args.startDate) return false;
+        if (args.endDate && d.createdAt > args.endDate) return false;
+        return true;
+      });
     return await Promise.all(donations.map(async (d) => {
       const user = await ctx.db.get(d.userId);
       const project = await ctx.db.get(d.projectId);
@@ -246,6 +268,8 @@ export const getAllDonations = query({
           ? (await ctx.storage.getUrl(d.receiptUrl as any)) ?? undefined
           : undefined,
         bankName: d.bankName,
+        transactionReference: d.transactionReference,
+        whopPaymentId: d.whopPaymentId,
         createdAt: d.createdAt ?? d._creationTime,
       };
     }));
@@ -263,13 +287,13 @@ export const createDonation = mutation({
     amount: v.number(),
     paymentMethod: v.union(
       v.literal("bank_transfer"),
-      v.literal("card_whop"),
       v.literal("cash_agency")
     ),
     coversFees: v.boolean(),
     isAnonymous: v.boolean(),
     message: v.optional(v.string()),
     bankName: v.optional(v.string()),
+    transactionReference: v.optional(v.string()),
   },
   returns: v.id("donations"),
   handler: async (ctx, args) => {
@@ -295,6 +319,7 @@ export const createDonation = mutation({
       isAnonymous: args.isAnonymous,
       message: args.message,
       bankName: args.bankName,
+      transactionReference: args.transactionReference,
       createdAt: now,
       updatedAt: now,
     });
@@ -336,12 +361,13 @@ export const uploadReceipt = mutation({
 export const verifyDonation = mutation({
   args: {
     donationId: v.id("donations"),
-    adminId: v.optional(v.id("admins")),
+    adminId: v.id("admins"),
     verified: v.boolean(),
     notes: v.optional(v.string()),
   },
   returns: v.boolean(),
   handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.adminId, "verification:write");
     const donation = await ctx.db.get(args.donationId);
     if (!donation) return false;
     if (donation.status !== "awaiting_verification") return false;
@@ -430,12 +456,12 @@ export const verifyDonation = mutation({
 export const rejectDonation = mutation({
   args: {
     donationId: v.id("donations"),
-    adminId: v.optional(v.id("admins")),
+    adminId: v.id("admins"),
     reason: v.optional(v.string()),
   },
   returns: v.boolean(),
   handler: async (ctx, args) => {
-    if (args.adminId) await requireAdmin(ctx, args.adminId, "verification:write");
+    await requireAdmin(ctx, args.adminId, "verification:write");
     const donation = await ctx.db.get(args.donationId);
     if (!donation) return false;
     if (donation.status !== "awaiting_verification") return false;
@@ -482,6 +508,7 @@ export const updateDonationStatus = mutation({
       v.literal("awaiting_verification"),
       v.literal("verified"),
       v.literal("rejected"),
+      v.literal("cancelled"),
       v.literal("completed")
     ),
   },

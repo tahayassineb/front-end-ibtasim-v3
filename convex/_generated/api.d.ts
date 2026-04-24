@@ -21,6 +21,7 @@ import type * as kafala from "../kafala.js";
 import type * as kafalaExpiry from "../kafalaExpiry.js";
 import type * as kafalaNotifications from "../kafalaNotifications.js";
 import type * as kafalaPayments from "../kafalaPayments.js";
+import type * as migrations from "../migrations.js";
 import type * as notifications from "../notifications.js";
 import type * as payments from "../payments.js";
 import type * as permissions from "../permissions.js";
@@ -52,6 +53,7 @@ declare const fullApi: ApiFromModules<{
   kafalaExpiry: typeof kafalaExpiry;
   kafalaNotifications: typeof kafalaNotifications;
   kafalaPayments: typeof kafalaPayments;
+  migrations: typeof migrations;
   notifications: typeof notifications;
   payments: typeof payments;
   permissions: typeof permissions;

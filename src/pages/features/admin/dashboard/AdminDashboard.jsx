@@ -62,7 +62,7 @@ const StatCard = ({ icon, label, value, hint, tone = PRIMARY }) => (
 const ChartPanel = ({ title, data, color, type = 'area' }) => {
   const chartData = (data || []).map((row) => ({
     ...row,
-    amountMAD: Math.round((row.amount || 0) / 100),
+    amountMAD: Math.round(row.amount || 0),
   }));
 
   return (

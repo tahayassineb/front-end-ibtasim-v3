@@ -4,6 +4,7 @@ import JSZip from 'jszip';
 import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
 import { can } from '../../../lib/adminPermissions';
+import { getInclusiveDateRange, getPaymentMethodLabel, isCardPayment, isHiddenLegacyDonation, requiresReceipt } from '../../../lib/donationUi';
 
 const statusLabels = {
   awaiting_receipt: 'بانتظار الوصل',
@@ -16,20 +17,40 @@ const statusLabels = {
 
 export default function AdminReceipts() {
   const { user } = useApp();
-  const [filters, setFilters] = useState({ type: '', status: '', search: '' });
+  const [filters, setFilters] = useState({ type: '', status: '', search: '', startDate: '', endDate: '' });
   const [selected, setSelected] = useState({});
   const [exporting, setExporting] = useState(false);
   const logExport = useMutation(api.receipts.logExport);
+  const dateRange = useMemo(() => getInclusiveDateRange(filters), [filters]);
   const data = useQuery(api.receipts.list, user?.id ? {
     adminId: user.id,
     type: filters.type || undefined,
     status: filters.status || undefined,
     search: filters.search || undefined,
+    startDate: dateRange.startDate,
+    endDate: dateRange.endDate,
     limit: 250,
   } : 'skip');
-  const rows = useMemo(() => data?.rows || [], [data?.rows]);
+  const rows = useMemo(() => (data?.rows || []).filter((row) => {
+    if (isHiddenLegacyDonation(row)) return false;
+    if (dateRange.startDate != null && row.createdAt < dateRange.startDate) return false;
+    if (dateRange.endDate != null && row.createdAt > dateRange.endDate) return false;
+    return true;
+  }), [data?.rows, dateRange]);
   const selectedRows = useMemo(() => rows.filter((r) => selected[r.id]), [rows, selected]);
   const canExport = can(user?.role, 'receipts:export');
+  const totals = useMemo(() => ({
+    count: rows.length,
+    amount: rows.reduce((sum, row) => sum + (row.amount ?? 0), 0),
+    missingReceipts: rows.filter((row) => requiresReceipt(row.paymentMethod) && !row.receiptUrl).length,
+  }), [rows]);
+
+  const getStatusLabel = (row) => {
+    if (!isCardPayment(row.paymentMethod)) return statusLabels[row.status] || row.status;
+    if (row.status === 'verified' || row.status === 'completed') return 'مدفوع بالبطاقة';
+    if (row.status === 'rejected') return 'مرفوض';
+    return 'معالجة البطاقة';
+  };
 
   const csvFor = (items) => {
     const headers = ['Date', 'Donor Name', 'Donor Phone', 'Amount MAD', 'Type', 'Project/Kafala', 'Payment Method', 'Status', 'Verified Date', 'Transaction Reference', 'Bank Name', 'Receipt URL'];
@@ -37,11 +58,11 @@ export default function AdminReceipts() {
       new Date(r.createdAt).toISOString(),
       r.donorName,
       r.donorPhone,
-      (r.amount / 100).toFixed(2),
+      Number(r.amount || 0).toFixed(2),
       r.type,
       r.entityTitle,
-      r.paymentMethod,
-      r.status,
+      getPaymentMethodLabel(r.paymentMethod),
+      getStatusLabel(r),
       r.verifiedAt ? new Date(r.verifiedAt).toISOString() : '',
       r.transactionReference || '',
       r.bankName || '',
@@ -107,12 +128,12 @@ export default function AdminReceipts() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 16 }}>
-        <Stat label="عدد الوصولات" value={data?.totals?.count ?? 0} />
-        <Stat label="المبلغ" value={`${((data?.totals?.amount ?? 0) / 100).toFixed(0)} د.م`} />
-        <Stat label="بدون وصل" value={data?.totals?.missingReceipts ?? 0} />
+        <Stat label="عدد الوصولات" value={totals.count} />
+        <Stat label="المبلغ" value={`${totals.amount.toFixed(0)} د.م`} />
+        <Stat label="بدون وصل" value={totals.missingReceipts} />
       </div>
 
-      <div style={{ background: 'white', border: '1px solid #E5E9EB', borderRadius: 14, padding: 14, display: 'flex', gap: 12, marginBottom: 16 }}>
+      <div style={{ background: 'white', border: '1px solid #E5E9EB', borderRadius: 14, padding: 14, display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
         <select value={filters.type} onChange={(e) => setFilters((f) => ({ ...f, type: e.target.value }))} style={filterStyle}>
           <option value="">كل الأنواع</option>
           <option value="donation">تبرعات المشاريع</option>
@@ -122,7 +143,12 @@ export default function AdminReceipts() {
           <option value="">كل الحالات</option>
           {Object.entries(statusLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
         </select>
+        <input type="date" value={filters.startDate} onChange={(e) => setFilters((f) => ({ ...f, startDate: e.target.value }))} style={filterStyle} />
+        <input type="date" value={filters.endDate} onChange={(e) => setFilters((f) => ({ ...f, endDate: e.target.value }))} style={filterStyle} />
         <input value={filters.search} onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))} placeholder="بحث باسم المتبرع أو الهاتف" style={{ ...filterStyle, flex: 1 }} />
+        {(filters.startDate || filters.endDate) && (
+          <button onClick={() => setFilters((f) => ({ ...f, startDate: '', endDate: '' }))} style={buttonStyle}>مسح التاريخ</button>
+        )}
       </div>
 
       <div style={{ background: 'white', border: '1px solid #E5E9EB', borderRadius: 16, overflowX: 'auto' }}>
@@ -140,9 +166,15 @@ export default function AdminReceipts() {
                   <td style={td}><strong>{r.donorName}</strong><div style={{ color: '#94a3b8', fontSize: 12 }}>{r.donorPhone}</div></td>
                   <td style={td}>{r.type === 'kafala' ? 'كفالة' : 'تبرع'}</td>
                   <td style={td}>{r.entityTitle}</td>
-                  <td style={td}>{(r.amount / 100).toFixed(0)} د.م</td>
-                  <td style={td}>{statusLabels[r.status] || r.status}</td>
-                  <td style={td}>{r.receiptUrl ? <a href={r.receiptUrl} target="_blank" rel="noreferrer" style={{ color: '#0d7477', fontWeight: 800 }}>عرض</a> : <span style={{ color: '#ef4444' }}>مفقود</span>}</td>
+                  <td style={td}>{Number(r.amount || 0).toFixed(0)} د.م</td>
+                  <td style={td}>{getStatusLabel(r)}</td>
+                  <td style={td}>
+                    {requiresReceipt(r.paymentMethod)
+                      ? (r.receiptUrl
+                        ? <a href={r.receiptUrl} target="_blank" rel="noreferrer" style={{ color: '#0d7477', fontWeight: 800 }}>عرض</a>
+                        : <span style={{ color: '#ef4444' }}>مفقود</span>)
+                      : <span style={{ color: '#0d7477', fontWeight: 800 }}>غير مطلوب</span>}
+                  </td>
                   <td style={td}>{new Date(r.createdAt).toLocaleDateString('ar-MA')}</td>
                 </tr>
               ))}

@@ -1,8 +1,13 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 
 const http = httpRouter();
+
+function normalizeBaseUrl(value?: string | null): string | undefined {
+  if (!value) return undefined;
+  return value.trim().replace(/\/+$/, "");
+}
 
 // Svix signature verification helper
 // Svix payload format: "${svixId}.${svixTimestamp}.${rawBody}"
@@ -52,6 +57,14 @@ http.route({
     const secret = process.env.WHOP_WEBHOOK_SECRET;
     if (!secret) {
       console.error("WHOP_WEBHOOK_SECRET not configured");
+      try {
+        await ctx.runMutation(api.errorLogs.insertErrorLog, {
+          source: "whop_webhook",
+          level: "error",
+          message: "WHOP_WEBHOOK_SECRET not configured",
+          details: JSON.stringify({ path: "/webhooks/whop" }),
+        });
+      } catch {}
       return new Response("Webhook secret not configured", { status: 500 });
     }
 
@@ -68,6 +81,7 @@ http.route({
       const event = payload.event;
       const data = payload.data;
 
+      const paymentAttemptId = data?.metadata?.paymentAttemptId;
       const donationId = data?.metadata?.donationId;
       const paymentType = data?.metadata?.type; // "kafala" for kafala payments
 
@@ -129,34 +143,62 @@ http.route({
       }
 
       // ── Regular donation payments ────────────────────────────────────────────
-      if (!donationId) {
-        console.error("Missing donationId in webhook metadata");
+      if (!paymentAttemptId && !donationId) {
+        console.error("Missing paymentAttemptId/donationId in webhook metadata");
         return new Response("OK", { status: 200 }); // Return 200 to stop Whop retries
       }
 
       switch (event) {
         case "payment.succeeded": {
-          // processWhopPayment handles card_whop donations correctly (works on "pending" status)
-          await ctx.runMutation(api.donations.processWhopPayment, {
-            donationId: donationId as any,
-            whopPaymentId: data.id,
-          });
+          if (paymentAttemptId) {
+            await ctx.runMutation(internal.payments.finalizeWhopCardPayment, {
+              paymentAttemptId: paymentAttemptId as any,
+              whopPaymentId: data.id,
+              whopPaymentStatus: "paid",
+              eventName: event,
+            });
+          } else {
+            await ctx.runMutation(api.donations.processWhopPayment, {
+              donationId: donationId as any,
+              whopPaymentId: data.id,
+            });
+          }
           break;
         }
 
         case "payment.failed": {
-          await ctx.runMutation(api.donations.updateDonationStatus, {
-            donationId: donationId as any,
-            status: "rejected",
-          });
+          if (paymentAttemptId) {
+            await ctx.runMutation(internal.payments.markCardPaymentAttemptState, {
+              paymentAttemptId: paymentAttemptId as any,
+              whopPaymentId: data.id,
+              status: "failed",
+              reason: data?.failure_reason ?? "Whop reported payment.failed",
+              eventName: event,
+            });
+          } else {
+            await ctx.runMutation(api.donations.updateDonationStatus, {
+              donationId: donationId as any,
+              status: "rejected",
+            });
+          }
           break;
         }
 
         case "payment.refunded": {
-          await ctx.runMutation(api.donations.updateDonationStatus, {
-            donationId: donationId as any,
-            status: "rejected",
-          });
+          if (paymentAttemptId) {
+            await ctx.runMutation(internal.payments.markCardPaymentAttemptState, {
+              paymentAttemptId: paymentAttemptId as any,
+              whopPaymentId: data.id,
+              status: "refunded",
+              reason: "Whop reported payment.refunded",
+              eventName: event,
+            });
+          } else {
+            await ctx.runMutation(api.donations.updateDonationStatus, {
+              donationId: donationId as any,
+              status: "rejected",
+            });
+          }
           break;
         }
 
@@ -285,8 +327,9 @@ http.route({
     }
 
     let donationId: string | undefined;
-    let amount = 0;
+    let amountMAD = 0;
     let currency = "MAD";
+    let paid = false;
 
     if (paymentId) {
       try {
@@ -297,24 +340,46 @@ http.route({
 
         if (res.ok) {
           const payment = await res.json();
-          donationId = payment.metadata?.donationId;
-          amount = payment.final_amount ?? 0;
+          const paymentAttemptId = payment.metadata?.paymentAttemptId;
+          const legacyDonationId = payment.metadata?.donationId;
+          amountMAD = payment.final_amount ?? 0;
           currency = (payment.currency ?? "mad").toUpperCase();
 
-          // Mark donation as paid + auto-verify
-          if (donationId) {
+          if (paymentAttemptId) {
+            try {
+              const result = await ctx.runMutation(internal.payments.finalizeWhopCardPayment, {
+                paymentAttemptId: paymentAttemptId as any,
+                whopPaymentId: paymentId,
+                whopPaymentStatus: "paid",
+                eventName: "success_redirect",
+              });
+              donationId = result.donationId ? String(result.donationId) : undefined;
+              paid = result.success;
+            } catch (err) {
+              try {
+                await ctx.runMutation(api.errorLogs.insertErrorLog, {
+                  source: "donate_success",
+                  level: "error",
+                  message: `finalizeWhopCardPayment failed: ${err instanceof Error ? err.message : String(err)}`,
+                  details: JSON.stringify({ paymentId, paymentAttemptId }),
+                });
+              } catch {}
+            }
+          } else if (legacyDonationId) {
+            donationId = legacyDonationId;
             try {
               await ctx.runMutation(api.donations.processWhopPayment, {
-                donationId: donationId as any,
+                donationId: legacyDonationId as any,
                 whopPaymentId: paymentId,
               });
+              paid = true;
             } catch (err) {
               try {
                 await ctx.runMutation(api.errorLogs.insertErrorLog, {
                   source: "donate_success",
                   level: "error",
                   message: `processWhopPayment failed: ${err instanceof Error ? err.message : String(err)}`,
-                  details: JSON.stringify({ paymentId, donationId }),
+                  details: JSON.stringify({ paymentId, donationId: legacyDonationId }),
                 });
               } catch {}
             }
@@ -345,16 +410,17 @@ http.route({
     }
 
     // If FRONTEND_URL is configured, redirect there (with params for the React success page)
-    const frontendUrl = process.env.FRONTEND_URL;
+    const frontendUrl = normalizeBaseUrl(process.env.FRONTEND_URL);
     if (frontendUrl) {
-      const params = new URLSearchParams({ paid: "true" });
+      const params = new URLSearchParams({ paid: paid ? "true" : "false" });
       if (donationId) params.set("donationId", donationId);
-      if (amount) params.set("amount", String(amount));
+      if (amountMAD) params.set("amount", String(amountMAD));
+      params.set("paymentId", paymentId ?? "");
       return Response.redirect(`${frontendUrl}/donate/success?${params}`, 302);
     }
 
     // No frontend URL configured → render the success page inline from Convex
-    return new Response(renderPaymentPage({ success: true, amount, currency, paymentId: paymentId ?? "" }), {
+    return new Response(renderPaymentPage({ success: paid, amount: amountMAD, currency, paymentId: paymentId ?? "" }), {
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });
   }),

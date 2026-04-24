@@ -72,7 +72,7 @@ src/
 - Warm sand (kafala): `#8B6914` dark, `#C4A882` main, `#F5EBD9` bg, `#E8D4B0` border
 - Text: `#0e1a1b` primary, `#64748b` secondary, `#94a3b8` muted
 
-**Amounts**: All monetary values stored in **centimes** (MAD × 100) in Convex. Display divides by 100.
+**Amounts**: All monetary values are stored in **MAD** in Convex and displayed directly as dirhams.
 
 ### Backend (`convex/`)
 
@@ -141,7 +141,7 @@ Set via `npx convex env set KEY value` or Convex Dashboard → Settings → Env 
 
 **Does NOT work**: `/v2/checkout_configurations` (requires enterprise scopes).
 
-`initial_price` = actual MAD amount (e.g., `350`), **not centimes** (not `35000`).
+`initial_price` = actual MAD amount (e.g., `350`).
 
 Preset plan IDs: 200 MAD → `plan_FX2nfOyGnmaCf`, 500 MAD → `plan_KCTR7FdaRv4rv`, 1000 MAD → `plan_6Ed3nRvJGJ8cO`.
 
@@ -179,7 +179,7 @@ Session flow: create (`POST /sessions`) → connect (`POST /sessions/{id}/connec
 
 ## Database Schema Highlights
 
-- All prices/amounts in centimes (MAD × 100) except Whop `initial_price` which is actual MAD
+- All prices/amounts are stored in MAD. Whop `initial_price` is also actual MAD.
 - `kafala.bio` is `{ ar, fr, en }` object; use `getBioText(bio)` pattern to extract by lang
 - `projects.benefitCards` — optional array of `{ icon, value, label }` for impact display
 - `stories.coverImage` / `stories.body` — optional; coverImage is a storageId, body is HTML string
@@ -211,7 +211,7 @@ Session flow: create (`POST /sessions`) → connect (`POST /sessions/{id}/connec
 ## Gotchas
 
 1. **Two deploys**: git push (Vercel) + `npx convex deploy --yes` (Convex) are always both needed
-2. **Amounts**: Convex stores centimes; Whop `initial_price` takes actual MAD — don't confuse
+2. **Amounts**: Convex stores MAD; Whop `initial_price` also takes actual MAD
 3. **`WHOP_COMPANY_ID`**: starts with `biz_`, not `apik_` — was set wrong before
 4. **storageId vs URL**: Always store Convex `storageId` in DB, call `convexFileUrl()` in frontend
 5. **QR code expires**: ~30–60s; no auto-poll — user clicks Reconnect manually

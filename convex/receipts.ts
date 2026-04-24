@@ -46,6 +46,7 @@ export const list = query({
     if (includeDonation) {
       const donations = await ctx.db.query("donations").order("desc").take(500);
       for (const d of donations) {
+        if (d.status === "cancelled") continue;
         const user = await ctx.db.get(d.userId);
         const project = await ctx.db.get(d.projectId);
         const receiptUrl = d.receiptUrl ? await ctx.storage.getUrl(d.receiptUrl as any) : null;
@@ -63,7 +64,7 @@ export const list = query({
           receiptStorageId: d.receiptUrl,
           receiptUrl: receiptUrl ?? undefined,
           bankName: d.bankName,
-          transactionReference: d.transactionReference,
+          transactionReference: d.transactionReference ?? d.whopPaymentId,
           verifiedBy: d.verifiedBy,
           verifiedAt: d.verifiedAt,
           createdAt: d.createdAt,
@@ -105,7 +106,7 @@ export const list = query({
       totals: {
         count: filtered.length,
         amount: filtered.reduce((sum, r) => sum + (r.amount ?? 0), 0),
-        missingReceipts: filtered.filter((r) => !r.receiptUrl).length,
+        missingReceipts: filtered.filter((r) => !r.receiptUrl && r.paymentMethod !== "card_whop").length,
       },
     };
   },
@@ -131,4 +132,3 @@ export const logExport = mutation({
     });
   },
 });
-

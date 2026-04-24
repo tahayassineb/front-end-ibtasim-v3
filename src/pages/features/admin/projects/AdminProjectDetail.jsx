@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../../../convex/_generated/api';
@@ -45,6 +45,7 @@ export default function AdminProjectDetail() {
   const project          = useQuery(api.projects.getProjectById, id ? { projectId: id } : 'skip');
   const projectDonations = useQuery(api.donations.getDonationsByProject, id ? { projectId: id } : 'skip');
   const deleteProjectMutation = useMutation(api.projects.deleteProject);
+  const [now] = useState(() => Date.now());
 
   const handleDelete = async () => {
     if (window.confirm('هل أنت متأكد من حذف هذا المشروع؟')) {
@@ -82,13 +83,13 @@ export default function AdminProjectDetail() {
 
   // ── Computed ──────────────────────────────────────────────────────────────
   const title     = getStr(project.title, lang);
-  const goalMAD   = (project.goalAmount || 0) / 100;
-  const raisedMAD = (project.raisedAmount || 0) / 100;
+  const goalMAD   = project.goalAmount || 0;
+  const raisedMAD = project.raisedAmount || 0;
   const pct       = goalMAD > 0 ? Math.min(Math.round(raisedMAD / goalMAD * 100), 100) : 0;
   const donorCount = projectDonations?.filter(d => ['verified', 'awaiting_verification'].includes(d.status)).length || 0;
   const avgDonation = donorCount > 0 ? Math.round(raisedMAD / donorCount) : 0;
   const daysLeft = project.endDate
-    ? Math.max(0, Math.ceil((project.endDate - Date.now()) / (1000 * 60 * 60 * 24)))
+    ? Math.max(0, Math.ceil((project.endDate - now) / (1000 * 60 * 60 * 24)))
     : '—';
   const imageUrl = convexFileUrl(project.mainImage) || project.mainImage;
   const st = STATUS_CFG[project.status] || STATUS_CFG.draft;
@@ -210,7 +211,7 @@ export default function AdminProjectDetail() {
           projectDonations.slice(0, 10).map((d, i) => {
             const ds = DONATION_STATUS[d.status] || DONATION_STATUS.pending;
             const donorName = d.isAnonymous ? 'مجهول الهوية' : (d.donorName || getStr(d.name, lang) || 'متبرع');
-            const amtMAD = ((d.amount || 0) / 100).toLocaleString('fr-MA');
+            const amtMAD = Number(d.amount || 0).toLocaleString('fr-MA');
             const dateStr = d.createdAt ? new Date(d.createdAt).toLocaleDateString('fr-MA') : '—';
             return (
               <div key={d._id}

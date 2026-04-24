@@ -209,7 +209,7 @@ export const createKafala = mutation({
     location: v.string(),
     bio: v.object({ ar: v.string(), fr: v.string(), en: v.string() }),
     photo: v.optional(v.string()),
-    monthlyPrice: v.number(), // In cents
+    monthlyPrice: v.number(), // In MAD
     isFeatured: v.optional(v.boolean()),
     featuredOrder: v.optional(v.number()),
     slug: v.optional(v.string()),

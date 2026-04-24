@@ -31,7 +31,7 @@ export default defineSchema({
     notificationsEnabled: v.boolean(),
     
     // Totals for quick access
-    totalDonated: v.number(), // In cents (MAD)
+    totalDonated: v.number(), // In MAD
     donationCount: v.number(),
     
     // GDPR / Data retention
@@ -93,8 +93,8 @@ export default defineSchema({
     ),
     
     // Financial
-    goalAmount: v.number(), // In cents
-    raisedAmount: v.number(), // In cents
+    goalAmount: v.number(), // In MAD
+    raisedAmount: v.number(), // In MAD
     currency: v.literal("MAD"),
     
     // Media
@@ -161,7 +161,7 @@ export default defineSchema({
     projectId: v.id("projects"),
     
     // Amount
-    amount: v.number(), // In cents
+    amount: v.number(), // In MAD
     currency: v.literal("MAD"),
     coversFees: v.boolean(),
     
@@ -179,6 +179,7 @@ export default defineSchema({
       v.literal("awaiting_verification"),
       v.literal("verified"),
       v.literal("rejected"),
+      v.literal("cancelled"),
       v.literal("completed")
     ),
     
@@ -219,18 +220,25 @@ export default defineSchema({
   // ============================================
   payments: defineTable({
     // References
-    donationId: v.id("donations"),
+    donationId: v.optional(v.id("donations")),
     userId: v.id("users"),
+    projectId: v.id("projects"),
     
-    // Whop-specific
-    whopPaymentId: v.string(),
+    // Provider-specific
+    provider: v.literal("whop"),
+    whopPaymentId: v.optional(v.string()),
     whopProductId: v.optional(v.string()),
+    checkoutSessionId: v.optional(v.string()),
     
     // Amount breakdown
     amount: v.number(),
-    platformFee: v.number(),
-    processingFee: v.number(),
-    netAmount: v.number(),
+    currency: v.literal("MAD"),
+    coversFees: v.boolean(),
+    isAnonymous: v.boolean(),
+    message: v.optional(v.string()),
+    platformFee: v.optional(v.number()),
+    processingFee: v.optional(v.number()),
+    netAmount: v.optional(v.number()),
     
     // Status
     status: v.union(
@@ -238,7 +246,8 @@ export default defineSchema({
       v.literal("processing"),
       v.literal("completed"),
       v.literal("failed"),
-      v.literal("refunded")
+      v.literal("refunded"),
+      v.literal("cancelled")
     ),
     
     // Timeline
@@ -255,7 +264,9 @@ export default defineSchema({
     webhookEvents: v.optional(v.array(v.string())),
   })
     .index("by_donation", ["donationId"])
-    .index("by_whop_payment", ["whopPaymentId"]),
+    .index("by_whop_payment", ["whopPaymentId"])
+    .index("by_checkout_session", ["checkoutSessionId"])
+    .index("by_user", ["userId"]),
 
   // ============================================
   // VERIFICATION LOGS TABLE
@@ -363,7 +374,7 @@ export default defineSchema({
     location: v.string(),
     bio: v.object({ ar: v.string(), fr: v.string(), en: v.string() }),
     photo: v.optional(v.string()), // storageId — fallback: grey silhouette by gender
-    monthlyPrice: v.number(),      // In cents MAD (e.g. 30000 = 300 MAD)
+    monthlyPrice: v.number(),      // In MAD
     currency: v.literal("MAD"),
     status: v.union(
       v.literal("draft"),
@@ -424,7 +435,7 @@ export default defineSchema({
     kafalaId: v.id("kafala"),
     userId: v.id("users"),
     sponsorshipId: v.id("kafalaSponsorship"),
-    amount: v.number(),    // In cents
+    amount: v.number(),    // In MAD
     currency: v.literal("MAD"),
     paymentMethod: v.union(
       v.literal("card_whop"),

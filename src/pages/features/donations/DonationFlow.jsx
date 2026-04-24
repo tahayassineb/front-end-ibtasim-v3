@@ -676,6 +676,7 @@ const Step5Review = ({ donationData, project, uploadedFile, amount, agreedTerms,
 
 // ─── Step 6: Success ──────────────────────────────────────────────────────────
 const Step6Success = ({ donationReference, project, navigate, resetDonation, lang }) => {
+  const displayReference = donationReference ? String(donationReference) : '--------';
   const handleShare = (platform) => {
     const text = `تبرعت لجمعية ابتسام! انضم إليّ في دعم ${project?.title || 'مشاريع الخير'}`;
     const url = window.location.origin;
@@ -701,7 +702,7 @@ const Step6Success = ({ donationReference, project, navigate, resetDonation, lan
       {/* Reference card */}
       <div style={{ width: '100%', background: 'white', border: '1.5px solid #CCF0F0', borderRadius: 20, padding: 20, marginBottom: 20, textAlign: 'center' }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: '#0d7477', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8, fontFamily: 'Inter, sans-serif' }}>رقم مرجع التبرع</div>
-        <div style={{ fontSize: 22, fontWeight: 800, fontFamily: 'Inter, sans-serif', letterSpacing: '.05em' }} dir="ltr">#{(donationReference || '').toString().slice(-8).toUpperCase()}</div>
+        <div style={{ fontSize: 22, fontWeight: 800, fontFamily: 'Inter, sans-serif', letterSpacing: '.02em' }} dir="ltr">{displayReference}</div>
         <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid #E5E9EB', fontSize: 13, color: '#64748b', lineHeight: 1.7 }}>
           سنقوم بالتحقق من التبرع وإرسال تأكيد عبر واتساب
         </div>
@@ -776,7 +777,7 @@ export default function DonationFlow() {
   const createDonation = useMutation(api.donations.createDonation);
   const uploadReceiptMutation = useMutation(api.donations.uploadReceipt);
   const generateUploadUrl = useMutation(api.storage.generateProjectImageUploadUrl);
-  const createWhopCheckout = useAction(api.payments.createWhopCheckout);
+  const startWhopCheckout = useAction(api.payments.startWhopCheckout);
   const setPassword = useMutation(api.auth.setPassword);
 
   // ── Convex queries (preserved exactly) ──
@@ -819,6 +820,7 @@ export default function DonationFlow() {
     isAnonymous: false,
     dedication: '',
     message: '',
+    transactionReference: '',
   });
 
   // Pre-fill info from user when they log in
@@ -860,6 +862,7 @@ export default function DonationFlow() {
     const base = donationData.customAmount ? (parseFloat(donationData.customAmount) || 0) : donationData.amount;
     return base;
   };
+  const calculateTotalAmount = () => Number(calculateTotal().toFixed(2));
 
   // ── Phone handling (preserved exactly) ──
   const handleAuthChange = (e) => {
@@ -971,19 +974,20 @@ export default function DonationFlow() {
       const donationId = await createDonation({
         userId: user?.userId || user?.id,
         projectId,
-        amount: calculateTotal(),
+        amount: calculateTotalAmount(),
         paymentMethod: donationData.paymentMethod === 'transfer' ? (donationData.transferType === 'cash' ? 'cash_agency' : 'bank_transfer') : 'bank_transfer',
         coversFees: donationData.coverFees,
         isAnonymous: donationData.isAnonymous,
         message: donationData.dedication || donationData.message || '',
         bankName: donationData.bankName || '',
+        transactionReference: donationData.transactionReference || '',
       });
       const uploadUrl = await generateUploadUrl();
       const uploadResponse = await fetch(uploadUrl, { method: 'POST', headers: { 'Content-Type': uploadedFile.type }, body: uploadedFile });
       if (!uploadResponse.ok) throw new Error('Receipt upload failed');
       const { storageId } = await uploadResponse.json();
       await uploadReceiptMutation({ donationId, receiptUrl: storageId });
-      setDonationReference(donationId);
+      setDonationReference(donationData.transactionReference?.trim() || donationId);
       setStep(6);
       showToast('تم إرسال التبرع بنجاح', 'success');
     } catch (err) {
@@ -996,17 +1000,14 @@ export default function DonationFlow() {
   const handleWhopCheckout = async () => {
     setIsLoading(true);
     try {
-      const donationId = await createDonation({
+      const { purchaseUrl } = await startWhopCheckout({
         userId: user?.userId || user?.id,
         projectId,
-        amount: calculateTotal(),
-        paymentMethod: 'card_whop',
+        amount: calculateTotalAmount(),
         coversFees: donationData.coverFees,
         isAnonymous: donationData.isAnonymous,
         message: donationData.dedication || '',
-        bankName: '',
       });
-      const { purchaseUrl } = await createWhopCheckout({ donationId, amountMAD: calculateTotal() });
       window.location.href = purchaseUrl;
     } catch (err) {
       console.error('Whop checkout error:', err);

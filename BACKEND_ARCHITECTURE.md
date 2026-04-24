@@ -150,7 +150,7 @@ export default defineSchema({
     notificationsEnabled: v.boolean(),
     
     // Totals for quick access
-    totalDonated: v.number(), // In cents (MAD)
+    totalDonated: v.number(), // In MAD
     donationCount: v.number(),
     
     // GDPR / Data retention
@@ -206,8 +206,8 @@ export default defineSchema({
     ),
     
     // Financial
-    goalAmount: v.number(), // In cents
-    raisedAmount: v.number(), // In cents
+    goalAmount: v.number(), // In MAD
+    raisedAmount: v.number(), // In MAD
     currency: v.literal("MAD"),
     
     // Media
@@ -253,7 +253,7 @@ export default defineSchema({
     projectId: v.id("projects"),
     
     // Amount
-    amount: v.number(), // In cents
+    amount: v.number(), // In MAD
     currency: v.literal("MAD"),
     coversFees: v.boolean(), // User opted to cover transaction fees
     

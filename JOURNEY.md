@@ -856,6 +856,27 @@ When an AI generates code quickly across many files, correctness bugs cluster in
 
 - **F1**: Dashboard KPI card #2 said "all statuses" — now shows "verified only" trend label. Pending card now sums both donation and kafala pending verifications. Y-axis labels were formatting amounts as `NaN` or raw centimes — fixed the `(maxAmt * pct / 100)` formula. Added a second amber chart for monthly kafala revenue.
 - **F2**: UserProfile showed hardcoded kafala stat ("1") and generic "مشروع" in donation list. Rewrote to use real `getUserKafalaSponsorship` query, show each sponsorship's orphan photo/name/status/renewal date, and add a working cancel button.
+
+## 2026-04-24 — Money Contract Migration to DH
+
+- User explicitly rejected the centime storage model and wanted the system to store plain dirhams everywhere.
+- Earlier Whop fixes had stabilized the payment-attempt flow, but the broader codebase still assumed stored centimes across admin pages, project forms, donor views, kafala pages, and helper utilities.
+- Root cause: the repo had two overlapping contracts at once. Some paths wrote/expected raw MAD, while schema comments, forms, displays, and old repair logic still converted with `/100` and `*100`.
+- What changed:
+  - Backend money fields were standardized to stored MAD in `schema.ts`, `donations.ts`, `payments.ts`, `kafala.ts`, `kafalaPayments.ts`, and related notification paths.
+  - Frontend/admin/public surfaces stopped dividing and multiplying by 100 for donation, project, donor, receipt, and kafala amounts.
+  - Added `convex/migrations.ts` and `scripts/migrateMoneyToDirhams.mjs` to convert old production data from centimes to dirhams, recompute totals, and preserve the two legacy Whop rows correctly.
+  - Fixed donor tier thresholds after the unit switch so gold/silver/new segmentation still reflects real DH values.
+- Mistakes / traps encountered:
+  - Unit changes are not isolated to payments. Changing the donation flow alone leaves totals, admin exports, tiers, and seeded fallback data wrong.
+  - The migration needed compatibility reads for old `payments.amountCents` rows even after the new schema switched to `payments.amount`.
+- Verification:
+  - `npx convex codegen` passed.
+  - `npm run build` passed.
+- Lessons:
+  - Money unit changes are schema migrations, not formatting tweaks.
+  - If the storage contract changes, recompute aggregate fields from migrated source rows instead of trusting legacy totals.
+  - Keep Whop and Convex on the same human-readable unit unless there is a hard provider requirement otherwise.
 - **F3**: KafalaFlow allowed submitting bank/cash payment with no receipt and no reference number. Added validation blocking submission. Success screen for bank/cash now shows "pending review" state instead of the checkmark used for card payments.
 - **F4**: KafalaRenew only validated `bank_transfer` — `cash_agency` could still be submitted empty. Unified the check. Added cancel button wired to `cancelKafalaSubscription` action.
 - **F5**: DonationFlow Step 3 "Continue" button was active even with no receipt. Fixed `isNextDisabled` to block unless either a file is uploaded or a reference number is entered.

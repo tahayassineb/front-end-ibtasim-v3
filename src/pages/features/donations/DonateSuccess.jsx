@@ -1,6 +1,5 @@
 import React from 'react';
-import { useSearchParams, Link, useNavigate } from 'react-router-dom';
-import { useApp } from '../../../context/AppContext';
+import { useSearchParams, Link } from 'react-router-dom';
 
 // ============================================
 // DONATE SUCCESS PAGE
@@ -10,12 +9,14 @@ import { useApp } from '../../../context/AppContext';
 
 export default function DonateSuccess() {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const { currentLanguage } = useApp();
-
-  const paid = searchParams.get('paid') === 'true';
+  const paidParam = searchParams.get('paid');
   const donationId = searchParams.get('donationId') || '';
   const amount = searchParams.get('amount') || '';
+  const paymentId = searchParams.get('paymentId') || searchParams.get('payment_id') || '';
+  const checkoutStatus = (searchParams.get('checkout_status') || searchParams.get('status') || '').toLowerCase();
+  const successStatuses = new Set(['success', 'complete', 'completed']);
+  const explicitFailure = paidParam === 'false' || (checkoutStatus && !successStatuses.has(checkoutStatus));
+  const paid = paidParam === 'true' || successStatuses.has(checkoutStatus) || Boolean(donationId);
 
   const handleShare = (platform) => {
     const text = 'تبرعت لجمعية ابتسام! انضم إليّ في دعم مشاريع الخير 🤲';
@@ -28,7 +29,7 @@ export default function DonateSuccess() {
     navigator.clipboard?.writeText(donationId);
   };
 
-  if (!paid) {
+  if (explicitFailure) {
     return (
       <div style={{ minHeight: '100vh', background: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'var(--font-arabic)' }} dir="rtl">
         <div style={{ background: 'white', borderRadius: 24, boxShadow: '0 10px 15px rgba(0,0,0,.1)', padding: 48, maxWidth: 420, width: '100%', textAlign: 'center' }}>
@@ -38,6 +39,28 @@ export default function DonateSuccess() {
           <Link to="/" style={{ display: 'inline-block', background: '#0d7477', color: 'white', padding: '12px 32px', borderRadius: 14, fontWeight: 700, fontSize: 15, textDecoration: 'none' }}>
             العودة إلى الموقع
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!paid) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#F0F7F7', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: 'var(--font-arabic)' }} dir="rtl">
+        <div style={{ background: 'white', borderRadius: 24, boxShadow: '0 10px 15px rgba(0,0,0,.08)', padding: 48, maxWidth: 460, width: '100%', textAlign: 'center' }}>
+          <div style={{ fontSize: 64, marginBottom: 16 }}>⏳</div>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0d7477', marginBottom: 8 }}>جار تأكيد الدفع</h1>
+          <p style={{ fontSize: 14, color: '#64748b', marginBottom: 28, lineHeight: 1.8 }}>
+            عدنا من بوابة الدفع، لكننا ما زلنا نتحقق من النتيجة النهائية. حدّث الصفحة خلال لحظات أو راجع ملفك الشخصي لاحقاً.
+          </p>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link to="/profile" style={{ display: 'inline-block', background: '#0d7477', color: 'white', padding: '12px 24px', borderRadius: 14, fontWeight: 700, fontSize: 15, textDecoration: 'none' }}>
+              ملفي الشخصي
+            </Link>
+            <Link to="/" style={{ display: 'inline-block', background: '#F0F7F7', color: '#0d7477', padding: '12px 24px', borderRadius: 14, fontWeight: 700, fontSize: 15, textDecoration: 'none' }}>
+              العودة إلى الموقع
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -58,7 +81,7 @@ export default function DonateSuccess() {
             </div>
             <div style={{ fontSize: 28, fontWeight: 900, color: 'white', marginBottom: 8 }}>شكراً لك!</div>
             <div style={{ fontSize: 14, color: 'rgba(255,255,255,.8)', lineHeight: 1.6 }}>
-              تم إرسال تبرعك بنجاح<br />وسيصل كاملاً للمشروع
+              تم تأكيد الدفع بنجاح<br />وسيُحتسب تبرعك مباشرة للمشروع
             </div>
           </div>
         </div>
@@ -76,6 +99,11 @@ export default function DonateSuccess() {
             {amount && (
               <div style={{ fontSize: 28, fontWeight: 900, color: '#0d7477', fontFamily: 'Inter, sans-serif', marginTop: 8 }}>{amount} <span style={{ fontSize: 14, color: '#94a3b8', fontWeight: 500 }}>درهم</span></div>
             )}
+            {paymentId && (
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 8, fontFamily: 'Inter, sans-serif' }}>
+                Whop: {paymentId}
+              </div>
+            )}
             <button onClick={handleCopyRef} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#0d7477', background: 'white', padding: '4px 12px', borderRadius: 100, cursor: 'pointer', marginTop: 8, border: '1px solid #CCF0F0', fontFamily: 'var(--font-arabic)' }}>
               📋 نسخ الرقم
             </button>
@@ -85,10 +113,10 @@ export default function DonateSuccess() {
           <div style={{ margin: '0 16px 16px', background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', overflow: 'hidden' }}>
             <div style={{ padding: '14px 16px', borderBottom: '1px solid #E5E9EB', fontSize: 13, fontWeight: 700 }}>📊 حالة تبرعك</div>
             {[
-              { dot: 'done', name: 'إرسال التبرع', time: '✓ تم الآن', desc: null },
-              { dot: 'active', name: 'التحقق من الدفع', time: 'خلال 24 ساعة', desc: 'يراجع فريقنا تفاصيل الدفع' },
-              { dot: 'pending', name: 'اعتماد التبرع', desc: 'إشعار واتساب عند الاعتماد', time: null },
-              { dot: 'pending', name: 'التحويل للمشروع', desc: 'يُضاف للرصيد الإجمالي', time: null },
+              { dot: 'done', name: 'إرسال الدفع', time: '✓ تم الآن', desc: null },
+              { dot: 'done', name: 'تأكيد البطاقة', time: '✓ تم التحقق', desc: 'تمت مطابقة عملية الدفع مع تبرعك' },
+              { dot: 'done', name: 'اعتماد التبرع', desc: 'لا يحتاج هذا التبرع إلى تحقق يدوي', time: '✓ مكتمل' },
+              { dot: 'active', name: 'الإشعار والمتابعة', desc: 'يمكنك مراجعة التبرع من ملفك الشخصي', time: 'بعد لحظات' },
             ].map((s, i, arr) => (
               <div key={i} style={{ display: 'flex', gap: 12, padding: '12px 16px', position: 'relative' }}>
                 {i < arr.length - 1 && (

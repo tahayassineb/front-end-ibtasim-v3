@@ -77,7 +77,7 @@ export default function AdminKafalaForm() {
       setAge(String(existingKafala.age || ''));
       setLocation(existingKafala.location || '');
       setBio(existingKafala.bio || { ar: '', fr: '', en: '' });
-      const totalMadFromDB = Math.round(existingKafala.monthlyPrice / 100);
+      const totalMadFromDB = Math.round(existingKafala.monthlyPrice || 0);
       setNeeds([
         { id: 1, icon: '📚', label: 'التعليم', price: String(Math.round(totalMadFromDB * 0.4)) },
         { id: 2, icon: '🍞', label: 'الغذاء',  price: String(Math.round(totalMadFromDB * 0.33)) },
@@ -118,21 +118,21 @@ export default function AdminKafalaForm() {
     setSaving(true);
     try {
       const photoStorageId = await uploadPhoto();
-      const priceInCents   = totalMAD * 100;
+      const monthlyPrice   = totalMAD;
 
       if (isEdit) {
         await updateKafala({
           adminId: adminUser?.id,
           kafalaId: id, name, gender, age: Number(age),
           location, bio, photo: photoStorageId || undefined,
-          monthlyPrice: priceInCents,
+          monthlyPrice,
           ...(publish ? { status: 'active' } : {}),
         });
         showToast?.(publish ? 'تم نشر الكفالة' : 'تم حفظ التغييرات', 'success');
       } else {
         const adminId = adminUser?.id;
         if (!adminId) throw new Error('لم يتم التعرف على الأدمن');
-        await createKafala({ adminId, name, gender, age: Number(age), location, bio, photo: photoStorageId || undefined, monthlyPrice: priceInCents });
+        await createKafala({ adminId, name, gender, age: Number(age), location, bio, photo: photoStorageId || undefined, monthlyPrice });
         showToast?.(publish ? 'تم إنشاء الكفالة. انشرها من قائمة الكفالات' : 'تم حفظ الكفالة كمسودة', 'success');
       }
       navigate('/admin/kafala');

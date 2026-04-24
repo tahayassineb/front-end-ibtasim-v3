@@ -299,7 +299,7 @@ export const broadcastToAllUsers = action({
  * Args:
  *   - userId: ID of the donor
  *   - donationId: ID of the verified donation
- *   - amount: Donation amount in cents
+ *   - amount: Donation amount in MAD
  *   - projectTitle: Title of the project donated to
  * 
  * Returns:
