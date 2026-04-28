@@ -33,10 +33,19 @@ const parseLocalDate = (dateValue, endOfDay = false) => {
     : new Date(year, month - 1, day, 0, 0, 0, 0).getTime();
 };
 
-export const getInclusiveDateRange = ({ startDate, endDate } = {}) => ({
-  startDate: parseLocalDate(startDate, false),
-  endDate: parseLocalDate(endDate, true),
-});
+export const getInclusiveDateRange = ({ exactDate, startDate, endDate } = {}) => {
+  if (exactDate) {
+    return {
+      startDate: parseLocalDate(exactDate, false),
+      endDate: parseLocalDate(exactDate, true),
+    };
+  }
+
+  return {
+    startDate: parseLocalDate(startDate, false),
+    endDate: parseLocalDate(endDate, true),
+  };
+};
 
 export const matchesInclusiveDateRange = (timestamp, range) => {
   if (!timestamp) return false;

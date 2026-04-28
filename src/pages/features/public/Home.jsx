@@ -461,7 +461,10 @@ export default function Home() {
       const tick = (now) => {
         const progress = Math.min((now - startedAt) / duration, 1);
         const eased = 1 - ((1 - progress) ** 3);
-        setStatValues(targets.map((target) => Math.round(target * eased)));
+        setStatValues(targets.map((target) => {
+          const nextValue = Math.round(target * eased);
+          return progress < 1 ? Math.max(nextValue, 1) : target;
+        }));
         if (progress < 1) {
           rafId = window.requestAnimationFrame(tick);
         }
@@ -530,7 +533,7 @@ export default function Home() {
             </div>
             <div className="home-v2__stats-grid" ref={statsRef}>
               {t.stats.items.map((item, index) => (
-                <article className="home-v2__stat home-reveal" key={item.label} style={{ '--reveal-delay': `${80 + (index * 90)}ms` }}>
+                <article className="home-v2__stat" key={item.label}>
                   <span className="material-symbols-outlined no-flip">{item.icon}</span>
                   <strong>{formatStatValue(index, statValues[index] ?? getStatTarget(index), lang)}</strong>
                   <small>{item.label}</small>

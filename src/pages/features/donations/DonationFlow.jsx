@@ -898,6 +898,7 @@ export default function DonationFlow() {
     setAuthMode(mode);
     setAuthErrors({});
     if (otpSent) { setOtpSent(false); setOtpValues(['', '', '', '']); }
+    if (mode === 'guest') setStep(1);
   };
 
   // ── Login (preserved exactly) ──

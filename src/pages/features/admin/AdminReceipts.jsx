@@ -17,11 +17,26 @@ const statusLabels = {
 
 export default function AdminReceipts() {
   const { user } = useApp();
-  const [filters, setFilters] = useState({ type: '', status: '', search: '', startDate: '', endDate: '' });
+  const [filters, setFilters] = useState({ type: '', status: '', search: '', exactDate: '', startDate: '', endDate: '' });
   const [selected, setSelected] = useState({});
   const [exporting, setExporting] = useState(false);
   const logExport = useMutation(api.receipts.logExport);
   const dateRange = useMemo(() => getInclusiveDateRange(filters), [filters]);
+  const updateExactDate = (value) => {
+    setFilters((current) => ({
+      ...current,
+      exactDate: value,
+      startDate: value ? '' : current.startDate,
+      endDate: value ? '' : current.endDate,
+    }));
+  };
+  const updateRangeDate = (field, value) => {
+    setFilters((current) => ({
+      ...current,
+      exactDate: '',
+      [field]: value,
+    }));
+  };
   const data = useQuery(api.receipts.list, user?.id ? {
     adminId: user.id,
     type: filters.type || undefined,
@@ -143,9 +158,22 @@ export default function AdminReceipts() {
           <option value="">كل الحالات</option>
           {Object.entries(statusLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
         </select>
-        <input type="date" value={filters.startDate} onChange={(e) => setFilters((f) => ({ ...f, startDate: e.target.value }))} style={filterStyle} />
-        <input type="date" value={filters.endDate} onChange={(e) => setFilters((f) => ({ ...f, endDate: e.target.value }))} style={filterStyle} />
+        <label style={dateFieldWrapStyle}>
+          <span style={dateLabelStyle}>Single day</span>
+          <input type="date" value={filters.exactDate} onChange={(e) => updateExactDate(e.target.value)} style={filterStyle} />
+        </label>
+        <label style={dateFieldWrapStyle}>
+          <span style={dateLabelStyle}>From</span>
+          <input type="date" value={filters.startDate} onChange={(e) => updateRangeDate('startDate', e.target.value)} disabled={Boolean(filters.exactDate)} style={{ ...filterStyle, opacity: filters.exactDate ? 0.6 : 1 }} />
+        </label>
+        <label style={dateFieldWrapStyle}>
+          <span style={dateLabelStyle}>To</span>
+          <input type="date" value={filters.endDate} onChange={(e) => updateRangeDate('endDate', e.target.value)} disabled={Boolean(filters.exactDate)} style={{ ...filterStyle, opacity: filters.exactDate ? 0.6 : 1 }} />
+        </label>
         <input value={filters.search} onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))} placeholder="بحث باسم المتبرع أو الهاتف" style={{ ...filterStyle, flex: 1 }} />
+        {filters.exactDate && (
+          <button onClick={() => updateExactDate('')} style={buttonStyle}>Clear day</button>
+        )}
         {(filters.startDate || filters.endDate) && (
           <button onClick={() => setFilters((f) => ({ ...f, startDate: '', endDate: '' }))} style={buttonStyle}>مسح التاريخ</button>
         )}
@@ -192,4 +220,6 @@ function Stat({ label, value }) {
 
 const filterStyle = { height: 40, border: '1px solid #E5E9EB', borderRadius: 10, background: '#fff', padding: '0 12px', fontFamily: 'var(--font-arabic)' };
 const buttonStyle = { height: 40, border: '1px solid #E5E9EB', borderRadius: 10, background: 'white', padding: '0 14px', fontFamily: 'var(--font-arabic)', cursor: 'pointer', fontWeight: 800 };
+const dateFieldWrapStyle = { display: 'flex', flexDirection: 'column', gap: 6, minWidth: 132 };
+const dateLabelStyle = { fontSize: 12, fontWeight: 700, color: '#64748b', paddingInline: 2 };
 const td = { padding: 12, fontSize: 14, verticalAlign: 'middle' };

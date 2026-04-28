@@ -1,340 +1,515 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../../../context/AppContext';
 
-const useIsMobile = () => {
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  useEffect(() => {
-    const h = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', h);
-    return () => window.removeEventListener('resize', h);
-  }, []);
-  return isMobile;
-};
+const introImage = 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=1600&q=84';
+const missionImage = 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=1400&q=82';
+const pillarsImage = 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=1400&q=82';
+const contactImage = 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1600&q=82';
 
-// ============================================
-// ABOUT PAGE - Mission, Vision & Team
-// ============================================
-
-const ABOUT_COPY = {
+const copy = {
   ar: {
-    hero_badge: 'ABOUT US · من نحن',
-    hero_title: 'نحن أداةٌ للخير\nفي أيدي المحسنين',
-    hero_sub: 'جمعية ابتسام للأعمال الخيرية تعمل منذ 2018 على ربط قلوب المحسنين باحتياجات الأسر المحتاجة في المغرب بكل شفافية وأمانة',
-    hero_badge2: '🏛 تأسست عام 2018 · الرباط، المغرب',
-    stats: [
-      { num: '7', unit: 'سنوات', label: 'من العمل الخيري' },
-      { num: '142K', unit: 'درهم', label: 'إجمالي التبرعات' },
-      { num: '4,218', unit: 'متبرع', label: 'يثقون بنا' },
-      { num: '1,200+', unit: 'أسرة', label: 'استفادت' },
-      { num: '7', unit: 'مشاريع', label: 'مكتملة بنجاح' },
-    ],
-    mission_badge: 'MISSION & VISION',
-    mission_title: 'رسالتنا ورؤيتنا',
-    mission_heading: 'رسالتنا',
-    mission_text: 'توفير منصة موثوقة وشفافة تربط المحسنين بالأسر المحتاجة، من خلال مشاريع تنموية مدروسة تحقق أثراً حقيقياً ومستداماً في مجالات التعليم والصحة والمياه والغذاء والسكن.',
-    vision_heading: 'رؤيتنا',
-    vision_text: 'مجتمع متكافل خالٍ من الفقر والحرمان، حيث تتوفر لكل أسرة مقومات الحياة الكريمة من تعليم وصحة وغذاء ومسكن لائق — وذلك بفضل التضامن والتكافل الاجتماعي.',
-    values_badge: 'OUR VALUES',
-    values_title: 'قيمنا الأساسية',
-    values_sub: 'هذه القيم تحكم كل قرار نتخذه وكل مشروع نطلقه',
-    values: [
-      { icon: '🔍', title: 'الشفافية', text: 'ننشر تقارير مالية دورية تفصيلية ونشارك صور وأدلة إنجاز كل مشروع' },
-      { icon: '🤝', title: 'الأمانة', text: 'كل درهم تتبرع به يصل إلى المستفيد — لا مصاريف إدارية مخفية' },
-      { icon: '📊', title: 'الأثر الحقيقي', text: 'نختار المشاريع بعناية بناءً على دراسات احتياج ميدانية وقياس الأثر' },
-      { icon: '🌱', title: 'الاستدامة', text: 'مشاريعنا مصممة لتكون مستدامة ذاتياً وتخدم المجتمع لعقود' },
-    ],
-    team_badge: 'OUR TEAM',
-    team_title: 'فريق العمل',
-    team_sub: 'متطوعون وموظفون شغوفون يعملون من أجل خدمة المجتمع',
-    team: [
-      { avatar: '👨', name: 'عبد الرحمن الحسني', role: 'المدير التنفيذي', bio: '15 سنة في المجال الخيري، خبير في إدارة المشاريع التنموية' },
-      { avatar: '👩', name: 'مريم العلوي', role: 'مسؤولة المشاريع', bio: 'متخصصة في العمل الميداني وتقييم الاحتياجات الاجتماعية' },
-      { avatar: '👨‍💻', name: 'يوسف بنموسى', role: 'مسؤول المالية', bio: 'محاسب معتمد مع خبرة في المنظمات غير الربحية' },
-      { avatar: '👩‍🎓', name: 'آمنة الشرقاوي', role: 'مسؤولة التواصل', bio: 'إعلامية متخصصة في التواصل الاجتماعي والعلاقات العامة' },
-    ],
-    timeline_badge: 'OUR JOURNEY',
-    timeline_title: 'مسيرتنا',
-    timeline: [
-      { year: '2018', title: 'التأسيس', text: 'تأسست الجمعية برؤية واضحة ومشروع أول ناجح لتوفير المياه في إقليم الرشيدية', current: false },
-      { year: '2020', title: 'إطلاق برنامج الكفالة', text: 'إضافة برنامج كفالة الأيتام بكفالة 12 يتيماً في السنة الأولى', current: false },
-      { year: '2022', title: 'منصة التبرع الرقمية', text: 'إطلاق المنصة الإلكترونية لتيسير التبرع ومتابعة المشاريع آنياً', current: false },
-      { year: '2024', title: 'الاعتراف الوطني', text: 'حصول الجمعية على جائزة أفضل جمعية خيرية في المغرب من وزارة التضامن', current: false },
-      { year: '2026', title: 'اليوم — نستمر 🌱', text: '12 مشروع نشط · 48 يتيم مكفول · 4,218 متبرع يثقون بنا', current: true },
-    ],
-    certs_badge: 'CERTIFICATIONS',
-    certs_title: 'شهاداتنا واعتماداتنا',
-    certs: [
-      { icon: '🏛', name: 'معتمدة من وزارة الداخلية', desc: 'رقم الاعتماد: 2018/4521' },
-      { icon: '🌙', name: 'عضو صندوق محمد الخامس', desc: 'منذ 2020' },
-      { icon: '📋', name: 'معفاة من الضرائب', desc: 'قرار وزاري 2019' },
-      { icon: '🔒', name: 'شفافية مالية معتمدة', desc: 'مدققة سنوياً' },
-      { icon: '🌍', name: 'شريك UNICEF', desc: 'منذ 2022' },
-      { icon: '🏆', name: 'جائزة التميز الخيري', desc: 'وزارة التضامن 2024' },
-    ],
+    intro: {
+      eyebrow: 'جمعية ابتسم لتمكين أسرة اليتيم',
+      title: 'من نحن؟',
+      lead: 'جمعية ابتسم تعمل على تمكين أسرة اليتيم من خلال برامج مستمرة تجمع بين الكفالة، التعليم، الدعم النفسي، المبادرات الاجتماعية، والشراكات المجتمعية.',
+      lines: [
+        {
+          icon: 'calendar_month',
+          title: 'أرشيف أنشطة موثق منذ 2018',
+          text: 'نوثق رحلة العمل الميداني والبرامج والمبادرات بشكل مستمر.',
+        },
+        {
+          icon: 'group',
+          title: 'برامج موجهة للطفل، الأم، والأسرة',
+          text: 'نصمم التدخلات بما يراعي احتياجات كل فرد داخل الأسرة.',
+        },
+        {
+          icon: 'handshake',
+          title: 'تعاون مع مبادرات ونواد ومؤسسات',
+          text: 'شراكات محلية ودولية تعزز الاستدامة والثقة والأثر.',
+        },
+      ],
+      quote: 'نؤمن أن اليتيم لا يحتاج إلى مساعدة عابرة، بل إلى محيط يراه ويسمعه ويرافقه.',
+      cta: 'تعرف أكثر على ابتسم',
+      badgeTop: 'منذ',
+      badgeMain: '2018',
+      badgeBottom: 'نرافق الأيتام وأسرهم',
+    },
+    mission: {
+      kicker: 'رسالتنا ورؤيتنا',
+      title: 'نبني بيئة تحيط بالطفل وتمنح الأسرة فرصة للاستقرار',
+      lead: 'لا نتعامل مع اليتيم كملف منفصل، بل كجزء من أسرة تحتاج إلى رعاية، إنصات، وتعليم ومساحات أمل مستمرة.',
+      blocks: [
+        {
+          label: 'مهمتنا',
+          title: 'مرافقة الأسرة ببرامج عملية',
+          text: 'نربط العطاء بمسارات واضحة في الكفالة، التعليم، المواكبة النفسية، والدعم الاجتماعي حتى يصبح الأثر ملموسا في الحياة اليومية.',
+        },
+        {
+          label: 'رؤيتنا',
+          title: 'كرامة مستقرة لا مساعدة عابرة',
+          text: 'نطمح إلى مجتمع يرى في كفالة اليتيم مسؤولية مستمرة، ويمنح الطفل والأسرة محيطا أكثر أمنا وفرصا أكثر عدلا.',
+        },
+        {
+          label: 'وعدنا',
+          title: 'ثقة موثقة وأثر يمكن تتبعه',
+          text: 'نوضح أين يذهب الدعم، ونحافظ على كرامة المستفيد، ونبني جسرا موثوقا بين المتبرع والعائلة.',
+        },
+      ],
+    },
+    pillars: {
+      kicker: 'كيف نصنع الأثر',
+      title: 'نشتغل على تفاصيل الحياة اليومية التي تغيّر المسار',
+      lead: 'من الكفالة إلى التعليم، ومن الإنصات إلى التمكين، نبني منظومة مرافقة متكاملة حول الطفل وأسرته.',
+      items: [
+        {
+          icon: 'volunteer_activism',
+          title: 'الكفالة والرعاية',
+          text: 'دعم منتظم يساعد الطفل والأسرة على مواجهة الاحتياجات الأساسية بثبات أكبر.',
+        },
+        {
+          icon: 'school',
+          title: 'التعليم وبناء الثقة',
+          text: 'دعم دراسي وأنشطة تربوية وتجارب توسع أفق الطفل وتمنحه شعورا أكبر بالقدرة والانتماء.',
+        },
+        {
+          icon: 'favorite',
+          title: 'الإنصات والمواكبة',
+          text: 'نرافق الأمهات والأطفال نفسيا واجتماعيا لأن الحاجة لا تكون مادية فقط.',
+        },
+        {
+          icon: 'storefront',
+          title: 'تمكين الأسرة',
+          text: 'مبادرات عملية تساعد الأسرة على بداية أكثر استقلالية وقدرة على الاستمرار.',
+        },
+        {
+          icon: 'celebration',
+          title: 'الفرح والكرامة',
+          text: 'كسوة، مبادرات موسمية، وتجارب تحفظ للطفل حقه في الاختيار والفرح.',
+        },
+      ],
+      quote: 'كل برنامج نصممه يجب أن يلامس الطفل والأسرة معا، لا أن يقدّم مساعدة معزولة عن واقعهم اليومي.',
+    },
+    journey: {
+      kicker: 'مسيرتنا',
+      title: 'رحلة تتسع عاما بعد عام',
+      lead: 'تطورت ابتسم من مبادرات ميدانية موثقة إلى منظومة مرافقة أوسع تجمع العمل الاجتماعي، الشراكات، والتتبع المستمر.',
+      timeline: [
+        {
+          year: '2018',
+          title: 'بداية الأرشيف الموثق',
+          text: 'انطلاق التوثيق المنتظم للأنشطة والبرامج المرتبطة بدعم الطفل والأسرة.',
+        },
+        {
+          year: '2020',
+          title: 'توسيع مسارات الكفالة',
+          text: 'ترسيخ فكرة المرافقة المستمرة وربطها بالاحتياج اليومي والتعليمي.',
+        },
+        {
+          year: '2024',
+          title: 'توسع في الظهور الميداني',
+          text: 'برامج وأنشطة أكثر انتظاما، وحضور أكبر للمبادرات الاجتماعية والشبابية.',
+        },
+        {
+          year: '2026',
+          title: 'شراكات وأثر أكثر نضجا',
+          text: 'تواصل مستمر، مبادرات موثقة، وشبكة تعاون تعزز الثقة والاستدامة.',
+          current: true,
+        },
+      ],
+      trustTitle: 'الثقة والاعتمادية',
+      trustItems: [
+        {
+          icon: 'verified',
+          title: 'توثيق بصري مستمر',
+          text: 'أثر يظهر عبر الصور، المتابعة، والتقارير المنشورة.',
+        },
+        {
+          icon: 'policy',
+          title: 'شفافية في الاحتياج',
+          text: 'نوضح الاحتياج ونربط الدعم بالمسار الذي سيخدم الطفل والأسرة.',
+        },
+        {
+          icon: 'public',
+          title: 'شراكات مجتمعية',
+          text: 'تعاون مع مبادرات ونواد ومؤسسات محلية ودولية.',
+        },
+        {
+          icon: 'workspace_premium',
+          title: 'كرامة في المساعدة',
+          text: 'نعطي الأولوية للطريقة التي تُقدّم بها المساعدة، لا للمساعدة فقط.',
+        },
+      ],
+    },
+    partners: {
+      kicker: 'شركاؤنا في الأثر',
+      title: 'الثقة تُبنى مع محيط يشاركنا نفس المسؤولية',
+      lead: 'يظهر في مسار الجمعية تعاون مع مبادرات ونواد ومؤسسات محلية ودولية دعمت الأنشطة والبرامج الموجهة للأطفال والأسر.',
+      chips: [
+        'Coincide',
+        'Lions Club UIR',
+        'The Bridge UIR',
+        'Club CAS INPT',
+        'مؤسسة نفع الوطنية',
+        'المجلس العلمي المحلي بسلا',
+      ],
+    },
+    cta: {
+      titlePrimary: 'كن جزءا من أثر',
+      titleAccent: 'يحفظ الكرامة',
+      lead: 'سواء أردت التبرع، الكفالة، التطوع، أو بناء شراكة، هناك دائما طريقة لتكون قريبا من طفل وأسرة يحتاجان إلى سند حقيقي.',
+      primary: 'تبرع الآن',
+      secondary: 'تواصل معنا',
+      footer: 'نحوّل الدعم إلى مرافقة يومية تصنع الطمأنينة والفرصة.',
+    },
   },
   fr: {
-    hero_badge: 'À PROPOS DE NOUS',
-    hero_title: 'Un instrument du bien\nentre les mains des bienfaiteurs',
-    hero_sub: "L'association Ibtasim œuvre depuis 2018 pour relier les donateurs aux familles dans le besoin au Maroc, en toute transparence et honnêteté.",
-    hero_badge2: '🏛 Fondée en 2018 · Rabat, Maroc',
-    stats: [
-      { num: '7', unit: 'ans', label: "d'action caritative" },
-      { num: '142K', unit: 'MAD', label: 'de dons collectés' },
-      { num: '4 218', unit: 'donateurs', label: 'nous font confiance' },
-      { num: '1 200+', unit: 'familles', label: 'bénéficiaires' },
-      { num: '7', unit: 'projets', label: 'achevés avec succès' },
-    ],
-    mission_badge: 'MISSION & VISION',
-    mission_title: 'Notre mission et vision',
-    mission_heading: 'Notre mission',
-    mission_text: "Offrir une plateforme fiable et transparente qui relie les donateurs aux familles dans le besoin, à travers des projets de développement soigneusement sélectionnés dans les domaines de l'éducation, de la santé, de l'eau, de l'alimentation et du logement.",
-    vision_heading: 'Notre vision',
-    vision_text: "Une société solidaire, libre de la pauvreté, où chaque famille a accès aux conditions d'une vie digne : éducation, santé, alimentation et logement décent — grâce à la solidarité et à l'entraide sociale.",
-    values_badge: 'NOS VALEURS',
-    values_title: 'Nos valeurs',
-    values_sub: 'Ces valeurs guident chaque décision que nous prenons et chaque projet que nous lançons.',
-    values: [
-      { icon: '🔍', title: 'Transparence', text: 'Nous publions des rapports financiers détaillés et partageons photos et preuves de réalisation pour chaque projet.' },
-      { icon: '🤝', title: 'Intégrité', text: "Chaque dirham que vous donnez parvient au bénéficiaire — aucun frais administratif caché." },
-      { icon: '📊', title: 'Impact réel', text: "Nous sélectionnons les projets avec soin, sur la base d'études de terrain et d'une mesure rigoureuse de l'impact." },
-      { icon: '🌱', title: 'Durabilité', text: 'Nos projets sont conçus pour être autonomes et servir la communauté pendant des décennies.' },
-    ],
-    team_badge: 'NOTRE ÉQUIPE',
-    team_title: 'Notre équipe',
-    team_sub: 'Des bénévoles et employés passionnés au service de la communauté.',
-    team: [
-      { avatar: '👨', name: 'Abderrahman Al-Hassani', role: 'Directeur général', bio: '15 ans dans le secteur caritatif, expert en gestion de projets de développement.' },
-      { avatar: '👩', name: 'Maryam Al-Alawi', role: 'Responsable projets', bio: 'Spécialisée dans le travail de terrain et l\'évaluation des besoins sociaux.' },
-      { avatar: '👨‍💻', name: 'Youssef Benmoussa', role: 'Responsable financier', bio: 'Comptable certifié avec expérience dans les organisations à but non lucratif.' },
-      { avatar: '👩‍🎓', name: 'Amina Charqawi', role: 'Responsable communication', bio: 'Journaliste spécialisée en communication digitale et relations publiques.' },
-    ],
-    timeline_badge: 'NOTRE PARCOURS',
-    timeline_title: 'Notre parcours',
-    timeline: [
-      { year: '2018', title: 'Fondation', text: "L'association est fondée avec une vision claire et un premier projet réussi d'approvisionnement en eau dans la province d'Errachidia.", current: false },
-      { year: '2020', title: 'Programme Kafala', text: "Lancement du programme de parrainage d'orphelins avec 12 enfants pris en charge la première année.", current: false },
-      { year: '2022', title: 'Plateforme numérique', text: 'Lancement de la plateforme en ligne pour faciliter les dons et suivre les projets en temps réel.', current: false },
-      { year: '2024', title: 'Reconnaissance nationale', text: "L'association reçoit le prix de la meilleure association caritative au Maroc décerné par le ministère de la Solidarité.", current: false },
-      { year: '2026', title: "Aujourd'hui — nous continuons 🌱", text: '12 projets actifs · 48 orphelins parrainés · 4 218 donateurs nous font confiance', current: true },
-    ],
-    certs_badge: 'CERTIFICATIONS',
-    certs_title: 'Certifications et accréditations',
-    certs: [
-      { icon: '🏛', name: "Agréée par le ministère de l'Intérieur", desc: "N° d'agrément : 2018/4521" },
-      { icon: '🌙', name: 'Membre du Fonds Mohammed V', desc: 'Depuis 2020' },
-      { icon: '📋', name: 'Exonérée fiscalement', desc: 'Décret ministériel 2019' },
-      { icon: '🔒', name: 'Transparence financière certifiée', desc: 'Auditée chaque année' },
-      { icon: '🌍', name: 'Partenaire UNICEF', desc: 'Depuis 2022' },
-      { icon: '🏆', name: "Prix d'excellence caritative", desc: 'Ministère de la Solidarité 2024' },
-    ],
+    intro: {
+      eyebrow: 'Association Ibtassim',
+      title: 'Qui sommes-nous ?',
+      lead: "L'association Ibtassim accompagne la famille de l'orphelin par la kafala, l'education, le soutien psychosocial et les partenariats communautaires.",
+      lines: [
+        { icon: 'calendar_month', title: 'Archive documentee depuis 2018', text: "Une trace continue du travail de terrain et des programmes." },
+        { icon: 'group', title: "Des programmes pour l'enfant, la mere et la famille", text: 'Nous concevons chaque action autour du cercle familial complet.' },
+        { icon: 'handshake', title: 'Des collaborations locales et internationales', text: 'Des partenariats qui renforcent la confiance et la durabilite.' },
+      ],
+      quote: "L'orphelin n'a pas besoin d'une aide passagere, mais d'un environnement qui l'accompagne.",
+      cta: 'En savoir plus',
+      badgeTop: 'Depuis',
+      badgeMain: '2018',
+      badgeBottom: 'aux cotes des familles',
+    },
+    mission: {
+      kicker: 'Mission, vision, promesse',
+      title: 'Une presence qui relie soutien, stabilite et dignite',
+      lead: "Nous accompagnons l'enfant et sa famille dans la duree, a travers des parcours utiles, lisibles et humains.",
+      blocks: [
+        { label: 'Mission', title: 'Accompagner la famille par des programmes concrets', text: "Kafala, education, ecoute et soutien social pour transformer le don en impact quotidien." },
+        { label: 'Vision', title: 'Une dignite stable, pas une aide ponctuelle', text: "Une societe ou l'accompagnement de l'orphelin devient une responsabilite continue." },
+        { label: 'Promesse', title: 'Une confiance documentee', text: "Montrer ou va le soutien et proteger la dignite des familles accompagnees." },
+      ],
+    },
+    pillars: {
+      kicker: 'Comment nous agissons',
+      title: 'Nous travaillons sur les details qui changent un parcours',
+      lead: "De la kafala a l'education, nous construisons un accompagnement coherent autour de l'enfant et de sa famille.",
+      items: [
+        { icon: 'volunteer_activism', title: 'Kafala et soutien', text: 'Un appui stable relie aux besoins essentiels de la famille.' },
+        { icon: 'school', title: 'Education et confiance', text: 'Soutien scolaire, activites et experiences qui ouvrent des perspectives.' },
+        { icon: 'favorite', title: 'Ecoute et accompagnement', text: "Parce que le besoin n'est pas uniquement materiel." },
+        { icon: 'storefront', title: 'Autonomisation familiale', text: 'Des initiatives pour une famille plus stable et plus autonome.' },
+        { icon: 'celebration', title: 'Joie et dignite', text: 'Des initiatives saisonnieres qui preservent la joie et le choix.' },
+      ],
+      quote: "Chaque programme doit toucher l'enfant et la famille ensemble, pas seulement traiter un besoin isole.",
+    },
+    journey: {
+      kicker: 'Notre parcours',
+      title: 'Une trajectoire qui grandit avec le terrain',
+      lead: 'Ibtassim a evolue vers un accompagnement plus large, plus documente et plus structure.',
+      timeline: [
+        { year: '2018', title: 'Debut de l’archive', text: 'Mise en place d’un archivage visuel continu du travail de terrain.' },
+        { year: '2020', title: 'Developpement de la kafala', text: "Renforcement de l'accompagnement regulier des enfants et des familles." },
+        { year: '2024', title: 'Presence sociale accrue', text: 'Plus de programmes, plus de terrain, plus de presence communautaire.' },
+        { year: '2026', title: 'Maturite et partenariats', text: 'Des initiatives documentees et une confiance plus large.', current: true },
+      ],
+      trustTitle: 'Confiance et credibilite',
+      trustItems: [
+        { icon: 'verified', title: 'Documentation continue', text: 'Un impact visible a travers la preuve et le suivi.' },
+        { icon: 'policy', title: 'Besoin clarifie', text: 'Un soutien relie a une trajectoire concrete.' },
+        { icon: 'public', title: 'Partenariats actifs', text: 'Des collaborations locales et internationales.' },
+        { icon: 'workspace_premium', title: 'Dignite preservee', text: "La maniere d'aider compte autant que l'aide elle-meme." },
+      ],
+    },
+    partners: {
+      kicker: 'Partenaires',
+      title: 'Une confiance construite avec un ecosystème engage',
+      lead: "Le parcours de l'association montre des cooperations avec des clubs, initiatives et institutions qui soutiennent les programmes.",
+      chips: ['Coincide', 'Lions Club UIR', 'The Bridge UIR', 'Club CAS INPT', 'Nafaa Foundation', 'Conseil local de Sale'],
+    },
+    cta: {
+      titlePrimary: 'Faites partie',
+      titleAccent: "d'un impact digne",
+      lead: 'Don, kafala, benevolat ou partenariat: il existe toujours une maniere utile de soutenir un enfant et sa famille.',
+      primary: 'Donner maintenant',
+      secondary: 'Nous contacter',
+      footer: 'Nous transformons le soutien en accompagnement quotidien.',
+    },
   },
   en: {
-    hero_badge: 'ABOUT US',
-    hero_title: 'An instrument of good\nin the hands of benefactors',
-    hero_sub: 'Ibtasim Charitable Association has been working since 2018 to connect generous donors with families in need across Morocco — with full transparency and trust.',
-    hero_badge2: '🏛 Founded 2018 · Rabat, Morocco',
-    stats: [
-      { num: '7', unit: 'years', label: 'of charitable work' },
-      { num: '142K', unit: 'MAD', label: 'total donations' },
-      { num: '4,218', unit: 'donors', label: 'trust us' },
-      { num: '1,200+', unit: 'families', label: 'benefited' },
-      { num: '7', unit: 'projects', label: 'completed' },
-    ],
-    mission_badge: 'MISSION & VISION',
-    mission_title: 'Our Mission & Vision',
-    mission_heading: 'Our Mission',
-    mission_text: 'To provide a reliable and transparent platform connecting donors with families in need, through carefully designed development projects that create real, lasting impact in education, health, water, food, and housing.',
-    vision_heading: 'Our Vision',
-    vision_text: 'A cohesive society free of poverty and deprivation, where every family has access to the foundations of a dignified life: education, healthcare, food, and decent housing — made possible through solidarity and social solidarity.',
-    values_badge: 'OUR VALUES',
-    values_title: 'Our Core Values',
-    values_sub: 'These values guide every decision we make and every project we launch.',
-    values: [
-      { icon: '🔍', title: 'Transparency', text: 'We publish detailed periodic financial reports and share photos and proof of completion for every project.' },
-      { icon: '🤝', title: 'Integrity', text: 'Every dirham you donate reaches the beneficiary — no hidden administrative fees.' },
-      { icon: '📊', title: 'Real Impact', text: 'We carefully select projects based on field needs assessments and measurable impact criteria.' },
-      { icon: '🌱', title: 'Sustainability', text: 'Our projects are designed to be self-sustaining and serve the community for decades.' },
-    ],
-    team_badge: 'OUR TEAM',
-    team_title: 'Our Team',
-    team_sub: 'Passionate volunteers and staff dedicated to serving the community.',
-    team: [
-      { avatar: '👨', name: 'Abderrahman Al-Hassani', role: 'Executive Director', bio: '15 years in charity work, expert in development project management.' },
-      { avatar: '👩', name: 'Maryam Al-Alawi', role: 'Projects Manager', bio: 'Specialist in field work and social needs assessment.' },
-      { avatar: '👨‍💻', name: 'Youssef Benmoussa', role: 'Finance Manager', bio: 'Certified accountant with experience in non-profit organizations.' },
-      { avatar: '👩‍🎓', name: 'Amina Charqawi', role: 'Communications Manager', bio: 'Media specialist in digital communications and public relations.' },
-    ],
-    timeline_badge: 'OUR JOURNEY',
-    timeline_title: 'Our Journey',
-    timeline: [
-      { year: '2018', title: 'Founded', text: 'The association was founded with a clear vision and a first successful water supply project in the Errachidia province.', current: false },
-      { year: '2020', title: 'Kafala Program Launch', text: 'Launched the orphan sponsorship program with 12 children sponsored in the first year.', current: false },
-      { year: '2022', title: 'Digital Platform', text: 'Launched the online platform to facilitate donations and track projects in real time.', current: false },
-      { year: '2024', title: 'National Recognition', text: 'The association received the Best Charitable Association in Morocco award from the Ministry of Solidarity.', current: false },
-      { year: '2026', title: 'Today — We continue 🌱', text: '12 active projects · 48 orphans sponsored · 4,218 donors trust us', current: true },
-    ],
-    certs_badge: 'CERTIFICATIONS',
-    certs_title: 'Certifications & Accreditations',
-    certs: [
-      { icon: '🏛', name: 'Accredited by Ministry of Interior', desc: 'Accreditation No: 2018/4521' },
-      { icon: '🌙', name: 'Member of Mohammed V Foundation', desc: 'Since 2020' },
-      { icon: '📋', name: 'Tax Exempt', desc: 'Ministerial decree 2019' },
-      { icon: '🔒', name: 'Certified Financial Transparency', desc: 'Audited annually' },
-      { icon: '🌍', name: 'UNICEF Partner', desc: 'Since 2022' },
-      { icon: '🏆', name: 'Charitable Excellence Award', desc: 'Ministry of Solidarity 2024' },
-    ],
+    intro: {
+      eyebrow: 'Association Ibtassim',
+      title: 'Who are we?',
+      lead: 'Association Ibtassim supports orphan families through sponsorship, education, psychosocial support, social initiatives, and community partnerships.',
+      lines: [
+        { icon: 'calendar_month', title: 'A documented archive since 2018', text: 'A continuous record of field work, programs, and initiatives.' },
+        { icon: 'group', title: 'Programs for child, mother, and family', text: 'We shape every action around the full family circle.' },
+        { icon: 'handshake', title: 'Local and international collaboration', text: 'Partnerships that strengthen trust, reach, and continuity.' },
+      ],
+      quote: 'An orphan child does not need passing help. They need an environment that sees, hears, and accompanies them.',
+      cta: 'Learn more about Ibtassim',
+      badgeTop: 'Since',
+      badgeMain: '2018',
+      badgeBottom: 'beside families',
+    },
+    mission: {
+      kicker: 'Mission, vision, promise',
+      title: 'Support that connects dignity, stability, and daily care',
+      lead: 'We support the child and the family over time through clear, practical, and human-centered programs.',
+      blocks: [
+        { label: 'Mission', title: 'Accompany families through real programs', text: 'Sponsorship, education, listening, and social support that turn giving into visible daily impact.' },
+        { label: 'Vision', title: 'Stable dignity, not temporary relief', text: 'A society where supporting an orphan child becomes an ongoing responsibility.' },
+        { label: 'Promise', title: 'Documented trust', text: 'We show where support goes and protect the dignity of every family we accompany.' },
+      ],
+    },
+    pillars: {
+      kicker: 'How we work',
+      title: 'We work on the daily details that change a life path',
+      lead: 'From sponsorship to education and psychosocial care, we build a coherent support system around the child and family.',
+      items: [
+        { icon: 'volunteer_activism', title: 'Sponsorship and care', text: 'Stable support tied to essential family needs.' },
+        { icon: 'school', title: 'Education and confidence', text: 'Academic support and experiences that open wider possibilities.' },
+        { icon: 'favorite', title: 'Listening and support', text: 'Because need is never only material.' },
+        { icon: 'storefront', title: 'Family empowerment', text: 'Practical initiatives that help families become steadier and more independent.' },
+        { icon: 'celebration', title: 'Joy and dignity', text: 'Seasonal initiatives that preserve joy, choice, and belonging.' },
+      ],
+      quote: 'Every program should reach the child and the family together, not address need in isolation.',
+    },
+    journey: {
+      kicker: 'Our journey',
+      title: 'A path that grows with the field',
+      lead: 'Ibtassim has grown into a broader, more documented, and more structured support ecosystem.',
+      timeline: [
+        { year: '2018', title: 'Documented beginnings', text: 'A steady visual archive of field work and early programs.' },
+        { year: '2020', title: 'Expanded sponsorship paths', text: 'Stronger regular accompaniment for children and families.' },
+        { year: '2024', title: 'More visible social work', text: 'A wider presence in programs, social initiatives, and community life.' },
+        { year: '2026', title: 'Maturity and partnerships', text: 'Documented initiatives and a stronger network of trust.', current: true },
+      ],
+      trustTitle: 'Trust and credibility',
+      trustItems: [
+        { icon: 'verified', title: 'Continuous documentation', text: 'Visible impact through proof, follow-up, and records.' },
+        { icon: 'policy', title: 'Clear need framing', text: 'Support tied to concrete paths of care and growth.' },
+        { icon: 'public', title: 'Active partnerships', text: 'Local and international collaboration around impact.' },
+        { icon: 'workspace_premium', title: 'Dignity-first practice', text: 'How support is delivered matters as much as the support itself.' },
+      ],
+    },
+    partners: {
+      kicker: 'Partners',
+      title: 'Trust is built with an ecosystem that shares responsibility',
+      lead: 'The association’s journey shows collaboration with clubs, initiatives, and institutions supporting children and families.',
+      chips: ['Coincide', 'Lions Club UIR', 'The Bridge UIR', 'Club CAS INPT', 'Nafaa Foundation', 'Local Council of Sale'],
+    },
+    cta: {
+      titlePrimary: 'Be part of',
+      titleAccent: 'dignity-centered impact',
+      lead: 'Donate, sponsor, volunteer, or build a partnership. There is always a meaningful way to stand beside a child and family.',
+      primary: 'Donate now',
+      secondary: 'Contact us',
+      footer: 'We turn support into daily accompaniment that creates stability and opportunity.',
+    },
   },
 };
 
-const About = () => {
-  const { language } = useApp();
-  const isMobile = useIsMobile();
-  const c = ABOUT_COPY[language] || ABOUT_COPY.ar;
-  const { stats, values, team, timeline, certs } = c;
+function useRevealMotion() {
+  useEffect(() => {
+    const nodes = Array.from(document.querySelectorAll('.about-v2 .home-reveal'));
+    if (!nodes.length) return undefined;
 
-  const sectionStyle = { padding: isMobile ? '40px 0' : '72px 0' };
-  const innerStyle = { maxWidth: 1200, margin: '0 auto', padding: isMobile ? '0 16px' : '0 28px' };
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.14, rootMargin: '0px 0px -8% 0px' });
+
+    nodes.forEach((node) => observer.observe(node));
+    return () => observer.disconnect();
+  }, []);
+}
+
+export default function About() {
+  const { language, currentLanguage } = useApp();
+  const lang = currentLanguage?.code || language || 'ar';
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  const t = copy[lang] || copy.ar;
+
+  useRevealMotion();
 
   return (
-    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'var(--font-arabic)', color: '#0e1a1b', overflowX: 'hidden' }}>
-
-      {/* Hero */}
-      <div style={{ background: 'linear-gradient(160deg,#021718,#052E2F 60%,#0d7477)', padding: isMobile ? '48px 20px' : '80px 0', textAlign: 'center' }}>
-        <div style={{ maxWidth: 700, margin: '0 auto', padding: isMobile ? '0' : '0 28px' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#33C0C0', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>
-            {c.hero_badge}
+    <div className="about-v2" dir={dir}>
+      <section className="about-v2__intro">
+        <div className="about-v2__shell">
+          <div className="about-v2__intro-header">
+            <h1 className="home-reveal" style={{ '--reveal-delay': '40ms' }}>{t.intro.title}</h1>
+            <p className="about-v2__eyebrow home-reveal" style={{ '--reveal-delay': '110ms' }}>{t.intro.eyebrow}</p>
           </div>
-          <h1 style={{ fontSize: isMobile ? 32 : 44, fontWeight: 900, color: 'white', lineHeight: 1.15, marginBottom: 16, whiteSpace: 'pre-line' }}>
-            {c.hero_title}
-          </h1>
-          <p style={{ fontSize: 17, color: 'rgba(255,255,255,.7)', lineHeight: 1.8, marginBottom: 28 }}>
-            {c.hero_sub}
-          </p>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.2)', color: 'rgba(255,255,255,.8)', borderRadius: 100, padding: '8px 18px', fontSize: 13, fontWeight: 500 }}>
-            {c.hero_badge2}
+
+          <div className="about-v2__intro-media home-reveal" style={{ '--reveal-delay': '170ms' }}>
+            <img src={introImage} alt="" loading="eager" />
+          </div>
+
+          <div className="about-v2__intro-copy">
+            <p className="about-v2__lead home-reveal" style={{ '--reveal-delay': '220ms' }}>{t.intro.lead}</p>
+
+            <div className="about-v2__proof-lines">
+              {t.intro.lines.map((line, index) => (
+                <article key={line.title} className="home-reveal" style={{ '--reveal-delay': `${290 + index * 70}ms` }}>
+                  <span className="material-symbols-outlined">{line.icon}</span>
+                  <strong>{line.title}</strong>
+                  <p>{line.text}</p>
+                </article>
+              ))}
+            </div>
+
+            <blockquote className="home-reveal" style={{ '--reveal-delay': '520ms' }}>
+              <span className="material-symbols-outlined">format_quote</span>
+              <p>{t.intro.quote}</p>
+            </blockquote>
+
+            <Link className="about-v2__button home-reveal" style={{ '--reveal-delay': '590ms' }} to="/contact">
+              {t.intro.cta}
+              <span className="material-symbols-outlined">{dir === 'rtl' ? 'arrow_back' : 'arrow_forward'}</span>
+            </Link>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Stats band */}
-      <div style={{ background: '#0A5F62', padding: isMobile ? '24px 0' : '32px 0' }}>
-        <div style={{ ...innerStyle, display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(5,1fr)', rowGap: isMobile ? 16 : 0 }}>
-          {stats.map((s, i) => (
-            <div key={i} style={{ textAlign: 'center', padding: isMobile ? '0 8px' : '0 16px', borderLeft: !isMobile && i < stats.length - 1 ? '1px solid rgba(255,255,255,.15)' : 'none' }}>
-              <div style={{ fontSize: isMobile ? 24 : 34, fontWeight: 900, color: 'white', fontFamily: 'Inter, sans-serif' }}>{s.num}</div>
-              <div style={{ fontSize: isMobile ? 11 : 12, color: '#33C0C0', fontWeight: 600, marginTop: 2 }}>{s.unit}</div>
-              <div style={{ fontSize: isMobile ? 11 : 12, color: 'rgba(255,255,255,.6)', marginTop: 4 }}>{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Mission & Vision */}
-      <div style={{ ...sectionStyle, background: 'white' }}>
-        <div style={innerStyle}>
-          <div style={{ marginBottom: 48 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>{c.mission_badge}</div>
-            <h2 style={{ fontSize: 34, fontWeight: 800, lineHeight: 1.2 }}>{c.mission_title}</h2>
+      <section className="about-v2__mission">
+        <div className="about-v2__shell">
+          <div className="about-v2__section-intro about-v2__section-intro--center">
+            <p className="about-v2__kicker home-reveal" style={{ '--reveal-delay': '40ms' }}>{t.mission.kicker}</p>
+            <h2 className="home-reveal" style={{ '--reveal-delay': '110ms' }}>{t.mission.title}</h2>
+            <p className="about-v2__lead home-reveal" style={{ '--reveal-delay': '180ms' }}>{t.mission.lead}</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 16 : 32 }}>
-            <div style={{ padding: 32, borderRadius: 20, background: 'linear-gradient(135deg,#F0F7F7,#E6F4F4)' }}>
-              <div style={{ fontSize: 32, marginBottom: 16 }}>🎯</div>
-              <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 12 }}>{c.mission_heading}</div>
-              <p style={{ fontSize: 15, color: '#64748b', lineHeight: 1.85 }}>{c.mission_text}</p>
+
+          <div className="about-v2__mission-band">
+            <div className="about-v2__mission-image home-reveal" style={{ '--reveal-delay': '80ms' }}>
+              <img src={missionImage} alt="" loading="lazy" />
             </div>
-            <div style={{ padding: 32, borderRadius: 20, background: 'linear-gradient(135deg,#F5EBD9,#E8D4B0)' }}>
-              <div style={{ fontSize: 32, marginBottom: 16 }}>🌟</div>
-              <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 12 }}>{c.vision_heading}</div>
-              <p style={{ fontSize: 15, color: '#64748b', lineHeight: 1.85 }}>{c.vision_text}</p>
+            <div className="about-v2__mission-stack">
+              {t.mission.blocks.map((block, index) => (
+                <article key={block.label} className="about-v2__mission-card home-reveal" style={{ '--reveal-delay': `${150 + index * 80}ms` }}>
+                  <span>{block.label}</span>
+                  <strong>{block.title}</strong>
+                  <p>{block.text}</p>
+                </article>
+              ))}
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Values */}
-      <div style={sectionStyle}>
-        <div style={innerStyle}>
-          <div style={{ marginBottom: 48, textAlign: 'center' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>{c.values_badge}</div>
-            <h2 style={{ fontSize: 34, fontWeight: 800, lineHeight: 1.2, marginBottom: 12 }}>{c.values_title}</h2>
-            <p style={{ fontSize: 16, color: '#64748b', lineHeight: 1.7, maxWidth: 560, margin: '0 auto' }}>{c.values_sub}</p>
+      <section className="about-v2__pillars">
+        <div className="about-v2__shell about-v2__pillars-grid">
+          <div className="about-v2__pillars-copy">
+            <p className="about-v2__kicker home-reveal" style={{ '--reveal-delay': '40ms' }}>{t.pillars.kicker}</p>
+            <h2 className="home-reveal" style={{ '--reveal-delay': '110ms' }}>{t.pillars.title}</h2>
+            <p className="about-v2__lead home-reveal" style={{ '--reveal-delay': '180ms' }}>{t.pillars.lead}</p>
+
+            <div className="about-v2__pillar-list">
+              {t.pillars.items.map((item, index) => (
+                <article key={item.title} className="home-reveal" style={{ '--reveal-delay': `${250 + index * 70}ms` }}>
+                  <div className="about-v2__pillar-icon">
+                    <span className="material-symbols-outlined">{item.icon}</span>
+                  </div>
+                  <div>
+                    <strong>{item.title}</strong>
+                    <p>{item.text}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <blockquote className="about-v2__soft-quote home-reveal" style={{ '--reveal-delay': '610ms' }}>
+              {t.pillars.quote}
+            </blockquote>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: isMobile ? 12 : 24 }}>
-            {values.map((v, i) => (
-              <div key={i} style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', padding: 24, textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
-                <div style={{ width: 56, height: 56, borderRadius: 14, background: '#E6F4F4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, margin: '0 auto 14px' }}>{v.icon}</div>
-                <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{v.title}</div>
-                <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.65 }}>{v.text}</p>
-              </div>
+
+          <div className="about-v2__pillars-media home-reveal" style={{ '--reveal-delay': '120ms' }}>
+            <img src={pillarsImage} alt="" loading="lazy" />
+          </div>
+        </div>
+      </section>
+
+      <section className="about-v2__journey">
+        <div className="about-v2__shell about-v2__journey-grid">
+          <div className="about-v2__timeline-wrap">
+            <p className="about-v2__kicker home-reveal" style={{ '--reveal-delay': '40ms' }}>{t.journey.kicker}</p>
+            <h2 className="home-reveal" style={{ '--reveal-delay': '110ms' }}>{t.journey.title}</h2>
+            <p className="about-v2__lead home-reveal" style={{ '--reveal-delay': '180ms' }}>{t.journey.lead}</p>
+
+            <div className="about-v2__timeline">
+              {t.journey.timeline.map((item, index) => (
+                <article key={`${item.year}-${item.title}`} className={`about-v2__timeline-item ${item.current ? 'is-current' : ''} home-reveal`} style={{ '--reveal-delay': `${250 + index * 80}ms` }}>
+                  <div className="about-v2__timeline-dot" />
+                  <span>{item.year}</span>
+                  <strong>{item.title}</strong>
+                  <p>{item.text}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <div className="about-v2__trust-panel">
+            <p className="about-v2__kicker home-reveal" style={{ '--reveal-delay': '80ms' }}>{t.journey.trustTitle}</p>
+            <div className="about-v2__trust-list">
+              {t.journey.trustItems.map((item, index) => (
+                <article key={item.title} className="home-reveal" style={{ '--reveal-delay': `${150 + index * 70}ms` }}>
+                  <span className="material-symbols-outlined">{item.icon}</span>
+                  <div>
+                    <strong>{item.title}</strong>
+                    <p>{item.text}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="about-v2__partners">
+        <div className="about-v2__shell about-v2__partners-panel">
+          <div className="about-v2__section-intro">
+            <p className="about-v2__kicker home-reveal" style={{ '--reveal-delay': '40ms' }}>{t.partners.kicker}</p>
+            <h2 className="home-reveal" style={{ '--reveal-delay': '110ms' }}>{t.partners.title}</h2>
+            <p className="about-v2__lead home-reveal" style={{ '--reveal-delay': '180ms' }}>{t.partners.lead}</p>
+          </div>
+
+          <div className="about-v2__partner-chips">
+            {t.partners.chips.map((chip, index) => (
+              <span key={chip} className="home-reveal" style={{ '--reveal-delay': `${250 + index * 50}ms` }}>{chip}</span>
             ))}
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Team */}
-      <div style={{ ...sectionStyle, background: 'white' }}>
-        <div style={innerStyle}>
-          <div style={{ marginBottom: 48, textAlign: 'center' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>{c.team_badge}</div>
-            <h2 style={{ fontSize: 34, fontWeight: 800, lineHeight: 1.2, marginBottom: 12 }}>{c.team_title}</h2>
-            <p style={{ fontSize: 16, color: '#64748b', lineHeight: 1.7, maxWidth: 560, margin: '0 auto' }}>{c.team_sub}</p>
+      <section className="about-v2__cta">
+        <div className="about-v2__shell about-v2__cta-panel">
+          <div className="about-v2__cta-copy">
+            <p className="about-v2__kicker home-reveal" style={{ '--reveal-delay': '40ms' }}>ابتسم</p>
+            <h2 className="home-reveal" style={{ '--reveal-delay': '110ms' }}>
+              <span>{t.cta.titlePrimary}</span>
+              <em>{t.cta.titleAccent}</em>
+            </h2>
+            <p className="about-v2__lead home-reveal" style={{ '--reveal-delay': '180ms' }}>{t.cta.lead}</p>
+            <div className="about-v2__cta-actions home-reveal" style={{ '--reveal-delay': '250ms' }}>
+              <Link className="about-v2__button about-v2__button--primary" to="/projects">
+                {t.cta.primary}
+              </Link>
+              <Link className="about-v2__button about-v2__button--secondary" to="/contact">
+                {t.cta.secondary}
+              </Link>
+            </div>
+            <p className="about-v2__cta-foot home-reveal" style={{ '--reveal-delay': '320ms' }}>{t.cta.footer}</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: isMobile ? 12 : 24 }}>
-            {team.map((m, i) => (
-              <div key={i} style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', padding: isMobile ? 16 : 24, textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
-                <div style={{ width: isMobile ? 60 : 80, height: isMobile ? 60 : 80, borderRadius: '50%', background: 'linear-gradient(135deg,#CCF0F0,#E6F4F4)', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? 26 : 34 }}>{m.avatar}</div>
-                <div style={{ fontSize: isMobile ? 13 : 16, fontWeight: 700, marginBottom: 4 }}>{m.name}</div>
-                <div style={{ fontSize: 12, color: '#0A5F62', fontWeight: 600, marginBottom: 6 }}>{m.role}</div>
-                <div style={{ fontSize: 11, color: '#94a3b8', lineHeight: 1.5 }}>{m.bio}</div>
-              </div>
-            ))}
+
+          <div className="about-v2__cta-image home-reveal" style={{ '--reveal-delay': '120ms' }}>
+            <img src={contactImage} alt="" loading="lazy" />
           </div>
         </div>
-      </div>
-
-      {/* Timeline + Certifications */}
-      <div style={sectionStyle}>
-        <div style={innerStyle}>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 40 : 60, alignItems: 'start' }}>
-            {/* Timeline */}
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>{c.timeline_badge}</div>
-              <h2 style={{ fontSize: 34, fontWeight: 800, marginBottom: 32 }}>{c.timeline_title}</h2>
-              <div style={{ position: 'relative', paddingRight: 28 }}>
-                {/* Vertical line */}
-                <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 2, background: 'linear-gradient(to bottom,#33C0C0,#E6F4F4)' }} />
-                {timeline.map((item, i) => (
-                  <div key={i} style={{ position: 'relative', marginBottom: 36, paddingRight: 24 }}>
-                    <div style={{ position: 'absolute', right: -6, top: 6, width: 12, height: 12, borderRadius: '50%', background: item.current ? '#33C0C0' : '#0d7477', border: '2px solid white', boxShadow: '0 0 0 3px #E6F4F4' }} />
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#0d7477', fontFamily: 'Inter, sans-serif', marginBottom: 4 }}>{item.year}</div>
-                    <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>{item.title}</div>
-                    <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7 }}>{item.text}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            {/* Certifications */}
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>{c.certs_badge}</div>
-              <h2 style={{ fontSize: 34, fontWeight: 800, marginBottom: 28 }}>{c.certs_title}</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: isMobile ? 12 : 20 }}>
-                {certs.map((c, i) => (
-                  <div key={i} style={{ background: 'white', borderRadius: 14, border: '1px solid #E5E9EB', padding: 20, display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 10, background: '#E6F4F4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{c.icon}</div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 700 }}>{c.name}</div>
-                      <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{c.desc}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      </section>
     </div>
   );
-};
-
-export default About;
+}
