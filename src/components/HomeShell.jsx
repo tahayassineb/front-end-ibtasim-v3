@@ -82,7 +82,7 @@ export default function HomeShell({ children }) {
     [copy]
   );
 
-  const accountHref = isAuthenticated ? '/profile' : '/login';
+  const accountHref = isAuthenticated ? (user?.isAdmin ? '/admin' : '/profile') : '/login';
   const accountLabel = isAuthenticated ? (user?.name || copy.profile) : copy.login;
 
   const isActive = (path) => {

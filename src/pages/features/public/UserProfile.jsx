@@ -16,6 +16,7 @@ const statusLabels = {
 const UserProfile = () => {
   const navigate = useNavigate();
   const { currentLanguage, user, logout, updateUser, showToast, formatCurrency, formatDate, changeLanguage } = useApp();
+  const profileUserId = user?.userId || (!user?.isAdmin ? user?.id : null);
 
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,8 +25,8 @@ const UserProfile = () => {
 
   const updateUserConvex = useMutation(api.users.updateUser);
   const cancelKafala = useAction(api.kafalaPayments.cancelKafalaSubscription);
-  const userDonations = useQuery(api.donations.getDonationsByUser, user?.id ? { userId: user.id } : 'skip');
-  const kafalaSponsorships = useQuery(api.kafala.getUserKafalaSponsorship, user?.id ? { userId: user.id } : 'skip');
+  const userDonations = useQuery(api.donations.getDonationsByUser, profileUserId ? { userId: profileUserId } : 'skip');
+  const kafalaSponsorships = useQuery(api.kafala.getUserKafalaSponsorship, profileUserId ? { userId: profileUserId } : 'skip');
 
   const lang = currentLanguage.code;
   const translations = {
@@ -132,13 +133,13 @@ const UserProfile = () => {
   };
 
   const handleSave = async () => {
-    if (!user?.id) {
+    if (!profileUserId) {
       showToast(tx.editError, 'error');
       return;
     }
     setIsLoading(true);
     try {
-      await updateUserConvex({ userId: user.userId || user.id, updates: { fullName: editData.name, email: editData.email } });
+      await updateUserConvex({ userId: profileUserId, updates: { fullName: editData.name, email: editData.email } });
       updateUser({ name: editData.name, email: editData.email, phone: editData.phone });
       showToast(tx.editSuccess, 'success');
       setIsEditing(false);
