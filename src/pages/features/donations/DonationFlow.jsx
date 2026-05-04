@@ -83,7 +83,7 @@ const Step0Auth = ({ authMode, setAuthMode, authFormData, handleAuthChange, hand
     const newOtp = [...otpValues];
     newOtp[index] = value;
     setOtpValues(newOtp);
-    if (value && index < 3) otpRefs[index + 1].current?.focus();
+    if (value && index < 5) otpRefs[index + 1].current?.focus();
   };
   const handleKeyDown = (index, e) => {
     if (e.key === 'Backspace' && !otpValues[index] && index > 0) otpRefs[index - 1].current?.focus();
@@ -113,7 +113,7 @@ const Step0Auth = ({ authMode, setAuthMode, authFormData, handleAuthChange, hand
           <div style={{ fontSize: 13, color: '#64748b' }}>تم الإرسال إلى <span dir="ltr" style={{ fontFamily: 'Inter', fontWeight: 700 }}>{countryCode} {formatPhoneDisplay(authFormData.phone)}</span></div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 24, direction: 'ltr' }}>
-          {[0, 1, 2, 3].map(i => (
+          {[0, 1, 2, 3, 4, 5].map(i => (
             <input key={i} ref={otpRefs[i]} type="text" inputMode="numeric" maxLength={1} value={otpValues[i]}
               onChange={e => handleOtpChange(i, e.target.value)}
               onKeyDown={e => handleKeyDown(i, e)}
@@ -157,9 +157,9 @@ const Step0Auth = ({ authMode, setAuthMode, authFormData, handleAuthChange, hand
               <div style={{ fontSize: 13, color: '#64748b' }}>تم الإرسال إلى <span dir="ltr" style={{ fontFamily: 'Inter', fontWeight: 700 }}>{countryCode} {formatPhoneDisplay(authFormData.phone)}</span></div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 24, direction: 'ltr' }}>
-              {[0, 1, 2, 3].map(i => (
+              {[0, 1, 2, 3, 4, 5].map(i => (
                 <input key={i} ref={otpRefs[i]} type="text" inputMode="numeric" maxLength={1} value={otpValues[i]}
-                  onChange={e => { const v = e.target.value; if (v.length > 1) return; if (!/^\d*$/.test(v)) return; const n = [...otpValues]; n[i] = v; setOtpValues(n); if (v && i < 3) otpRefs[i + 1].current?.focus(); }}
+                  onChange={e => { const v = e.target.value; if (v.length > 1) return; if (!/^\d*$/.test(v)) return; const n = [...otpValues]; n[i] = v; setOtpValues(n); if (v && i < 5) otpRefs[i + 1].current?.focus(); }}
                   onKeyDown={e => { if (e.key === 'Backspace' && !otpValues[i] && i > 0) otpRefs[i - 1].current?.focus(); }}
                   style={{ width: 56, height: 60, textAlign: 'center', fontSize: 24, fontWeight: 700, border: `2px solid ${otpValues[i] ? '#0d7477' : '#E5E9EB'}`, borderRadius: 12, outline: 'none', fontFamily: 'Inter, sans-serif', background: otpValues[i] ? '#E6F4F4' : 'white' }}
                 />
@@ -843,8 +843,8 @@ export default function DonationFlow() {
   const [authErrors, setAuthErrors] = useState({});
   const [otpSent, setOtpSent] = useState(false);
   const [otpTimer, setOtpTimer] = useState(120);
-  const [otpValues, setOtpValues] = useState(['', '', '', '']);
-  const otpRefs = [useRef(), useRef(), useRef(), useRef()];
+  const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
+  const otpRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
   const [countryCode, setCountryCode] = useState('+212');
   const phoneInputRef = useRef(null);
   const cursorPositionRef = useRef(0);

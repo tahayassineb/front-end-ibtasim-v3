@@ -1008,3 +1008,40 @@ Claude hit the limit after partially changing `convex/admin.ts`, `convex/schema.
 2. Dashboard stats need clear semantics: money can be date-filtered, but workflow queues like pending verification should stay current.
 3. Featured-home behavior should reuse existing project fields when possible, but kafala needed matching backend support before the UI toggle could work.
 4. For large UI rewrites, `npm run build` is the reliable gate; lint can remain noisy when the repo already has unrelated legacy errors.
+
+---
+
+## Session: OTP Length Fix (4 → 6 digits)
+
+### Problem
+
+Account verification OTP was inconsistent across the codebase:
+- `convex/auth.ts` generated 4-digit codes (`Math.floor(1000 + Math.random() * 9000)`)
+- `Register.jsx` already expected 6 cells with copy "Enter the 6-digit code"
+- `KafalaFlow.jsx` and `DonationFlow.jsx` rendered 4 cells
+
+Net effect: a user registering through the standalone Register page saw 6 input cells but the backend only ever sent 4 digits — the last two cells were unfillable and `otpValues.every(v => v.length === 1)` blocked submission. Users in Kafala/Donation flows got 4 cells which matched the backend, but the security level was 4-digit (10k combinations).
+
+### Root Cause
+
+Backend OTP generator was never updated when Register.jsx was redesigned for 6 digits. KafalaFlow / DonationFlow were never aligned either. No single source of truth for OTP length.
+
+### Fix
+
+- `convex/auth.ts:108-109`: `Math.floor(100000 + Math.random() * 900000).toString()` — 6 digits.
+- `src/pages/features/kafala/KafalaFlow.jsx`: state, refs, reset, cell map, focus-advance boundary all expanded to 6.
+- `src/pages/features/donations/DonationFlow.jsx`: same in both `Step0Auth` render branches and the parent state at L846/847.
+- `Register.jsx`: already 6, no change.
+- `Login.jsx`: password-based, no OTP UI to update.
+
+### Validation
+
+- `npm run build` passed (9.72s).
+- Grep for remaining `i < 3` / `[0,1,2,3]` / 4-element OTP arrays returned nothing.
+- `npx convex deploy --yes` succeeded against `bold-lemming-266.eu-west-1.convex.cloud`.
+
+### Lessons
+
+1. When one client surface is updated for a security/UX change (OTP length), grep ALL OTP entry points before considering the migration done — there are three in this repo.
+2. The backend generator is the only place that can enforce length. Treat it as the source of truth and have all clients render `Array.from({ length: OTP_LENGTH })` instead of hard-coded `[0,1,2,3]` literals — but this refactor is out of scope for the bug fix.
+3. A prior Sentry telemetry "fetch failed" error from `convex deploy` masked the fact that the deploy actually succeeded — always re-run / check the dashboard before assuming failure.

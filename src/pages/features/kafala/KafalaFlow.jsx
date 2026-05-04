@@ -71,14 +71,14 @@ export default function KafalaFlow() {
   const [authFormData, setAuthFormData] = useState({ fullName: '', email: '', phone: '', password: '', confirmPassword: '' });
   const [authErrors, setAuthErrors] = useState({});
   const [otpSent, setOtpSent] = useState(false);
-  const [otpValues, setOtpValues] = useState(['', '', '', '']);
+  const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
   const [otpTimer, setOtpTimer] = useState(120);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [countryCode, setCountryCode] = useState('+212');
   const phoneInputRef = useRef();
-  const otpRefs = [useRef(), useRef(), useRef(), useRef()];
+  const otpRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
 
   // ── Payment state ──
   const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
@@ -102,7 +102,7 @@ export default function KafalaFlow() {
   // ── Auth handlers (preserved exactly) ──
   const handleAuthModeSwitch = (mode) => {
     setAuthMode(mode); setAuthErrors({});
-    if (otpSent) { setOtpSent(false); setOtpValues(['', '', '', '']); }
+    if (otpSent) { setOtpSent(false); setOtpValues(['', '', '', '', '', '']); }
   };
   const handleAuthChange = (e) => {
     const { name, value } = e.target;
@@ -355,9 +355,9 @@ export default function KafalaFlow() {
                     <div style={{ background: K.kbg, borderRadius: 16, padding: 20, border: `1px solid ${K.k100}`, textAlign: 'center', marginBottom: 14 }}>
                       <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>أدخل رمز التحقق</div>
                       <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 12, direction: 'ltr' }}>
-                        {[0, 1, 2, 3].map(i => (
+                        {[0, 1, 2, 3, 4, 5].map(i => (
                           <input key={i} ref={otpRefs[i]} type="text" inputMode="numeric" maxLength={1} value={otpValues[i]}
-                            onChange={e => { const v = e.target.value.replace(/\D/, ''); if (v.length <= 1) { const n = [...otpValues]; n[i] = v; setOtpValues(n); if (v && i < 3) otpRefs[i + 1].current?.focus(); } }}
+                            onChange={e => { const v = e.target.value.replace(/\D/, ''); if (v.length <= 1) { const n = [...otpValues]; n[i] = v; setOtpValues(n); if (v && i < 5) otpRefs[i + 1].current?.focus(); } }}
                             onKeyDown={e => { if (e.key === 'Backspace' && !otpValues[i] && i > 0) otpRefs[i - 1].current?.focus(); }}
                             style={{ width: 52, height: 56, textAlign: 'center', fontSize: 22, fontWeight: 700, border: `2px solid ${otpValues[i] ? K.kdark : K.k100}`, borderRadius: 12, outline: 'none', background: otpValues[i] ? K.kbg : 'white', fontFamily: 'Inter, sans-serif' }}
                           />
