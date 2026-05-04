@@ -99,6 +99,28 @@ export default function KafalaFlow() {
     if (isAuthenticated && step === 0) setStep(1);
   }, [isAuthenticated]);
 
+  // ── OTP countdown ──
+  useEffect(() => {
+    if (otpSent && otpTimer > 0) {
+      const t = setTimeout(() => setOtpTimer(p => p - 1), 1000);
+      return () => clearTimeout(t);
+    }
+  }, [otpSent, otpTimer]);
+
+  const handleResendOtp = async () => {
+    try {
+      const result = await requestOTP({ phoneNumber: countryCode + authFormData.phone });
+      if (!result?.success) {
+        showToast(result?.message || 'تعذر إعادة الإرسال', 'error');
+        return;
+      }
+      setOtpTimer(120);
+      showToast('تم إرسال الرمز', 'success');
+    } catch {
+      showToast('تعذر إعادة الإرسال', 'error');
+    }
+  };
+
   // ── Auth handlers (preserved exactly) ──
   const handleAuthModeSwitch = (mode) => {
     setAuthMode(mode); setAuthErrors({});
@@ -366,7 +388,7 @@ export default function KafalaFlow() {
                       {otpTimer > 0 ? (
                         <div style={{ fontSize: 13, color: '#94a3b8' }}>إعادة الإرسال بعد {Math.floor(otpTimer / 60)}:{String(otpTimer % 60).padStart(2, '0')}</div>
                       ) : (
-                        <button onClick={() => setOtpTimer(120)} style={{ fontSize: 13, color: K.kdark, fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>إعادة إرسال الرمز</button>
+                        <button onClick={handleResendOtp} style={{ fontSize: 13, color: K.kdark, fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>إعادة إرسال الرمز</button>
                       )}
                     </div>
                   ) : (

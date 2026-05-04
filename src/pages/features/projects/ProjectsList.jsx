@@ -33,7 +33,7 @@ export default function ProjectsList() {
   const projects = useMemo(() => (projectsData || []).map((project) => ({
     ...project,
     titleText: getText(project.title, lang),
-    descriptionText: getText(project.description, lang),
+    shortDescriptionText: getText(project.shortDescription, lang) || getText(project.description, lang),
     imageUrl: convexFileUrl(project.mainImage) || project.mainImage,
   })), [projectsData, lang]);
 
@@ -84,7 +84,7 @@ export default function ProjectsList() {
                   </div>
                   <div style={{ padding: 18 }}>
                     <h3 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 900 }}>{project.titleText}</h3>
-                    <p style={{ margin: '0 0 14px', color: '#64748b', fontSize: 13, lineHeight: 1.7, height: 44, overflow: 'hidden' }}>{project.descriptionText}</p>
+                    <p style={{ margin: '0 0 14px', color: '#64748b', fontSize: 13, lineHeight: 1.7, height: 44, overflow: 'hidden' }}>{project.shortDescriptionText}</p>
                     <div style={{ height: 8, background: '#E5E9EB', borderRadius: 99, overflow: 'hidden', marginBottom: 8 }}><div style={{ width: `${pct}%`, height: '100%', background: '#0d7477' }} /></div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', fontSize: 12 }}>
                       <strong style={{ color: '#0A5F62' }}>{formatMAD(project.raisedAmount || 0, lang)}</strong>

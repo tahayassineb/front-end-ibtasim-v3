@@ -39,6 +39,20 @@ const BankTab = ({
           onFocus={e => e.target.style.borderColor = PRIMARY}
           onBlur={e => e.target.style.borderColor = BORDER} />
       </div>
+      <div>
+        <FieldLabel>الفرع / الوكالة</FieldLabel>
+        <input style={fieldInput} type="text" value={formData.agency}
+          onChange={e => handleInputChange('agency', e.target.value)}
+          onFocus={e => e.target.style.borderColor = PRIMARY}
+          onBlur={e => e.target.style.borderColor = BORDER} />
+      </div>
+      <div>
+        <FieldLabel>رقم هاتف الجمعية (للإيداع النقدي)</FieldLabel>
+        <input style={{ ...fieldInput, direction: 'ltr' }} type="tel" value={formData.associationPhone}
+          onChange={e => handleInputChange('associationPhone', e.target.value)}
+          onFocus={e => e.target.style.borderColor = PRIMARY}
+          onBlur={e => e.target.style.borderColor = BORDER} />
+      </div>
       <div style={{ gridColumn: '1/-1' }}>
         <FieldLabel>رقم RIB (24 خانة)</FieldLabel>
         <div style={{ display: 'flex', gap: 8 }}>

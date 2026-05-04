@@ -13,7 +13,17 @@ import CountryCodeSelector, { validatePhoneByCountry, formatPhoneForDisplay } fr
 
 const DONATION_AMOUNTS = [100, 200, 500, 1000, 2000, 5000];
 
-const DEFAULT_BANK_INFO = { accountHolder: '—', rib: '—', bankName: '—' };
+const useViewportWidth = () => {
+  const [width, setWidth] = useState(window.innerWidth);
+  useEffect(() => {
+    const handleResize = () => setWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  return width;
+};
+
+const DEFAULT_BANK_INFO = { accountHolder: '—', rib: '—', bankName: '—', agency: '', associationPhone: '' };
 
 const STEP_LABELS = [
   'الخطوة 1 من 6 — تسجيل الدخول',
@@ -24,13 +34,11 @@ const STEP_LABELS = [
   'الخطوة 6 من 6 — مراجعة وتأكيد',
 ];
 
-const getImpactItems = (amount) => {
-  if (amount >= 5000) return ['تمويل مشروع بناء كامل', 'تعليم 10 أطفال لمدة سنة', 'رعاية صحية لـ 20 مستفيداً'];
-  if (amount >= 2000) return ['تجهيز فصل دراسي كامل', 'كتب لـ 20 تلميذاً', 'وجبات مدرسية لشهر'];
-  if (amount >= 1000) return ['كتب ولوازم لـ 10 تلاميذ', 'أسبوعان من الوجبات', 'رعاية طفل شهرين'];
-  if (amount >= 500) return ['كتب مدرسية لـ 5 تلاميذ', 'ربع جدار في المبنى', '3 أسابيع وجبات مدرسية'];
-  if (amount >= 200) return ['كتب لتلميذين', 'لوازم مدرسية كاملة', 'أسبوع وجبات مدرسية'];
-  return ['لوازم مدرسية', 'دعم تلميذ واحد', 'مساهمة في البناء'];
+const getImpactItems = (benefitCards) => {
+  if (benefitCards && benefitCards.length > 0) {
+    return benefitCards.slice(0, 3).map(card => `${card.icon} ${card.value} ${card.label}`.trim());
+  }
+  return [];
 };
 
 // ─── Shared UI: Top Bar ───────────────────────────────────────────────────────
@@ -76,7 +84,20 @@ const ProjectCtx = ({ project, step, amount }) => (
 );
 
 // ─── Step 0: Auth ─────────────────────────────────────────────────────────────
-const Step0Auth = ({ authMode, setAuthMode, authFormData, handleAuthChange, handlePhoneChange, phoneInputRef, countryCode, setCountryCode, showPassword, setShowPassword, showConfirmPassword, setShowConfirmPassword, authErrors, otpSent, otpValues, setOtpValues, otpRefs, otpTimer, setOtpTimer, lang, formatPhoneDisplay }) => {
+const Step0Auth = ({ authMode, setAuthMode, authFormData, handleAuthChange, handlePhoneChange, phoneInputRef, countryCode, setCountryCode, showPassword, setShowPassword, showConfirmPassword, setShowConfirmPassword, authErrors, otpSent, otpValues, setOtpValues, otpRefs, otpTimer, setOtpTimer, lang, formatPhoneDisplay, requestOTP, showToast, isNarrow }) => {
+  const handleResendOtp = async () => {
+    try {
+      const result = await requestOTP({ phoneNumber: countryCode + authFormData.phone });
+      if (!result?.success) {
+        showToast?.(result?.message || (lang === 'ar' ? 'تعذر إعادة الإرسال' : 'Failed to resend'), 'error');
+        return;
+      }
+      setOtpTimer(120);
+      showToast?.(lang === 'ar' ? 'تم إرسال الرمز' : 'Code resent', 'success');
+    } catch {
+      showToast?.(lang === 'ar' ? 'تعذر إعادة الإرسال' : 'Failed to resend', 'error');
+    }
+  };
   const handleOtpChange = (index, value) => {
     if (value.length > 1) value = value[0];
     if (!/^\d*$/.test(value)) return;
@@ -125,7 +146,7 @@ const Step0Auth = ({ authMode, setAuthMode, authFormData, handleAuthChange, hand
           {otpTimer > 0 ? (
             <div style={{ fontSize: 13, color: '#94a3b8', fontFamily: 'Inter, sans-serif' }}>إعادة الإرسال بعد {formatTime(otpTimer)}</div>
           ) : (
-            <button onClick={() => setOtpTimer(120)} style={{ fontSize: 13, color: '#0d7477', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>إعادة إرسال الرمز</button>
+            <button onClick={handleResendOtp} style={{ fontSize: 13, color: '#0d7477', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>إعادة إرسال الرمز</button>
           )}
         </div>
       </div>
@@ -168,14 +189,14 @@ const Step0Auth = ({ authMode, setAuthMode, authFormData, handleAuthChange, hand
             <div style={{ textAlign: 'center' }}>
               {otpTimer > 0
                 ? <div style={{ fontSize: 13, color: '#94a3b8', fontFamily: 'Inter, sans-serif' }}>إعادة الإرسال بعد {String(Math.floor(otpTimer / 60)).padStart(2, '0')}:{String(otpTimer % 60).padStart(2, '0')}</div>
-                : <button onClick={() => setOtpTimer(120)} style={{ fontSize: 13, color: '#0d7477', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>إعادة إرسال الرمز</button>
+                : <button onClick={handleResendOtp} style={{ fontSize: 13, color: '#0d7477', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>إعادة إرسال الرمز</button>
               }
             </div>
           </div>
         ) : (
           <div style={{ padding: '16px', background: '#F0F7F7', borderRadius: 16, border: '1px solid #CCF0F0' }}>
             {authMode === 'register' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isNarrow ? '1fr' : '1fr 1fr', gap: 8, marginBottom: 12 }}>
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 4 }}>الاسم الكامل *</div>
                   <input type="text" name="fullName" value={authFormData.fullName} onChange={handleAuthChange} placeholder="الاسم" style={{ ...inputStyle, height: 44 }} />
@@ -268,9 +289,9 @@ const Step0Auth = ({ authMode, setAuthMode, authFormData, handleAuthChange, hand
 };
 
 // ─── Step 1: Amount ────────────────────────────────────────────────────────────
-const Step1Amount = ({ donationData, setDonationData }) => {
+const Step1Amount = ({ donationData, setDonationData, benefitCards }) => {
   const amount = donationData.customAmount ? (parseFloat(donationData.customAmount) || 0) : donationData.amount;
-  const impactItems = getImpactItems(amount);
+  const impactItems = getImpactItems(benefitCards);
 
   return (
     <div style={{ flex: 1, padding: '16px', overflowY: 'auto' }}>
@@ -301,7 +322,7 @@ const Step1Amount = ({ donationData, setDonationData }) => {
         <span style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 14, fontWeight: 700, color: '#94a3b8', fontFamily: 'Inter, sans-serif' }}>د.م</span>
       </div>
 
-      {amount > 0 && (
+      {amount > 0 && impactItems.length > 0 && (
         <div style={{ background: '#F0F7F7', borderRadius: 14, padding: 14, marginBottom: 16, border: '1px solid #CCF0F0' }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#0A5F62', marginBottom: 10 }}>✨ {amount} درهم ستغطي:</div>
           {impactItems.map((item, i) => (
@@ -397,6 +418,12 @@ const Step2Payment = ({ donationData, setDonationData, bankInfo, showToast, lang
                       <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>اسم المستفيد</div>
                       <div style={{ fontSize: 14, fontWeight: 700 }}>{bankInfo.accountHolder || 'جمعية ابتسام للأعمال الخيرية'}</div>
                     </div>
+                    {bankInfo.agency && (
+                      <div style={{ marginBottom: 12 }}>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>الفرع / الوكالة</div>
+                        <div style={{ fontSize: 14, fontWeight: 700 }}>{bankInfo.agency}</div>
+                      </div>
+                    )}
                     <div style={{ background: '#F0F7F7', borderRadius: 10, padding: 12, marginTop: 4 }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: '#0A5F62', marginBottom: 6 }}>📋 خطوات التحويل:</div>
                       {['حوّل المبلغ عبر تطبيق بنكك', 'احتفظ بوصل التحويل', 'ارفع الوصل في الخطوة التالية'].map((s, i) => (
@@ -415,6 +442,16 @@ const Step2Payment = ({ donationData, setDonationData, bankInfo, showToast, lang
                     <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7, marginBottom: 12 }}>
                       حوّل المبلغ عبر <strong>Wafacash</strong> أو <strong>Cash Plus</strong> — في خانة المستفيد أدخل رقم هاتف الجمعية
                     </div>
+                    {bankInfo.associationPhone && (
+                      <div style={{ background: '#E6F4F4', borderRadius: 10, padding: 12, marginBottom: 12, border: '1px solid #CCF0F0', textAlign: 'center' }}>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>رقم هاتف الجمعية</div>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: '#0A5F62', fontFamily: 'Inter, sans-serif', letterSpacing: '.06em', margin: '4px 0' }} dir="ltr">{bankInfo.associationPhone}</div>
+                        <button onClick={e => { e.stopPropagation(); copyToClipboard(bankInfo.associationPhone); }}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#0d7477', background: 'white', padding: '3px 10px', borderRadius: 100, cursor: 'pointer', border: 'none', fontFamily: 'var(--font-arabic)', marginTop: 4 }}>
+                          📋 نسخ الرقم
+                        </button>
+                      </div>
+                    )}
                     <div style={{ background: '#F0F7F7', borderRadius: 10, padding: 12 }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: '#0A5F62', marginBottom: 6 }}>📋 خطوات الإيداع:</div>
                       {['توجه لأقرب وكالة Wafacash أو Cash Plus', 'أدخل رقم هاتف الجمعية في خانة المستفيد', 'احتفظ بوصل الإيداع', 'ارفع الوصل في الخطوة التالية'].map((s, i) => (
@@ -795,6 +832,7 @@ export default function DonationFlow() {
     title: convexProject.title?.[lang] || convexProject.title?.ar || convexProject.title?.en || '',
     image: convexFileUrl(convexProject.mainImage) || convexProject.mainImage,
     category: convexProject.category,
+    benefitCards: convexProject.benefitCards,
   } : null;
 
   // ── Step state ──
@@ -1068,10 +1106,14 @@ export default function DonationFlow() {
 
   const amount = calculateTotal();
 
+  const vw = useViewportWidth();
+  const containerMaxWidth = vw >= 1024 ? 720 : vw >= 640 ? 560 : 430;
+  const isNarrow = vw < 560;
+
   // ── Render ──
   return (
     <div style={{ height: '100dvh', background: '#F0F7F7', fontFamily: 'var(--font-arabic)', color: '#0e1a1b', display: 'flex', justifyContent: 'center', overflow: 'hidden' }}>
-      <div style={{ width: '100%', maxWidth: 430, height: '100%', background: 'white', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ width: '100%', maxWidth: containerMaxWidth, height: '100%', background: 'white', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
 
         {/* Top bar */}
         {step < 6 && <TopBar onBack={handleBack} />}
@@ -1097,9 +1139,10 @@ export default function DonationFlow() {
             otpValues={otpValues} setOtpValues={setOtpValues}
             otpRefs={otpRefs} otpTimer={otpTimer} setOtpTimer={setOtpTimer}
             lang={lang} formatPhoneDisplay={formatPhoneDisplay}
+            requestOTP={requestOTP} showToast={showToast} isNarrow={isNarrow}
           />
         )}
-        {step === 1 && <Step1Amount donationData={donationData} setDonationData={setDonationData} />}
+        {step === 1 && <Step1Amount donationData={donationData} setDonationData={setDonationData} benefitCards={project?.benefitCards} />}
         {step === 2 && <Step2Payment donationData={donationData} setDonationData={setDonationData} bankInfo={bankInfo} showToast={showToast} lang={lang} />}
         {step === 3 && <Step3Receipt uploadedFile={uploadedFile} setUploadedFile={setUploadedFile} dragActive={dragActive} setDragActive={setDragActive} showToast={showToast} lang={lang} amount={amount} donationData={donationData} setDonationData={setDonationData} />}
         {step === 4 && <Step4Info donationData={donationData} setDonationData={setDonationData} lang={lang} />}

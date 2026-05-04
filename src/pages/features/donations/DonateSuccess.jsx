@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 
 // ============================================
@@ -7,7 +7,20 @@ import { useSearchParams, Link } from 'react-router-dom';
 // URL params: paid=true, donationId=xxx, amount=xxx
 // ============================================
 
+const useViewportWidth = () => {
+  const [width, setWidth] = useState(window.innerWidth);
+  useEffect(() => {
+    const handleResize = () => setWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  return width;
+};
+
 export default function DonateSuccess() {
+  const vw = useViewportWidth();
+  const containerMaxWidth = vw >= 1024 ? 720 : vw >= 640 ? 560 : 430;
+
   const [searchParams] = useSearchParams();
   const paidParam = searchParams.get('paid');
   const donationId = searchParams.get('donationId') || '';
@@ -68,7 +81,7 @@ export default function DonateSuccess() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#F0F7F7', fontFamily: 'var(--font-arabic)', color: '#0e1a1b', display: 'flex', justifyContent: 'center' }} dir="rtl">
-      <div style={{ width: '100%', maxWidth: 430, minHeight: '100vh', background: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ width: '100%', maxWidth: containerMaxWidth, minHeight: '100vh', background: 'white', display: 'flex', flexDirection: 'column' }}>
 
         {/* Success hero */}
         <div style={{ background: 'linear-gradient(160deg,#0A5F62,#0d7477,#33C0C0)', padding: '48px 24px 40px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>

@@ -235,6 +235,7 @@ export default function AdminProjectForm() {
           updates: {
             title: formData.title,
             description: formData.description,
+            shortDescription: formData.shortDescription,
             category: formData.category,
             goalAmount: Math.round(parseFloat(formData.goal) || 0),
             mainImageStorageId: formData.mainImageStorageId,
@@ -258,6 +259,7 @@ export default function AdminProjectForm() {
         await createProjectMutation({
           title: formData.title,
           description: formData.description,
+          shortDescription: formData.shortDescription,
           category: formData.category,
           goalAmount: Math.round(parseFloat(formData.goal) || 0),
           mainImageStorageId: formData.mainImageStorageId,

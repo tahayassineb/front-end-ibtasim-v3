@@ -255,10 +255,14 @@ const Register = () => {
                   <button
                     onClick={async () => {
                       try {
-                        await requestOTP({ phoneNumber: countryCode + phone });
+                        const result = await requestOTP({ phoneNumber: countryCode + phone });
+                        if (!result?.success) {
+                          showToast(result?.message || (lang === 'ar' ? 'تعذر إعادة الإرسال' : 'Failed to resend'), 'error');
+                          return;
+                        }
                         setOtpTimer(120);
                         showToast(lang === 'ar' ? 'تم إرسال الرمز' : 'Code resent', 'success');
-                      } catch (e) { showToast('Failed to resend', 'error'); }
+                      } catch (e) { showToast(lang === 'ar' ? 'تعذر إعادة الإرسال' : 'Failed to resend', 'error'); }
                     }}
                     style={{ color: '#0d7477', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-arabic)', fontSize: 13 }}
                   >

@@ -195,6 +195,7 @@ export const updateUser = mutation({
     updates: v.object({
       fullName: v.optional(v.string()),
       email: v.optional(v.string()),
+      phoneNumber: v.optional(v.string()),
       preferredLanguage: v.optional(v.union(v.literal("ar"), v.literal("fr"), v.literal("en"))),
       notificationsEnabled: v.optional(v.boolean()),
     }),

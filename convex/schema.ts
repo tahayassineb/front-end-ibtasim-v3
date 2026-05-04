@@ -80,7 +80,12 @@ export default defineSchema({
       fr: v.string(),
       en: v.string(),
     }),
-    
+    shortDescription: v.optional(v.object({
+      ar: v.string(),
+      fr: v.string(),
+      en: v.string(),
+    })),
+
     // Categorization
     category: v.union(
       v.literal("education"),

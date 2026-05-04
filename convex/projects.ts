@@ -34,6 +34,7 @@ export const getProjects = query({
     _creationTime: v.number(),
     title: v.object({ ar: v.string(), fr: v.string(), en: v.string() }),
     description: v.object({ ar: v.string(), fr: v.string(), en: v.string() }),
+    shortDescription: v.optional(v.object({ ar: v.string(), fr: v.string(), en: v.string() })),
     category: v.string(),
     goalAmount: v.number(),
     raisedAmount: v.number(),
@@ -47,6 +48,7 @@ export const getProjects = query({
     beneficiaries: v.optional(v.number()),
     startDate: v.number(),
     endDate: v.optional(v.number()),
+    benefitCards: v.optional(v.array(v.object({ icon: v.string(), value: v.string(), label: v.string() }))),
   })),
   handler: async (ctx, args) => {
     const status = args.status;
@@ -84,6 +86,7 @@ export const getProjects = query({
       _creationTime: p._creationTime,
       title: p.title,
       description: p.description,
+      shortDescription: p.shortDescription,
       category: p.category,
       goalAmount: p.goalAmount,
       raisedAmount: p.raisedAmount,
@@ -97,6 +100,7 @@ export const getProjects = query({
       beneficiaries: p.beneficiaries,
       startDate: p.startDate,
       endDate: p.endDate,
+      benefitCards: p.benefitCards,
     }));
   },
 });
@@ -109,6 +113,7 @@ export const getProjectById = query({
       _creationTime: v.number(),
       title: v.object({ ar: v.string(), fr: v.string(), en: v.string() }),
       description: v.object({ ar: v.string(), fr: v.string(), en: v.string() }),
+      shortDescription: v.optional(v.object({ ar: v.string(), fr: v.string(), en: v.string() })),
       category: v.string(),
       goalAmount: v.number(),
       raisedAmount: v.number(),
@@ -121,18 +126,20 @@ export const getProjectById = query({
       beneficiaries: v.optional(v.number()),
       startDate: v.number(),
       endDate: v.optional(v.number()),
+      benefitCards: v.optional(v.array(v.object({ icon: v.string(), value: v.string(), label: v.string() }))),
     }),
     v.null()
   ),
   handler: async (ctx, args) => {
     const project = await ctx.db.get(args.projectId);
     if (!project) return null;
-    
+
     return {
       _id: project._id,
       _creationTime: project._creationTime,
       title: project.title,
       description: project.description,
+      shortDescription: project.shortDescription,
       category: project.category,
       goalAmount: project.goalAmount,
       raisedAmount: project.raisedAmount,
@@ -145,6 +152,7 @@ export const getProjectById = query({
       beneficiaries: project.beneficiaries,
       startDate: project.startDate,
       endDate: project.endDate,
+      benefitCards: project.benefitCards,
     };
   },
 });
@@ -169,11 +177,13 @@ export const getFeaturedProjects = query({
     _id: v.id("projects"),
     title: v.object({ ar: v.string(), fr: v.string(), en: v.string() }),
     description: v.object({ ar: v.string(), fr: v.string(), en: v.string() }),
+    shortDescription: v.optional(v.object({ ar: v.string(), fr: v.string(), en: v.string() })),
     category: v.string(),
     goalAmount: v.number(),
     raisedAmount: v.number(),
     mainImage: v.string(),
     featuredOrder: v.number(),
+    benefitCards: v.optional(v.array(v.object({ icon: v.string(), value: v.string(), label: v.string() }))),
   })),
   handler: async (ctx, args) => {
     // Query all featured projects (isFeatured=true) regardless of featuredOrder value
@@ -191,11 +201,13 @@ export const getFeaturedProjects = query({
       _id: p._id,
       title: p.title,
       description: p.description,
+      shortDescription: p.shortDescription,
       category: p.category,
       goalAmount: p.goalAmount,
       raisedAmount: p.raisedAmount,
       mainImage: p.mainImage,
       featuredOrder: p.featuredOrder ?? index + 1,
+      benefitCards: p.benefitCards,
     }));
   },
 });
@@ -208,6 +220,7 @@ export const createProject = mutation({
   args: {
     title: v.object({ ar: v.string(), fr: v.string(), en: v.string() }),
     description: v.object({ ar: v.string(), fr: v.string(), en: v.string() }),
+    shortDescription: v.optional(v.object({ ar: v.string(), fr: v.string(), en: v.string() })),
     category: v.union(
       v.literal("education"),
       v.literal("health"),
@@ -257,6 +270,7 @@ export const createProject = mutation({
     const projectId = await ctx.db.insert("projects", {
       title: args.title,
       description: args.description,
+      shortDescription: args.shortDescription,
       category: args.category,
       goalAmount: args.goalAmount,
       raisedAmount: 0,
@@ -308,6 +322,7 @@ export const updateProject = mutation({
     updates: v.object({
       title: v.optional(v.object({ ar: v.string(), fr: v.string(), en: v.string() })),
       description: v.optional(v.object({ ar: v.string(), fr: v.string(), en: v.string() })),
+      shortDescription: v.optional(v.object({ ar: v.string(), fr: v.string(), en: v.string() })),
       category: v.optional(v.union(
         v.literal("education"),
         v.literal("health"),

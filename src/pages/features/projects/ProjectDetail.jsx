@@ -72,6 +72,7 @@ const ProjectDetail = ({ preview = false }) => {
       title: convexProject.title,
       location: convexProject.location || 'المغرب',
       description: convexProject.description,
+      shortDescription: convexProject.shortDescription,
       raised: convexProject.raisedAmount,
       goal: convexProject.goalAmount,
       progress: Math.min(progress, 100),
@@ -85,6 +86,7 @@ const ProjectDetail = ({ preview = false }) => {
       metaDescription: convexProject.metaDescription,
       imageAlt: convexProject.imageAlt,
       canonicalPath: convexProject.canonicalPath,
+      benefitCards: convexProject.benefitCards,
     };
   }, [convexProject, previewData, now]);
 

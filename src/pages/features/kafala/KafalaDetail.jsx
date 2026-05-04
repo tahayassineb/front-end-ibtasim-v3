@@ -251,19 +251,6 @@ export default function KafalaDetail() {
 
           <div style={{ height: 1, background: '#E5E9EB', margin: '24px 0' }} />
 
-          {/* Testimonials */}
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#8B6914', marginBottom: 8, fontFamily: 'Inter, sans-serif' }}>شهادات الكافلين</div>
-          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>ماذا قال من كفلوا قبلك؟</h2>
-          {[
-            { text: '"تجربة الكفالة غيّرت طريقة تفكيري — أصبحت أشعر بأن لي فرداً آخر في أسرتي يحتاجني ويدعو لي."', author: 'أحمد الإدريسي — كافل منذ 2023' },
-            { text: '"أروع قرار اتخذته في حياتي — الجمعية ترسل لي تقارير ربع سنوية عن الطفل المكفول وهذا يمنحني الطمأنينة الكاملة."', author: 'فاطمة العلوي — كافلة منذ 2022' },
-          ].map((t, i) => (
-            <div key={i} style={{ background: '#F5EBD9', borderRadius: 14, padding: 20, borderRight: '3px solid #C4A882', marginBottom: 12 }}>
-              <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.8, fontStyle: 'italic', marginBottom: 10 }}>{t.text}</div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#8B6914' }}>{t.author}</div>
-            </div>
-          ))}
-
           <div style={{ marginTop: 16 }}>
             <Link to="/kafala" style={{ display: 'inline-flex', height: 44, padding: '0 22px', background: '#E6F4F4', color: '#0A5F62', borderRadius: 100, fontSize: 14, fontWeight: 600, textDecoration: 'none', alignItems: 'center' }}>
               ← تصفح أيتاماً آخرين

@@ -73,7 +73,7 @@ const AdminSettings = () => {
 
   // ── Form state ────────────────────────────────────────────────────────────
   const defaultFormData = {
-    accountHolder: 'جمعية ابتسم', rib: '', bankName: 'Attijariwafa Bank',
+    accountHolder: 'جمعية ابتسم', rib: '', bankName: 'Attijariwafa Bank', agency: '', associationPhone: '',
     organizationName: 'جمعية ابتسم', email: 'contact@ibtasam.org',
     phone: '+212 5XX-XXXXXX', address: 'الدار البيضاء، المغرب',
     description: 'جمعية خيرية تعمل على رعاية الأيتام',
@@ -87,7 +87,7 @@ const AdminSettings = () => {
     if (bankInfoData) {
       try {
         const p = JSON.parse(bankInfoData);
-        setFormData(prev => ({ ...prev, accountHolder: p.accountHolder || prev.accountHolder, rib: p.rib || prev.rib, bankName: p.bankName || prev.bankName }));
+        setFormData(prev => ({ ...prev, accountHolder: p.accountHolder || prev.accountHolder, rib: p.rib || prev.rib, bankName: p.bankName || prev.bankName, agency: p.agency || prev.agency, associationPhone: p.associationPhone || prev.associationPhone }));
       } catch (e) { console.error('Failed to parse bank info:', e); }
     }
   }, [bankInfoData]);
@@ -136,7 +136,7 @@ const AdminSettings = () => {
   const handleSaveBank = async () => {
     setIsSavingBank(true);
     try {
-      await setConfig({ key: 'bank_info', value: JSON.stringify({ accountHolder: formData.accountHolder, rib: formData.rib, bankName: formData.bankName }) });
+      await setConfig({ key: 'bank_info', value: JSON.stringify({ accountHolder: formData.accountHolder, rib: formData.rib, bankName: formData.bankName, agency: formData.agency, associationPhone: formData.associationPhone }) });
       showToast('تم حفظ معلومات البنك بنجاح', 'success');
     } catch (error) {
       console.error('Failed to save bank info:', error);

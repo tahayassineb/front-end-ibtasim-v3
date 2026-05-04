@@ -555,7 +555,7 @@ export default function Home() {
             <p className="home-v2__lead home-reveal" style={{ '--reveal-delay': '170ms' }}>{t.summary.lead}</p>
             <div className="home-v2__summary-list">
               {t.summary.items.map((item, index) => (
-                <div className="home-v2__summary-item home-reveal" key={item.title} style={{ '--reveal-delay': `${220 + (index * 80)}ms` }}>
+                <div className="home-v2__summary-item home-reveal" key={`summary-${index}`} style={{ '--reveal-delay': `${220 + (index * 80)}ms` }}>
                   <div className="home-v2__summary-icon">
                     <span className="material-symbols-outlined no-flip">{item.icon}</span>
                   </div>
@@ -586,7 +586,7 @@ export default function Home() {
             {visibleProjects.map((project, index) => {
               const image = resolveImage(project, index === 0 ? projectImageA : projectImageB);
               const title = getFirstText(project, lang, ['title', 'name']);
-              const description = getFirstText(project, lang, ['description', 'summary', 'shortDescription']);
+              const description = getFirstText(project, lang, ['shortDescription', 'description']);
               const tag = getText(project.tag, lang) || getText(fallbackProjects[index].tag, lang);
               const raised = project.raisedAmount || project.raised || 0;
               const goal = project.goalAmount || project.goal || 1000;
@@ -708,7 +708,7 @@ export default function Home() {
             <p className="home-v2__lead home-reveal" style={{ '--reveal-delay': '180ms' }}>{t.about.lead}</p>
             <div className="home-v2__about-lines">
               {t.about.lines.map((line, index) => (
-                <article className="home-reveal" key={line.title} style={{ '--reveal-delay': `${250 + (index * 90)}ms` }}>
+                <article className="home-reveal" key={`about-${index}`} style={{ '--reveal-delay': `${250 + (index * 90)}ms` }}>
                   <span className="material-symbols-outlined no-flip">{line.icon}</span>
                   <strong>{line.title}</strong>
                   <p>{line.text}</p>

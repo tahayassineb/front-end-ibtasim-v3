@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
@@ -13,6 +13,29 @@ const statusLabels = {
   cancelled: { label: 'ملغي', color: '#ef4444', bg: '#fef2f2' },
 };
 
+const useViewportWidth = () => {
+  const [width, setWidth] = useState(window.innerWidth);
+  useEffect(() => {
+    const handleResize = () => setWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  return width;
+};
+
+const getTier = (totalDonated, donationCount) => {
+  if (totalDonated >= 5000) return 'gold';
+  if (totalDonated >= 1000) return 'silver';
+  if (donationCount <= 1 && totalDonated < 500) return 'new';
+  return 'bronze';
+};
+
+const tierLabels = {
+  ar: { gold: '🥇 ذهبي', silver: '🥈 فضي', bronze: '🥉 برونزي', new: '✨ جديد' },
+  fr: { gold: '🥇 Or', silver: '🥈 Argent', bronze: '🥉 Bronze', new: '✨ Nouveau' },
+  en: { gold: '🥇 Gold', silver: '🥈 Silver', bronze: '🥉 Bronze', new: '✨ New' },
+};
+
 const UserProfile = () => {
   const navigate = useNavigate();
   const { currentLanguage, user, logout, updateUser, showToast, formatCurrency, formatDate, changeLanguage } = useApp();
@@ -20,13 +43,20 @@ const UserProfile = () => {
 
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [editData, setEditData] = useState({ name: user?.name || '', email: user?.email || '', phone: user?.phone || '' });
+  const [editData, setEditData] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    preferredLanguage: user?.preferredLanguage || lang || 'ar',
+    notificationsEnabled: user?.notificationsEnabled ?? true,
+  });
   const [cancellingId, setCancellingId] = useState(null);
 
   const updateUserConvex = useMutation(api.users.updateUser);
   const cancelKafala = useAction(api.kafalaPayments.cancelKafalaSubscription);
   const userDonations = useQuery(api.donations.getDonationsByUser, profileUserId ? { userId: profileUserId } : 'skip');
   const kafalaSponsorships = useQuery(api.kafala.getUserKafalaSponsorship, profileUserId ? { userId: profileUserId } : 'skip');
+  const convexUser = useQuery(api.users.getUserById, profileUserId ? { userId: profileUserId } : 'skip');
 
   const lang = currentLanguage.code;
   const translations = {
@@ -39,6 +69,8 @@ const UserProfile = () => {
       nameLabel: 'الاسم',
       emailLabel: 'البريد الإلكتروني',
       phoneLabel: 'رقم الهاتف',
+      languageLabel: 'اللغة',
+      notificationsLabel: 'إشعارات واتساب',
       memberSince: 'عضو منذ',
       donationHistory: 'سجل التبرعات',
       noDonations: 'لم تقم بأي تبرعات بعد',
@@ -64,6 +96,8 @@ const UserProfile = () => {
       nameLabel: 'Nom',
       emailLabel: 'Email',
       phoneLabel: 'Téléphone',
+      languageLabel: 'Langue',
+      notificationsLabel: 'Notifications WhatsApp',
       memberSince: 'Membre depuis',
       donationHistory: 'Historique',
       noDonations: 'Pas encore de dons',
@@ -89,6 +123,8 @@ const UserProfile = () => {
       nameLabel: 'Name',
       emailLabel: 'Email',
       phoneLabel: 'Phone',
+      languageLabel: 'Language',
+      notificationsLabel: 'WhatsApp notifications',
       memberSince: 'Member since',
       donationHistory: 'Donation History',
       noDonations: 'No donations yet',
@@ -111,12 +147,21 @@ const UserProfile = () => {
   const donations = (userDonations || []).filter((donation) => !isHiddenLegacyDonation(donation));
   const sponsorships = kafalaSponsorships || [];
   const activeSponsorships = sponsorships.filter((sponsorship) => sponsorship.status === 'active');
-  const totalDonated = donations.reduce((sum, donation) => sum + (donation.amount || 0), 0);
+  const totalDonated = convexUser?.totalDonated ?? donations.reduce((sum, donation) => sum + (donation.amount || 0), 0);
+  const donationCount = convexUser?.donationCount ?? donations.length;
   const isDonationsLoading = userDonations === undefined;
   const isKafalaLoading = kafalaSponsorships === undefined;
 
   const handleEditToggle = () => {
-    if (isEditing) setEditData({ name: user?.name || '', email: user?.email || '', phone: user?.phone || '' });
+    if (isEditing) {
+      setEditData({
+        name: user?.name || '',
+        email: user?.email || '',
+        phone: user?.phone || '',
+        preferredLanguage: user?.preferredLanguage || lang || 'ar',
+        notificationsEnabled: user?.notificationsEnabled ?? true,
+      });
+    }
     setIsEditing(!isEditing);
   };
 
@@ -139,8 +184,26 @@ const UserProfile = () => {
     }
     setIsLoading(true);
     try {
-      await updateUserConvex({ userId: profileUserId, updates: { fullName: editData.name, email: editData.email } });
-      updateUser({ name: editData.name, email: editData.email, phone: editData.phone });
+      await updateUserConvex({
+        userId: profileUserId,
+        updates: {
+          fullName: editData.name,
+          email: editData.email,
+          phoneNumber: editData.phone,
+          preferredLanguage: editData.preferredLanguage,
+          notificationsEnabled: editData.notificationsEnabled,
+        },
+      });
+      updateUser({
+        name: editData.name,
+        email: editData.email,
+        phone: editData.phone,
+        preferredLanguage: editData.preferredLanguage,
+        notificationsEnabled: editData.notificationsEnabled,
+      });
+      if (editData.preferredLanguage !== lang) {
+        changeLanguage(editData.preferredLanguage);
+      }
       showToast(tx.editSuccess, 'success');
       setIsEditing(false);
     } catch {
@@ -192,6 +255,8 @@ const UserProfile = () => {
   };
 
   const inputStyle = { width: '100%', height: 48, padding: '0 16px', border: '1.5px solid #E5E9EB', borderRadius: 12, fontFamily: 'var(--font-arabic)', fontSize: 14, color: '#0e1a1b', outline: 'none', background: '#f6f8f8' };
+  const vw = useViewportWidth();
+  const isMobile = vw < 768;
 
   const payMethodLabel = {
     card_whop: lang === 'ar' ? 'بطاقة بنكية' : lang === 'fr' ? 'Carte bancaire' : 'Bank card',
@@ -227,8 +292,8 @@ const UserProfile = () => {
 
   return (
     <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'var(--font-arabic)', color: '#0e1a1b' }}>
-      <div style={{ background: 'linear-gradient(160deg,#021718,#0A5F62)', padding: '48px 0 0' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px', display: 'flex', alignItems: 'flex-end', gap: 24 }}>
+      <div style={{ background: 'linear-gradient(160deg,#021718,#0A5F62)', padding: isMobile ? '32px 0 0' : '48px 0 0' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '0 16px' : '0 28px', display: 'flex', alignItems: 'flex-end', gap: 24, flexWrap: 'wrap' }}>
           <div style={{ width: 96, height: 96, borderRadius: '50%', background: 'linear-gradient(135deg,#CCF0F0,#33C0C0)', border: '4px solid white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, flexShrink: 0, marginBottom: -32, boxShadow: '0 10px 15px rgba(0,0,0,.10)' }}>
             {user?.avatar ? <img src={user.avatar} alt={user.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : <span style={{ fontSize: 28, color: '#0A5F62', fontWeight: 900, fontFamily: 'Inter, sans-serif' }}>{getInitials(user?.name)}</span>}
           </div>
@@ -238,12 +303,16 @@ const UserProfile = () => {
               {user?.phone && <span>📞 {user.phone}</span>}
               {user?.email && <span style={{ marginRight: 12 }}>✉ {user.email}</span>}
             </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-              <span style={{ background: '#FEF3C7', color: '#b45309', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 100 }}>⭐ متبرع ذهبي</span>
-              <span style={{ background: '#D1FAE5', color: '#16a34a', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 100 }}>✓ موثق</span>
+            <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+              {totalDonated > 0 && (
+                <span style={{ background: '#FEF3C7', color: '#b45309', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 100 }}>{(tierLabels[lang] || tierLabels.ar)[getTier(totalDonated, donationCount)]}</span>
+              )}
+              {(convexUser?.isVerified ?? user?.isVerified) && (
+                <span style={{ background: '#D1FAE5', color: '#16a34a', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 100 }}>{lang === 'ar' ? '✓ موثق' : lang === 'fr' ? '✓ Vérifié' : '✓ Verified'}</span>
+              )}
             </div>
           </div>
-          <div style={{ marginRight: 'auto', paddingBottom: 36 }}>
+          <div style={{ marginRight: 'auto', paddingBottom: isMobile ? 16 : 36 }}>
             <button onClick={handleEditToggle} style={{ height: 36, padding: '0 16px', borderRadius: 100, fontSize: 13, fontWeight: 600, background: 'rgba(255,255,255,.15)', color: 'white', border: '1px solid rgba(255,255,255,.3)', cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>
               {isEditing ? tx.cancel : `✏️ ${tx.editProfile}`}
             </button>
@@ -251,10 +320,10 @@ const UserProfile = () => {
         </div>
       </div>
 
-      <div style={{ maxWidth: 1200, margin: '48px auto', padding: '0 28px', display: 'grid', gridTemplateColumns: '1fr 320px', gap: 32, alignItems: 'start' }}>
+      <div style={{ maxWidth: 1200, margin: isMobile ? '24px auto' : '48px auto', padding: isMobile ? '0 16px' : '0 28px', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 320px', gap: isMobile ? 16 : 32, alignItems: 'start' }}>
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 12, fontFamily: 'Inter, sans-serif' }}>إحصائياتي</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16, marginBottom: 28 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: 16, marginBottom: 28 }}>
             {[
               { icon: '💰', label: tx.totalDonated, value: formatCurrency ? formatCurrency(totalDonated) : `${totalDonated.toFixed(0)}`, sub: 'درهم مغربي' },
               { icon: '📋', label: tx.donationsCount, value: donations.length.toString(), sub: 'مشروع مختلف' },
@@ -381,10 +450,27 @@ const UserProfile = () => {
                 <label style={{ fontSize: 12, color: '#94a3b8', display: 'block', marginBottom: 6 }}>{tx.emailLabel}</label>
                 <input style={{ ...inputStyle, direction: 'ltr' }} name="email" type="email" value={editData.email} onChange={handleChange} />
               </div>
-              <div style={{ marginBottom: 20 }}>
+              <div style={{ marginBottom: 14 }}>
                 <label style={{ fontSize: 12, color: '#94a3b8', display: 'block', marginBottom: 6 }}>{tx.phoneLabel}</label>
                 <input style={{ ...inputStyle, direction: 'ltr' }} name="phone" type="tel" value={editData.phone} onChange={handleChange} />
               </div>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: 12, color: '#94a3b8', display: 'block', marginBottom: 6 }}>{tx.languageLabel}</label>
+                <select style={{ ...inputStyle, height: 40 }} name="preferredLanguage" value={editData.preferredLanguage} onChange={handleChange}>
+                  <option value="ar">العربية</option>
+                  <option value="fr">Français</option>
+                  <option value="en">English</option>
+                </select>
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, fontSize: 13, color: '#64748b', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={editData.notificationsEnabled}
+                  onChange={(e) => setEditData((prev) => ({ ...prev, notificationsEnabled: e.target.checked }))}
+                  style={{ width: 18, height: 18, accentColor: '#0d7477', cursor: 'pointer' }}
+                />
+                {tx.notificationsLabel}
+              </label>
               <button onClick={handleSave} disabled={isLoading} style={{ width: '100%', height: 44, background: '#0d7477', color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: '0 4px 14px rgba(13,116,119,.25)', opacity: isLoading ? 0.7 : 1 }}>
                 {isLoading ? '...' : tx.saveChanges}
               </button>
@@ -396,18 +482,45 @@ const UserProfile = () => {
             {[
               { icon: '✏️', text: 'تعديل المعلومات الشخصية', action: handleEditToggle },
               { icon: '🔒', text: 'تغيير كلمة المرور' },
-              { icon: '🔔', text: 'إشعارات واتساب' },
-              { icon: '🌍', text: `اللغة — ${lang === 'ar' ? 'العربية' : lang === 'fr' ? 'Français' : 'English'}` },
               { icon: '📜', text: 'تحميل شهادة التبرعات' },
             ].map((item, index) => (
-              <div key={index} onClick={item.action} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 18px', borderBottom: index < 4 ? '1px solid #E5E9EB' : 'none', cursor: 'pointer' }}>
+              <div key={index} onClick={item.action} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 18px', borderBottom: '1px solid #E5E9EB', cursor: 'pointer' }}>
                 <span style={{ fontSize: 18, flexShrink: 0 }}>{item.icon}</span>
                 <span style={{ fontSize: 14, fontWeight: 500 }}>{item.text}</span>
                 <span style={{ color: '#94a3b8', marginRight: 'auto', fontSize: 12 }}>←</span>
               </div>
             ))}
-            <div style={{ display: 'none' }}>
-              <select value={lang} onChange={handleLanguageChange}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 18px', borderBottom: '1px solid #E5E9EB' }}>
+              <span style={{ fontSize: 18, flexShrink: 0 }}>🔔</span>
+              <span style={{ fontSize: 14, fontWeight: 500 }}>{tx.notificationsLabel}</span>
+              <label style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={(convexUser?.notificationsEnabled ?? user?.notificationsEnabled) ?? true}
+                  onChange={async (e) => {
+                    const enabled = e.target.checked;
+                    if (profileUserId) {
+                      try {
+                        await updateUserConvex({ userId: profileUserId, updates: { notificationsEnabled: enabled } });
+                        updateUser({ notificationsEnabled: enabled });
+                        showToast(tx.editSuccess, 'success');
+                      } catch {
+                        showToast(tx.editError, 'error');
+                      }
+                    }
+                  }}
+                  style={{ width: 18, height: 18, accentColor: '#0d7477', cursor: 'pointer' }}
+                />
+              </label>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 18px', borderBottom: '1px solid #E5E9EB' }}>
+              <span style={{ fontSize: 18, flexShrink: 0 }}>🌍</span>
+              <span style={{ fontSize: 14, fontWeight: 500 }}>{tx.languageLabel}</span>
+              <select
+                value={lang}
+                onChange={handleLanguageChange}
+                style={{ marginRight: 'auto', height: 32, border: '1.5px solid #E5E9EB', borderRadius: 8, padding: '0 10px', fontSize: 13, fontFamily: 'var(--font-arabic)', background: 'white', cursor: 'pointer', color: '#64748b' }}
+              >
                 <option value="ar">العربية</option>
                 <option value="fr">Français</option>
                 <option value="en">English</option>
@@ -423,12 +536,8 @@ const UserProfile = () => {
           </div>
 
           <div style={{ background: '#F0F7F7', borderRadius: 14, padding: 16, border: '1px solid #CCF0F0' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#0A5F62', marginBottom: 6 }}>🎖 مستوى المتبرع الذهبي</div>
-            <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.7 }}>تبرعاتك تجاوزت 3,000 درهم — أنت من أوفياء جمعية ابتسام</div>
-            <div style={{ marginTop: 10, height: 6, background: '#E5E9EB', borderRadius: 100, overflow: 'hidden' }}>
-              <div style={{ width: '70%', height: '100%', background: 'linear-gradient(to left,#f59e0b,#d97706)', borderRadius: 100 }} />
-            </div>
-            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>3,450 / 5,000 درهم للمستوى البلاتيني</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#0A5F62', marginBottom: 6 }}>{tx.memberSince}</div>
+            <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.7 }}>{convexUser?.createdAt ? new Date(convexUser.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-MA' : lang === 'fr' ? 'fr-FR' : 'en-US') : '—'}</div>
           </div>
         </div>
       </div>
