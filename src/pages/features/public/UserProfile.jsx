@@ -41,6 +41,8 @@ const UserProfile = () => {
   const { currentLanguage, user, logout, updateUser, showToast, formatCurrency, formatDate, changeLanguage } = useApp();
   const profileUserId = user?.userId || (!user?.isAdmin ? user?.id : null);
 
+  const lang = currentLanguage.code;
+
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [editData, setEditData] = useState({
@@ -57,8 +59,6 @@ const UserProfile = () => {
   const userDonations = useQuery(api.donations.getDonationsByUser, profileUserId ? { userId: profileUserId } : 'skip');
   const kafalaSponsorships = useQuery(api.kafala.getUserKafalaSponsorship, profileUserId ? { userId: profileUserId } : 'skip');
   const convexUser = useQuery(api.users.getUserById, profileUserId ? { userId: profileUserId } : 'skip');
-
-  const lang = currentLanguage.code;
   const translations = {
     ar: {
       editProfile: 'تعديل الملف',

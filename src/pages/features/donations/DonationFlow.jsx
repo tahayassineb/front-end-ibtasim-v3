@@ -442,16 +442,26 @@ const Step2Payment = ({ donationData, setDonationData, bankInfo, showToast, lang
                     <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7, marginBottom: 12 }}>
                       حوّل المبلغ عبر <strong>Wafacash</strong> أو <strong>Cash Plus</strong> — في خانة المستفيد أدخل رقم هاتف الجمعية
                     </div>
-                    {bankInfo.associationPhone && (
-                      <div style={{ background: '#E6F4F4', borderRadius: 10, padding: 12, marginBottom: 12, border: '1px solid #CCF0F0', textAlign: 'center' }}>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>رقم هاتف الجمعية</div>
-                        <div style={{ fontSize: 20, fontWeight: 800, color: '#0A5F62', fontFamily: 'Inter, sans-serif', letterSpacing: '.06em', margin: '4px 0' }} dir="ltr">{bankInfo.associationPhone}</div>
-                        <button onClick={e => { e.stopPropagation(); copyToClipboard(bankInfo.associationPhone); }}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#0d7477', background: 'white', padding: '3px 10px', borderRadius: 100, cursor: 'pointer', border: 'none', fontFamily: 'var(--font-arabic)', marginTop: 4 }}>
-                          📋 نسخ الرقم
-                        </button>
+                    {bankInfo.agency && (
+                      <div style={{ marginBottom: 12 }}>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>الوكالة / الفرع المستهدف</div>
+                        <div style={{ fontSize: 14, fontWeight: 700 }}>{bankInfo.agency}</div>
                       </div>
                     )}
+                    <div style={{ background: '#E6F4F4', borderRadius: 10, padding: 12, marginBottom: 12, border: '1px solid #CCF0F0', textAlign: 'center' }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>رقم هاتف الجمعية</div>
+                      {bankInfo.associationPhone ? (
+                        <>
+                          <div style={{ fontSize: 20, fontWeight: 800, color: '#0A5F62', fontFamily: 'Inter, sans-serif', letterSpacing: '.06em', margin: '4px 0' }} dir="ltr">{bankInfo.associationPhone}</div>
+                          <button onClick={e => { e.stopPropagation(); copyToClipboard(bankInfo.associationPhone); }}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#0d7477', background: 'white', padding: '3px 10px', borderRadius: 100, cursor: 'pointer', border: 'none', fontFamily: 'var(--font-arabic)', marginTop: 4 }}>
+                            📋 نسخ الرقم
+                          </button>
+                        </>
+                      ) : (
+                        <div style={{ fontSize: 14, fontWeight: 600, color: '#b45309', margin: '4px 0' }}>لم يتم تحديد رقم الهاتف بعد</div>
+                      )}
+                    </div>
                     <div style={{ background: '#F0F7F7', borderRadius: 10, padding: 12 }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: '#0A5F62', marginBottom: 6 }}>📋 خطوات الإيداع:</div>
                       {['توجه لأقرب وكالة Wafacash أو Cash Plus', 'أدخل رقم هاتف الجمعية في خانة المستفيد', 'احتفظ بوصل الإيداع', 'ارفع الوصل في الخطوة التالية'].map((s, i) => (
@@ -476,7 +486,7 @@ const Step2Payment = ({ donationData, setDonationData, bankInfo, showToast, lang
   );
 };
 
-const MOROCCAN_BANKS = ['CIH Bank', 'Attijariwafa Bank', 'BMCE Bank (Bank of Africa)', 'Banque Populaire', 'BCP (Banque Centrale Populaire)', 'Société Générale Maroc', 'BMCI', 'Crédit Agricole du Maroc', 'CDG Capital', 'CFG Bank', 'Al Barid Bank', 'Umnia Bank', 'Wafa Cash', 'Cash Plus', 'أخرى'];
+const MOROCCAN_BANKS = ['CIH Bank', 'Attijariwafa Bank', 'BMCE Bank (Bank of Africa)', 'Banque Populaire', 'BCP (Banque Centrale Populaire)', 'Société Générale Maroc', 'BMCI', 'Crédit Agricole du Maroc', 'CDG Capital', 'CFG Bank', 'Al Barid Bank', 'Umnia Bank', 'Wafa Cash', 'Cash Plus', 'أخرى / Autre / Other'];
 
 // ─── Step 3: Receipt Upload ───────────────────────────────────────────────────
 const Step3Receipt = ({ uploadedFile, setUploadedFile, dragActive, setDragActive, showToast, lang, amount, donationData, setDonationData }) => {
@@ -528,13 +538,13 @@ const Step3Receipt = ({ uploadedFile, setUploadedFile, dragActive, setDragActive
         <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: '#0e1a1b' }}>تفاصيل التحويل</div>
 
         <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>اسم البنك / الوكالة <span style={{ color: '#ef4444' }}>*</span></div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>البنك أو الوكالة التي حوّلت منها <span style={{ color: '#ef4444' }}>*</span></div>
           <select
             value={donationData?.bankName || ''}
             onChange={e => setDonationData(p => ({ ...p, bankName: e.target.value }))}
             style={{ width: '100%', height: 52, border: `1.5px solid ${donationData?.bankName ? '#33C0C0' : '#E5E9EB'}`, borderRadius: 14, padding: '0 16px', fontSize: 14, fontFamily: 'var(--font-arabic)', color: '#0e1a1b', background: 'white', outline: 'none', boxSizing: 'border-box', appearance: 'none', cursor: 'pointer' }}
           >
-            <option value="">-- اختر البنك أو الوكالة --</option>
+            <option value="">-- اختر البنك أو الوكالة التي أرسلت منها --</option>
             {MOROCCAN_BANKS.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
         </div>

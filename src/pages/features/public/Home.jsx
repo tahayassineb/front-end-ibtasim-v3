@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
@@ -68,6 +68,7 @@ const copy = {
       quote: 'نؤمن أن كل طفل يستحق من يرافقه ليصل إلى إمكاناته.',
       allCta: 'عرض حالات الكفالة',
       previewCta: 'عرض الحالة',
+      sponsorCta: 'اكفله الآن',
       centerTitle: 'كفالتك تصنع فرقاً',
       centerText: 'في حياتهم وتمنحهم فرصة لحلم ومستقبل أكثر إشراقاً.',
       band: 'معاً، نحول الكفالة إلى مرافقة تصنع الأثر في حياة طفل وأسرة.',
@@ -123,6 +124,7 @@ const copy = {
       quote: 'Chaque enfant merite un accompagnement vers son potentiel.',
       allCta: 'Voir les cas de kafala',
       previewCta: 'Voir le cas',
+      sponsorCta: 'Parrainer maintenant',
       centerTitle: 'Votre kafala fait la difference',
       centerText: 'et donne a un enfant et sa famille une stabilite durable.',
       band: 'Ensemble, nous transformons la kafala en accompagnement durable.',
@@ -178,6 +180,7 @@ const copy = {
       quote: 'Every child deserves someone who walks with them toward their potential.',
       allCta: 'View sponsorship cases',
       previewCta: 'View case',
+      sponsorCta: 'Sponsor Now',
       centerTitle: 'Your sponsorship creates a real difference',
       centerText: 'and gives a child and family steadier ground for the future.',
       band: 'Together, we turn sponsorship into long-term accompaniment.',
@@ -378,7 +381,7 @@ function useRevealMotion() {
 
     nodes.forEach((node) => observer.observe(node));
     return () => observer.disconnect();
-  }, []);
+  }, [lang]);
 }
 
 const getStatTarget = (index) => {
@@ -414,6 +417,7 @@ const formatStatValue = (index, value, lang) => {
 };
 
 export default function Home() {
+  const navigate = useNavigate();
   const { language, currentLanguage } = useApp();
   const lang = currentLanguage?.code || language || 'ar';
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
@@ -505,7 +509,7 @@ export default function Home() {
             </div>
             <ul className="home-v2__trust-list home-reveal" style={{ '--reveal-delay': '320ms' }}>
               {t.hero.trustItems.map((item, index) => (
-                <li key={item}>
+                <li key={`trust-${index}`}>
                   <span className="material-symbols-outlined no-flip">
                     {index === 0 ? 'verified_user' : index === 1 ? 'event_available' : 'favorite'}
                   </span>
@@ -533,7 +537,7 @@ export default function Home() {
             </div>
             <div className="home-v2__stats-grid" ref={statsRef}>
               {t.stats.items.map((item, index) => (
-                <article className="home-v2__stat" key={item.label}>
+                <article className="home-v2__stat" key={`stat-${index}`}>
                   <span className="material-symbols-outlined no-flip">{item.icon}</span>
                   <strong>{formatStatValue(index, statValues[index] ?? getStatTarget(index), lang)}</strong>
                   <small>{item.label}</small>
@@ -596,10 +600,15 @@ export default function Home() {
               const actionPath = isFallback ? '/projects' : `/donate/${project._id}`;
 
               return (
-                <article className={`home-v2__project-feature ${index % 2 === 1 ? 'is-reversed' : ''}`} key={project._id || title}>
-                  <Link className="home-v2__project-image" to={projectPath}>
+                <article
+                  className={`home-v2__project-feature ${index % 2 === 1 ? 'is-reversed' : ''}`}
+                  key={project._id || title}
+                  onClick={() => navigate(projectPath)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="home-v2__project-image">
                     <img src={image} alt={title} loading="lazy" />
-                  </Link>
+                  </div>
                   <div className="home-v2__project-copy">
                     <span className="home-v2__project-tag">{tag}</span>
                     <h3>{title}</h3>
@@ -613,7 +622,11 @@ export default function Home() {
                         <span style={{ width: `${percent}%` }} />
                       </div>
                     </div>
-                    <Link className="home-v2__button home-v2__button--primary" to={actionPath}>
+                    <Link
+                      className="home-v2__button home-v2__button--primary"
+                      to={actionPath}
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <span className="material-symbols-outlined no-flip">arrow_forward</span>
                       {t.projects.action}
                     </Link>
@@ -664,17 +677,28 @@ export default function Home() {
               const isFallback = String(item._id || '').startsWith('fallback-');
               const detailPath = isFallback ? '/kafala' : `/kafala/${item.slug || item._id}`;
 
+              const sponsorPath = isFallback ? '/kafala' : `/kafala/${item._id}/sponsor`;
+
               return (
-                <article className="home-v2__kafala-card home-reveal" key={item._id || title} style={{ '--reveal-delay': `${80 + (index * 120)}ms` }}>
+                <article
+                  className="home-v2__kafala-card home-reveal"
+                  key={item._id || title}
+                  style={{ '--reveal-delay': `${80 + (index * 120)}ms`, cursor: 'pointer' }}
+                  onClick={() => navigate(detailPath)}
+                >
                   <div className="home-v2__kafala-card-image">
                     <img src={resolvedImage} alt={title} loading="lazy" />
                   </div>
                   <div className="home-v2__kafala-card-copy">
                     <h3>{title}</h3>
                     <p>{description}</p>
-                    <Link className="home-v2__button home-v2__button--secondary" to={detailPath}>
+                    <Link
+                      className="home-v2__button home-v2__button--secondary"
+                      to={sponsorPath}
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <span className="material-symbols-outlined no-flip">arrow_forward</span>
-                      {t.kafala.previewCta}
+                      {t.kafala.sponsorCta}
                     </Link>
                   </div>
                 </article>

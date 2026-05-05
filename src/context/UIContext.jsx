@@ -10,6 +10,11 @@ export const UIProvider = ({ children }) => {
     return saved || 'ar';
   });
 
+  // First-visit language chooser
+  const [showLanguageChooser, setShowLanguageChooser] = useState(() => {
+    return !localStorage.getItem('app-language');
+  });
+
   // Toast/Notification State
   const [toast, setToast] = useState(null);
   const toastTimerRef = useRef(null);
@@ -32,6 +37,11 @@ export const UIProvider = ({ children }) => {
       document.documentElement.lang = langCode;
     }
   }, []);
+
+  const selectLanguageAndClose = useCallback((langCode) => {
+    changeLanguage(langCode);
+    setShowLanguageChooser(false);
+  }, [changeLanguage]);
 
   const t = useCallback((key) => {
     return TRANSLATIONS[language]?.[key] || key;
@@ -215,7 +225,82 @@ export const UIProvider = ({ children }) => {
   return (
     <UIContext.Provider value={value}>
       {children}
+      {showLanguageChooser && <LanguageChooserOverlay onSelect={selectLanguageAndClose} />}
     </UIContext.Provider>
+  );
+};
+
+const LanguageChooserOverlay = ({ onSelect }) => {
+  const options = [
+    { code: 'ar', label: 'العربية' },
+    { code: 'fr', label: 'Français' },
+    { code: 'en', label: 'English' },
+  ];
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(2,23,24,0.65)',
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
+      }}
+    >
+      <div
+        style={{
+          background: 'white',
+          borderRadius: 20,
+          padding: '36px 28px',
+          maxWidth: 380,
+          width: '90%',
+          textAlign: 'center',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+        }}
+      >
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: '#0e1a1b', marginBottom: 4 }}>اختر لغتك</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: '#334155', marginBottom: 4 }}>Choisissez votre langue</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: '#334155' }}>Choose your language</div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {options.map((opt) => (
+            <button
+              key={opt.code}
+              type="button"
+              onClick={() => onSelect(opt.code)}
+              style={{
+                width: '100%',
+                height: 48,
+                borderRadius: 12,
+                border: '1.5px solid #E5E9EB',
+                background: 'white',
+                color: '#0e1a1b',
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                transition: 'background 150ms, border-color 150ms',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#f6f8f8';
+                e.currentTarget.style.borderColor = '#0d7477';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'white';
+                e.currentTarget.style.borderColor = '#E5E9EB';
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 };
 

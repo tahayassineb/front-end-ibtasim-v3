@@ -86,10 +86,27 @@ export default function ProjectsList() {
                     <h3 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 900 }}>{project.titleText}</h3>
                     <p style={{ margin: '0 0 14px', color: '#64748b', fontSize: 13, lineHeight: 1.7, height: 44, overflow: 'hidden' }}>{project.shortDescriptionText}</p>
                     <div style={{ height: 8, background: '#E5E9EB', borderRadius: 99, overflow: 'hidden', marginBottom: 8 }}><div style={{ width: `${pct}%`, height: '100%', background: '#0d7477' }} /></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', fontSize: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', fontSize: 12, marginBottom: 14 }}>
                       <strong style={{ color: '#0A5F62' }}>{formatMAD(project.raisedAmount || 0, lang)}</strong>
                       <span>{pct}%</span>
                     </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); navigate(`/donate/${project._id}`); }}
+                      style={{
+                        width: '100%',
+                        height: 40,
+                        background: '#0d7477',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 10,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      {lang === 'ar' ? 'تبرع الآن' : lang === 'fr' ? 'Faire un don' : 'Donate now'}
+                    </button>
                   </div>
                 </article>
               );
