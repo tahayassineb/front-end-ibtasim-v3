@@ -365,7 +365,7 @@ const resolveImage = (item, fallback = '') => {
   return fallback;
 };
 
-function useRevealMotion() {
+function useRevealMotion(lang) {
   useEffect(() => {
     const nodes = Array.from(document.querySelectorAll('.home-v2 .home-reveal'));
     if (!nodes.length) return undefined;
@@ -425,7 +425,7 @@ export default function Home() {
   const statsRef = useRef(null);
   const [statValues, setStatValues] = useState(() => t.stats.items.map(() => 0));
 
-  useRevealMotion();
+  useRevealMotion(lang);
 
   const projects = useQuery(api.projects.getProjects, { featured: true, limit: 6 });
   const kafala = useQuery(api.kafala.getPublicKafalaList, { featured: true, limit: 4 });
