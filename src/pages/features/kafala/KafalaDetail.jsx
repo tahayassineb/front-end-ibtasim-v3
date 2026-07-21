@@ -4,6 +4,7 @@ import { useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
 import { convexFileUrl } from '../../../lib/convex';
+import { getLocalizedText } from '../../../lib/i18nContent';
 import KafalaAvatar from '../../../components/kafala/KafalaAvatar';
 import { updatePageSeo } from '../../../lib/seo';
 
@@ -63,14 +64,14 @@ export default function KafalaDetail() {
         ? kafala.bio
         : kafala.bio[lang] || kafala.bio.ar || kafala.bio.en || '';
     updatePageSeo({
-      title: `${kafala.metaTitle || kafala.name} | Kafala | Association Espoir`,
+      title: `${kafala.metaTitle || getLocalizedText(kafala.name, lang)} | Kafala | Association Espoir`,
       description: kafala.metaDescription || bio,
       canonicalPath: kafala.canonicalPath || `/kafala/${kafala.slug || kafala._id}`,
       image: photoUrl,
       schema: {
         '@context': 'https://schema.org',
         '@type': 'DonateAction',
-        name: kafala.name,
+        name: getLocalizedText(kafala.name, lang),
         description: kafala.metaDescription || bio,
         url: `${window.location.origin}/kafala/${kafala.slug || kafala._id}`,
         recipient: { '@type': 'NGO', name: 'Association Espoir' },
@@ -101,6 +102,8 @@ export default function KafalaDetail() {
   const params = new URLSearchParams(window.location.search);
   const justSponsored = params.get('sponsored') === 'true';
   const monthlyAmount = Number(kafala.monthlyPrice || 300).toLocaleString('fr-MA');
+  const displayName = getLocalizedText(kafala.name, lang);
+  const displayLocation = getLocalizedText(kafala.location, lang);
 
   return (
     <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'var(--font-arabic)', color: '#0e1a1b' }}>
@@ -122,10 +125,10 @@ export default function KafalaDetail() {
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,.15)', border: '1px solid rgba(255,255,255,.25)', color: 'rgba(255,255,255,.9)', borderRadius: 100, padding: '5px 14px', fontSize: 12, fontWeight: 600, marginBottom: 10 }}>
               {isSponsored ? '🤲 مكفول · Sponsored' : '🤲 متاح للكفالة · Available'}
             </div>
-            <h1 style={{ fontSize: isMobile ? 26 : 40, fontWeight: 900, color: 'white', marginBottom: 6 }}>{kafala.name}</h1>
+            <h1 style={{ fontSize: isMobile ? 26 : 40, fontWeight: 900, color: 'white', marginBottom: 6 }}>{displayName}</h1>
             <div style={{ display: 'flex', justifyContent: isMobile ? 'center' : 'flex-start', flexWrap: 'wrap', gap: isMobile ? 10 : 20, fontSize: 14, color: 'rgba(255,255,255,.75)' }}>
               <span>🎂 {kafala.age} {lang === 'ar' ? 'سنوات' : lang === 'fr' ? 'ans' : 'yrs'}</span>
-              <span>📍 {kafala.location}</span>
+              <span>📍 {displayLocation}</span>
               <span>{kafala.gender === 'female' ? `👧 ${tx.female}` : `👦 ${tx.male}`}</span>
             </div>
             <div style={{ marginTop: 14, display: 'flex', alignItems: 'baseline', justifyContent: isMobile ? 'center' : 'flex-start', gap: 4 }}>
@@ -170,14 +173,14 @@ export default function KafalaDetail() {
         {/* Left column */}
         <div>
           {/* Bio */}
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#8B6914', marginBottom: 8, fontFamily: 'Inter, sans-serif' }}>قصة {kafala.name}</div>
-          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 14 }}>من هو {kafala.name}؟</h2>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#8B6914', marginBottom: 8, fontFamily: 'Inter, sans-serif' }}>قصة {displayName}</div>
+          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 14 }}>من هو {displayName}؟</h2>
           {getBioText(kafala.bio) ? (
             <p style={{ fontSize: 15, color: '#64748b', lineHeight: 1.85 }}>{getBioText(kafala.bio)}</p>
           ) : (
             <>
               <p style={{ fontSize: 15, color: '#64748b', lineHeight: 1.85 }}>
-                {kafala.name} طفل يتيم بالغ من العمر {kafala.age} سنوات، يعيش في منطقة {kafala.location}. يحتاج إلى دعم مستمر ليواصل تعليمه ويحقق أحلامه.
+                {displayName} طفل يتيم بالغ من العمر {kafala.age} سنوات، يعيش في منطقة {displayLocation}. يحتاج إلى دعم مستمر ليواصل تعليمه ويحقق أحلامه.
               </p>
               <p style={{ fontSize: 15, color: '#64748b', lineHeight: 1.85, marginTop: 12 }}>
                 كفالتك الشهرية ستوفر له التعليم والغذاء والرعاية الصحية التي يحتاجها كل طفل لينمو بصحة وأمان.
@@ -243,7 +246,7 @@ export default function KafalaDetail() {
                 onClick={() => navigate(`/kafala/${kafala._id}/sponsor`)}
                 style={{ width: '100%', height: 52, background: '#8B6914', color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: '0 4px 14px rgba(196,168,130,.35)', marginBottom: 8 }}
               >
-                اكفل {kafala.name} بـ {monthlyAmount} درهم/شهر
+                اكفل {displayName} بـ {monthlyAmount} درهم/شهر
               </button>
               <div style={{ fontSize: 12, color: '#94a3b8' }}>بدون التزام طويل المدى · يمكنك الإلغاء متى شئت</div>
             </div>
@@ -288,7 +291,7 @@ export default function KafalaDetail() {
                 onClick={() => navigate(`/kafala/${kafala._id}/sponsor`)}
                 style={{ width: '100%', height: 56, background: '#8B6914', color: 'white', border: 'none', borderRadius: 14, fontSize: 17, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(196,168,130,.35)', fontFamily: 'var(--font-arabic)', margin: '20px 0 8px' }}
               >
-                🤲 اكفل {kafala.name} الآن
+                🤲 اكفل {displayName} الآن
               </button>
               <div style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8' }}>بدون التزام طويل المدى · يمكنك الإلغاء متى شئت</div>
 

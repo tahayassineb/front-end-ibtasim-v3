@@ -171,7 +171,6 @@ export const StepperProgress = ({
       {steps.map((step, index) => {
         const isCompleted = index < currentStep;
         const isCurrent = index === currentStep;
-        const isPending = index > currentStep;
 
         return (
           <React.Fragment key={index}>

@@ -36,6 +36,7 @@ export default function AdminLogin() {
       if (result.success) {
         login({
           id: result.adminId,
+          sessionToken: result.sessionToken,
           userId: result.userId,
           email: result.email,
           name: result.fullName || 'Admin',

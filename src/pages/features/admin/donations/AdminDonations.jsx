@@ -145,7 +145,11 @@ export default function AdminDonations() {
     }
     setBulkLoading(true);
     try {
-      await Promise.all(eligibleIds.map((id) => verifyDonation({ donationId: id, adminId: user.id, verified: true })));
+      await Promise.all(eligibleIds.map((id) => verifyDonation({
+        donationId: id,
+        sessionToken: user?.sessionToken,
+        verified: true,
+      })));
       setSelectedIds(new Set());
       showToast('تم التحقق من التبرعات المحددة', 'success');
     } finally {
@@ -167,7 +171,10 @@ export default function AdminDonations() {
     }
     setBulkLoading(true);
     try {
-      await Promise.all(eligibleIds.map((id) => rejectDonation({ donationId: id, adminId: user.id })));
+      await Promise.all(eligibleIds.map((id) => rejectDonation({
+        donationId: id,
+        sessionToken: user?.sessionToken,
+      })));
       setSelectedIds(new Set());
       showToast('تم رفض التبرعات المحددة', 'success');
     } finally {

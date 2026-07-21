@@ -1,11 +1,30 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { excerpt, slugify } from "./seo";
+import { requireAdmin, requireAdminSession } from "./permissions";
+
+async function requireStoryAdminActor(
+  ctx: any,
+  sessionToken: string,
+  permission: "admin:read" | "content:write"
+) {
+  return await requireAdminSession(ctx, sessionToken, permission);
+}
+
+const localizedTextValidator = v.object({ ar: v.string(), fr: v.string(), en: v.string() });
+const localizedOrStringValidator = v.union(v.string(), localizedTextValidator);
+
+function textFallback(value: any) {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  return value.ar || value.fr || value.en || "";
+}
 
 // ── Admin: get all stories ──────────────────────────────────────────────────
 export const getAllStories = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { sessionToken: v.string() },
+  handler: async (ctx, args) => {
+    await requireStoryAdminActor(ctx, args.sessionToken, "admin:read");
     return await ctx.db
       .query("stories")
       .order("desc")
@@ -44,8 +63,9 @@ export const getPublishedStoryBySlugOrId = query({
 
 // ── Admin: generate upload URL for story cover image ────────────────────────
 export const generateStoryImageUploadUrl = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: { sessionToken: v.string() },
+  handler: async (ctx, args) => {
+    await requireStoryAdminActor(ctx, args.sessionToken, "content:write");
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -53,19 +73,19 @@ export const generateStoryImageUploadUrl = mutation({
 // ── Admin: create story ─────────────────────────────────────────────────────
 export const createStory = mutation({
   args: {
-    title: v.string(),
-    excerpt: v.string(),
+    title: localizedOrStringValidator,
+    excerpt: localizedOrStringValidator,
     category: v.string(),
     gradient: v.string(),
     badgeIcon: v.string(),
-    badgeText: v.string(),
-    catLabel: v.string(),
+    badgeText: localizedOrStringValidator,
+    catLabel: localizedOrStringValidator,
     catColor: v.string(),
     isPublished: v.boolean(),
     isFeatured: v.optional(v.boolean()),
-    adminId: v.string(),
+    sessionToken: v.string(),
     coverImage: v.optional(v.string()),
-    body: v.optional(v.string()),
+    body: v.optional(localizedOrStringValidator),
     postType: v.optional(v.union(v.literal("story"), v.literal("activity"), v.literal("update"))),
     slug: v.optional(v.string()),
     metaDescription: v.optional(v.string()),
@@ -73,13 +93,18 @@ export const createStory = mutation({
     imageAlt: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const slug = args.slug || slugify(args.title);
+    await requireStoryAdminActor(ctx, args.sessionToken, "content:write");
+    const { sessionToken, ...storyArgs } = args;
+    const titleText = textFallback(args.title);
+    const excerptText = textFallback(args.excerpt);
+    const bodyText = textFallback(args.body);
+    const slug = args.slug || slugify(titleText);
     return await ctx.db.insert("stories", {
-      ...args,
+      ...storyArgs,
       slug,
-      metaTitle: args.metaTitle || args.title,
-      metaDescription: args.metaDescription || excerpt(args.excerpt || args.body || ""),
-      imageAlt: args.imageAlt || args.title,
+      metaTitle: args.metaTitle || titleText,
+      metaDescription: args.metaDescription || excerpt(excerptText || bodyText),
+      imageAlt: args.imageAlt || titleText,
       canonicalPath: `/stories/${slug}`,
       publishedAt: args.isPublished ? Date.now() : undefined,
     });
@@ -90,52 +115,57 @@ export const createStory = mutation({
 export const updateStory = mutation({
   args: {
     id: v.id("stories"),
-    title: v.optional(v.string()),
-    excerpt: v.optional(v.string()),
+    sessionToken: v.string(),
+    title: v.optional(localizedOrStringValidator),
+    excerpt: v.optional(localizedOrStringValidator),
     category: v.optional(v.string()),
     gradient: v.optional(v.string()),
     badgeIcon: v.optional(v.string()),
-    badgeText: v.optional(v.string()),
-    catLabel: v.optional(v.string()),
+    badgeText: v.optional(localizedOrStringValidator),
+    catLabel: v.optional(localizedOrStringValidator),
     catColor: v.optional(v.string()),
     isPublished: v.optional(v.boolean()),
     isFeatured: v.optional(v.boolean()),
     coverImage: v.optional(v.string()),
-    body: v.optional(v.string()),
+    body: v.optional(localizedOrStringValidator),
     postType: v.optional(v.union(v.literal("story"), v.literal("activity"), v.literal("update"))),
     slug: v.optional(v.string()),
     metaDescription: v.optional(v.string()),
     metaTitle: v.optional(v.string()),
     imageAlt: v.optional(v.string()),
   },
-  handler: async (ctx, { id, ...fields }) => {
-    if (fields.title && !fields.slug) fields.slug = slugify(fields.title);
+  handler: async (ctx, { id, sessionToken, ...fields }) => {
+    await requireStoryAdminActor(ctx, sessionToken, "content:write");
+    if (fields.title && !fields.slug) fields.slug = slugify(textFallback(fields.title));
     if (fields.slug) (fields as any).canonicalPath = `/stories/${fields.slug}`;
-    if (fields.excerpt && !fields.metaDescription) fields.metaDescription = excerpt(fields.excerpt);
+    if (fields.excerpt && !fields.metaDescription) fields.metaDescription = excerpt(textFallback(fields.excerpt));
     await ctx.db.patch(id, fields);
   },
 });
 
 // ── Admin: delete story ─────────────────────────────────────────────────────
 export const deleteStory = mutation({
-  args: { id: v.id("stories") },
-  handler: async (ctx, { id }) => {
+  args: { id: v.id("stories"), sessionToken: v.string() },
+  handler: async (ctx, { id, sessionToken }) => {
+    await requireStoryAdminActor(ctx, sessionToken, "content:write");
     await ctx.db.delete(id);
   },
 });
 
 // ── Admin: publish story ────────────────────────────────────────────────────
 export const publishStory = mutation({
-  args: { id: v.id("stories") },
-  handler: async (ctx, { id }) => {
+  args: { id: v.id("stories"), sessionToken: v.string() },
+  handler: async (ctx, { id, sessionToken }) => {
+    await requireStoryAdminActor(ctx, sessionToken, "content:write");
     await ctx.db.patch(id, { isPublished: true, publishedAt: Date.now() });
   },
 });
 
 // ── Admin: unpublish story ──────────────────────────────────────────────────
 export const unpublishStory = mutation({
-  args: { id: v.id("stories") },
-  handler: async (ctx, { id }) => {
+  args: { id: v.id("stories"), sessionToken: v.string() },
+  handler: async (ctx, { id, sessionToken }) => {
+    await requireStoryAdminActor(ctx, sessionToken, "content:write");
     await ctx.db.patch(id, { isPublished: false });
   },
 });

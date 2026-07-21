@@ -33,12 +33,12 @@ const WhatsAppTab = ({
     }
     autoRefreshTimerRef.current = setInterval(async () => {
       try {
-        const result = await refreshQrCodeAction({});
+        const result = await refreshQrCodeAction();
         if (result.qrCode) setWhatsappSession(prev => ({ ...prev, qrCode: result.qrCode }));
       } catch { /* silent */ }
     }, 20000);
     return () => clearInterval(autoRefreshTimerRef.current);
-  }, [whatsappSession.qrCode, whatsappSession.isConnected]);
+  }, [refreshQrCodeAction, setWhatsappSession, whatsappSession.qrCode, whatsappSession.isConnected]);
 
   // Poll status every 5 s while QR visible (detect scan success)
   const statusPollRef = useRef(null);
@@ -49,7 +49,7 @@ const WhatsAppTab = ({
     }
     statusPollRef.current = setInterval(async () => {
       try {
-        const result = await syncSessionStatusAction({});
+        const result = await syncSessionStatusAction();
         if (result?.isConnected) {
           setWhatsappSession(prev => ({ ...prev, isConnected: true, qrCode: null }));
           clearInterval(statusPollRef.current);
@@ -57,7 +57,7 @@ const WhatsAppTab = ({
       } catch { /* silent */ }
     }, 5000);
     return () => clearInterval(statusPollRef.current);
-  }, [whatsappSession.instanceId, whatsappSession.isConnected, whatsappSession.qrCode]);
+  }, [setWhatsappSession, syncSessionStatusAction, whatsappSession.instanceId, whatsappSession.isConnected, whatsappSession.qrCode]);
 
   return (
     <SettingsCard icon="💬" title="إعدادات واتساب (WaSender)">

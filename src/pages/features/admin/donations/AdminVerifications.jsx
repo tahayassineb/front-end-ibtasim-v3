@@ -80,7 +80,11 @@ export default function AdminVerifications() {
     if (!user?.id) { showToast('تعذر تحديد المشرف الحالي', 'error'); return; }
     setIsSubmitting(true);
     try {
-      const ok = await verifyDonationMut({ donationId: selectedDonation._id, adminId: user.id, verified: true });
+      const ok = await verifyDonationMut({
+        donationId: selectedDonation._id,
+        sessionToken: user?.sessionToken,
+        verified: true,
+      });
       if (!ok) { showToast('فشل التحقق', 'error'); return; }
       showToast('تم التحقق من التبرع بنجاح ✅', 'success');
       setSelectedDonation(null);
@@ -93,7 +97,11 @@ export default function AdminVerifications() {
     if (!user?.id) { showToast('تعذر تحديد المشرف الحالي', 'error'); return; }
     setIsSubmitting(true);
     try {
-      await rejectDonationMut({ donationId: selectedDonation._id, adminId: user.id, reason: rejectionReason || undefined });
+      await rejectDonationMut({
+        donationId: selectedDonation._id,
+        sessionToken: user?.sessionToken,
+        reason: rejectionReason || undefined,
+      });
       showToast('تم رفض التبرع', 'error');
       setSelectedDonation(null);
     } catch { showToast('حدث خطأ أثناء الرفض', 'error'); }

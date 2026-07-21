@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { getAdminSessionRecord, touchAdminSession } from "./adminSessions";
 
 export const adminRole = v.union(
   v.literal("owner"),
@@ -22,7 +23,7 @@ const roleRank: Record<AdminRole, number> = {
   owner: 3,
 };
 
-const permissions: Record<string, AdminRole[]> = {
+export const permissions: Record<string, AdminRole[]> = {
   "admin:read": ["owner", "manager", "validator", "viewer"],
   "admin:manage_team": ["owner"],
   "admin:invite": ["owner", "manager"],
@@ -66,3 +67,18 @@ export async function requireAdmin(ctx: any, adminId: any, permission?: keyof ty
   return { ...admin, role: effectiveRole(admin.role) };
 }
 
+export async function requireAdminSession(
+  ctx: any,
+  sessionToken: string,
+  permission?: keyof typeof permissions
+) {
+  const resolved = await getAdminSessionRecord(ctx, sessionToken);
+  if (!resolved) {
+    throw new Error("Admin session is inactive or invalid.");
+  }
+  if (permission && !canRole(resolved.admin.role, permission)) {
+    throw new Error("You do not have permission to perform this action.");
+  }
+  await touchAdminSession(ctx, resolved.session._id);
+  return { ...resolved.admin, role: effectiveRole(resolved.admin.role) };
+}

@@ -4,6 +4,7 @@ import { useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
 import { convexFileUrl } from '../../../lib/convex';
+import { getProjectCategoryMeta, parseProjectCategories } from '../../../lib/i18nContent';
 import { formatMAD } from '../../../lib/money';
 
 const getText = (value, lang) => {
@@ -29,6 +30,9 @@ export default function ProjectsList() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const projectsData = useQuery(api.projects.getProjects, { status: 'active', limit: 100 });
+  const projectCategoriesConfig = useQuery(api.config.getConfig, { key: 'project_categories' });
+  const projectCategories = parseProjectCategories(projectCategoriesConfig);
+  const categoryKeys = Array.from(new Set([...projectCategories.map((item) => item.id), ...Object.keys(categoryMeta)]));
 
   const projects = useMemo(() => (projectsData || []).map((project) => ({
     ...project,
@@ -60,9 +64,9 @@ export default function ProjectsList() {
       <div style={{ background: 'white', borderBottom: '1px solid #E5E9EB' }}>
         <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 24px', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ابحث عن مشروع..." style={{ flex: 1, minWidth: 220, height: 40, border: '1.5px solid #E5E9EB', borderRadius: 10, padding: '0 14px', fontFamily: 'inherit' }} />
-          {['all', ...Object.keys(categoryMeta)].map((key) => (
+          {['all', ...categoryKeys].map((key) => (
             <button key={key} type="button" onClick={() => setCategory(key)} style={{ height: 36, padding: '0 14px', borderRadius: 99, border: `1.5px solid ${category === key ? '#0d7477' : '#E5E9EB'}`, background: category === key ? '#0d7477' : 'white', color: category === key ? 'white' : '#64748b', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 800 }}>
-              {key === 'all' ? 'الكل' : `${categoryMeta[key].icon} ${categoryMeta[key].label}`}
+              {key === 'all' ? 'الكل' : `${categoryMeta[key]?.icon || ''} ${getProjectCategoryMeta(projectCategories, key, lang).label || categoryMeta[key]?.label || key}`}
             </button>
           ))}
         </div>
@@ -74,7 +78,10 @@ export default function ProjectsList() {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 20 }}>
             {filtered.map((project) => {
-              const meta = categoryMeta[project.category] || { icon: '🤝', label: 'خيري' };
+              const configuredMeta = getProjectCategoryMeta(projectCategories, project.category, lang);
+              const meta = categoryMeta[project.category]
+                ? { ...categoryMeta[project.category], label: configuredMeta.label || categoryMeta[project.category].label }
+                : { icon: '🤝', label: configuredMeta.label || 'خيري' };
               const pct = project.goalAmount ? Math.min(Math.round((project.raisedAmount || 0) / project.goalAmount * 100), 100) : 0;
               return (
                 <article key={project._id} onClick={() => navigate(`/projects/${project._id}`)} style={{ background: 'white', border: '1px solid #E5E9EB', borderRadius: 16, overflow: 'hidden', cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,.05)' }}>

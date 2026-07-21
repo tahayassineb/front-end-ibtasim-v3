@@ -1,6 +1,10 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAdmin } from "./permissions";
+import { requireAdminSession } from "./permissions";
+
+async function requireReceiptAdminActor(ctx: any, sessionToken: string, permission: "receipts:export") {
+  return await requireAdminSession(ctx, sessionToken, permission);
+}
 
 const receiptStatus = v.union(
   v.literal("pending"),
@@ -13,7 +17,7 @@ const receiptStatus = v.union(
 
 export const list = query({
   args: {
-    adminId: v.id("admins"),
+    sessionToken: v.string(),
     type: v.optional(v.union(v.literal("donation"), v.literal("kafala"))),
     status: v.optional(receiptStatus),
     paymentMethod: v.optional(v.union(v.literal("bank_transfer"), v.literal("cash_agency"), v.literal("card_whop"))),
@@ -24,7 +28,7 @@ export const list = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx, args.adminId, "admin:read");
+    await requireReceiptAdminActor(ctx, args.sessionToken, "receipts:export");
     const rows: any[] = [];
     const includeDonation = !args.type || args.type === "donation";
     const includeKafala = !args.type || args.type === "kafala";
@@ -114,15 +118,15 @@ export const list = query({
 
 export const logExport = mutation({
   args: {
-    adminId: v.id("admins"),
+    sessionToken: v.string(),
     count: v.number(),
     exportType: v.union(v.literal("csv"), v.literal("zip"), v.literal("package")),
     filters: v.optional(v.record(v.string(), v.any())),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx, args.adminId, "receipts:export");
+    const actor = await requireReceiptAdminActor(ctx, args.sessionToken, "receipts:export");
     await ctx.db.insert("activities", {
-      actorId: args.adminId,
+      actorId: actor._id,
       actorType: "admin",
       action: "receipt.export",
       entityType: "receipt",

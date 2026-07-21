@@ -4,6 +4,7 @@ import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../../../convex/_generated/api';
 import { useApp } from '../../../../context/AppContext';
 import { convexFileUrl } from '../../../../lib/convex';
+import { getLocalizedText } from '../../../../lib/i18nContent';
 import { formatMAD } from '../../../../lib/money';
 import KafalaAvatar from '../../../../components/kafala/KafalaAvatar';
 
@@ -22,7 +23,7 @@ const statusMeta = {
 
 export default function AdminKafala() {
   const navigate = useNavigate();
-  const { showToast, currentLanguage } = useApp();
+  const { showToast, currentLanguage, user: adminUser } = useApp();
   const lang = currentLanguage?.code || 'ar';
   const [status, setStatus] = useState('all');
   const [search, setSearch] = useState('');
@@ -39,9 +40,9 @@ export default function AdminKafala() {
   const list = useMemo(() => kafalaList || [], [kafalaList]);
   const filtered = useMemo(() => list.filter((item) => {
     if (status !== 'all' && item.status !== status) return false;
-    if (search && !item.name?.toLowerCase().includes(search.toLowerCase())) return false;
+    if (search && !getLocalizedText(item.name, lang).toLowerCase().includes(search.toLowerCase())) return false;
     return true;
-  }), [list, search, status]);
+  }), [list, search, status, lang]);
 
   const sponsored = list.filter((item) => item.status === 'sponsored');
   const available = list.filter((item) => item.status === 'active');
@@ -53,7 +54,7 @@ export default function AdminKafala() {
       return;
     }
     try {
-      await deleteKafala({ kafalaId: id });
+      await deleteKafala({ kafalaId: id, sessionToken: adminUser?.sessionToken });
       setDeleteConfirm(null);
       showToast?.('تم حذف الكفالة', 'success');
     } catch (error) {
@@ -63,7 +64,7 @@ export default function AdminKafala() {
 
   const handlePublish = async (id) => {
     try {
-      await publishKafala({ kafalaId: id });
+      await publishKafala({ kafalaId: id, sessionToken: adminUser?.sessionToken });
       showToast?.('تم نشر الكفالة', 'success');
     } catch (error) {
       showToast?.(error?.message || 'فشل النشر', 'error');
@@ -72,7 +73,7 @@ export default function AdminKafala() {
 
   const handleReset = async (id) => {
     try {
-      await resetKafala({ kafalaId: id });
+      await resetKafala({ kafalaId: id, sessionToken: adminUser?.sessionToken });
       setResetConfirm(null);
       showToast?.('تمت إعادة فتح الكفالة', 'success');
     } catch (error) {
@@ -82,7 +83,11 @@ export default function AdminKafala() {
 
   const toggleFeatured = async (item) => {
     try {
-      await updateKafala({ kafalaId: item._id, isFeatured: !item.isFeatured });
+      await updateKafala({
+        kafalaId: item._id,
+        isFeatured: !item.isFeatured,
+        sessionToken: adminUser?.sessionToken,
+      });
       showToast?.(!item.isFeatured ? 'تم إظهار الكفالة في الرئيسية' : 'تم إخفاء الكفالة من الرئيسية', 'success');
     } catch (error) {
       showToast?.(error?.message || 'فشل التحديث', 'error');
@@ -127,15 +132,15 @@ export default function AdminKafala() {
           return (
             <div key={item._id} style={{ background: 'white', borderRadius: 16, border: `1px solid ${BORDER}`, boxShadow: SHADOW, overflow: 'hidden' }}>
               <div style={{ height: 150, position: 'relative', background: 'linear-gradient(135deg,#3D2506,#8B6914)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {photoUrl ? <img src={photoUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <KafalaAvatar gender={item.gender} size={70} />}
+                {photoUrl ? <img src={photoUrl} alt={getLocalizedText(item.name, lang)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <KafalaAvatar gender={item.gender} size={70} />}
                 <span style={{ position: 'absolute', top: 10, right: 10, borderRadius: 99, padding: '4px 10px', background: st.bg, color: st.color, fontSize: 11, fontWeight: 900 }}>{st.label}</span>
                 <button type="button" onClick={() => toggleFeatured(item)} style={{ position: 'absolute', top: 10, left: 10, height: 30, borderRadius: 99, border: 'none', padding: '0 10px', background: item.isFeatured ? '#FEF3C7' : 'rgba(255,255,255,.92)', color: item.isFeatured ? '#92400e' : MUTED, cursor: 'pointer', fontWeight: 900 }}>
                   {item.isFeatured ? '★ الرئيسية' : '☆ الرئيسية'}
                 </button>
               </div>
               <div style={{ padding: 16 }}>
-                <h3 style={{ margin: '0 0 6px', fontSize: 17, fontWeight: 900, color: K }}>{item.name}</h3>
-                <div style={{ color: MUTED, fontSize: 12, marginBottom: 8 }}>{item.age} سنة · {item.location}</div>
+                <h3 style={{ margin: '0 0 6px', fontSize: 17, fontWeight: 900, color: K }}>{getLocalizedText(item.name, lang)}</h3>
+                <div style={{ color: MUTED, fontSize: 12, marginBottom: 8 }}>{item.age} سنة · {getLocalizedText(item.location, lang)}</div>
                 <div style={{ fontSize: 16, fontWeight: 900, color: K, marginBottom: 14 }}>{formatMAD(item.monthlyPrice || 0, lang)} / شهر</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   <button type="button" onClick={() => navigate(`/admin/kafala/${item._id}/edit`)} style={{ height: 34, border: 'none', borderRadius: 9, background: '#F5EBD9', color: K, fontWeight: 800, cursor: 'pointer' }}>تعديل</button>

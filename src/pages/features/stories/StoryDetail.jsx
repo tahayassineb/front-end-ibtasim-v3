@@ -3,6 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { convexFileUrl } from '../../../lib/convex';
+import { useApp } from '../../../context/AppContext';
+import { getLocalizedText } from '../../../lib/i18nContent';
+import { sanitizeRichHtml } from '../../../lib/richContent';
 import { updatePageSeo } from '../../../lib/seo';
 
 // ============================================
@@ -23,6 +26,8 @@ export default function StoryDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { currentLanguage } = useApp();
+  const lang = currentLanguage?.code || 'ar';
 
   const story = useQuery(api.stories.getPublishedStoryBySlugOrId, id ? { ref: id } : 'skip');
 
@@ -41,21 +46,21 @@ export default function StoryDetail() {
     if (!story) return;
     const image = story.coverImage ? convexFileUrl(story.coverImage) : undefined;
     updatePageSeo({
-      title: `${story.metaTitle || story.title} | Association Espoir`,
-      description: story.metaDescription || story.excerpt,
+      title: `${story.metaTitle || getLocalizedText(story.title, lang)} | Association Espoir`,
+      description: story.metaDescription || getLocalizedText(story.excerpt, lang),
       canonicalPath: story.canonicalPath || `/stories/${story.slug || story._id}`,
       image,
       schema: {
         '@context': 'https://schema.org',
         '@type': 'Article',
-        headline: story.title,
-        description: story.metaDescription || story.excerpt,
+        headline: getLocalizedText(story.title, lang),
+        description: story.metaDescription || getLocalizedText(story.excerpt, lang),
         image,
         datePublished: story.publishedAt ? new Date(story.publishedAt).toISOString() : undefined,
         publisher: { '@type': 'NGO', name: 'Association Espoir' },
       },
     });
-  }, [story]);
+  }, [story, lang]);
 
   if (story === undefined) {
     return (
@@ -102,11 +107,12 @@ export default function StoryDetail() {
           {/* Category badge */}
           <div style={{ marginBottom: 12 }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,.15)', backdropFilter: 'blur(8px)', color: 'white', padding: '5px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600 }}>
-              {story.badgeIcon} {story.badgeText}
+              <span className="material-symbols-outlined no-flip" style={{ fontSize: 16 }}>{story.badgeIcon}</span>
+              {getLocalizedText(story.badgeText, lang)}
             </span>
           </div>
           <h1 style={{ fontSize: isMobile ? 22 : 32, fontWeight: 900, color: 'white', lineHeight: 1.3, marginBottom: 0 }}>
-            {story.title}
+            {getLocalizedText(story.title, lang)}
           </h1>
         </div>
       </div>
@@ -126,7 +132,7 @@ export default function StoryDetail() {
         {/* Meta */}
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
           <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.12em', color: story.catColor || '#0d7477', fontFamily: 'Inter, sans-serif' }}>
-            {story.catLabel}
+            {getLocalizedText(story.catLabel, lang)}
           </span>
           {date && (
             <>
@@ -139,15 +145,15 @@ export default function StoryDetail() {
         {/* Story body */}
         <div style={{ background: 'white', borderRadius: 18, border: '1px solid #E5E9EB', padding: isMobile ? 20 : 36, boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
           {/* Excerpt — always shown as pull-quote */}
-          <p style={{ fontSize: isMobile ? 15 : 17, color: '#374151', lineHeight: 2, borderRight: '3px solid #33C0C0', paddingRight: 16, margin: 0, marginBottom: story.body ? 24 : 0 }}>
-            {story.excerpt}
+          <p style={{ fontSize: isMobile ? 15 : 17, color: '#374151', lineHeight: 2, borderRight: '3px solid #33C0C0', paddingRight: 16, margin: 0, marginBottom: getLocalizedText(story.body, lang) ? 24 : 0 }}>
+            {getLocalizedText(story.excerpt, lang)}
           </p>
           {/* Rich body — rendered as HTML if present */}
-          {story.body && (
+          {getLocalizedText(story.body, lang) && (
             <div
               style={{ fontSize: isMobile ? 15 : 16, color: '#374151', lineHeight: 1.9 }}
               className="prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: story.body }}
+              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(getLocalizedText(story.body, lang)) }}
             />
           )}
         </div>

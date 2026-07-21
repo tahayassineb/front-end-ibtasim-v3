@@ -14,6 +14,7 @@ import { useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
 import { convexFileUrl } from '../../../lib/convex';
+import { getProjectCategoryMeta, parseProjectCategories } from '../../../lib/i18nContent';
 import { updatePageSeo } from '../../../lib/seo';
 
 // ============================================
@@ -46,6 +47,8 @@ const ProjectDetail = ({ preview = false }) => {
 
   // Fetch project from Convex backend — PRESERVED
   const convexProject = useQuery(api.projects.getProjectBySlugOrId, id ? { ref: id } : 'skip');
+  const projectCategoriesConfig = useQuery(api.config.getConfig, { key: 'project_categories' });
+  const projectCategories = parseProjectCategories(projectCategoriesConfig);
 
   // Fetch recent verified donations for donors section — PRESERVED
   const convexDonations = useQuery(
@@ -155,7 +158,10 @@ const ProjectDetail = ({ preview = false }) => {
     );
   }
 
-  const cat = categoryMeta[project.category] || categoryMeta.default;
+  const configuredCat = getProjectCategoryMeta(projectCategories, project.category, language);
+  const cat = categoryMeta[project.category]
+    ? { ...categoryMeta[project.category], label: configuredCat.label || categoryMeta[project.category].label }
+    : { icon: '🤝', label: configuredCat.label || categoryMeta.default.label };
   const pct = project.progress;
   const hasImage = project.image && !String(project.image).includes('undefined');
   const remaining = Math.max(0, project.goal - project.raised);
@@ -248,7 +254,7 @@ const ProjectDetail = ({ preview = false }) => {
                     <div key={i} style={{ background: '#F0F7F7', borderRadius: 14, padding: 18, textAlign: 'center' }}>
                       <div style={{ width: 44, height: 44, margin: '0 auto 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible', fontSize: 28, lineHeight: 1 }}>{card.icon}</div>
                       <div style={{ fontSize: 22, fontWeight: 800, color: '#0A5F62', fontFamily: 'Inter, sans-serif' }}>{card.value}</div>
-                      <div style={{ fontSize: 12, color: '#64748b', marginTop: 4, lineHeight: 1.5 }}>{card.label}</div>
+                      <div style={{ fontSize: 12, color: '#64748b', marginTop: 4, lineHeight: 1.5 }}>{getLocalizedText(card.label, language)}</div>
                     </div>
                   ))}
                 </div>

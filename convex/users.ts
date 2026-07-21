@@ -159,6 +159,36 @@ export const getOrCreateUser = mutation({
   },
 });
 
+export const createOrGetGuestUser = mutation({
+  args: {
+    name: v.string(),
+    phone: v.string(),
+    email: v.optional(v.string()),
+  },
+  returns: v.id("users"),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_phone", (q) => q.eq("phoneNumber", args.phone))
+      .first();
+    if (existing) return existing._id;
+    const now = Date.now();
+    return await ctx.db.insert("users", {
+      fullName: args.name,
+      email: args.email ?? "",
+      phoneNumber: args.phone,
+      isVerified: false,
+      preferredLanguage: "ar",
+      notificationsEnabled: true,
+      totalDonated: 0,
+      donationCount: 0,
+      dataRetentionConsent: false,
+      createdAt: now,
+      lastLoginAt: now,
+    });
+  },
+});
+
 export const createUser = mutation({
   args: {
     fullName: v.string(),

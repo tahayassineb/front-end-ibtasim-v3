@@ -184,7 +184,7 @@ export const UIProvider = ({ children }) => {
     // Clean up stale donation state from existing sessions
     localStorage.removeItem('donation-state');
     return () => clearTimeout(toastTimerRef.current);
-  }, []);
+  }, [currentLanguage.dir, isDarkMode, language]);
 
   // ============================================
   // CONTEXT VALUE

@@ -1,4 +1,4 @@
-import React, { useState, forwardRef } from 'react';
+import React, { forwardRef } from 'react';
 
 // ============================================
 // INPUT COMPONENT - Form inputs with icons
@@ -19,8 +19,6 @@ const Input = forwardRef(({
   labelClassName = '',
   ...props
 }, ref) => {
-  const [isFocused, setIsFocused] = useState(false);
-
   // Container classes
   const containerClasses = `
     ${fullWidth ? 'w-full' : ''}
@@ -126,11 +124,9 @@ const Input = forwardRef(({
           ref={ref}
           className={inputClasses}
           onFocus={(e) => {
-            setIsFocused(true);
             props.onFocus?.(e);
           }}
           onBlur={(e) => {
-            setIsFocused(false);
             props.onBlur?.(e);
           }}
           {...props}

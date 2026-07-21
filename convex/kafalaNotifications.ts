@@ -1,40 +1,28 @@
 import { action } from "./_generated/server";
-import { v } from "convex/values";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 
 declare const process: {
   env: {
-    WASENDER_MASTER_TOKEN?: string;
     FRONTEND_URL?: string;
   };
 };
 
-const WASENDER_API_URL = "https://www.wasenderapi.com/api/send-message";
+// ============================================
+// DAY-BUCKET MATH
+// ============================================
 
-// Days before renewal to send reminders
-const REMINDER_DAYS = [10, 5, 3, 1];
-
-function formatPhoneNumber(phone: string): string {
-  let formatted = phone.replace(/[\s\-\(\)]/g, "");
-  if (!formatted.startsWith("+")) formatted = "+" + formatted;
-  return formatted;
-}
-
-async function sendWhatsAppMessage(
-  to: string,
-  text: string,
-  token?: string
-): Promise<void> {
-  if (!token) return;
-  const formattedPhone = formatPhoneNumber(to);
-  await fetch(WASENDER_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ to: formattedPhone, text }),
-  });
+/**
+ * Map a number of days remaining until renewal to the reminder bucket key
+ * that should be sent for that distance. Returns `null` if the value falls
+ * outside any reminder window (e.g. >10 days away, or already overdue —
+ * overdue is handled separately by the catch-up path).
+ */
+function bucketFor(daysLeft: number): number | null {
+  if (daysLeft <= 1 && daysLeft >= 0) return 1;
+  if (daysLeft <= 3 && daysLeft > 1) return 3;
+  if (daysLeft <= 5 && daysLeft > 3) return 5;
+  if (daysLeft <= 10 && daysLeft > 5) return 10;
+  return null;
 }
 
 // ============================================
@@ -56,39 +44,37 @@ function buildReminderMessage(
   return `As-salamu alaykum 🌙\n\nReminder: Your kafala for *${kafalaName}* expires in *${daysLeft} day${daysLeft > 1 ? "s" : ""}*.\n\nTo renew and upload your receipt:\n${renewalLink}\n\nJazak Allah Khayran 🤲`;
 }
 
+/**
+ * Overdue reminder — sent once when the renewal date has already passed.
+ */
+function buildOverdueMessage(
+  lang: "ar" | "fr" | "en",
+  kafalaName: string,
+  renewalLink: string
+): string {
+  if (lang === "ar") {
+    return `السلام عليكم 🌙\n\nكفالتك لـ *${kafalaName}* متأخرة. للتجديد:\n${renewalLink}\n\nجزاكم الله خيراً 🤲`;
+  }
+  if (lang === "fr") {
+    return `Salam Aleykoum 🌙\n\nVotre kafala pour *${kafalaName}* est en retard. Pour renouveler:\n${renewalLink}\n\nJazak Allah Khayran 🤲`;
+  }
+  return `As-salamu alaykum 🌙\n\nYour kafala for *${kafalaName}* is overdue. To renew:\n${renewalLink}\n\nJazak Allah Khayran 🤲`;
+}
+
 // ============================================
 // CRON ACTION — run daily
 // ============================================
 
 /**
  * Sends WhatsApp renewal reminders to bank/cash kafala sponsors
- * whose nextRenewalDate is 10, 5, 3, or 1 day(s) away.
- * Card (Whop subscription) sponsors are excluded — Whop handles auto-billing.
+ * whose nextRenewalDate is approaching (10, 5, 3, 1 days) or has already
+ * passed (overdue catch-up). Card (Whop subscription) sponsors are excluded —
+ * Whop handles auto-billing.
  */
 export const sendKafalaRenewalReminders = action({
   args: {},
   handler: async (ctx) => {
     const frontendUrl = process.env.FRONTEND_URL || "";
-
-    // Get session API key from whatsapp_settings config
-    let apiKey: string | undefined;
-    try {
-      const rawSettings: string | null = await ctx.runQuery(
-        api.config.getConfig,
-        { key: "whatsapp_settings" }
-      );
-      if (rawSettings) {
-        const settings = JSON.parse(rawSettings);
-        if (settings.apiKey) apiKey = settings.apiKey;
-      }
-    } catch (e) {
-      console.error("Could not read whatsapp_settings:", e);
-    }
-
-    if (!apiKey) {
-      console.warn("KafalaRenewalReminders: no WhatsApp API key configured, skipping.");
-      return;
-    }
 
     // Fetch all active non-Whop sponsorships
     const sponsorships: any[] = await ctx.runQuery(
@@ -104,15 +90,25 @@ export const sendKafalaRenewalReminders = action({
       const msUntilRenewal = s.nextRenewalDate - now;
       const daysUntilRenewal = Math.round(msUntilRenewal / dayMs);
 
-      // Range check: find which reminder level this day count falls into
-      const dayKey = REMINDER_DAYS.find(
-        (d) => daysUntilRenewal <= d && daysUntilRenewal > (REMINDER_DAYS[REMINDER_DAYS.indexOf(d) + 1] ?? 0)
-      );
-      if (!dayKey) continue;
+      const remindersSent: string[] = s.remindersSent ?? [];
 
-      const keyStr = String(dayKey);
-      // Skip if we already sent this reminder level for this sponsorship cycle
-      if ((s.remindersSent ?? []).includes(keyStr)) continue;
+      let reminderKey: string | null = null;
+      let message: string | null = null;
+
+      const bucket = bucketFor(daysUntilRenewal);
+
+      if (bucket !== null) {
+        const keyStr = String(bucket);
+        if (remindersSent.includes(keyStr)) continue;
+        reminderKey = keyStr;
+      } else if (daysUntilRenewal < 0) {
+        // Catch-up: overdue — send once
+        if (remindersSent.includes("overdue")) continue;
+        reminderKey = "overdue";
+      } else {
+        // Outside any window (e.g. >10 days away) — nothing to do
+        continue;
+      }
 
       const kafala: any = await ctx.runQuery(api.kafala.getKafalaById, {
         kafalaId: s.kafalaId,
@@ -126,14 +122,23 @@ export const sendKafalaRenewalReminders = action({
 
       const lang: "ar" | "fr" | "en" = user.preferredLanguage || "ar";
       const renewalLink = `${frontendUrl}/kafala/${s.kafalaId}/renew`;
-      const message = buildReminderMessage(lang, kafala.name, daysUntilRenewal, renewalLink);
 
-      await sendWhatsAppMessage(user.phoneNumber, message, apiKey);
+      if (reminderKey === "overdue") {
+        message = buildOverdueMessage(lang, kafala.name, renewalLink);
+      } else {
+        message = buildReminderMessage(lang, kafala.name, daysUntilRenewal, renewalLink);
+      }
+
+      // Send via central WhatsApp action (gives unified failure visibility)
+      await ctx.runAction(internal.notifications.sendWhatsAppInternal, {
+        to: user.phoneNumber,
+        text: message,
+      });
 
       // Record that this reminder level was sent
       await ctx.runMutation(api.kafala.markReminderSent, {
         sponsorshipId: s._id,
-        reminderKey: keyStr,
+        reminderKey,
       });
 
       // Rate limit: 250ms between messages
