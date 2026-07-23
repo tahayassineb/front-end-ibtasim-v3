@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
+  APP_CONTENT_SECURITY_POLICY,
   APP_ASSET_SECURITY_HEADERS,
   APP_BASE_SECURITY_HEADERS,
 } from "./securityHeaders";
@@ -17,6 +18,12 @@ function escapeRegExp(value) {
 }
 
 describe("deployment security headers", () => {
+  it("allows Convex storage redirects in the image policy", () => {
+    expect(APP_CONTENT_SECURITY_POLICY).toContain("img-src");
+    expect(APP_CONTENT_SECURITY_POLICY).toContain("https://*.convex.site");
+    expect(APP_CONTENT_SECURITY_POLICY).toContain("https://*.convex.cloud");
+  });
+
   it("keeps Netlify base and asset headers aligned with the canonical security policy", () => {
     for (const [key, value] of Object.entries(APP_BASE_SECURITY_HEADERS)) {
       expect(netlifyToml).toMatch(new RegExp(`${escapeRegExp(key)}\\s*=\\s*"${escapeRegExp(value)}"`));

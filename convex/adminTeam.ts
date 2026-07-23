@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { hashPassword } from "./auth";
 import { revokeAdminSessionRecord } from "./adminSessions";
+import { normalizeEmail } from "./email";
 import {
   adminRole,
   canChangeRole,
@@ -23,6 +24,7 @@ export const createAdminInvitation = mutation({
   returns: v.object({ token: v.string() }),
   handler: async (ctx, args) => {
     const now = Date.now();
+    const email = normalizeEmail(args.email);
     const inviter = await requireAdminSession(ctx, args.sessionToken, "admin:invite");
     if (!canInviteRole(inviter.role, args.role)) {
       throw new Error("You cannot invite a member with this role.");
@@ -32,7 +34,7 @@ export const createAdminInvitation = mutation({
     const expiresAt = now + 7 * 24 * 60 * 60 * 1000;
 
     const invitationId = await ctx.db.insert("adminInvitations", {
-      email: args.email,
+      email,
       phone: args.phone,
       token,
       invitedBy: inviter._id,
@@ -48,7 +50,7 @@ export const createAdminInvitation = mutation({
       action: "admin.invitation_created",
       entityType: "admin",
       entityId: String(invitationId),
-      metadata: { email: args.email, role: args.role },
+      metadata: { email, role: args.role },
       createdAt: now,
     });
 
@@ -114,16 +116,17 @@ export const acceptAdminInvitation = mutation({
     if (!invitation) return { success: false, message: "Invalid invitation." } as const;
     if (invitation.status !== "pending") return { success: false, message: "Invitation already used." } as const;
     if (now > invitation.expiresAt) return { success: false, message: "Invitation has expired." } as const;
+    const email = normalizeEmail(invitation.email);
 
     const existing = await ctx.db
       .query("admins")
-      .withIndex("by_email", (q) => q.eq("email", invitation.email))
+      .withIndex("by_email", (q) => q.eq("email", email))
       .first();
     if (existing) return { success: false, message: "Email already registered as admin." } as const;
 
     const userId = await ctx.db.insert("users", {
       fullName: args.fullName,
-      email: invitation.email,
+      email,
       phoneNumber: args.phoneNumber || invitation.phone,
       isVerified: true,
       preferredLanguage: "ar",
@@ -139,7 +142,7 @@ export const acceptAdminInvitation = mutation({
     const passwordHash = await hashPassword(args.password);
     const adminId = await ctx.db.insert("admins", {
       userId,
-      email: invitation.email,
+      email,
       passwordHash,
       role: invitation.role ?? "viewer",
       isActive: true,

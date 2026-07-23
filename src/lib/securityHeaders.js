@@ -1,6 +1,6 @@
 const FONT_STYLE_ORIGINS = ["https://fonts.googleapis.com"];
 const FONT_ASSET_ORIGINS = ["https://fonts.gstatic.com"];
-const IMAGE_ORIGINS = ["https://images.unsplash.com", "https://*.convex.site"];
+const IMAGE_ORIGINS = ["https://images.unsplash.com", "https://*.convex.site", "https://*.convex.cloud"];
 const CONNECT_ORIGINS = ["https://*.convex.cloud", "https://*.convex.site", "wss://*.convex.cloud"];
 
 export const APP_CONTENT_SECURITY_POLICY = [

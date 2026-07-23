@@ -2,6 +2,7 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { hashPassword } from "./auth";
 import { adminRole, effectiveRole } from "./permissions";
+import { normalizeEmail } from "./email";
 
 export const createAdmin = mutation({
   args: {
@@ -14,10 +15,11 @@ export const createAdmin = mutation({
   returns: v.id("admins"),
   handler: async (ctx, args) => {
     const now = Date.now();
+    const email = normalizeEmail(args.email);
 
     return await ctx.db.insert("admins", {
       userId: args.userId,
-      email: args.email,
+      email,
       passwordHash: args.passwordHash,
       role: args.role ?? "manager",
       isActive: true,
@@ -43,9 +45,10 @@ export const getAdminByEmail = query({
     v.null()
   ),
   handler: async (ctx, args) => {
+    const email = normalizeEmail(args.email);
     const admin = await ctx.db
       .query("admins")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", email))
       .first();
 
     if (!admin) return null;
@@ -86,10 +89,11 @@ export const createSuperAdmin = mutation({
   ),
   handler: async (ctx, args) => {
     const now = Date.now();
+    const email = normalizeEmail(args.email);
 
     const existing = await ctx.db
       .query("admins")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", email))
       .first();
     if (existing) {
       return { success: false, message: "Admin already exists." } as const;
@@ -97,7 +101,7 @@ export const createSuperAdmin = mutation({
 
     const userId = await ctx.db.insert("users", {
       fullName: args.fullName,
-      email: args.email,
+      email,
       phoneNumber: args.phoneNumber,
       isVerified: true,
       preferredLanguage: "ar",
@@ -113,7 +117,7 @@ export const createSuperAdmin = mutation({
     const passwordHash = await hashPassword(args.password);
     const adminId = await ctx.db.insert("admins", {
       userId,
-      email: args.email,
+      email,
       passwordHash,
       role: "owner",
       isActive: true,

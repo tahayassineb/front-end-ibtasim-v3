@@ -26,6 +26,7 @@ import type * as donationsHelpers from "../donationsHelpers.js";
 import type * as donationsManual from "../donationsManual.js";
 import type * as donationsPayments from "../donationsPayments.js";
 import type * as donationsQueries from "../donationsQueries.js";
+import type * as email from "../email.js";
 import type * as errorLogs from "../errorLogs.js";
 import type * as featureFlags from "../featureFlags.js";
 import type * as http from "../http.js";
@@ -97,6 +98,7 @@ declare const fullApi: ApiFromModules<{
   donationsManual: typeof donationsManual;
   donationsPayments: typeof donationsPayments;
   donationsQueries: typeof donationsQueries;
+  email: typeof email;
   errorLogs: typeof errorLogs;
   featureFlags: typeof featureFlags;
   http: typeof http;

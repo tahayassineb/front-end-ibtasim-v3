@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { adminRole, effectiveRole } from "./permissions";
 import { createAdminSessionRecord } from "./adminSessions";
+import { normalizeEmail } from "./email";
 
 // ============================================
 // PASSWORD HASHING (PBKDF2 via Web Crypto API)
@@ -218,6 +219,7 @@ export const registerUser = mutation({
   }),
   handler: async (ctx, args) => {
     const now = Date.now();
+    const email = normalizeEmail(args.email);
     
     // Check if user exists
     const existingUser = await ctx.db
@@ -231,7 +233,7 @@ export const registerUser = mutation({
       if (!existingUser.isVerified && !existingUser.passwordHash) {
         await ctx.db.patch(existingUser._id, {
           fullName: args.fullName,
-          email: args.email,
+          email,
           preferredLanguage: args.preferredLanguage,
           lastLoginAt: now,
         });
@@ -250,7 +252,7 @@ export const registerUser = mutation({
     // Check email uniqueness
     const existingEmail = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", email))
       .first();
     
     if (existingEmail) {
@@ -263,7 +265,7 @@ export const registerUser = mutation({
     // Create user
     const userId = await ctx.db.insert("users", {
       fullName: args.fullName,
-      email: args.email,
+      email,
       phoneNumber: args.phoneNumber,
       isVerified: false,
       preferredLanguage: args.preferredLanguage,
@@ -332,9 +334,10 @@ export const loginAdmin = mutation({
     })
   ),
   handler: async (ctx, args) => {
+    const email = normalizeEmail(args.email);
     const admin = await ctx.db
       .query("admins")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", email))
       .first();
 
     if (!admin || !admin.isActive) {
