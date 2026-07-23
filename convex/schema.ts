@@ -87,15 +87,8 @@ export default defineSchema({
     })),
 
     // Categorization
-    category: v.union(
-      v.literal("education"),
-      v.literal("health"),
-      v.literal("housing"),
-      v.literal("emergency"),
-      v.literal("food"),
-      v.literal("water"),
-      v.literal("orphan_care")
-    ),
+    // Stable category slug. The category catalog owns its display name and icon.
+    category: v.string(),
     
     // Financial
     goalAmount: v.number(), // In MAD
@@ -156,6 +149,25 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_category", ["category"])
     .index("by_featured", ["isFeatured", "featuredOrder"]),
+
+  // ============================================
+  // PROJECT CATEGORIES
+  // ============================================
+  projectCategories: defineTable({
+    slug: v.string(),
+    name: v.object({ ar: v.string(), fr: v.string(), en: v.string() }),
+    icon: v.object({
+      type: v.union(v.literal("material"), v.literal("emoji"), v.literal("image")),
+      value: v.string(),
+    }),
+    isActive: v.boolean(),
+    sortOrder: v.number(),
+    createdBy: v.id("admins"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_active_sort", ["isActive", "sortOrder"]),
 
   // ============================================
   // DONATIONS TABLE

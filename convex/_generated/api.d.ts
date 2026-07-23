@@ -25,6 +25,7 @@ import type * as migrations from "../migrations.js";
 import type * as notifications from "../notifications.js";
 import type * as payments from "../payments.js";
 import type * as permissions from "../permissions.js";
+import type * as projectCategories from "../projectCategories.js";
 import type * as projects from "../projects.js";
 import type * as receipts from "../receipts.js";
 import type * as seo from "../seo.js";
@@ -57,6 +58,7 @@ declare const fullApi: ApiFromModules<{
   notifications: typeof notifications;
   payments: typeof payments;
   permissions: typeof permissions;
+  projectCategories: typeof projectCategories;
   projects: typeof projects;
   receipts: typeof receipts;
   seo: typeof seo;

@@ -4,6 +4,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../../convex/_generated/api';
 import { useApp } from '../context/AppContext';
 import { canAccessPath, normalizeAdminRole, roleLabels } from '../lib/adminPermissions';
+import AdminTutorial from './AdminTutorial';
 
 const sections = [
   { label: 'الرئيسية', items: [{ path: '/admin', label: 'لوحة التحكم', icon: 'dashboard', exact: true }] },
@@ -11,6 +12,7 @@ const sections = [
     label: 'المحتوى',
     items: [
       { path: '/admin/projects', label: 'المشاريع', icon: 'folder_open' },
+      { path: '/admin/projects/categories', label: 'فئات المشاريع', icon: 'category' },
       { path: '/admin/kafala', label: 'الكفالة', icon: 'diversity_1' },
       { path: '/admin/stories', label: 'القصص', icon: 'auto_stories' },
     ],
@@ -141,6 +143,7 @@ export default function AdminLayout() {
 
   const isActive = (item) => {
     if (item.exact) return location.pathname === item.path || location.pathname === '/admin/dashboard';
+    if (item.path === '/admin/projects' && location.pathname.startsWith('/admin/projects/categories')) return false;
     return location.pathname.startsWith(item.path);
   };
 
@@ -168,7 +171,7 @@ export default function AdminLayout() {
             <span className="material-symbols-outlined no-flip">menu</span>
           </button>
           <h1 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>{current}</h1>
-          <Link to="/" style={{ color: '#0d7477', fontSize: 13, fontWeight: 800, textDecoration: 'none' }}>عرض الموقع</Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}><AdminTutorial /><Link to="/" style={{ color: '#0d7477', fontSize: 13, fontWeight: 800, textDecoration: 'none' }}>عرض الموقع</Link></div>
         </header>
         <Outlet />
       </main>

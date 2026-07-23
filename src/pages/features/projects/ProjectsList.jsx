@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
@@ -12,23 +12,19 @@ const getText = (value, lang) => {
   return value[lang] || value.ar || value.fr || value.en || '';
 };
 
-const categoryMeta = {
-  education: { icon: '🎓', label: 'التعليم' },
-  water: { icon: '💧', label: 'المياه' },
-  health: { icon: '❤️', label: 'الصحة' },
-  food: { icon: '🍞', label: 'الغذاء' },
-  housing: { icon: '🏠', label: 'السكن' },
-  emergency: { icon: '⚡', label: 'الطوارئ' },
-  orphan_care: { icon: '🤲', label: 'رعاية الأيتام' },
-};
+const CategoryIcon = ({ icon }) => icon?.type === 'image'
+  ? <img src={convexFileUrl(icon.value) || icon.value} alt="" style={{ width: 17, height: 17, objectFit: 'cover', borderRadius: 4, verticalAlign: 'middle' }} />
+  : icon?.type === 'emoji' ? <span>{icon.value}</span> : <span className="material-symbols-outlined no-flip" style={{ fontSize: 17, verticalAlign: 'middle' }}>{icon?.value || 'category'}</span>;
 
 export default function ProjectsList() {
   const { currentLanguage } = useApp();
   const lang = currentLanguage?.code || 'ar';
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('all');
+  const category = searchParams.get('category') || 'all';
   const projectsData = useQuery(api.projects.getProjects, { status: 'active', limit: 100 });
+  const categories = useQuery(api.projectCategories.getPublicCategories, {});
 
   const projects = useMemo(() => (projectsData || []).map((project) => ({
     ...project,
@@ -60,11 +56,12 @@ export default function ProjectsList() {
       <div style={{ background: 'white', borderBottom: '1px solid #E5E9EB' }}>
         <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 24px', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ابحث عن مشروع..." style={{ flex: 1, minWidth: 220, height: 40, border: '1.5px solid #E5E9EB', borderRadius: 10, padding: '0 14px', fontFamily: 'inherit' }} />
-          {['all', ...Object.keys(categoryMeta)].map((key) => (
-            <button key={key} type="button" onClick={() => setCategory(key)} style={{ height: 36, padding: '0 14px', borderRadius: 99, border: `1.5px solid ${category === key ? '#0d7477' : '#E5E9EB'}`, background: category === key ? '#0d7477' : 'white', color: category === key ? 'white' : '#64748b', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 800 }}>
-              {key === 'all' ? 'الكل' : `${categoryMeta[key].icon} ${categoryMeta[key].label}`}
+          {['all', ...(categories || []).map((item) => item.slug)].map((key) => {
+            const item = (categories || []).find((candidate) => candidate.slug === key);
+            return <button key={key} type="button" onClick={() => setSearchParams(key === 'all' ? {} : { category: key })} style={{ height: 36, padding: '0 14px', borderRadius: 99, border: `1.5px solid ${category === key ? '#0d7477' : '#E5E9EB'}`, background: category === key ? '#0d7477' : 'white', color: category === key ? 'white' : '#64748b', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 800 }}>
+              {key === 'all' ? (lang === 'fr' ? 'Tous' : lang === 'en' ? 'All' : 'الكل') : <><CategoryIcon icon={item?.icon} /> {getText(item?.name, lang)}</>}
             </button>
-          ))}
+          })}
         </div>
       </div>
 
@@ -74,13 +71,13 @@ export default function ProjectsList() {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 20 }}>
             {filtered.map((project) => {
-              const meta = categoryMeta[project.category] || { icon: '🤝', label: 'خيري' };
+              const meta = (categories || []).find((item) => item.slug === project.category);
               const pct = project.goalAmount ? Math.min(Math.round((project.raisedAmount || 0) / project.goalAmount * 100), 100) : 0;
               return (
                 <article key={project._id} onClick={() => navigate(`/projects/${project._id}`)} style={{ background: 'white', border: '1px solid #E5E9EB', borderRadius: 16, overflow: 'hidden', cursor: 'pointer', boxShadow: '0 4px 16px rgba(0,0,0,.05)' }}>
                   <div style={{ height: 180, background: '#E6F4F4', position: 'relative' }}>
                     {project.imageUrl && <img src={project.imageUrl} alt={project.titleText} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                    <span style={{ position: 'absolute', right: 12, bottom: 12, background: 'rgba(255,255,255,.92)', borderRadius: 99, padding: '4px 10px', fontSize: 12, fontWeight: 800 }}>{meta.icon} {meta.label}</span>
+                    <span style={{ position: 'absolute', right: 12, bottom: 12, background: 'rgba(255,255,255,.92)', borderRadius: 99, padding: '4px 10px', fontSize: 12, fontWeight: 800 }}><CategoryIcon icon={meta?.icon} /> {getText(meta?.name, lang) || project.category}</span>
                   </div>
                   <div style={{ padding: 18 }}>
                     <h3 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 900 }}>{project.titleText}</h3>

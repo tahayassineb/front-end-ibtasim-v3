@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../../../convex/_generated/api';
 import { useApp } from '../../../../context/AppContext';
@@ -72,7 +72,8 @@ const ToggleRow = ({ title, desc, checked, onChange, last }) => (
 export default function AdminProjectForm() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { showToast, user } = useApp();
+  const { showToast, user, currentLanguage } = useApp();
+  const language = currentLanguage?.code || 'ar';
   const isEditMode = Boolean(id);
 
   const [activeTab, setActiveTab] = useState('ar');
@@ -84,6 +85,7 @@ export default function AdminProjectForm() {
 
   // ── Convex ────────────────────────────────────────────────────────────────
   const existingProject = useQuery(api.projects.getProjectById, isEditMode ? { projectId: id } : 'skip');
+  const categories = useQuery(api.projectCategories.getPublicCategories, {});
   const createProjectMutation = useMutation(api.projects.createProject);
   const updateProjectMutation = useMutation(api.projects.updateProject);
   const getUploadUrlMutation = useMutation(api.storage.generateProjectImageUploadUrl);
@@ -335,18 +337,17 @@ export default function AdminProjectForm() {
           <div>
             <div style={fieldLabel}>الفئة <span style={{ color: '#ef4444' }}>*</span></div>
             <select
-              value={formData.category}
+              value={categories?.length ? formData.category : ''}
               onChange={e => set('category', e.target.value)}
+              disabled={categories !== undefined && categories.length === 0}
               style={{ ...fieldInput, cursor: 'pointer' }}
             >
-              <option value="education">🎓 التعليم</option>
-              <option value="water">💧 الماء</option>
-              <option value="health">🏥 الصحة</option>
-              <option value="food">🍞 الغذاء</option>
-              <option value="housing">🏠 السكن</option>
-              <option value="orphan_care">🕌 الكفالة</option>
-              <option value="emergency">⚡ الطوارئ</option>
+              {categories !== undefined && categories.length === 0 && <option value="">Set up categories first</option>}
+              {(categories || []).map((category) => (
+                <option key={category.slug} value={category.slug}>{category.icon.type === 'emoji' ? category.icon.value : ''} {category.name[language] || category.name.ar}</option>
+              ))}
             </select>
+            {categories !== undefined && categories.length === 0 && <div style={{ marginTop: 7, fontSize: 12, color: '#64748b' }}>Open <Link to="/admin/projects/categories" style={{ color: PRIMARY, fontWeight: 800 }}>Project categories</Link> and restore or create the first category before creating a project.</div>}
           </div>
 
           {/* Location */}

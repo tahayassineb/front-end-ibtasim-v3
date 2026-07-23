@@ -4,6 +4,17 @@ import { api } from "./_generated/api";
 import { requireAdmin } from "./permissions";
 import { excerpt, slugify } from "./seo";
 
+async function requireActiveProjectCategory(ctx: any, slug: string) {
+  const category = await ctx.db
+    .query("projectCategories")
+    .withIndex("by_slug", (q: any) => q.eq("slug", slug))
+    .first();
+  if (!category || !category.isActive) {
+    throw new Error("Select an active project category.");
+  }
+  return category;
+}
+
 // ============================================
 // PROJECT QUERIES
 // ============================================
@@ -17,15 +28,7 @@ export const getProjects = query({
       v.literal("completed"),
       v.literal("cancelled")
     )),
-    category: v.optional(v.union(
-      v.literal("education"),
-      v.literal("health"),
-      v.literal("housing"),
-      v.literal("emergency"),
-      v.literal("food"),
-      v.literal("water"),
-      v.literal("orphan_care")
-    )),
+    category: v.optional(v.string()),
     featured: v.optional(v.boolean()),
     limit: v.optional(v.number()),
   },
@@ -221,15 +224,7 @@ export const createProject = mutation({
     title: v.object({ ar: v.string(), fr: v.string(), en: v.string() }),
     description: v.object({ ar: v.string(), fr: v.string(), en: v.string() }),
     shortDescription: v.optional(v.object({ ar: v.string(), fr: v.string(), en: v.string() })),
-    category: v.union(
-      v.literal("education"),
-      v.literal("health"),
-      v.literal("housing"),
-      v.literal("emergency"),
-      v.literal("food"),
-      v.literal("water"),
-      v.literal("orphan_care")
-    ),
+    category: v.string(),
     goalAmount: v.number(),
     mainImageStorageId: v.string(),
     galleryStorageIds: v.optional(v.array(v.string())),
@@ -255,6 +250,7 @@ export const createProject = mutation({
   returns: v.id("projects"),
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.createdBy, "content:write");
+    await requireActiveProjectCategory(ctx, args.category);
     const now = Date.now();
 
     // Auto-assign featuredOrder when isFeatured=true and no order is given
@@ -323,15 +319,7 @@ export const updateProject = mutation({
       title: v.optional(v.object({ ar: v.string(), fr: v.string(), en: v.string() })),
       description: v.optional(v.object({ ar: v.string(), fr: v.string(), en: v.string() })),
       shortDescription: v.optional(v.object({ ar: v.string(), fr: v.string(), en: v.string() })),
-      category: v.optional(v.union(
-        v.literal("education"),
-        v.literal("health"),
-        v.literal("housing"),
-        v.literal("emergency"),
-        v.literal("food"),
-        v.literal("water"),
-        v.literal("orphan_care")
-      )),
+      category: v.optional(v.string()),
       goalAmount: v.optional(v.number()),
       mainImageStorageId: v.optional(v.string()),
       galleryStorageIds: v.optional(v.array(v.string())),
@@ -360,6 +348,9 @@ export const updateProject = mutation({
     if (args.adminId) await requireAdmin(ctx, args.adminId, "content:write");
     const project = await ctx.db.get(args.projectId);
     if (!project) return false;
+    if (args.updates.category && args.updates.category !== project.category) {
+      await requireActiveProjectCategory(ctx, args.updates.category);
+    }
 
     // Map storage IDs to database field names
     const updates: any = { ...args.updates };

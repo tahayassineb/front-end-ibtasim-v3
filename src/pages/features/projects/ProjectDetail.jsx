@@ -26,14 +26,9 @@ const getLocalizedText = (obj, lang = 'ar') => {
   return obj[lang] || obj.ar || obj.en || '';
 };
 
-const categoryMeta = {
-  education: { icon: '🎓', label: 'التعليم' },
-  water:     { icon: '💧', label: 'المياه' },
-  health:    { icon: '❤️', label: 'الصحة' },
-  food:      { icon: '🍞', label: 'الغذاء' },
-  housing:   { icon: '🏠', label: 'السكن' },
-  default:   { icon: '🤝', label: 'خيري' },
-};
+const CategoryIcon = ({ icon }) => icon?.type === 'image'
+  ? <img src={convexFileUrl(icon.value) || icon.value} alt="" style={{ width: 18, height: 18, objectFit: 'cover', borderRadius: 4 }} />
+  : icon?.type === 'emoji' ? <span>{icon.value}</span> : <span className="material-symbols-outlined no-flip" style={{ fontSize: 18 }}>{icon?.value || 'category'}</span>;
 
 const PROJECT_DETAIL_COPY = {
   ar: {
@@ -59,6 +54,7 @@ const ProjectDetail = ({ preview = false }) => {
 
   // Fetch project from Convex backend — PRESERVED
   const convexProject = useQuery(api.projects.getProjectBySlugOrId, id ? { ref: id } : 'skip');
+  const categories = useQuery(api.projectCategories.getPublicCategories, {});
 
   // Fetch recent verified donations for donors section — PRESERVED
   const convexDonations = useQuery(
@@ -168,7 +164,7 @@ const ProjectDetail = ({ preview = false }) => {
     );
   }
 
-  const cat = categoryMeta[project.category] || categoryMeta.default;
+  const cat = (categories || []).find((category) => category.slug === project.category);
   const pct = project.progress;
   const hasImage = project.image && !String(project.image).includes('undefined');
   const remaining = Math.max(0, project.goal - project.raised);
@@ -200,7 +196,7 @@ const ProjectDetail = ({ preview = false }) => {
         </button>
         <div style={{ position: 'relative', zIndex: 2, maxWidth: 1200, width: '100%', margin: '0 auto', padding: isMobile ? '0 16px 24px' : '0 28px 32px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)', color: 'white', borderRadius: 100, padding: '5px 14px', fontSize: 12, fontWeight: 600, marginBottom: 12 }}>
-            {cat.icon} {cat.label}
+            <CategoryIcon icon={cat?.icon} /> {getLocalizedText(cat?.name, language) || project.category}
           </div>
           <h1 style={{ fontSize: isMobile ? 22 : 32, fontWeight: 900, color: 'white', marginBottom: 8 }}>
             {getLocalizedText(project.title, language)}

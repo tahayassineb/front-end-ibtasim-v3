@@ -51,6 +51,7 @@ import AdminDashboard from './pages/features/admin/dashboard/AdminDashboard';
 import AdminProjects from './pages/features/admin/projects/AdminProjects';
 import AdminProjectDetail from './pages/features/admin/projects/AdminProjectDetail';
 import AdminProjectForm from './pages/features/admin/projects/AdminProjectForm';
+import AdminCategories from './pages/features/admin/projects/AdminCategories';
 import AdminDonations from './pages/features/admin/donations/AdminDonations';
 import AdminVerifications from './pages/features/admin/donations/AdminVerifications';
 import AdminDonors from './pages/features/admin/donors/AdminDonors';
@@ -254,6 +255,7 @@ function AppContent() {
             
             {/* Projects Management */}
             <Route path="/admin/projects" element={<AdminProjects />} />
+            <Route path="/admin/projects/categories" element={<AdminCategories />} />
             <Route path="/admin/projects/new" element={<AdminProjectForm />} />
             <Route path="/admin/projects/:id" element={<AdminProjectDetail />} />
             <Route path="/admin/projects/:id/edit" element={<AdminProjectForm />} />
