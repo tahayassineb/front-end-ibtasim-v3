@@ -35,8 +35,21 @@ const categoryMeta = {
   default:   { icon: '🤝', label: 'خيري' },
 };
 
+const PROJECT_DETAIL_COPY = {
+  ar: {
+    country: 'المغرب', loading: 'جاري التحميل...', notFound: 'المشروع غير موجود', notFoundBody: 'المشروع الذي تبحث عنه غير متوفر', allProjects: 'عرض جميع المشاريع', preview: 'وضع المعاينة — هذا المشروع لم يُنشر بعد', daysLeft: 'يوماً متبقياً', ofGoal: 'من الهدف', donate: 'تبرع الآن', aboutOverline: 'عن المشروع', about: 'عن المشروع', impactOverline: 'أثر تبرعك', impact: 'ماذا يفعل تبرعك؟', donorsOverline: 'المتبرعون الكرام', donors: 'المتبرعون الكرام', donor: 'متبرع', anonymousDonor: 'متبرع مجهول', generousDonor: 'متبرع كريم', firstDonor: 'كن أول من يتبرع لهذا المشروع!', viewDonors: 'عرض جميع المتبرعين', raised: 'تم جمع', outOf: 'من أصل', complete: 'مكتمل', remaining: 'درهم متبقي', secureDonation: 'تبرعك آمن ومحمي بالكامل', share: 'شارك', whatsapp: 'واتساب', copied: 'تم النسخ', copyLink: 'نسخ الرابط', certified: 'جمعية معتمدة رسمياً', certificationBody: 'تبرعاتكم تصل مباشرة إلى المشروع · ننشر تقارير دورية للإنجاز', currency: 'د.م',
+  },
+  fr: {
+    country: 'Maroc', loading: 'Chargement...', notFound: 'Projet introuvable', notFoundBody: 'Le projet que vous recherchez n’est pas disponible.', allProjects: 'Voir tous les projets', preview: 'Mode aperçu — ce projet n’est pas encore publié', daysLeft: 'jours restants', ofGoal: 'de l’objectif', donate: 'Faire un don', aboutOverline: 'À PROPOS DU PROJET', about: 'À propos du projet', impactOverline: 'VOTRE IMPACT', impact: 'Que permet votre don ?', donorsOverline: 'GÉNÉREUX DONATEURS', donors: 'Généreux donateurs', donor: 'donateur', anonymousDonor: 'Donateur anonyme', generousDonor: 'Généreux donateur', firstDonor: 'Soyez le premier à soutenir ce projet !', viewDonors: 'Voir tous les donateurs', raised: 'Collecté', outOf: 'sur', complete: 'atteint', remaining: 'MAD restants', secureDonation: 'Votre don est entièrement sécurisé', share: 'Partager', whatsapp: 'WhatsApp', copied: 'Copié', copyLink: 'Copier le lien', certified: 'Association officiellement agréée', certificationBody: 'Vos dons parviennent directement au projet · Nous publions régulièrement des rapports d’avancement.', currency: 'MAD',
+  },
+  en: {
+    country: 'Morocco', loading: 'Loading...', notFound: 'Project not found', notFoundBody: 'The project you are looking for is unavailable.', allProjects: 'View all projects', preview: 'Preview mode — this project has not been published yet', daysLeft: 'days left', ofGoal: 'of goal', donate: 'Donate now', aboutOverline: 'ABOUT THE PROJECT', about: 'About the project', impactOverline: 'YOUR IMPACT', impact: 'What will your donation do?', donorsOverline: 'GENEROUS DONORS', donors: 'Generous donors', donor: 'donor', anonymousDonor: 'Anonymous donor', generousDonor: 'Generous donor', firstDonor: 'Be the first to donate to this project!', viewDonors: 'View all donors', raised: 'Raised', outOf: 'out of', complete: 'complete', remaining: 'MAD remaining', secureDonation: 'Your donation is fully secure', share: 'Share', whatsapp: 'WhatsApp', copied: 'Copied', copyLink: 'Copy link', certified: 'Officially accredited association', certificationBody: 'Your donations go directly to the project · We publish regular progress reports.', currency: 'MAD',
+  },
+};
+
 const ProjectDetail = ({ preview = false }) => {
   const { language } = useApp();
+  const tx = PROJECT_DETAIL_COPY[language] || PROJECT_DETAIL_COPY.ar;
   const { id } = useParams();
   const navigate = useNavigate();
   const [previewData, setPreviewData] = useState(null);
@@ -70,7 +83,7 @@ const ProjectDetail = ({ preview = false }) => {
     return {
       id: convexProject._id,
       title: convexProject.title,
-      location: convexProject.location || 'المغرب',
+      location: convexProject.location || tx.country,
       description: convexProject.description,
       shortDescription: convexProject.shortDescription,
       raised: convexProject.raisedAmount,
@@ -88,7 +101,7 @@ const ProjectDetail = ({ preview = false }) => {
       canonicalPath: convexProject.canonicalPath,
       benefitCards: convexProject.benefitCards,
     };
-  }, [convexProject, previewData, now]);
+  }, [convexProject, previewData, now, tx.country]);
 
   useEffect(() => {
     if (!project || preview) return;
@@ -124,10 +137,10 @@ const ProjectDetail = ({ preview = false }) => {
   // ── Loading state ──
   if (!preview && convexProject === undefined) {
     return (
-      <div dir="rtl" style={{ fontFamily: 'var(--font-arabic)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8' }}>
+      <div dir={language === 'ar' ? 'rtl' : 'ltr'} style={{ fontFamily: 'var(--font-arabic)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8' }}>
         <div style={{ textAlign: 'center', color: '#94a3b8' }}>
           <div style={{ width: 40, height: 40, border: '3px solid #E5E9EB', borderTopColor: '#0d7477', borderRadius: '50%', margin: '0 auto 12px', animation: 'spin 0.8s linear infinite' }} />
-          جاري التحميل...
+          {tx.loading}
         </div>
       </div>
     );
@@ -136,12 +149,12 @@ const ProjectDetail = ({ preview = false }) => {
   // ── Not found ──
   if (!preview && convexProject === null) {
     return (
-      <div dir="rtl" style={{ fontFamily: 'var(--font-arabic)', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8', padding: 24 }}>
+      <div dir={language === 'ar' ? 'rtl' : 'ltr'} style={{ fontFamily: 'var(--font-arabic)', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8', padding: 24 }}>
         <div style={{ fontSize: 64, marginBottom: 16 }}>🔍</div>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0e1a1b', marginBottom: 8 }}>المشروع غير موجود</h1>
-        <p style={{ color: '#64748b', marginBottom: 24 }}>المشروع الذي تبحث عنه غير متوفر</p>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0e1a1b', marginBottom: 8 }}>{tx.notFound}</h1>
+        <p style={{ color: '#64748b', marginBottom: 24 }}>{tx.notFoundBody}</p>
         <button onClick={() => navigate('/projects')} style={{ height: 44, padding: '0 24px', background: '#0d7477', color: 'white', border: 'none', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: '0 4px 14px rgba(13,116,119,0.25)' }}>
-          عرض جميع المشاريع
+          {tx.allProjects}
         </button>
       </div>
     );
@@ -149,8 +162,8 @@ const ProjectDetail = ({ preview = false }) => {
 
   if (!project) {
     return (
-      <div dir="rtl" style={{ fontFamily: 'var(--font-arabic)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8' }}>
-        <div style={{ color: '#94a3b8' }}>جاري التحميل...</div>
+      <div dir={language === 'ar' ? 'rtl' : 'ltr'} style={{ fontFamily: 'var(--font-arabic)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8' }}>
+        <div style={{ color: '#94a3b8' }}>{tx.loading}</div>
       </div>
     );
   }
@@ -166,12 +179,12 @@ const ProjectDetail = ({ preview = false }) => {
     : { background: 'linear-gradient(160deg,#021718,#052E2F,#0d7477)' };
 
   return (
-    <div dir="rtl" style={{ fontFamily: 'var(--font-arabic)', color: '#0e1a1b', background: '#f6f8f8', minHeight: '100vh' }}>
+    <div dir={language === 'ar' ? 'rtl' : 'ltr'} style={{ fontFamily: 'var(--font-arabic)', color: '#0e1a1b', background: '#f6f8f8', minHeight: '100vh' }}>
 
       {/* Preview Banner */}
       {preview && (
         <div style={{ position: 'sticky', top: 0, zIndex: 60, background: '#0d7477', color: 'white', padding: '12px 24px', textAlign: 'center', fontWeight: 700, fontSize: 14 }}>
-          وضع المعاينة — هذا المشروع لم يُنشر بعد
+          {tx.preview}
         </div>
       )}
 
@@ -195,7 +208,7 @@ const ProjectDetail = ({ preview = false }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 13, color: 'rgba(255,255,255,0.7)', flexWrap: 'wrap' }}>
             <span>📍 {getLocalizedText(project.location, language)}</span>
             <span>|</span>
-            <span>⏳ {project.daysLeft} يوماً متبقياً</span>
+            <span>⏳ {project.daysLeft} {tx.daysLeft}</span>
           </div>
         </div>
       </div>
@@ -204,17 +217,17 @@ const ProjectDetail = ({ preview = false }) => {
       <div style={{ position: isMobile ? 'relative' : 'sticky', top: isMobile ? 'auto' : 64, zIndex: 40, background: 'white', borderBottom: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03), 0 4px 6px rgba(0,0,0,.05)' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '12px 16px' : '12px 28px', display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 24, flexWrap: 'wrap' }}>
           <div style={{ fontSize: 22, fontWeight: 900, color: '#0A5F62', whiteSpace: 'nowrap', fontFamily: 'Inter, sans-serif' }}>
-            {project.raised.toLocaleString('en-US')} د.م
+            {project.raised.toLocaleString('en-US')} {tx.currency}
           </div>
           <div style={{ flex: 1, height: 8, background: '#E5E9EB', borderRadius: 100, overflow: 'hidden', minWidth: 80 }}>
             <div style={{ height: '100%', background: '#0d7477', borderRadius: 100, width: `${pct}%` }} />
           </div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#64748b', whiteSpace: 'nowrap' }}>{pct}% من الهدف</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#64748b', whiteSpace: 'nowrap' }}>{pct}% {tx.ofGoal}</div>
           <button
             onClick={handleDonateClick}
             style={{ height: 44, padding: '0 22px', background: '#0d7477', color: 'white', border: 'none', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: '0 4px 14px rgba(13,116,119,0.25)', flexShrink: 0 }}
           >
-            تبرع الآن
+            {tx.donate}
           </button>
         </div>
       </div>
@@ -227,9 +240,9 @@ const ProjectDetail = ({ preview = false }) => {
           <div>
             {/* About */}
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#0d7477', marginBottom: 8, fontFamily: 'Inter, sans-serif' }}>
-              ABOUT THE PROJECT
+              {tx.aboutOverline}
             </div>
-            <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 16 }}>عن المشروع</h2>
+            <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 16 }}>{tx.about}</h2>
             <p style={{ fontSize: 15, color: '#64748b', lineHeight: 1.85 }}>
               {getLocalizedText(project.description, language)}
             </p>
@@ -240,9 +253,9 @@ const ProjectDetail = ({ preview = false }) => {
             {project.benefitCards && project.benefitCards.length > 0 && (
               <>
                 <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#0d7477', marginBottom: 8, fontFamily: 'Inter, sans-serif' }}>
-                  YOUR IMPACT
+                  {tx.impactOverline}
                 </div>
-                <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 20 }}>ماذا يفعل تبرعك؟</h2>
+                <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 20 }}>{tx.impact}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3" style={{ gap: 16 }}>
                   {project.benefitCards.map((card, i) => (
                     <div key={i} style={{ background: '#F0F7F7', borderRadius: 14, padding: 18, textAlign: 'center' }}>
@@ -258,11 +271,11 @@ const ProjectDetail = ({ preview = false }) => {
 
             {/* Donors */}
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#0d7477', marginBottom: 8, fontFamily: 'Inter, sans-serif' }}>
-              GENEROUS DONORS
+              {tx.donorsOverline}
             </div>
             <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 20 }}>
-              المتبرعون الكرام{' '}
-              <span style={{ fontSize: 14, color: '#94a3b8', fontWeight: 500 }}>({donors} متبرع)</span>
+              {tx.donors}{' '}
+              <span style={{ fontSize: 14, color: '#94a3b8', fontWeight: 500 }}>({donors} {tx.donor})</span>
             </h2>
 
             {convexDonations && convexDonations.length > 0 ? (
@@ -271,26 +284,26 @@ const ProjectDetail = ({ preview = false }) => {
                   <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#CCF0F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>👤</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 600 }}>
-                      {donation.isAnonymous ? 'متبرع مجهول' : (donation.donorName || 'متبرع كريم')}
+                      {donation.isAnonymous ? tx.anonymousDonor : (donation.donorName || tx.generousDonor)}
                     </div>
                     <div style={{ fontSize: 12, color: '#94a3b8' }}>
-                      {donation._creationTime ? new Date(donation._creationTime).toLocaleDateString('ar-MA') : ''}
+                      {donation._creationTime ? new Date(donation._creationTime).toLocaleDateString(language === 'ar' ? 'ar-MA' : language === 'fr' ? 'fr-MA' : 'en-US') : ''}
                     </div>
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#0A5F62', fontFamily: 'Inter, sans-serif', marginRight: 'auto', marginLeft: 0 }}>
-                    {Number(donation.amount || 0).toLocaleString('en-US')} د.م
+                    {Number(donation.amount || 0).toLocaleString('en-US')} {tx.currency}
                   </div>
                 </div>
               ))
             ) : (
-              <p style={{ fontSize: 14, color: '#94a3b8', padding: '16px 0' }}>كن أول من يتبرع لهذا المشروع!</p>
+              <p style={{ fontSize: 14, color: '#94a3b8', padding: '16px 0' }}>{tx.firstDonor}</p>
             )}
 
             <div style={{ marginTop: 16 }}>
               <button
                 style={{ height: 36, padding: '0 16px', background: '#E6F4F4', color: '#0A5F62', border: 'none', borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}
               >
-                عرض جميع المتبرعين →
+                {tx.viewDonors} →
               </button>
             </div>
           </div>
@@ -301,31 +314,31 @@ const ProjectDetail = ({ preview = false }) => {
             <div style={{ marginBottom: 24 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 10 }}>
                 <div>
-                  <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4 }}>تم جمع</div>
+                  <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4 }}>{tx.raised}</div>
                   <div style={{ fontSize: 28, fontWeight: 900, color: '#0A5F62', fontFamily: 'Inter, sans-serif' }}>
-                    {project.raised.toLocaleString('en-US')} د.م
+                    {project.raised.toLocaleString('en-US')} {tx.currency}
                   </div>
                 </div>
                 <div style={{ textAlign: 'left', fontSize: 13, color: '#94a3b8' }}>
-                  <div>من أصل</div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: '#0e1a1b' }}>{project.goal.toLocaleString('en-US')} د.م</div>
+                  <div>{tx.outOf}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#0e1a1b' }}>{project.goal.toLocaleString('en-US')} {tx.currency}</div>
                 </div>
               </div>
               <div style={{ height: 12, background: '#E5E9EB', borderRadius: 100, overflow: 'hidden', marginBottom: 10 }}>
                 <div style={{ height: '100%', background: '#0d7477', borderRadius: 100, width: `${pct}%` }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#94a3b8' }}>
-                <span><strong style={{ color: '#0d7477' }}>{pct}%</strong> مكتمل</span>
-                <span>⏳ {project.daysLeft} يوم متبقي</span>
+                <span><strong style={{ color: '#0d7477' }}>{pct}%</strong> {tx.complete}</span>
+                <span>⏳ {project.daysLeft} {tx.daysLeft}</span>
               </div>
             </div>
 
             {/* Stats strip */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 1, background: '#E5E9EB', borderRadius: 12, overflow: 'hidden', marginBottom: 20 }}>
               {[
-                { num: donors, label: 'متبرع' },
-                { num: remaining.toLocaleString('en-US'), label: 'درهم متبقي' },
-                { num: project.daysLeft, label: 'يوم متبقي' },
+                { num: donors, label: tx.donor },
+                { num: remaining.toLocaleString('en-US'), label: tx.remaining },
+                { num: project.daysLeft, label: tx.daysLeft },
               ].map((s, i) => (
                 <div key={i} style={{ background: 'white', padding: 14, textAlign: 'center' }}>
                   <div style={{ fontSize: 20, fontWeight: 800, color: '#0e1a1b', fontFamily: 'Inter, sans-serif' }}>{s.num}</div>
@@ -339,18 +352,18 @@ const ProjectDetail = ({ preview = false }) => {
               onClick={handleDonateClick}
               style={{ width: '100%', height: 56, background: '#0d7477', color: 'white', border: 'none', borderRadius: 16, fontSize: 17, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(13,116,119,0.25)', fontFamily: 'var(--font-arabic)', marginBottom: 12 }}
             >
-              تبرع الآن 💚
+              {tx.donate} 💚
             </button>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, color: '#94a3b8' }}>
-              🔒 تبرعك آمن ومحمي بالكامل
+              🔒 {tx.secureDonation}
             </div>
 
             {/* Share row */}
             <div style={{ display: 'flex', gap: 8, marginTop: 16, paddingTop: 16, borderTop: '1px solid #E5E9EB' }}>
               {[
-                { icon: '📘', label: 'شارك' },
-                { icon: '💬', label: 'واتساب' },
-                { icon: copied ? '✅' : '🔗', label: copied ? 'تم النسخ' : 'نسخ الرابط' },
+                { icon: '📘', label: tx.share },
+                { icon: '💬', label: tx.whatsapp },
+                { icon: copied ? '✅' : '🔗', label: copied ? tx.copied : tx.copyLink },
               ].map((btn, i) => (
                 <button
                   key={i}

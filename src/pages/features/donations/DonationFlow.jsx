@@ -13,6 +13,14 @@ import CountryCodeSelector, { validatePhoneByCountry, formatPhoneForDisplay } fr
 
 const DONATION_AMOUNTS = [100, 200, 500, 1000, 2000, 5000];
 
+const FLOW_COPY = {
+  ar: { completeDonation: 'إتمام التبرع', projectDonation: 'تبرع لجمعية ابتسام', currency: 'درهم', stepLabels: ['الخطوة 1 من 6 — تسجيل الدخول', 'الخطوة 2 من 6 — اختيار المبلغ', 'الخطوة 3 من 6 — طريقة الدفع', 'الخطوة 4 من 6 — رفع وصل التحويل', 'الخطوة 5 من 6 — بياناتك الشخصية', 'الخطوة 6 من 6 — مراجعة وتأكيد'], amountTitle: 'كم تريد أن تتبرع؟', amountHelp: 'اختر مبلغاً أو أدخل مبلغاً مخصصاً', otherAmount: 'أو أدخل مبلغاً آخر:', impact: 'ستغطي:', coverFees: 'أريد تغطية رسوم المعالجة حتى تصل كامل تبرعتي للمشروع', donationSecure: 'تبرعك سيصل كاملاً للمشروع', paymentTitle: 'كيف تريد الدفع؟', paymentHelp: 'اختر طريقة الدفع المناسبة لك', transfer: 'تحويل بنكي أو وكالة نقد', transferHelp: 'حوّل وأرفق وصل الإيداع', popular: 'الأكثر استخداماً', card: 'بطاقة بنكية', cardHelp: 'فيزا، ماستركارد — مباشر وآمن', available: 'متاح', bank: 'البنك', accountNumber: 'رقم الحساب (RIB)', copyNumber: 'نسخ الرقم', accountHolder: 'اسم المستفيد', transferSteps: 'خطوات التحويل:', cashSteps: 'خطوات الإيداع:', receiptTitle: 'ارفع وصل التحويل', receiptHelp: 'أرفق صورة وصل التحويل البنكي للتحقق من تبرعك', uploadSuccess: 'تم الرفع بنجاح', replace: 'حذف والاستبدال', dragReceipt: 'اسحب وأفلت الوصل هنا', camera: 'أو استخدم الكاميرا مباشرةً', chooseFile: 'اختر من الجهاز', transferDetails: 'تفاصيل التحويل', personalTitle: 'بياناتك الشخصية', personalHelp: 'للتواصل معك وإرسال وصل التبرع الرسمي', fullName: 'الاسم الكامل', phone: 'رقم الهاتف', email: 'البريد الإلكتروني', optional: 'اختياري', anonymous: 'التبرع باسم مجهول', anonymousHelp: 'لن يظهر اسمك في قائمة المتبرعين العامة', reviewTitle: 'راجع تبرعك', reviewHelp: 'تأكد من صحة التفاصيل قبل الإرسال', total: 'إجمالي تبرعك', donationAmount: 'المبلغ', paymentMethod: 'طريقة الدفع', donor: 'المتبرع', edit: 'تعديل', next: 'التالي', nextPayment: 'التالي: طريقة الدفع →', nextReceipt: 'التالي: رفع الوصل →', nextInfo: 'التالي: بياناتك →', nextReview: 'التالي: المراجعة →', payByCard: 'الدفع بالبطاقة', sendDonation: 'أرسل تبرعي الآن' },
+  fr: { completeDonation: 'Finaliser le don', projectDonation: 'Don à l’Association Ibtasim', currency: 'MAD', stepLabels: ['Étape 1 sur 6 — Connexion', 'Étape 2 sur 6 — Montant', 'Étape 3 sur 6 — Paiement', 'Étape 4 sur 6 — Reçu de virement', 'Étape 5 sur 6 — Vos coordonnées', 'Étape 6 sur 6 — Vérification et confirmation'], amountTitle: 'Quel montant souhaitez-vous donner ?', amountHelp: 'Choisissez un montant ou saisissez un montant personnalisé.', otherAmount: 'Ou saisissez un autre montant :', impact: 'permettra de couvrir :', coverFees: 'Je souhaite couvrir les frais de traitement pour que la totalité de mon don parvienne au projet.', donationSecure: 'Votre don parviendra intégralement au projet', paymentTitle: 'Comment souhaitez-vous payer ?', paymentHelp: 'Choisissez le moyen de paiement qui vous convient.', transfer: 'Virement bancaire ou agence', transferHelp: 'Effectuez le transfert et joignez le reçu.', popular: 'Le plus utilisé', card: 'Carte bancaire', cardHelp: 'Visa, Mastercard — direct et sécurisé', available: 'Disponible', bank: 'Banque', accountNumber: 'Numéro de compte (RIB)', copyNumber: 'Copier le numéro', accountHolder: 'Bénéficiaire', transferSteps: 'Étapes du virement :', cashSteps: 'Étapes du dépôt :', receiptTitle: 'Téléversez votre reçu', receiptHelp: 'Joignez une image du reçu bancaire pour vérifier votre don.', uploadSuccess: 'Téléversement réussi', replace: 'Supprimer et remplacer', dragReceipt: 'Glissez-déposez le reçu ici', camera: 'ou utilisez directement l’appareil photo', chooseFile: 'Choisir un fichier', transferDetails: 'Détails du transfert', personalTitle: 'Vos coordonnées', personalHelp: 'Pour vous contacter et envoyer le reçu officiel de votre don.', fullName: 'Nom complet', phone: 'Téléphone', email: 'E-mail', optional: 'facultatif', anonymous: 'Don anonyme', anonymousHelp: 'Votre nom n’apparaîtra pas dans la liste publique des donateurs.', reviewTitle: 'Vérifiez votre don', reviewHelp: 'Vérifiez les informations avant l’envoi.', total: 'Total de votre don', donationAmount: 'Montant', paymentMethod: 'Moyen de paiement', donor: 'Donateur', edit: 'Modifier', next: 'Suivant', nextPayment: 'Suivant : paiement →', nextReceipt: 'Suivant : reçu →', nextInfo: 'Suivant : coordonnées →', nextReview: 'Suivant : vérification →', payByCard: 'Payer par carte', sendDonation: 'Envoyer mon don' },
+  en: { completeDonation: 'Complete donation', projectDonation: 'Donation to Association Ibtasim', currency: 'MAD', stepLabels: ['Step 1 of 6 — Sign in', 'Step 2 of 6 — Choose an amount', 'Step 3 of 6 — Payment method', 'Step 4 of 6 — Upload transfer receipt', 'Step 5 of 6 — Your information', 'Step 6 of 6 — Review and confirm'], amountTitle: 'How much would you like to donate?', amountHelp: 'Choose an amount or enter a custom amount.', otherAmount: 'Or enter another amount:', impact: 'will help cover:', coverFees: 'I would like to cover processing fees so my full donation reaches the project.', donationSecure: 'Your full donation will reach the project', paymentTitle: 'How would you like to pay?', paymentHelp: 'Choose the payment method that works for you.', transfer: 'Bank transfer or cash agency', transferHelp: 'Make a transfer and attach your receipt.', popular: 'Most popular', card: 'Bank card', cardHelp: 'Visa, Mastercard — direct and secure', available: 'Available', bank: 'Bank', accountNumber: 'Account number (RIB)', copyNumber: 'Copy number', accountHolder: 'Account holder', transferSteps: 'Transfer steps:', cashSteps: 'Deposit steps:', receiptTitle: 'Upload your transfer receipt', receiptHelp: 'Attach an image of your bank-transfer receipt to verify your donation.', uploadSuccess: 'Uploaded successfully', replace: 'Remove and replace', dragReceipt: 'Drag and drop your receipt here', camera: 'or use your camera directly', chooseFile: 'Choose from device', transferDetails: 'Transfer details', personalTitle: 'Your information', personalHelp: 'So we can contact you and send your official donation receipt.', fullName: 'Full name', phone: 'Phone number', email: 'Email address', optional: 'optional', anonymous: 'Donate anonymously', anonymousHelp: 'Your name will not appear in the public donor list.', reviewTitle: 'Review your donation', reviewHelp: 'Confirm the details before sending.', total: 'Your donation total', donationAmount: 'Amount', paymentMethod: 'Payment method', donor: 'Donor', edit: 'Edit', next: 'Next', nextPayment: 'Next: payment →', nextReceipt: 'Next: upload receipt →', nextInfo: 'Next: your information →', nextReview: 'Next: review →', payByCard: 'Pay by card', sendDonation: 'Send my donation now' },
+};
+
+const getFlowCopy = (lang) => FLOW_COPY[lang] || FLOW_COPY.ar;
+
 const useViewportWidth = () => {
   const [width, setWidth] = useState(window.innerWidth);
   useEffect(() => {
@@ -25,14 +33,7 @@ const useViewportWidth = () => {
 
 const DEFAULT_BANK_INFO = { accountHolder: '—', rib: '—', bankName: '—', agency: '', associationPhone: '' };
 
-const STEP_LABELS = [
-  'الخطوة 1 من 6 — تسجيل الدخول',
-  'الخطوة 2 من 6 — اختيار المبلغ',
-  'الخطوة 3 من 6 — طريقة الدفع',
-  'الخطوة 4 من 6 — رفع وصل التحويل',
-  'الخطوة 5 من 6 — بياناتك الشخصية',
-  'الخطوة 6 من 6 — مراجعة وتأكيد',
-];
+const getStepLabels = (lang) => getFlowCopy(lang).stepLabels;
 
 const getImpactItems = (benefitCards) => {
   if (benefitCards && benefitCards.length > 0) {
@@ -42,28 +43,28 @@ const getImpactItems = (benefitCards) => {
 };
 
 // ─── Shared UI: Top Bar ───────────────────────────────────────────────────────
-const TopBar = ({ onBack }) => (
+const TopBar = ({ onBack, lang }) => (
   <div style={{ height: 56, display: 'flex', alignItems: 'center', padding: '0 20px', justifyContent: 'space-between', borderBottom: '1px solid #E5E9EB', flexShrink: 0, background: 'white' }}>
     <button onClick={onBack} style={{ width: 36, height: 36, borderRadius: '50%', background: '#F0F7F7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, border: 'none', cursor: 'pointer' }}>←</button>
-    <div style={{ fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-arabic)' }}>إتمام التبرع</div>
+    <div style={{ fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-arabic)' }}>{getFlowCopy(lang).completeDonation}</div>
     <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#F0F7F7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#64748b' }}>?</div>
   </div>
 );
 
 // ─── Shared UI: Segmented Progress ───────────────────────────────────────────
-const SegProgress = ({ step }) => (
+const SegProgress = ({ step, lang }) => (
   <div style={{ padding: '14px 20px 0', flexShrink: 0 }}>
     <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
       {[0, 1, 2, 3, 4, 5].map(i => (
         <div key={i} style={{ flex: 1, height: 4, borderRadius: 100, background: i < step ? '#0d7477' : i === step ? '#33C0C0' : '#E5E9EB' }} />
       ))}
     </div>
-    <div style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'Inter, sans-serif' }}>{STEP_LABELS[step] || ''}</div>
+    <div style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'Inter, sans-serif' }}>{getStepLabels(lang)[step] || ''}</div>
   </div>
 );
 
 // ─── Shared UI: Project Context Card ─────────────────────────────────────────
-const ProjectCtx = ({ project, step, amount }) => (
+const ProjectCtx = ({ project, step, amount, lang }) => (
   <div style={{ margin: '14px 16px', background: '#F0F7F7', borderRadius: 14, padding: 12, display: 'flex', alignItems: 'center', gap: 12, border: '1px solid #CCF0F0', flexShrink: 0 }}>
     <div style={{ width: 48, height: 48, borderRadius: 10, background: 'linear-gradient(135deg,#0A5F62,#33C0C0)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, overflow: 'hidden' }}>
       {project?.image ? <img src={project.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🎓'}
@@ -71,12 +72,12 @@ const ProjectCtx = ({ project, step, amount }) => (
     <div>
       {step <= 1 ? (
         <>
-          <div style={{ fontSize: 13, fontWeight: 700 }}>{project?.title || 'تبرع لجمعية ابتسام'}</div>
+          <div style={{ fontSize: 13, fontWeight: 700 }}>{project?.title || getFlowCopy(lang).projectDonation}</div>
         </>
       ) : (
         <>
-          <div style={{ fontSize: 14, fontWeight: 800, color: '#0A5F62', fontFamily: 'Inter, sans-serif' }}>{amount} درهم</div>
-          <div style={{ fontSize: 12, color: '#64748b' }}>{project?.title || 'تبرع لجمعية ابتسام'}</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: '#0A5F62', fontFamily: 'Inter, sans-serif' }}>{amount} {getFlowCopy(lang).currency}</div>
+          <div style={{ fontSize: 12, color: '#64748b' }}>{project?.title || getFlowCopy(lang).projectDonation}</div>
         </>
       )}
     </div>
@@ -289,14 +290,15 @@ const Step0Auth = ({ authMode, setAuthMode, authFormData, handleAuthChange, hand
 };
 
 // ─── Step 1: Amount ────────────────────────────────────────────────────────────
-const Step1Amount = ({ donationData, setDonationData, benefitCards }) => {
+const Step1Amount = ({ donationData, setDonationData, benefitCards, lang }) => {
+  const tx = getFlowCopy(lang);
   const amount = donationData.customAmount ? (parseFloat(donationData.customAmount) || 0) : donationData.amount;
   const impactItems = getImpactItems(benefitCards);
 
   return (
     <div style={{ flex: 1, padding: '16px', overflowY: 'auto' }}>
-      <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>كم تريد أن تتبرع؟</div>
-      <div style={{ fontSize: 13, color: '#64748b', marginBottom: 18 }}>اختر مبلغاً أو أدخل مبلغاً مخصصاً</div>
+      <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>{tx.amountTitle}</div>
+      <div style={{ fontSize: 13, color: '#64748b', marginBottom: 18 }}>{tx.amountHelp}</div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 18 }}>
         {DONATION_AMOUNTS.map(amt => {
@@ -305,13 +307,13 @@ const Step1Amount = ({ donationData, setDonationData, benefitCards }) => {
             <button key={amt} onClick={() => setDonationData(p => ({ ...p, amount: amt, customAmount: '' }))}
               style={{ height: 64, border: `2px solid ${isActive ? '#0d7477' : '#E5E9EB'}`, borderRadius: 16, background: isActive ? '#E6F4F4' : 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: isActive ? '0 0 0 3px rgba(13,116,119,.1)' : 'none', transition: 'all .15s' }}>
               <div style={{ fontSize: 20, fontWeight: 800, color: isActive ? '#0A5F62' : '#0e1a1b', fontFamily: 'Inter, sans-serif' }}>{amt >= 1000 ? `${(amt / 1000).toLocaleString('fr-MA')}k` : amt}</div>
-              <div style={{ fontSize: 11, color: '#94a3b8' }}>درهم{amt === 500 ? ' ⭐' : ''}</div>
+              <div style={{ fontSize: 11, color: '#94a3b8' }}>{tx.currency}{amt === 500 ? ' ⭐' : ''}</div>
             </button>
           );
         })}
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>أو أدخل مبلغاً آخر:</div>
+      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{tx.otherAmount}</div>
       <div style={{ position: 'relative', marginBottom: 18 }}>
         <input type="number" inputMode="numeric" value={donationData.customAmount}
           onChange={e => { const v = e.target.value; if (v === '' || /^\d*$/.test(v)) setDonationData(p => ({ ...p, customAmount: v, amount: 0 })); }}
@@ -319,12 +321,12 @@ const Step1Amount = ({ donationData, setDonationData, benefitCards }) => {
           style={{ width: '100%', height: 60, padding: '0 56px 0 16px', border: `2px solid ${donationData.customAmount ? '#0d7477' : '#E5E9EB'}`, borderRadius: 14, fontSize: 26, fontWeight: 800, color: '#0A5F62', outline: 'none', background: donationData.customAmount ? '#E6F4F4' : 'white', fontFamily: 'Inter, var(--font-arabic), sans-serif', boxSizing: 'border-box', boxShadow: donationData.customAmount ? '0 0 0 3px rgba(13,116,119,.1)' : 'none' }}
           dir="ltr"
         />
-        <span style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 14, fontWeight: 700, color: '#94a3b8', fontFamily: 'Inter, sans-serif' }}>د.م</span>
+        <span style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 14, fontWeight: 700, color: '#94a3b8', fontFamily: 'Inter, sans-serif' }}>{tx.currency}</span>
       </div>
 
       {amount > 0 && impactItems.length > 0 && (
         <div style={{ background: '#F0F7F7', borderRadius: 14, padding: 14, marginBottom: 16, border: '1px solid #CCF0F0' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#0A5F62', marginBottom: 10 }}>✨ {amount} درهم ستغطي:</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#0A5F62', marginBottom: 10 }}>✨ {amount} {tx.currency} {tx.impact}</div>
           {impactItems.map((item, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#64748b', marginBottom: 6 }}>
               <span style={{ color: '#0d7477', fontWeight: 700 }}>✓</span><span>{item}</span>
@@ -336,11 +338,11 @@ const Step1Amount = ({ donationData, setDonationData, benefitCards }) => {
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: 12, background: '#F0FFF4', borderRadius: 10, border: '1px solid #BBF7D0', marginBottom: 14 }}>
         <input type="checkbox" checked={donationData.coverFees} onChange={e => setDonationData(p => ({ ...p, coverFees: e.target.checked }))}
           style={{ width: 18, height: 18, accentColor: '#0d7477', marginTop: 2, flexShrink: 0 }} />
-        <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.6 }}>أريد تغطية رسوم المعالجة حتى تصل كامل تبرعتي للمشروع</div>
+        <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.6 }}>{tx.coverFees}</div>
       </div>
 
       <div style={{ padding: '10px 14px', background: '#F0F7F7', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#64748b' }}>
-        🔒 <span>تبرعك سيصل كاملاً للمشروع</span>
+        🔒 <span>{tx.donationSecure}</span>
       </div>
     </div>
   );
@@ -348,22 +350,23 @@ const Step1Amount = ({ donationData, setDonationData, benefitCards }) => {
 
 // ─── Step 2: Payment Method ───────────────────────────────────────────────────
 const Step2Payment = ({ donationData, setDonationData, bankInfo, showToast, lang }) => {
+  const tx = getFlowCopy(lang);
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
     showToast(lang === 'ar' ? 'تم النسخ' : 'Copied', 'success');
   };
 
   const METHODS = [
-    { id: 'transfer', icon: '🏦', title: 'تحويل بنكي أو وكالة نقد', desc: 'حوّل وأرفق وصل الإيداع', badge: 'الأكثر استخداماً' },
-    { id: 'card', icon: '💳', title: 'بطاقة بنكية', desc: 'فيزا، ماستركارد — مباشر وآمن', badge: 'متاح' },
+    { id: 'transfer', icon: '🏦', title: tx.transfer, desc: tx.transferHelp, badge: tx.popular },
+    { id: 'card', icon: '💳', title: tx.card, desc: tx.cardHelp, badge: tx.available },
   ];
 
   const transferType = donationData.transferType || 'bank';
 
   return (
     <div style={{ flex: 1, padding: '16px', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-      <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>كيف تريد الدفع؟</div>
-      <div style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>اختر طريقة الدفع المناسبة لك</div>
+      <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>{tx.paymentTitle}</div>
+      <div style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>{tx.paymentHelp}</div>
 
       {METHODS.map(m => {
         const sel = donationData.paymentMethod === m.id;
@@ -387,7 +390,7 @@ const Step2Payment = ({ donationData, setDonationData, bankInfo, showToast, lang
               <div style={{ marginTop: 14 }}>
                 {/* Sub-toggle */}
                 <div style={{ display: 'flex', background: '#F0F7F7', borderRadius: 10, padding: 4, marginBottom: 14, border: '1px solid #CCF0F0' }}>
-                  {[{ id: 'bank', label: '🏦 تحويل بنكي' }, { id: 'cash', label: '💳 Wafacash · Cash Plus' }].map(t => (
+                  {[{ id: 'bank', label: `🏦 ${tx.transfer}` }, { id: 'cash', label: '💳 Wafacash · Cash Plus' }].map(t => (
                     <button key={t.id} onClick={e => { e.stopPropagation(); setDonationData(p => ({ ...p, transferType: t.id })); }}
                       style={{ flex: 1, height: 34, borderRadius: 8, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'var(--font-arabic)',
                         background: transferType === t.id ? 'white' : 'transparent',
@@ -403,19 +406,19 @@ const Step2Payment = ({ donationData, setDonationData, bankInfo, showToast, lang
                 {transferType === 'bank' && (
                   <div style={{ padding: 14, background: 'white', borderRadius: 12, border: '1px solid #CCF0F0' }}>
                     <div style={{ marginBottom: 12 }}>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>البنك</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>{tx.bank}</div>
                       <div style={{ fontSize: 14, fontWeight: 700 }}>{bankInfo.bankName || 'بنك التجاري وفا بنك'}</div>
                     </div>
                     <div style={{ marginBottom: 12 }}>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>رقم الحساب (RIB)</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>{tx.accountNumber}</div>
                       <div style={{ fontSize: 18, fontWeight: 800, color: '#0A5F62', fontFamily: 'Inter, sans-serif', letterSpacing: '.08em', margin: '2px 0' }} dir="ltr">{bankInfo.rib || '—'}</div>
                       <button onClick={e => { e.stopPropagation(); copyToClipboard((bankInfo.rib || '').replace(/\s/g, '')); }}
                         style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#0d7477', background: '#E6F4F4', padding: '3px 10px', borderRadius: 100, cursor: 'pointer', border: 'none', fontFamily: 'var(--font-arabic)', marginTop: 4 }}>
-                        📋 نسخ الرقم
+                        📋 {tx.copyNumber}
                       </button>
                     </div>
                     <div style={{ marginBottom: 12 }}>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>اسم المستفيد</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 3, fontFamily: 'Inter, sans-serif' }}>{tx.accountHolder}</div>
                       <div style={{ fontSize: 14, fontWeight: 700 }}>{bankInfo.accountHolder || 'جمعية ابتسام للأعمال الخيرية'}</div>
                     </div>
                     {bankInfo.agency && (
@@ -425,7 +428,7 @@ const Step2Payment = ({ donationData, setDonationData, bankInfo, showToast, lang
                       </div>
                     )}
                     <div style={{ background: '#F0F7F7', borderRadius: 10, padding: 12, marginTop: 4 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: '#0A5F62', marginBottom: 6 }}>📋 خطوات التحويل:</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#0A5F62', marginBottom: 6 }}>📋 {tx.transferSteps}</div>
                       {['حوّل المبلغ عبر تطبيق بنكك', 'احتفظ بوصل التحويل', 'ارفع الوصل في الخطوة التالية'].map((s, i) => (
                         <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12, color: '#64748b', marginBottom: 4 }}>
                           <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#0d7477', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{i + 1}</div>
@@ -480,7 +483,7 @@ const Step2Payment = ({ donationData, setDonationData, bankInfo, showToast, lang
       })}
 
       <div style={{ padding: '10px 14px', background: '#F0F7F7', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#64748b', marginTop: 4 }}>
-        🔒 <span>جميع معاملاتك آمنة ومحمية</span>
+        🔒 <span>{lang === 'fr' ? 'Toutes vos transactions sont sécurisées et protégées' : lang === 'en' ? 'All your transactions are secure and protected' : 'جميع معاملاتك آمنة ومحمية'}</span>
       </div>
     </div>
   );
@@ -1107,11 +1110,12 @@ export default function DonationFlow() {
   };
 
   const getNextLabel = () => {
-    if (step === 0) return authMode === 'guest' ? 'التالي: اختيار المبلغ →' : otpSent ? 'تحقق' : authMode === 'login' ? 'تسجيل الدخول' : 'إنشاء حساب';
-    if (step === 5) return isLoading ? '...' : (donationData.paymentMethod === 'card' ? '💳 الدفع بالبطاقة' : '🤲 أرسل تبرعي الآن');
-    const labels = ['', 'التالي: طريقة الدفع →', 'التالي: رفع الوصل →', 'التالي: بياناتك →', 'التالي: المراجعة →'];
-    if (step === 2 && donationData.paymentMethod === 'card') return 'التالي: بياناتك →';
-    return labels[step] || 'التالي';
+    const tx = getFlowCopy(lang);
+    if (step === 0) return authMode === 'guest' ? tx.nextPayment : otpSent ? (lang === 'fr' ? 'Vérifier' : lang === 'en' ? 'Verify' : 'تحقق') : authMode === 'login' ? (lang === 'fr' ? 'Connexion' : lang === 'en' ? 'Sign in' : 'تسجيل الدخول') : (lang === 'fr' ? 'Créer un compte' : lang === 'en' ? 'Create account' : 'إنشاء حساب');
+    if (step === 5) return isLoading ? '...' : (donationData.paymentMethod === 'card' ? `💳 ${tx.payByCard}` : `🤲 ${tx.sendDonation}`);
+    const labels = ['', tx.nextPayment, tx.nextReceipt, tx.nextInfo, tx.nextReview];
+    if (step === 2 && donationData.paymentMethod === 'card') return tx.nextInfo;
+    return labels[step] || tx.next;
   };
 
   const amount = calculateTotal();
@@ -1126,14 +1130,14 @@ export default function DonationFlow() {
       <div style={{ width: '100%', maxWidth: containerMaxWidth, height: '100%', background: 'white', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
 
         {/* Top bar */}
-        {step < 6 && <TopBar onBack={handleBack} />}
+        {step < 6 && <TopBar onBack={handleBack} lang={lang} />}
 
         {/* Segmented progress */}
-        {step < 6 && <SegProgress step={step} />}
+        {step < 6 && <SegProgress step={step} lang={lang} />}
 
         {/* Project context card (steps 0-4) */}
         {step < 5 && project !== undefined && (
-          <ProjectCtx project={project} step={step} amount={amount} />
+          <ProjectCtx project={project} step={step} amount={amount} lang={lang} />
         )}
 
         {/* Step content */}
@@ -1152,7 +1156,7 @@ export default function DonationFlow() {
             requestOTP={requestOTP} showToast={showToast} isNarrow={isNarrow}
           />
         )}
-        {step === 1 && <Step1Amount donationData={donationData} setDonationData={setDonationData} benefitCards={project?.benefitCards} />}
+        {step === 1 && <Step1Amount donationData={donationData} setDonationData={setDonationData} benefitCards={project?.benefitCards} lang={lang} />}
         {step === 2 && <Step2Payment donationData={donationData} setDonationData={setDonationData} bankInfo={bankInfo} showToast={showToast} lang={lang} />}
         {step === 3 && <Step3Receipt uploadedFile={uploadedFile} setUploadedFile={setUploadedFile} dragActive={dragActive} setDragActive={setDragActive} showToast={showToast} lang={lang} amount={amount} donationData={donationData} setDonationData={setDonationData} />}
         {step === 4 && <Step4Info donationData={donationData} setDonationData={setDonationData} lang={lang} />}
@@ -1173,14 +1177,14 @@ export default function DonationFlow() {
                   style={{ width: '100%', height: 56, background: isNextDisabled() ? '#E5E9EB' : '#0d7477', color: isNextDisabled() ? '#94a3b8' : 'white', border: 'none', borderRadius: 16, fontSize: 17, fontWeight: 800, cursor: isNextDisabled() ? 'not-allowed' : 'pointer', boxShadow: isNextDisabled() ? 'none' : '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'var(--font-arabic)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                   {getNextLabel()}
                 </button>
-                <div style={{ textAlign: 'center', fontSize: 11, color: '#94a3b8', marginTop: 8 }}>ستصلك رسالة تأكيد فور إرسال التبرع</div>
+                <div style={{ textAlign: 'center', fontSize: 11, color: '#94a3b8', marginTop: 8 }}>{lang === 'fr' ? 'Vous recevrez une confirmation dès l’envoi de votre don.' : lang === 'en' ? 'You will receive a confirmation as soon as your donation is sent.' : 'ستصلك رسالة تأكيد فور إرسال التبرع'}</div>
               </div>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                 <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.4 }}>
-                  المجموع<br />
+                  {lang === 'fr' ? 'Total' : lang === 'en' ? 'Total' : 'المجموع'}<br />
                   <strong style={{ fontSize: 18, fontWeight: 800, color: '#0A5F62', fontFamily: 'Inter, sans-serif' }}>{amount}</strong>{' '}
-                  <span style={{ fontSize: 11 }}>د.م</span>
+                  <span style={{ fontSize: 11 }}>{getFlowCopy(lang).currency}</span>
                 </div>
                 <button onClick={handleNext} disabled={isNextDisabled()}
                   style={{ flex: 1, height: 52, background: isNextDisabled() ? '#E5E9EB' : '#0d7477', color: isNextDisabled() ? '#94a3b8' : 'white', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: isNextDisabled() ? 'not-allowed' : 'pointer', boxShadow: isNextDisabled() ? 'none' : '0 4px 14px rgba(13,116,119,.25)', fontFamily: 'var(--font-arabic)' }}>
