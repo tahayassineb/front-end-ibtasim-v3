@@ -4,7 +4,13 @@ import JSZip from 'jszip';
 import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
 import { can } from '../../../lib/adminPermissions';
-import { getInclusiveDateRange, getPaymentMethodLabel, isCardPayment, isHiddenLegacyDonation, requiresReceipt } from '../../../lib/donationUi';
+import {
+  getInclusiveDateRange,
+  getPaymentMethodLabel,
+  isCardPayment,
+  isHiddenLegacyDonation,
+  requiresReceipt,
+} from '../../../lib/donationUi';
 
 const statusLabels = {
   awaiting_receipt: 'بانتظار الوصل',
@@ -20,8 +26,11 @@ export default function AdminReceipts() {
   const [filters, setFilters] = useState({ type: '', status: '', search: '', exactDate: '', startDate: '', endDate: '' });
   const [selected, setSelected] = useState({});
   const [exporting, setExporting] = useState(false);
+
   const logExport = useMutation(api.receipts.logExport);
   const dateRange = useMemo(() => getInclusiveDateRange(filters), [filters]);
+  const canExport = can(user?.role, 'receipts:export');
+
   const updateExactDate = (value) => {
     setFilters((current) => ({
       ...current,
@@ -30,6 +39,7 @@ export default function AdminReceipts() {
       endDate: value ? '' : current.endDate,
     }));
   };
+
   const updateRangeDate = (field, value) => {
     setFilters((current) => ({
       ...current,
@@ -37,28 +47,43 @@ export default function AdminReceipts() {
       [field]: value,
     }));
   };
-  const data = useQuery(api.receipts.list, user?.id ? {
-    adminId: user.id,
-    type: filters.type || undefined,
-    status: filters.status || undefined,
-    search: filters.search || undefined,
-    startDate: dateRange.startDate,
-    endDate: dateRange.endDate,
-    limit: 250,
-  } : 'skip');
-  const rows = useMemo(() => (data?.rows || []).filter((row) => {
-    if (isHiddenLegacyDonation(row)) return false;
-    if (dateRange.startDate != null && row.createdAt < dateRange.startDate) return false;
-    if (dateRange.endDate != null && row.createdAt > dateRange.endDate) return false;
-    return true;
-  }), [data?.rows, dateRange]);
+
+  const adminAuthArgs = user?.sessionToken ? { sessionToken: user.sessionToken } : null;
+  const data = useQuery(
+    api.receipts.list,
+    adminAuthArgs && canExport
+      ? {
+          ...adminAuthArgs,
+          type: filters.type || undefined,
+          status: filters.status || undefined,
+          search: filters.search || undefined,
+          startDate: dateRange.startDate,
+          endDate: dateRange.endDate,
+          limit: 250,
+        }
+      : 'skip'
+  );
+
+  const rows = useMemo(
+    () =>
+      (data?.rows || []).filter((row) => {
+        if (isHiddenLegacyDonation(row)) return false;
+        if (dateRange.startDate != null && row.createdAt < dateRange.startDate) return false;
+        if (dateRange.endDate != null && row.createdAt > dateRange.endDate) return false;
+        return true;
+      }),
+    [data?.rows, dateRange]
+  );
+
   const selectedRows = useMemo(() => rows.filter((r) => selected[r.id]), [rows, selected]);
-  const canExport = can(user?.role, 'receipts:export');
-  const totals = useMemo(() => ({
-    count: rows.length,
-    amount: rows.reduce((sum, row) => sum + (row.amount ?? 0), 0),
-    missingReceipts: rows.filter((row) => requiresReceipt(row.paymentMethod) && !row.receiptUrl).length,
-  }), [rows]);
+  const totals = useMemo(
+    () => ({
+      count: rows.length,
+      amount: rows.reduce((sum, row) => sum + (row.amount ?? 0), 0),
+      missingReceipts: rows.filter((row) => requiresReceipt(row.paymentMethod) && !row.receiptUrl).length,
+    }),
+    [rows]
+  );
 
   const getStatusLabel = (row) => {
     if (!isCardPayment(row.paymentMethod)) return statusLabels[row.status] || row.status;
@@ -69,20 +94,24 @@ export default function AdminReceipts() {
 
   const csvFor = (items) => {
     const headers = ['Date', 'Donor Name', 'Donor Phone', 'Amount MAD', 'Type', 'Project/Kafala', 'Payment Method', 'Status', 'Verified Date', 'Transaction Reference', 'Bank Name', 'Receipt URL'];
-    const body = items.map((r) => [
-      new Date(r.createdAt).toISOString(),
-      r.donorName,
-      r.donorPhone,
-      Number(r.amount || 0).toFixed(2),
-      r.type,
-      r.entityTitle,
-      getPaymentMethodLabel(r.paymentMethod),
-      getStatusLabel(r),
-      r.verifiedAt ? new Date(r.verifiedAt).toISOString() : '',
-      r.transactionReference || '',
-      r.bankName || '',
-      r.receiptUrl || '',
-    ].map((value) => `"${String(value).replace(/"/g, '""')}"`).join(','));
+    const body = items.map((r) =>
+      [
+        new Date(r.createdAt).toISOString(),
+        r.donorName,
+        r.donorPhone,
+        Number(r.amount || 0).toFixed(2),
+        r.type,
+        r.entityTitle,
+        getPaymentMethodLabel(r.paymentMethod),
+        getStatusLabel(r),
+        r.verifiedAt ? new Date(r.verifiedAt).toISOString() : '',
+        r.transactionReference || '',
+        r.bankName || '',
+        r.receiptUrl || '',
+      ]
+        .map((value) => `"${String(value).replace(/"/g, '""')}"`)
+        .join(',')
+    );
     return [headers.join(','), ...body].join('\n');
   };
 
@@ -98,7 +127,7 @@ export default function AdminReceipts() {
   };
 
   const exportCsv = async (items) => {
-    await logExport({ adminId: user.id, count: items.length, exportType: 'csv', filters });
+    await logExport({ ...adminAuthArgs, count: items.length, exportType: 'csv', filters });
     downloadBlob(new Blob([csvFor(items)], { type: 'text/csv;charset=utf-8' }), 'receipts.csv');
   };
 
@@ -118,12 +147,24 @@ export default function AdminReceipts() {
         }
       }
       const blob = await zip.generateAsync({ type: 'blob' });
-      await logExport({ adminId: user.id, count: items.length, exportType: 'package', filters });
+      await logExport({ ...adminAuthArgs, count: items.length, exportType: 'package', filters });
       downloadBlob(blob, 'accounting-receipts.zip');
     } finally {
       setExporting(false);
     }
   };
+
+  if (!canExport) {
+    return (
+      <div style={{ padding: 24, fontFamily: 'var(--font-arabic)' }} dir="rtl">
+        <div style={{ background: 'white', border: '1px solid #E5E9EB', borderRadius: 16, padding: 28, textAlign: 'center' }}>
+          <div style={{ fontSize: 42, marginBottom: 10 }}>🔒</div>
+          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900 }}>لا تملك صلاحية الوصول إلى مركز الوصولات</h2>
+          <p style={{ margin: '10px 0 0', color: '#64748b' }}>هذا القسم مخصص فقط للأدوار المخولة بالتصدير والمراجعة المالية.</p>
+        </div>
+      </div>
+    );
+  }
 
   const targetRows = selectedRows.length ? selectedRows : rows;
 
@@ -134,12 +175,12 @@ export default function AdminReceipts() {
           <h2 style={{ margin: 0, fontSize: 24, fontWeight: 900 }}>مركز الوصولات</h2>
           <p style={{ margin: '6px 0 0', color: '#64748b' }}>تجميع وتصدير وصولات التبرعات والكفالات للمحاسبة.</p>
         </div>
-        {canExport && (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button onClick={() => exportCsv(targetRows)} style={buttonStyle}>CSV</button>
-            <button onClick={() => exportPackage(targetRows)} disabled={exporting} style={{ ...buttonStyle, background: '#0d7477', color: 'white' }}>{exporting ? '...' : 'حزمة المحاسبة'}</button>
-          </div>
-        )}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button onClick={() => exportCsv(targetRows)} style={buttonStyle}>CSV</button>
+          <button onClick={() => exportPackage(targetRows)} disabled={exporting} style={{ ...buttonStyle, background: '#0d7477', color: 'white' }}>
+            {exporting ? '...' : 'حزمة المحاسبة'}
+          </button>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 16 }}>
@@ -156,7 +197,9 @@ export default function AdminReceipts() {
         </select>
         <select value={filters.status} onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))} style={filterStyle}>
           <option value="">كل الحالات</option>
-          {Object.entries(statusLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+          {Object.entries(statusLabels).map(([key, label]) => (
+            <option key={key} value={key}>{label}</option>
+          ))}
         </select>
         <label style={dateFieldWrapStyle}>
           <span style={dateLabelStyle}>Single day</span>
@@ -171,20 +214,20 @@ export default function AdminReceipts() {
           <input type="date" value={filters.endDate} onChange={(e) => updateRangeDate('endDate', e.target.value)} disabled={Boolean(filters.exactDate)} style={{ ...filterStyle, opacity: filters.exactDate ? 0.6 : 1 }} />
         </label>
         <input value={filters.search} onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))} placeholder="بحث باسم المتبرع أو الهاتف" style={{ ...filterStyle, flex: 1 }} />
-        {filters.exactDate && (
-          <button onClick={() => updateExactDate('')} style={buttonStyle}>Clear day</button>
-        )}
-        {(filters.startDate || filters.endDate) && (
-          <button onClick={() => setFilters((f) => ({ ...f, startDate: '', endDate: '' }))} style={buttonStyle}>مسح التاريخ</button>
-        )}
+        {filters.exactDate && <button onClick={() => updateExactDate('')} style={buttonStyle}>Clear day</button>}
+        {(filters.startDate || filters.endDate) && <button onClick={() => setFilters((f) => ({ ...f, startDate: '', endDate: '' }))} style={buttonStyle}>مسح التاريخ</button>}
       </div>
 
       <div style={{ background: 'white', border: '1px solid #E5E9EB', borderRadius: 16, overflowX: 'auto' }}>
-        {data === undefined ? <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>جاري التحميل...</div> : (
+        {data === undefined ? (
+          <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>جاري التحميل...</div>
+        ) : (
           <table style={{ width: '100%', minWidth: 980, borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#F8FAFA', color: '#64748b', fontSize: 12 }}>
-                {['', 'المتبرع', 'النوع', 'المشروع/الكفالة', 'المبلغ', 'الحالة', 'الوصل', 'التاريخ'].map((h) => <th key={h} style={{ textAlign: 'right', padding: 12 }}>{h}</th>)}
+                {['', 'المتبرع', 'النوع', 'المشروع/الكفالة', 'المبلغ', 'الحالة', 'الوصل', 'التاريخ'].map((h) => (
+                  <th key={h} style={{ textAlign: 'right', padding: 12 }}>{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -215,7 +258,12 @@ export default function AdminReceipts() {
 }
 
 function Stat({ label, value }) {
-  return <div style={{ background: 'white', border: '1px solid #E5E9EB', borderRadius: 14, padding: 16 }}><div style={{ color: '#64748b', fontSize: 12 }}>{label}</div><div style={{ fontSize: 24, fontWeight: 900, marginTop: 4 }}>{value}</div></div>;
+  return (
+    <div style={{ background: 'white', border: '1px solid #E5E9EB', borderRadius: 14, padding: 16 }}>
+      <div style={{ color: '#64748b', fontSize: 12 }}>{label}</div>
+      <div style={{ fontSize: 24, fontWeight: 900, marginTop: 4 }}>{value}</div>
+    </div>
+  );
 }
 
 const filterStyle = { height: 40, border: '1px solid #E5E9EB', borderRadius: 10, background: '#fff', padding: '0 12px', fontFamily: 'var(--font-arabic)' };

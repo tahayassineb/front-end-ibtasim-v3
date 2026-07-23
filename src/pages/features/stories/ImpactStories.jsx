@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
 import { convexFileUrl } from '../../../lib/convex';
+import { getLocalizedText } from '../../../lib/i18nContent';
 
 // ============================================
 // BLOG PAGE - المدونة
@@ -73,7 +74,11 @@ const ImpactStories = () => {
     id: s._id,
     badgeBg: 'rgba(255,255,255,.9)',
     badgeColor: s.catColor || '#0A5F62',
-    date: s.publishedAt ? new Date(s.publishedAt).toLocaleDateString('ar-MA', { year: 'numeric', month: 'long', day: 'numeric' }) : '',
+      title: getLocalizedText(s.title, language),
+      excerpt: getLocalizedText(s.excerpt, language),
+      badgeText: getLocalizedText(s.badgeText, language),
+      catLabel: getLocalizedText(s.catLabel, language),
+      date: s.publishedAt ? new Date(s.publishedAt).toLocaleDateString('ar-MA', { year: 'numeric', month: 'long', day: 'numeric' }) : '',
   }));
 
   const CATEGORIES = ['education', 'water', 'health', 'kafala', 'food', 'housing'];
@@ -92,7 +97,6 @@ const ImpactStories = () => {
   ];
 
   const POST_TYPE_LABELS = { story: '🌟 قصص نجاح', activity: '🎉 أنشطة وفعاليات', update: '📢 أخبار وتحديثات' };
-  const hasPostTypes = stories.some(s => s.postType);
   const filteredStories = stories.filter(s => {
     const categoryMatch = selectedFilter === 'all' || s.category === selectedFilter;
     const postTypeMatch = selectedPostType === 'all' || s.postType === selectedPostType;
@@ -168,7 +172,8 @@ const ImpactStories = () => {
               )}
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,.6),transparent)' }} />
               <span style={{ position: 'relative', zIndex: 1, display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,.15)', backdropFilter: 'blur(8px)', color: 'white', padding: '6px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600 }}>
-                {featuredStory.badgeIcon} {featuredStory.badgeText}
+                <span className="material-symbols-outlined no-flip" style={{ fontSize: 16 }}>{featuredStory.badgeIcon}</span>
+                {featuredStory.badgeText}
               </span>
             </div>
             {/* Body */}
@@ -242,7 +247,8 @@ const ImpactStories = () => {
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,.5),transparent)' }} />
                 <div style={{ position: 'absolute', bottom: 12, right: 12, zIndex: 1 }}>
                   <span style={{ background: story.badgeBg, color: story.badgeColor, fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 100 }}>
-                    {story.badgeIcon} {story.badgeText}
+                    <span className="material-symbols-outlined no-flip" style={{ fontSize: 14, verticalAlign: 'middle' }}>{story.badgeIcon}</span>
+                    {story.badgeText}
                   </span>
                 </div>
               </div>

@@ -20,8 +20,8 @@ export default function AdminActivity() {
   const { user } = useApp();
   const [action, setAction] = useState('');
   const [entityType, setEntityType] = useState('');
-  const activities = useQuery(api.activities.list, user?.id ? {
-    adminId: user.id,
+  const activities = useQuery(api.activities.list, user?.sessionToken ? {
+    sessionToken: user?.sessionToken,
     action: action || undefined,
     entityType: entityType || undefined,
     limit: 100,
@@ -73,4 +73,3 @@ const filterStyle = {
   padding: '0 12px',
   fontFamily: 'var(--font-arabic)',
 };
-

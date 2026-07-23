@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
+import { buildAdminUser, normalizeAdminEmail } from './adminLoginHelpers';
 
 // ============================================
 // ADMIN LOGIN — Split layout: dark teal left + white form right
@@ -32,17 +33,9 @@ export default function AdminLogin() {
     }
     setLoading(true);
     try {
-      const result = await loginAdmin({ email: formData.email, password: formData.password });
+      const result = await loginAdmin({ email: normalizeAdminEmail(formData.email), password: formData.password });
       if (result.success) {
-        login({
-          id: result.adminId,
-          userId: result.userId,
-          email: result.email,
-          name: result.fullName || 'Admin',
-          phone: result.phoneNumber || '',
-          role: result.role || 'owner',
-          isAdmin: true,
-        });
+        login(buildAdminUser(result));
         navigate('/admin');
       } else {
         setError(result.message || 'البريد الإلكتروني أو كلمة المرور غير صحيحة');

@@ -1,7 +1,9 @@
 import { query, mutation, action } from "./_generated/server";
 import { v } from "convex/values";
-import { api } from "./_generated/api";
+import { internal } from "./_generated/api";
 import { adminRole, effectiveRole } from "./permissions";
+import { createAdminSessionRecord } from "./adminSessions";
+import { normalizeEmail } from "./email";
 
 // ============================================
 // PASSWORD HASHING (PBKDF2 via Web Crypto API)
@@ -105,8 +107,10 @@ export const requestOTP = mutation({
       };
     }
     
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // Generate 6-digit OTP (cryptographically strong)
+    const buf = new Uint32Array(1);
+    crypto.getRandomValues(buf);
+    const otp = String(100000 + (buf[0] % 900000));
     const codeExpiresAt = now + 10 * 60 * 1000; // 10 minutes expiry
     
     // Update user with new OTP
@@ -124,7 +128,7 @@ export const requestOTP = mutation({
 
     let whatsappDelivery = "scheduled";
     try {
-      await ctx.scheduler.runAfter(0, api.notifications.sendWhatsApp, {
+      await ctx.scheduler.runAfter(0, internal.notifications.sendWhatsAppInternal, {
         to: args.phoneNumber,
         text: otpMessage,
       });
@@ -215,6 +219,7 @@ export const registerUser = mutation({
   }),
   handler: async (ctx, args) => {
     const now = Date.now();
+    const email = normalizeEmail(args.email);
     
     // Check if user exists
     const existingUser = await ctx.db
@@ -228,7 +233,7 @@ export const registerUser = mutation({
       if (!existingUser.isVerified && !existingUser.passwordHash) {
         await ctx.db.patch(existingUser._id, {
           fullName: args.fullName,
-          email: args.email,
+          email,
           preferredLanguage: args.preferredLanguage,
           lastLoginAt: now,
         });
@@ -247,7 +252,7 @@ export const registerUser = mutation({
     // Check email uniqueness
     const existingEmail = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", email))
       .first();
     
     if (existingEmail) {
@@ -260,7 +265,7 @@ export const registerUser = mutation({
     // Create user
     const userId = await ctx.db.insert("users", {
       fullName: args.fullName,
-      email: args.email,
+      email,
       phoneNumber: args.phoneNumber,
       isVerified: false,
       preferredLanguage: args.preferredLanguage,
@@ -314,6 +319,7 @@ export const loginAdmin = mutation({
   returns: v.union(
     v.object({
       success: v.literal(true),
+      sessionToken: v.string(),
       adminId: v.id("admins"),
       userId: v.id("users"),
       email: v.string(),
@@ -328,13 +334,24 @@ export const loginAdmin = mutation({
     })
   ),
   handler: async (ctx, args) => {
+    const email = normalizeEmail(args.email);
     const admin = await ctx.db
       .query("admins")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", email))
       .first();
 
     if (!admin || !admin.isActive) {
       return { success: false, message: "Invalid credentials." } as const;
+    }
+
+    // Log legacy plaintext password usage (no salt:hash separator)
+    if (!admin.passwordHash.includes(":")) {
+      await ctx.db.insert("errorLogs", {
+        source: "auth_legacy_password",
+        level: "warning",
+        message: `Legacy plaintext password used for user ${admin.userId}`,
+        createdAt: Date.now(),
+      });
     }
 
     const valid = await verifyPassword(args.password, admin.passwordHash);
@@ -344,9 +361,11 @@ export const loginAdmin = mutation({
 
     const user = await ctx.db.get(admin.userId);
     await ctx.db.patch(admin._id, { lastLoginAt: Date.now() });
+    const sessionToken = await createAdminSessionRecord(ctx, admin._id);
 
     return {
       success: true,
+      sessionToken,
       adminId: admin._id,
       userId: admin.userId,
       email: admin.email,
@@ -389,7 +408,7 @@ export const loginWithPassword = mutation({
         message: "Invalid phone number or password.",
       };
     }
-    
+
     // Account registered but OTP never completed — prompt them to verify
     if (!user.isVerified && !user.passwordHash) {
       return {
@@ -406,7 +425,32 @@ export const loginWithPassword = mutation({
         message: "Password not set. Please use OTP login or set a password.",
       };
     }
-    
+
+    // Password is set but account never finished verification — (re)send OTP
+    if (!user.isVerified) {
+      try {
+        await ctx.scheduler.runAfter(0, api.auth.requestOTP, { phoneNumber: args.phoneNumber });
+      } catch (err) {
+        console.error("Failed to schedule OTP resend:", err);
+      }
+      return {
+        success: false,
+        message: "Account not verified. Verification code sent.",
+        requiresOtpVerification: true,
+        userId: user._id,
+      };
+    }
+
+    // Log legacy plaintext password usage (no salt:hash separator)
+    if (!user.passwordHash.includes(":")) {
+      await ctx.db.insert("errorLogs", {
+        source: "auth_legacy_password",
+        level: "warning",
+        message: `Legacy plaintext password used for user ${user._id}`,
+        createdAt: Date.now(),
+      });
+    }
+
     const isValid = await verifyPassword(args.password, user.passwordHash);
     
     if (!isValid) {

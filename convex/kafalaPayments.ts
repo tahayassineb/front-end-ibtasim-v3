@@ -40,6 +40,7 @@ export const createKafalaWhopCheckout = action({
     kafalaId: v.id("kafala"),
     donationId: v.id("kafalaDonations"),
     userCountry: v.optional(v.string()),
+    plan: v.union(v.literal("monthly"), v.literal("annual")),
   },
   handler: async (ctx, args): Promise<string> => {
     const apiKey = process.env.WHOP_API_KEY;
@@ -56,6 +57,11 @@ export const createKafalaWhopCheckout = action({
     if (!kafala) throw new Error("الكفالة غير موجودة");
 
     const priceInMAD = kafala.monthlyPrice;
+    const isAnnual = args.plan === "annual";
+    // For annual: NO discount — straight 12x monthly price (kafala, not a product).
+    const periodMultiplier = isAnnual ? 12 : 1;
+    const billingPeriodDays = isAnnual ? 365 : 30;
+    const periodPriceMAD = priceInMAD * periodMultiplier;
 
     // ── Determine currency and amount ────────────────────────────────────────
     const isMorocco = !args.userCountry || args.userCountry === "MA";
@@ -65,7 +71,7 @@ export const createKafalaWhopCheckout = action({
 
     if (isMorocco) {
       planCurrency = "mad";
-      renewalPrice = priceInMAD;
+      renewalPrice = periodPriceMAD;
     } else {
       planCurrency = "usd";
       let madToUsd = FALLBACK_MAD_TO_USD;
@@ -76,17 +82,17 @@ export const createKafalaWhopCheckout = action({
           if (rateData?.rates?.USD) madToUsd = rateData.rates.USD;
         }
       } catch { /* use fallback */ }
-      renewalPrice = Math.round(priceInMAD * madToUsd * 100) / 100;
+      renewalPrice = Math.round(periodPriceMAD * madToUsd * 100) / 100;
     }
 
     // ── Step 1: Create hidden recurring plan ─────────────────────────────────
     // Uses product_id (renewal plans) + base_currency (raw Whop v2 field).
-    // Only renewal_price — no initial_price — so day-1 charge = one month only.
+    // Only renewal_price — no initial_price — so day-1 charge = one period only.
     const planBody = {
       company_id: companyId,
       product_id: productId,
       plan_type: "renewal",
-      billing_period: 30,
+      billing_period: billingPeriodDays,
       renewal_price: renewalPrice,
       base_currency: planCurrency,
       visibility: "hidden",
@@ -138,6 +144,7 @@ export const createKafalaWhopCheckout = action({
           kafalaId: args.kafalaId,
           donationId: args.donationId,
           type: "kafala",
+          plan: args.plan,
         },
       }),
     });
@@ -168,6 +175,24 @@ export const createKafalaWhopCheckout = action({
   },
 });
 
+export const startKafalaCheckout = action({
+  args: {
+    kafalaId: v.id("kafala"),
+    donationId: v.id("kafalaDonations"),
+    userCountry: v.optional(v.string()),
+    plan: v.union(v.literal("monthly"), v.literal("annual")),
+    provider: v.optional(v.literal("whop")),
+  },
+  returns: v.object({
+    provider: v.literal("whop"),
+    purchaseUrl: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    const purchaseUrl = await ctx.runAction(api.kafalaPayments.createKafalaWhopCheckout, args);
+    return { provider: "whop", purchaseUrl };
+  },
+});
+
 // ============================================
 // CANCEL KAFALA SUBSCRIPTION
 // ============================================
@@ -182,8 +207,15 @@ export const cancelKafalaSubscription = action({
   args: {
     sponsorshipId: v.id("kafalaSponsorship"),
   },
-  returns: v.object({ success: v.boolean(), error: v.optional(v.string()) }),
-  handler: async (ctx, args): Promise<{ success: boolean; error?: string }> => {
+  returns: v.object({
+    success: v.boolean(),
+    error: v.optional(v.string()),
+    retryable: v.optional(v.boolean()),
+  }),
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ success: boolean; error?: string; retryable?: boolean }> => {
     const sponsorship: any = await ctx.runQuery(api.kafala.getSponsorshipById, {
       sponsorshipId: args.sponsorshipId,
     });
@@ -194,18 +226,56 @@ export const cancelKafalaSubscription = action({
       const apiKey = process.env.WHOP_API_KEY;
       if (!apiKey) return { success: false, error: "WHOP_API_KEY not configured" };
 
-      const res = await fetch(
-        `${WHOP_API_BASE}/api/v2/memberships/${sponsorship.whopSubscriptionId}/cancel`,
-        { method: "POST", headers: { Authorization: `Bearer ${apiKey}` } }
-      );
+      let res: Response;
+      try {
+        res = await fetch(
+          `${WHOP_API_BASE}/api/v2/memberships/${sponsorship.whopSubscriptionId}/cancel`,
+          { method: "POST", headers: { Authorization: `Bearer ${apiKey}` } }
+        );
+      } catch (e: any) {
+        // Network error — DO NOT flip DB. Mark cancelPending so it can be retried.
+        console.error("Whop cancel network error:", e);
+        await ctx.runMutation(api.kafala.markSponsorshipCancelPending, {
+          sponsorshipId: args.sponsorshipId,
+        });
+        return {
+          success: false,
+          error: `Whop cancel network error: ${e?.message ?? "unknown"}`,
+          retryable: true,
+        };
+      }
+
+      if (res.status === 404) {
+        // Already cancelled / membership not found on Whop side — safe to flip DB.
+        await ctx.runMutation(api.kafala.expireSponsorship, {
+          sponsorshipId: args.sponsorshipId,
+        });
+        return { success: true };
+      }
+
       if (!res.ok) {
         const body = await res.text();
         console.error("Whop cancel failed:", res.status, body);
-        return { success: false, error: `Whop cancel failed: HTTP ${res.status}` };
+        // Non-OK and non-404 — flag for retry, leave DB untouched.
+        await ctx.runMutation(api.kafala.markSponsorshipCancelPending, {
+          sponsorshipId: args.sponsorshipId,
+        });
+        return {
+          success: false,
+          error: `Whop cancel failed: HTTP ${res.status}`,
+          retryable: true,
+        };
+      }
+
+      // Whop cancel succeeded — clear cancelPending if it was set, then flip DB.
+      if (sponsorship.cancelPending) {
+        await ctx.runMutation(api.kafala.clearSponsorshipCancelPending, {
+          sponsorshipId: args.sponsorshipId,
+        });
       }
     }
 
-    // Mark expired in DB regardless of payment method
+    // Bank/cash path or successful Whop cancel — expire in DB.
     await ctx.runMutation(api.kafala.expireSponsorship, { sponsorshipId: args.sponsorshipId });
     return { success: true };
   },

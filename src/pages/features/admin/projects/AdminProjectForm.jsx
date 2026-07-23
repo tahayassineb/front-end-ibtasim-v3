@@ -5,12 +5,14 @@ import { api } from '../../../../../convex/_generated/api';
 import { useApp } from '../../../../context/AppContext';
 import { convexFileUrl } from '../../../../lib/convex';
 import { formatBytes, optimizeImageFile } from '../../../../lib/imageOptimization';
+import { getLocalizedText, normalizeI18nText, parseProjectCategories } from '../../../../lib/i18nContent';
+import { CMS_IMAGE_ALLOWED_TYPES, CMS_IMAGE_MAX_BYTES, validateUploadFile } from '../../../../lib/uploadValidation';
 
 // ─── Convex storage helpers ───────────────────────────────────────────────────
-const uploadFileToConvex = async (file, getUploadUrlMutation) => {
+const uploadFileToConvex = async (file, getUploadUrlMutation, authArgs) => {
   const optimized = await optimizeImageFile(file, { maxWidth: 1800, maxHeight: 1800, quality: 0.82 });
   const uploadFile = optimized.file;
-  const uploadUrl = await getUploadUrlMutation();
+  const uploadUrl = await getUploadUrlMutation(authArgs);
   const response = await fetch(uploadUrl, {
     method: 'POST',
     headers: { 'Content-Type': uploadFile.type },
@@ -84,10 +86,15 @@ export default function AdminProjectForm() {
 
   // ── Convex ────────────────────────────────────────────────────────────────
   const existingProject = useQuery(api.projects.getProjectById, isEditMode ? { projectId: id } : 'skip');
+  const projectCategoriesConfig = useQuery(api.config.getConfig, { key: 'project_categories' });
   const createProjectMutation = useMutation(api.projects.createProject);
   const updateProjectMutation = useMutation(api.projects.updateProject);
   const getUploadUrlMutation = useMutation(api.storage.generateProjectImageUploadUrl);
   const deleteImageMutation = useMutation(api.storage.deleteProjectImage);
+  const uploadAuthArgs = {
+    purpose: 'project_image',
+    sessionToken: user?.sessionToken,
+  };
 
   // ── Form state ────────────────────────────────────────────────────────────
   const [formData, setFormData] = useState({
@@ -97,7 +104,7 @@ export default function AdminProjectForm() {
     impact: { ar: '', fr: '', en: '' },
     goal: '',
     category: 'education',
-    location: '',
+    location: { ar: '', fr: '', en: '' },
     beneficiaries: '',
     currency: 'MAD',
     status: 'draft',
@@ -131,11 +138,11 @@ export default function AdminProjectForm() {
         featured: existingProject.isFeatured ?? prev.featured,
         mainImage: existingProject.mainImage || prev.mainImage,
         mainImageStorageId: existingProject.mainImage || null,
-        location: existingProject.location || '',
+        location: normalizeI18nText(existingProject.location),
         beneficiaries: existingProject.beneficiaries?.toString() || '',
         status: existingProject.status || 'draft',
         transformationStage: existingProject.transformationStage || '',
-        benefitCards: existingProject.benefitCards || [],
+        benefitCards: (existingProject.benefitCards || []).map((card) => ({ ...card, label: normalizeI18nText(card.label) })),
         slug: existingProject.slug || '',
         metaTitle: existingProject.metaTitle || '',
         metaDescription: existingProject.metaDescription || '',
@@ -153,14 +160,22 @@ export default function AdminProjectForm() {
     }
   };
 
+  const projectCategories = parseProjectCategories(projectCategoriesConfig);
+
   const handleMainImageUpload = async (e) => {
     const file = e.target.files?.[0];
-    if (!file || !file.type.startsWith('image/')) return;
+    if (!file) return;
+    const error = validateUploadFile(file, {
+      allowedTypes: CMS_IMAGE_ALLOWED_TYPES,
+      maxBytes: CMS_IMAGE_MAX_BYTES,
+      label: 'الصورة الرئيسية',
+    });
+    if (error) { showToast(error, 'error'); return; }
     setIsUploading(true);
     try {
       const previewUrl = URL.createObjectURL(file);
       setFormData(prev => ({ ...prev, mainImage: previewUrl }));
-      const { storageId, optimization } = await uploadFileToConvex(file, getUploadUrlMutation);
+      const { storageId, optimization } = await uploadFileToConvex(file, getUploadUrlMutation, uploadAuthArgs);
       setFormData(prev => ({ ...prev, mainImage: previewUrl, mainImageStorageId: storageId }));
       showToast(optimization.optimized ? `Image optimized ${formatBytes(optimization.originalSize)} -> ${formatBytes(optimization.finalSize)}` : 'Image uploaded', 'success');
     } catch {
@@ -172,7 +187,15 @@ export default function AdminProjectForm() {
   };
 
   const handleGalleryUpload = async (e) => {
-    const files = Array.from(e.target.files).filter(f => f.type.startsWith('image/'));
+    const files = Array.from(e.target.files).filter((file) => {
+      const error = validateUploadFile(file, {
+        allowedTypes: CMS_IMAGE_ALLOWED_TYPES,
+        maxBytes: CMS_IMAGE_MAX_BYTES,
+        label: 'صورة المعرض',
+      });
+      if (error) showToast(error, 'error');
+      return !error;
+    });
     if (!files.length) return;
     if (formData.gallery.length + files.length > 10) { showToast('الحد الأقصى 10 صور', 'error'); return; }
     setIsUploading(true);
@@ -181,7 +204,7 @@ export default function AdminProjectForm() {
       setFormData(prev => ({ ...prev, gallery: [...prev.gallery, ...previews], galleryStorageIds: [...prev.galleryStorageIds, ...Array(files.length).fill(null)] }));
       const results = await Promise.all(files.map(async (file, i) => {
         try {
-          const uploaded = await uploadFileToConvex(file, getUploadUrlMutation);
+          const uploaded = await uploadFileToConvex(file, getUploadUrlMutation, uploadAuthArgs);
           return { i, id: uploaded.storageId };
         }
         catch { return { i, id: null }; }
@@ -251,11 +274,10 @@ export default function AdminProjectForm() {
             metaDescription: formData.metaDescription || undefined,
             imageAlt: formData.imageAlt || undefined,
           },
-          adminId: user?.id,
+          sessionToken: user?.sessionToken,
         });
       } else {
-        const adminId = user?.id;
-        if (!adminId) { showToast('انتهت الجلسة، يرجى تسجيل الدخول', 'error'); setIsLoading(false); return; }
+        if (!user?.sessionToken) { showToast('انتهت الجلسة، يرجى تسجيل الدخول', 'error'); setIsLoading(false); return; }
         await createProjectMutation({
           title: formData.title,
           description: formData.description,
@@ -268,7 +290,7 @@ export default function AdminProjectForm() {
           location: formData.location,
           beneficiaries: parseInt(formData.beneficiaries) || 0,
           isFeatured: formData.featured,
-          createdBy: adminId,
+          sessionToken: user?.sessionToken,
           slug: formData.slug || undefined,
           metaTitle: formData.metaTitle || undefined,
           metaDescription: formData.metaDescription || undefined,
@@ -339,6 +361,11 @@ export default function AdminProjectForm() {
               onChange={e => set('category', e.target.value)}
               style={{ ...fieldInput, cursor: 'pointer' }}
             >
+              {projectCategories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {getLocalizedText(category.label, 'ar') || category.id}
+                </option>
+              ))}
               <option value="education">🎓 التعليم</option>
               <option value="water">💧 الماء</option>
               <option value="health">🏥 الصحة</option>
@@ -355,8 +382,8 @@ export default function AdminProjectForm() {
             <input
               style={fieldInput}
               type="text"
-              value={formData.location}
-              onChange={e => set('location', e.target.value)}
+              value={formData.location?.[activeTab] || ''}
+              onChange={e => set('location', e.target.value, activeTab)}
               placeholder="مثال: درعة تافيلالت، المغرب"
               onFocus={e => e.target.style.borderColor = PRIMARY}
               onBlur={e => e.target.style.borderColor = BORDER}
@@ -461,7 +488,7 @@ export default function AdminProjectForm() {
               placeholder="10" style={{ ...fieldInput }} dir="ltr"
             />
             <input
-              value={card.label} onChange={e => { const c = [...formData.benefitCards]; c[i] = { ...c[i], label: e.target.value }; set('benefitCards', c); }}
+              value={card.label?.[activeTab] || ''} onChange={e => { const c = [...formData.benefitCards]; c[i] = { ...c[i], label: { ...normalizeI18nText(c[i].label), [activeTab]: e.target.value } }; set('benefitCards', c); }}
               placeholder="أسرة مستفيدة" style={{ ...fieldInput }}
             />
             <button type="button"
@@ -473,7 +500,7 @@ export default function AdminProjectForm() {
         ))}
         {(formData.benefitCards || []).length < 6 && (
           <button type="button"
-            onClick={() => set('benefitCards', [...(formData.benefitCards || []), { icon: '', value: '', label: '' }])}
+            onClick={() => set('benefitCards', [...(formData.benefitCards || []), { icon: '', value: '', label: { ar: '', fr: '', en: '' } }])}
             style={{ height: 40, padding: '0 18px', border: `1.5px dashed ${BORDER}`, borderRadius: 10, background: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', color: PRIMARY, fontFamily: 'var(--font-arabic)' }}>
             ➕ إضافة بطاقة
           </button>

@@ -1566,6 +1566,16 @@
   margin-top: 40px;
 }
 
+.home-v2__empty-state {
+  border: 1px dashed var(--home2-line-strong);
+  border-radius: 12px;
+  color: var(--home2-muted);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 22px;
+  text-align: center;
+}
+
 .home-v2__project-feature {
   display: grid;
   grid-template-columns: minmax(0, 0.96fr) minmax(0, 1.04fr);

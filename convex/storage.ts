@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { requireAdminSession } from "./permissions";
 
 // ============================================
 // FILE STORAGE MUTATIONS
@@ -11,10 +12,44 @@ import { v } from "convex/values";
  * the response will contain the storageId.
  */
 export const generateProjectImageUploadUrl = mutation({
-  args: {},
+  args: {
+    purpose: v.optional(v.union(
+      v.literal("receipt"),
+      v.literal("cms_image"),
+      v.literal("project_image"),
+      v.literal("kafala_image")
+    )),
+    donationId: v.optional(v.id("donations")),
+    kafalaDonationId: v.optional(v.id("kafalaDonations")),
+    sessionToken: v.optional(v.string()),
+  },
   returns: v.string(),
-  handler: async (ctx) => {
-    // Generate a signed URL for uploading the file
+  handler: async (ctx, args) => {
+    if (args.purpose === "receipt") {
+      if (args.donationId) {
+        const donation = await ctx.db.get(args.donationId);
+        if (!donation || donation.status !== "awaiting_receipt") {
+          throw new Error("Receipt uploads must target a pending donation.");
+        }
+      } else if (args.kafalaDonationId) {
+        const donation = await ctx.db.get(args.kafalaDonationId);
+        if (!donation || donation.status !== "awaiting_receipt") {
+          throw new Error("Receipt uploads must target a pending kafala donation.");
+        }
+      } else {
+        throw new Error("Receipt uploads require a donation context.");
+      }
+    }
+
+    if (
+      args.purpose === "cms_image"
+      || args.purpose === "project_image"
+      || args.purpose === "kafala_image"
+    ) {
+      if (!args.sessionToken) throw new Error("Admin session required for CMS uploads.");
+      await requireAdminSession(ctx, args.sessionToken, "content:write");
+    }
+
     const uploadUrl = await ctx.storage.generateUploadUrl();
     return uploadUrl;
   },
@@ -26,9 +61,11 @@ export const generateProjectImageUploadUrl = mutation({
 export const deleteProjectImage = mutation({
   args: {
     storageId: v.string(),
+    sessionToken: v.string(),
   },
   returns: v.boolean(),
   handler: async (ctx, args) => {
+    await requireAdminSession(ctx, args.sessionToken, "content:write");
     try {
       await ctx.storage.delete(args.storageId as any);
       return true;

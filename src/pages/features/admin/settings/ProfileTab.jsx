@@ -3,8 +3,11 @@ import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../../../convex/_generated/api';
 import { SettingsCard, FieldLabel, SaveBtn, fieldInput, PRIMARY, BORDER } from './shared';
 
-const ProfileTab = ({ formData, handleInputChange, handleSaveProfile, isSavingProfile }) => {
-  const fontSystem = useQuery(api.config.getConfig, { key: 'font_system' });
+const ProfileTab = ({ adminAuthArgs, formData, handleInputChange, handleSaveProfile, isSavingProfile }) => {
+  const fontSystem = useQuery(
+    api.config.getPrivateConfig,
+    adminAuthArgs === 'skip' ? 'skip' : { ...adminAuthArgs, key: 'font_system' }
+  );
   const setConfig = useMutation(api.config.setConfig);
 
   return (
@@ -41,7 +44,7 @@ const ProfileTab = ({ formData, handleInputChange, handleSaveProfile, isSavingPr
         <select
           value={fontSystem === 'legacy' ? 'legacy' : 'thmanyah'}
           onChange={async (e) => {
-            await setConfig({ key: 'font_system', value: e.target.value });
+            await setConfig({ ...adminAuthArgs, key: 'font_system', value: e.target.value });
             document.documentElement.dataset.fontSystem = e.target.value;
           }}
           style={fieldInput}
@@ -55,4 +58,3 @@ const ProfileTab = ({ formData, handleInputChange, handleSaveProfile, isSavingPr
 };
 
 export default ProfileTab;
-

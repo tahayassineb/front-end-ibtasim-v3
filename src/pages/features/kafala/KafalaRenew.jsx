@@ -4,6 +4,7 @@ import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
 import { convexFileUrl } from '../../../lib/convex';
+import { RECEIPT_ALLOWED_TYPES, RECEIPT_MAX_BYTES, validateUploadFile } from '../../../lib/uploadValidation';
 import KafalaAvatar from '../../../components/kafala/KafalaAvatar';
 
 // ============================================
@@ -27,6 +28,19 @@ function monthsAgo(ts) {
   if (!ts) return 0;
   const diff = Date.now() - ts;
   return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24 * 30)));
+}
+
+function validateReceiptFile(file, showToast) {
+  const error = validateUploadFile(file, {
+    allowedTypes: RECEIPT_ALLOWED_TYPES,
+    maxBytes: RECEIPT_MAX_BYTES,
+    label: 'ملف الإيصال',
+  });
+  if (error) {
+    showToast(error, 'error');
+    return false;
+  }
+  return true;
 }
 
 export default function KafalaRenew() {
@@ -190,7 +204,7 @@ export default function KafalaRenew() {
     e.preventDefault();
     setDragActive(false);
     const file = e.dataTransfer.files?.[0];
-    if (file) setReceipt(file);
+    if (file && validateReceiptFile(file, showToast)) setReceipt(file);
   };
 
   const handleSubmit = async () => {
@@ -210,7 +224,7 @@ export default function KafalaRenew() {
 
       let storageId = '';
       if (receipt) {
-        const uploadUrl = await generateUploadUrl();
+        const uploadUrl = await generateUploadUrl({ purpose: 'receipt', kafalaDonationId: donationId });
         const res = await fetch(uploadUrl, {
           method: 'POST', body: receipt,
           headers: { 'Content-Type': receipt.type },
@@ -386,8 +400,12 @@ export default function KafalaRenew() {
                     </>
                   )}
                 </div>
-                <input ref={fileRef} type="file" accept="image/*,.pdf" style={{ display: 'none' }}
-                  onChange={(e) => setReceipt(e.target.files?.[0] || null)} />
+                <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,application/pdf" style={{ display: 'none' }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    if (!file) return setReceipt(null);
+                    if (validateReceiptFile(file, showToast)) setReceipt(file);
+                  }} />
               </div>
 
               {/* Reference input */}

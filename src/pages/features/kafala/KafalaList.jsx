@@ -4,6 +4,7 @@ import { useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
 import { convexFileUrl } from '../../../lib/convex';
+import { getLocalizedText } from '../../../lib/i18nContent';
 import KafalaAvatar from '../../../components/kafala/KafalaAvatar';
 
 const useIsMobile = () => {
@@ -89,12 +90,6 @@ export default function KafalaList() {
   const getPhotoUrl = (k) => {
     if (!k.photo) return null;
     return convexFileUrl(k.photo) || k.photo;
-  };
-
-  const getBioText = (bio) => {
-    if (!bio) return '';
-    if (typeof bio === 'string') return bio;
-    return bio[lang] || bio.ar || bio.en || '';
   };
 
   const total = (kafalaList || []).length;
@@ -228,9 +223,9 @@ export default function KafalaList() {
                           size={88}
                         />
                       </div>
-                      <div style={{ fontSize: 17, fontWeight: 800 }}>{kafala.name}</div>
+                      <div style={{ fontSize: 17, fontWeight: 800 }}>{getLocalizedText(kafala.name, lang)}</div>
                       <div style={{ fontSize: 13, color: '#8B6914', fontWeight: 600, marginTop: 2 }}>{kafala.age} {tx.age}</div>
-                      <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>📍 {kafala.location}</div>
+                      <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>📍 {getLocalizedText(kafala.location, lang)}</div>
                       <div style={{ marginTop: 8 }}>
                         {isSponsored ? (
                           <span style={{ background: '#E8D4B0', color: '#8B6914', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 100 }}>🤲 مكفول</span>

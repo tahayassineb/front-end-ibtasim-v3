@@ -42,7 +42,7 @@ export const canAccessPath = (role, path) => {
   if (path.includes('/error-logs')) return can(normalizedRole, 'admin:error_logs');
   if (path.includes('/settings')) return can(normalizedRole, 'admin:settings') || can(normalizedRole, 'admin:invite');
   if (path.includes('/activity') || path.includes('/team-performance')) return can(normalizedRole, 'activity:read');
-  if (path.includes('/receipts')) return can(normalizedRole, 'admin:read');
+  if (path.includes('/receipts')) return can(normalizedRole, 'receipts:export');
   if (path.includes('/verification')) return can(normalizedRole, 'verification:write');
   return can(normalizedRole, 'admin:read');
 };

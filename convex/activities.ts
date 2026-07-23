@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAdmin } from "./permissions";
+import { requireAdmin, requireAdminSession } from "./permissions";
 
 const entityType = v.union(
   v.literal("user"),
@@ -40,7 +40,7 @@ export const log = mutation({
 
 export const list = query({
   args: {
-    adminId: v.id("admins"),
+    sessionToken: v.string(),
     action: v.optional(v.string()),
     entityType: v.optional(entityType),
     actorId: v.optional(v.id("admins")),
@@ -49,7 +49,7 @@ export const list = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx, args.adminId, "activity:read");
+    await requireAdminSession(ctx, args.sessionToken, "activity:read");
     const rows = await ctx.db.query("activities").withIndex("by_created").order("desc").take(500);
     const filtered = rows.filter((a) => {
       if (args.action && a.action !== args.action) return false;
@@ -74,12 +74,12 @@ export const list = query({
 
 export const getTeamPerformance = query({
   args: {
-    adminId: v.id("admins"),
+    sessionToken: v.string(),
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx, args.adminId, "activity:read");
+    await requireAdminSession(ctx, args.sessionToken, "activity:read");
     const admins = await ctx.db.query("admins").collect();
     const activities = await ctx.db.query("activities").collect();
     const inRange = (ts: number) => {
@@ -110,4 +110,3 @@ export const getTeamPerformance = query({
     }));
   },
 });
-

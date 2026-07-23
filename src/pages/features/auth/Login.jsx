@@ -3,7 +3,8 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useMutation } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
-import CountryCodeSelector, { validatePhoneByCountry, formatPhoneForDisplay } from '../../../components/CountryCodeSelector';
+import CountryCodeSelector from '../../../components/CountryCodeSelector';
+import { validatePhoneByCountry } from '../../../components/countryCodeHelpers';
 
 // ============================================
 // LOGIN PAGE - Phone + Password Authentication
@@ -12,7 +13,7 @@ import CountryCodeSelector, { validatePhoneByCountry, formatPhoneForDisplay } fr
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { t, currentLanguage, login, showToast } = useApp();
+  const { currentLanguage, login, showToast } = useApp();
 
   const loginWithPassword = useMutation(api.auth.loginWithPassword);
 
@@ -26,7 +27,6 @@ const Login = () => {
   const phoneInputRef = useRef(null);
   const cursorPositionRef = useRef(0);
 
-  const isRTL = currentLanguage.dir === 'rtl';
   const lang = currentLanguage.code;
 
   const returnUrl = location.state?.returnUrl || '/';

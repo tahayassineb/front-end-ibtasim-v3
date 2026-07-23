@@ -72,14 +72,13 @@ export default function AdminKafalaVerifications() {
   // ── Actions ───────────────────────────────────────────────────────────────────
   const handleVerify = async (verified) => {
     if (!selected || isSubmitting) return;
-    const adminId = adminUser?.id;
-    if (!adminId) { showToast('جلسة منتهية — سجّل الدخول مجدداً', 'error'); return; }
+    if (!adminUser?.sessionToken) { showToast('جلسة منتهية — سجّل الدخول مجدداً', 'error'); return; }
 
     setIsSubmitting(true);
     try {
       await verifyMut({
         donationId: selected._id,
-        adminId,
+        sessionToken: adminUser?.sessionToken,
         verified,
         notes: rejectionReason || undefined,
       });

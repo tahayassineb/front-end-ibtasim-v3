@@ -4,6 +4,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../../../convex/_generated/api';
 import { useApp } from '../../../../context/AppContext';
 import { convexFileUrl } from '../../../../lib/convex';
+import { sanitizeRichHtml } from '../../../../lib/richContent';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const BORDER = '#E5E9EB';
@@ -237,7 +238,7 @@ export default function AdminProjectDetail() {
             <span style={{ fontSize: 15, fontWeight: 700 }}>📄 الوصف</span>
           </div>
           <div style={{ padding: 20, fontSize: 14, lineHeight: 1.8, color: '#334155' }}
-            dangerouslySetInnerHTML={{ __html: getStr(project.description, lang) || '' }} />
+            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(getStr(project.description, lang) || '') }} />
         </div>
       )}
     </div>

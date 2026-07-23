@@ -34,5 +34,35 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+
+          if (id.includes('react-quill') || id.includes(`${path.sep}quill${path.sep}`)) {
+            return 'editor'
+          }
+
+          if (id.includes('recharts')) {
+            return 'charts'
+          }
+
+          if (id.includes(`${path.sep}convex${path.sep}`)) {
+            return 'convex'
+          }
+
+          if (id.includes('react-router')) {
+            return 'router'
+          }
+
+          if (id.includes(`${path.sep}react${path.sep}`) || id.includes('react-dom') || id.includes('scheduler')) {
+            return 'react-vendor'
+          }
+        },
+      },
+    },
+  },
+  test: {
+    exclude: ['tests/smoke/**', 'node_modules/**'],
   },
 })

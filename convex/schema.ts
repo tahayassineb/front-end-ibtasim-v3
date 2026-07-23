@@ -66,6 +66,20 @@ export default defineSchema({
     .index("by_email", ["email"]),
 
   // ============================================
+  // ADMIN SESSIONS TABLE
+  // ============================================
+  adminSessions: defineTable({
+    tokenHash: v.string(),
+    adminId: v.id("admins"),
+    expiresAt: v.number(),
+    lastSeenAt: v.number(),
+    revokedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_token_hash", ["tokenHash"])
+    .index("by_admin", ["adminId", "createdAt"]),
+
+  // ============================================
   // PROJECTS TABLE
   // ============================================
   projects: defineTable({
@@ -87,15 +101,7 @@ export default defineSchema({
     })),
 
     // Categorization
-    category: v.union(
-      v.literal("education"),
-      v.literal("health"),
-      v.literal("housing"),
-      v.literal("emergency"),
-      v.literal("food"),
-      v.literal("water"),
-      v.literal("orphan_care")
-    ),
+    category: v.string(),
     
     // Financial
     goalAmount: v.number(), // In MAD
@@ -129,7 +135,10 @@ export default defineSchema({
     featuredOrder: v.optional(v.number()),
 
     // Location
-    location: v.optional(v.string()),
+    location: v.optional(v.union(
+      v.string(),
+      v.object({ ar: v.string(), fr: v.string(), en: v.string() })
+    )),
     beneficiaries: v.optional(v.number()),
 
     // Transformation stage (orphan → citizen narrative)
@@ -143,7 +152,10 @@ export default defineSchema({
     benefitCards: v.optional(v.array(v.object({
       icon: v.string(),    // emoji e.g. "👨‍👩‍👧‍👦"
       value: v.string(),   // e.g. "10"
-      label: v.string(),   // e.g. "أسرة مستفيدة"
+      label: v.union(
+        v.string(),
+        v.object({ ar: v.string(), fr: v.string(), en: v.string() })
+      ),   // e.g. "أسرة مستفيدة"
     }))),
 
     // SEO / GEO publishing
@@ -152,6 +164,9 @@ export default defineSchema({
     metaDescription: v.optional(v.string()),
     imageAlt: v.optional(v.string()),
     canonicalPath: v.optional(v.string()),
+
+    // Soft-delete marker — set on deleteProject, cleared on restoreProject
+    deletedAt: v.optional(v.number()),
   })
     .index("by_status", ["status"])
     .index("by_category", ["category"])
@@ -162,9 +177,14 @@ export default defineSchema({
   // ============================================
   donations: defineTable({
     // References
-    userId: v.id("users"),
+    userId: v.optional(v.id("users")),
     projectId: v.id("projects"),
-    
+
+    // Guest donor info (when userId is not set, or to override profile info)
+    donorName: v.optional(v.string()),
+    donorPhone: v.optional(v.string()),
+    donorEmail: v.optional(v.string()),
+
     // Amount
     amount: v.number(), // In MAD
     currency: v.literal("MAD"),
@@ -194,9 +214,9 @@ export default defineSchema({
     verificationNotes: v.optional(v.string()),
     
     // Receipt (for bank transfers)
-    receiptUrl: v.optional(v.string()),
+    receiptUrl: v.optional(v.string()), // Stores a Convex storageId, not a URL — pass through convexFileUrl() or ctx.storage.getUrl() before serving
     receiptUploadedAt: v.optional(v.number()),
-    
+
     // Whop payment (for card payments)
     whopPaymentId: v.optional(v.string()),
     whopPaymentStatus: v.optional(v.string()),
@@ -281,6 +301,7 @@ export default defineSchema({
     adminId: v.optional(v.id("admins")),
     action: v.union(v.literal("verify"), v.literal("reject")),
     notes: v.optional(v.string()),
+    checklist: v.optional(v.array(v.string())), // items the admin ticked
     createdAt: v.number(),
   })
     .index("by_donation", ["donationId"])
@@ -373,10 +394,16 @@ export default defineSchema({
   // KAFALA TABLE (Orphan Sponsorship Profiles)
   // ============================================
   kafala: defineTable({
-    name: v.string(),
+    name: v.union(
+      v.string(),
+      v.object({ ar: v.string(), fr: v.string(), en: v.string() })
+    ),
     gender: v.union(v.literal("male"), v.literal("female")),
     age: v.number(),
-    location: v.string(),
+    location: v.union(
+      v.string(),
+      v.object({ ar: v.string(), fr: v.string(), en: v.string() })
+    ),
     bio: v.object({ ar: v.string(), fr: v.string(), en: v.string() }),
     photo: v.optional(v.string()), // storageId — fallback: grey silhouette by gender
     monthlyPrice: v.number(),      // In MAD
@@ -415,6 +442,8 @@ export default defineSchema({
     ),
     whopSubscriptionId: v.optional(v.string()), // For auto-renewing Whop subscriptions
     whopPlanId: v.optional(v.string()),
+    plan: v.optional(v.union(v.literal("monthly"), v.literal("annual"))),
+    cancelPending: v.optional(v.boolean()), // flag for Whop-cancel failures awaiting retry
     startDate: v.number(),
     nextRenewalDate: v.number(), // Unix ms — used by cron for reminders
     status: v.union(
@@ -456,7 +485,8 @@ export default defineSchema({
     ),
     whopPaymentId: v.optional(v.string()),
     whopSubscriptionId: v.optional(v.string()),
-    receiptUrl: v.optional(v.string()),
+    plan: v.optional(v.union(v.literal("monthly"), v.literal("annual"))), // denormalised from sponsorship for reporting
+    receiptUrl: v.optional(v.string()), // Stores a Convex storageId, not a URL — pass through convexFileUrl() or ctx.storage.getUrl() before serving
     bankName: v.optional(v.string()),
     transactionReference: v.optional(v.string()),
     verifiedBy: v.optional(v.id("admins")),
@@ -476,13 +506,25 @@ export default defineSchema({
   // STORIES TABLE (Impact Stories)
   // ============================================
   stories: defineTable({
-    title: v.string(),
-    excerpt: v.string(),
+    title: v.union(
+      v.string(),
+      v.object({ ar: v.string(), fr: v.string(), en: v.string() })
+    ),
+    excerpt: v.union(
+      v.string(),
+      v.object({ ar: v.string(), fr: v.string(), en: v.string() })
+    ),
     category: v.string(),
     gradient: v.string(),
     badgeIcon: v.string(),
-    badgeText: v.string(),
-    catLabel: v.string(),
+    badgeText: v.union(
+      v.string(),
+      v.object({ ar: v.string(), fr: v.string(), en: v.string() })
+    ),
+    catLabel: v.union(
+      v.string(),
+      v.object({ ar: v.string(), fr: v.string(), en: v.string() })
+    ),
     catColor: v.string(),
     isPublished: v.boolean(),
     isFeatured: v.optional(v.boolean()),
@@ -490,7 +532,10 @@ export default defineSchema({
     adminId: v.string(),
     // Rich content fields
     coverImage: v.optional(v.string()),       // Convex storage ID
-    body: v.optional(v.string()),             // HTML from rich text editor
+    body: v.optional(v.union(
+      v.string(),
+      v.object({ ar: v.string(), fr: v.string(), en: v.string() })
+    )),             // HTML from rich text editor
     // Blog/SEO fields
     postType: v.optional(v.union(v.literal("story"), v.literal("activity"), v.literal("update"))),
     slug: v.optional(v.string()),

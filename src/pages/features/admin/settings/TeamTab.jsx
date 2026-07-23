@@ -24,9 +24,12 @@ const badgeStyle = (role) => ({
 
 const initials = (name) => (name || '?').trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join('');
 
-export default function TeamTab() {
+export default function TeamTab({ adminAuthArgs }) {
   const { user, showToast } = useApp();
-  const team = useQuery(api.admin.listTeamMembers, user?.id ? { adminId: user.id } : 'skip');
+  const actorArgs = adminAuthArgs === 'skip'
+    ? (user?.sessionToken ? { sessionToken: user?.sessionToken } : 'skip')
+    : adminAuthArgs;
+  const team = useQuery(api.admin.listTeamMembers, actorArgs);
   const createAdminInvitation = useMutation(api.admin.createAdminInvitation);
   const updateAdminRole = useMutation(api.admin.updateAdminRole);
   const setAdminActive = useMutation(api.admin.setAdminActive);
@@ -53,7 +56,7 @@ export default function TeamTab() {
         email: inviteEmail.trim(),
         phone: invitePhone.trim(),
         role: inviteRole,
-        invitedBy: user.id,
+        sessionToken: user?.sessionToken,
         siteUrl: window.location.origin,
       });
       setInviteLink(`${window.location.origin}/admin/register/${result.token}`);
@@ -106,7 +109,7 @@ export default function TeamTab() {
       {canManageTeam && (
         <div style={{ marginBottom: 16 }}>
           <button onClick={async () => {
-            const updated = await migrateExistingAdminsToOwner({ adminId: user.id });
+            const updated = await migrateExistingAdminsToOwner({ sessionToken: user?.sessionToken });
             showToast(`تم تحديث ${updated} حسابات قديمة`, 'success');
           }} style={{ height: 36, padding: '0 14px', borderRadius: 10, border: `1px solid ${BORDER}`, background: 'white', cursor: 'pointer', fontFamily: 'var(--font-arabic)', fontWeight: 800 }}>
             ترحيل الحسابات القديمة إلى مالك
@@ -127,12 +130,12 @@ export default function TeamTab() {
               </div>
               <span style={badgeStyle(member.role)}>{roleLabels[member.role]}</span>
               {canManageTeam && member.role !== 'owner' && (
-                <select value={member.role} onChange={(e) => updateAdminRole({ actorAdminId: user.id, targetAdminId: member._id, role: e.target.value })} style={{ height: 34, border: `1px solid ${BORDER}`, borderRadius: 8, fontFamily: 'var(--font-arabic)' }}>
+                <select value={member.role} onChange={(e) => updateAdminRole({ sessionToken: user?.sessionToken, targetAdminId: member._id, role: e.target.value })} style={{ height: 34, border: `1px solid ${BORDER}`, borderRadius: 8, fontFamily: 'var(--font-arabic)' }}>
                   {roleOptions.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
                 </select>
               )}
               {canManageTeam && member._id !== user.id && (
-                <button onClick={() => setAdminActive({ actorAdminId: user.id, targetAdminId: member._id, isActive: !member.isActive })} style={{ height: 32, border: `1px solid ${BORDER}`, borderRadius: 8, background: member.isActive ? '#FEE2E2' : '#DCFCE7', color: member.isActive ? '#dc2626' : '#15803d', cursor: 'pointer', fontFamily: 'var(--font-arabic)', fontWeight: 800 }}>
+                <button onClick={() => setAdminActive({ sessionToken: user?.sessionToken, targetAdminId: member._id, isActive: !member.isActive })} style={{ height: 32, border: `1px solid ${BORDER}`, borderRadius: 8, background: member.isActive ? '#FEE2E2' : '#DCFCE7', color: member.isActive ? '#dc2626' : '#15803d', cursor: 'pointer', fontFamily: 'var(--font-arabic)', fontWeight: 800 }}>
                   {member.isActive ? 'تعطيل' : 'تفعيل'}
                 </button>
               )}
@@ -157,7 +160,7 @@ export default function TeamTab() {
               showToast('تم نسخ رابط الدعوة', 'success');
             }} style={{ height: 32, border: `1px solid ${BORDER}`, borderRadius: 8, background: 'white', cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>نسخ الرابط</button>
             {canInvite && (
-              <button onClick={() => cancelInvitation({ actorAdminId: user.id, invitationId: inv._id })} style={{ height: 32, border: `1px solid ${BORDER}`, borderRadius: 8, background: '#FEE2E2', color: '#dc2626', cursor: 'pointer', fontFamily: 'var(--font-arabic)', fontWeight: 800 }}>إلغاء</button>
+              <button onClick={() => cancelInvitation({ sessionToken: user?.sessionToken, invitationId: inv._id })} style={{ height: 32, border: `1px solid ${BORDER}`, borderRadius: 8, background: '#FEE2E2', color: '#dc2626', cursor: 'pointer', fontFamily: 'var(--font-arabic)', fontWeight: 800 }}>إلغاء</button>
             )}
           </div>
         ))}
@@ -165,4 +168,3 @@ export default function TeamTab() {
     </>
   );
 }
-

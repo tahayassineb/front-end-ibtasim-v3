@@ -3,7 +3,8 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useMutation } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
-import CountryCodeSelector, { validatePhoneByCountry, formatPhoneForDisplay } from '../../../components/CountryCodeSelector';
+import CountryCodeSelector from '../../../components/CountryCodeSelector';
+import { formatPhoneForDisplay, validatePhoneByCountry } from '../../../components/countryCodeHelpers';
 
 // ============================================
 // REGISTER PAGE - 3-step wizard with stepper
@@ -12,7 +13,7 @@ import CountryCodeSelector, { validatePhoneByCountry, formatPhoneForDisplay } fr
 const Register = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { t, currentLanguage, login, showToast } = useApp();
+  const { currentLanguage, login, showToast } = useApp();
 
   const registerUser = useMutation(api.auth.registerUser);
   const requestOTP = useMutation(api.auth.requestOTP);

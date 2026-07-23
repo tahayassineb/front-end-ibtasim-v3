@@ -27,7 +27,7 @@ const getText = (value, lang) => {
 };
 
 export default function AdminProjects() {
-  const { currentLanguage, showToast } = useApp();
+  const { currentLanguage, showToast, user } = useApp();
   const navigate = useNavigate();
   const lang = currentLanguage?.code || 'ar';
   const [search, setSearch] = useState('');
@@ -61,7 +61,7 @@ export default function AdminProjects() {
 
   const toggleFeatured = async (project) => {
     try {
-      await updateProject({ projectId: project._id, updates: { isFeatured: !project.isFeatured } });
+      await updateProject({ projectId: project._id, updates: { isFeatured: !project.isFeatured }, sessionToken: user?.sessionToken });
       showToast?.(!project.isFeatured ? 'تم إظهار المشروع في الرئيسية' : 'تم إخفاء المشروع من الرئيسية', 'success');
     } catch (error) {
       showToast?.(error?.message || 'فشل التحديث', 'error');
@@ -70,7 +70,7 @@ export default function AdminProjects() {
 
   const publishProject = async (projectId) => {
     try {
-      await updateProject({ projectId, updates: { status: 'active' } });
+      await updateProject({ projectId, updates: { status: 'active' }, sessionToken: user?.sessionToken });
       showToast?.('تم نشر المشروع', 'success');
     } catch (error) {
       showToast?.(error?.message || 'فشل النشر', 'error');
@@ -84,7 +84,7 @@ export default function AdminProjects() {
       return;
     }
     try {
-      await deleteProject({ projectId });
+      await deleteProject({ projectId, sessionToken: user?.sessionToken });
       setDeleteConfirm(null);
       showToast?.('تم حذف المشروع', 'success');
     } catch (error) {

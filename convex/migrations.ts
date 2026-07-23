@@ -1,6 +1,6 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { requireAdmin } from "./permissions";
+import { requireAdmin, requireAdminSession } from "./permissions";
 
 const LEGACY_SUCCESS_DONATION_ID = "jd72wqfzvrm2cgsdy98knw8vn185dqqp";
 const LEGACY_CANCELLED_DONATION_ID = "jd74n4qa148j6tpv0wyn9a7cfs85cyat";
@@ -29,7 +29,7 @@ function getLegacyPaymentAmount(payment: any): number {
 
 export const migrateStoredMoneyToDirhams = mutation({
   args: {
-    adminId: v.id("admins"),
+    sessionToken: v.string(),
     dryRun: v.boolean(),
     successfulWhopPaymentId: v.optional(v.string()),
   },
@@ -54,7 +54,7 @@ export const migrateStoredMoneyToDirhams = mutation({
     ),
   }),
   handler: async (ctx, args) => {
-    await requireAdmin(ctx, args.adminId, "verification:write");
+    await requireAdminSession(ctx, args.sessionToken, "verification:write");
 
     const [users, projects, donations, payments, kafalaProfiles, kafalaDonations] = await Promise.all([
       ctx.db.query("users").collect(),

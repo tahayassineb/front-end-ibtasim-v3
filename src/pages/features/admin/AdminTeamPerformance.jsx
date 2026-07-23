@@ -6,7 +6,12 @@ import { roleLabels } from '../../../lib/adminPermissions';
 
 export default function AdminTeamPerformance() {
   const { user } = useApp();
-  const rows = useQuery(api.activities.getTeamPerformance, user?.id ? { adminId: user.id } : 'skip');
+  const rows = useQuery(
+    api.activities.getTeamPerformance,
+    user?.sessionToken
+      ? { sessionToken: user?.sessionToken }
+      : 'skip'
+  );
 
   return (
     <div style={{ padding: 24, fontFamily: 'var(--font-arabic)' }} dir="rtl">
@@ -50,4 +55,3 @@ export default function AdminTeamPerformance() {
 }
 
 const td = { padding: 14, fontSize: 14, verticalAlign: 'middle' };
-

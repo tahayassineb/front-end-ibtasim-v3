@@ -5,6 +5,8 @@ import { api } from '../../../../../convex/_generated/api';
 import { useApp } from '../../../../context/AppContext';
 import { convexFileUrl } from '../../../../lib/convex';
 import { optimizeImageFile } from '../../../../lib/imageOptimization';
+import { getLocalizedText, normalizeI18nText } from '../../../../lib/i18nContent';
+import { CMS_IMAGE_ALLOWED_TYPES, CMS_IMAGE_MAX_BYTES, validateUploadFile } from '../../../../lib/uploadValidation';
 import KafalaAvatar from '../../../../components/kafala/KafalaAvatar';
 
 // ─── Kafala design tokens ─────────────────────────────────────────────────────
@@ -47,10 +49,10 @@ export default function AdminKafalaForm() {
   const generateUploadUrl = useMutation(api.storage.generateProjectImageUploadUrl);
 
   // ── Form state ────────────────────────────────────────────────────────────
-  const [name, setName]           = useState('');
+  const [name, setName]           = useState({ ar: '', fr: '', en: '' });
   const [gender, setGender]       = useState('male');
   const [age, setAge]             = useState('');
-  const [location, setLocation]   = useState('');
+  const [location, setLocation]   = useState({ ar: '', fr: '', en: '' });
   const [bio, setBio]             = useState({ ar: '', fr: '', en: '' });
   const [bioTab, setBioTab]       = useState('ar');
   const [needs, setNeeds] = useState([
@@ -72,10 +74,10 @@ export default function AdminKafalaForm() {
   // Pre-fill when editing
   useEffect(() => {
     if (existingKafala && isEdit) {
-      setName(existingKafala.name || '');
+      setName(normalizeI18nText(existingKafala.name));
       setGender(existingKafala.gender || 'male');
       setAge(String(existingKafala.age || ''));
-      setLocation(existingKafala.location || '');
+      setLocation(normalizeI18nText(existingKafala.location));
       setBio(existingKafala.bio || { ar: '', fr: '', en: '' });
       const totalMadFromDB = Math.round(existingKafala.monthlyPrice || 0);
       setNeeds([
@@ -90,6 +92,12 @@ export default function AdminKafalaForm() {
   const handlePhotoChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const error = validateUploadFile(file, {
+      allowedTypes: CMS_IMAGE_ALLOWED_TYPES,
+      maxBytes: CMS_IMAGE_MAX_BYTES,
+      label: 'صورة الكفالة',
+    });
+    if (error) { showToast?.(error, 'error'); return; }
     setPhoto(file);
     setPhotoPreview(URL.createObjectURL(file));
   };
@@ -97,17 +105,17 @@ export default function AdminKafalaForm() {
   const uploadPhoto = async () => {
     if (!photo) return existingPhoto;
     const optimized = await optimizeImageFile(photo, { maxWidth: 1400, maxHeight: 1400, quality: 0.82 });
-    const uploadUrl = await generateUploadUrl();
+    const uploadUrl = await generateUploadUrl({ purpose: 'kafala_image', sessionToken: adminUser?.sessionToken });
     const res = await fetch(uploadUrl, { method: 'POST', body: optimized.file, headers: { 'Content-Type': optimized.file.type } });
     const { storageId } = await res.json();
     return storageId;
   };
 
   const validate = () => {
-    if (!name.trim())     { showToast?.('الاسم مطلوب', 'error'); return false; }
+    if (!getLocalizedText(name).trim())     { showToast?.('الاسم مطلوب', 'error'); return false; }
     if (!age || isNaN(Number(age)) || Number(age) < 1) { showToast?.('العمر يجب أن يكون رقماً صحيحاً', 'error'); return false; }
-    if (!location.trim()) { showToast?.('المدينة مطلوبة', 'error'); return false; }
-    if (!bio.ar.trim())   { showToast?.('القصة بالعربية مطلوبة', 'error'); return false; }
+    if (!getLocalizedText(location).trim()) { showToast?.('المدينة مطلوبة', 'error'); return false; }
+    if (!getLocalizedText(bio).trim())   { showToast?.('القصة مطلوبة', 'error'); return false; }
     if (needs.length === 0)  { showToast?.('أضف احتياجاً واحداً على الأقل', 'error'); return false; }
     if (totalMAD < 1)        { showToast?.('السعر الشهري مطلوب', 'error'); return false; }
     return true;
@@ -122,7 +130,7 @@ export default function AdminKafalaForm() {
 
       if (isEdit) {
         await updateKafala({
-          adminId: adminUser?.id,
+          sessionToken: adminUser?.sessionToken,
           kafalaId: id, name, gender, age: Number(age),
           location, bio, photo: photoStorageId || undefined,
           monthlyPrice,
@@ -130,9 +138,17 @@ export default function AdminKafalaForm() {
         });
         showToast?.(publish ? 'تم نشر الكفالة' : 'تم حفظ التغييرات', 'success');
       } else {
-        const adminId = adminUser?.id;
-        if (!adminId) throw new Error('لم يتم التعرف على الأدمن');
-        await createKafala({ adminId, name, gender, age: Number(age), location, bio, photo: photoStorageId || undefined, monthlyPrice });
+        if (!adminUser?.sessionToken) throw new Error('لم يتم التعرف على جلسة الأدمن');
+        await createKafala({
+          sessionToken: adminUser?.sessionToken,
+          name,
+          gender,
+          age: Number(age),
+          location,
+          bio,
+          photo: photoStorageId || undefined,
+          monthlyPrice,
+        });
         showToast?.(publish ? 'تم إنشاء الكفالة. انشرها من قائمة الكفالات' : 'تم حفظ الكفالة كمسودة', 'success');
       }
       navigate('/admin/kafala');
@@ -166,7 +182,7 @@ export default function AdminKafalaForm() {
           {/* Name */}
           <div>
             <div style={fieldLabel}>الاسم الأول <span style={{ color: '#ef4444' }}>*</span></div>
-            <input style={fieldInput} type="text" value={name} onChange={e => setName(e.target.value)} placeholder="اسم اليتيم"
+            <input style={fieldInput} type="text" value={name[bioTab] || ''} onChange={e => setName(prev => ({ ...prev, [bioTab]: e.target.value }))} placeholder="اسم اليتيم"
               onFocus={e => e.target.style.borderColor = KDARK} onBlur={e => e.target.style.borderColor = BORDER} />
           </div>
 
@@ -189,7 +205,7 @@ export default function AdminKafalaForm() {
           {/* Location */}
           <div>
             <div style={fieldLabel}>المنطقة / المدينة <span style={{ color: '#ef4444' }}>*</span></div>
-            <input style={fieldInput} type="text" value={location} onChange={e => setLocation(e.target.value)} placeholder="مثال: درعة تافيلالت"
+            <input style={fieldInput} type="text" value={location[bioTab] || ''} onChange={e => setLocation(prev => ({ ...prev, [bioTab]: e.target.value }))} placeholder="مثال: درعة تافيلالت"
               onFocus={e => e.target.style.borderColor = KDARK} onBlur={e => e.target.style.borderColor = BORDER} />
           </div>
 
