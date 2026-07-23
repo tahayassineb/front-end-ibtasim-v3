@@ -1,4 +1,4 @@
-import { isStorageIdReferenced } from "./storageAccess";
+import { internal } from "./_generated/api";
 
 export async function handleStorageRequest(ctx: any, request: Request) {
   const url = new URL(request.url);
@@ -8,7 +8,7 @@ export async function handleStorageRequest(ctx: any, request: Request) {
     return new Response("Missing storage ID", { status: 400 });
   }
 
-  if (!(await isStorageIdReferenced(ctx, storageId))) {
+  if (!(await ctx.runQuery(internal.storageAccess.isStorageReferenced, { storageId }))) {
     return new Response("File not found", { status: 404 });
   }
 

@@ -1,3 +1,6 @@
+import { v } from "convex/values";
+import { internalQuery } from "./_generated/server";
+
 declare const process: {
   env: {
     CONVEX_SITE_URL?: string;
@@ -143,3 +146,8 @@ export async function isStorageIdReferenced(ctx: any, storageId: string) {
 
   return referenced.has(storageId);
 }
+
+export const isStorageReferenced = internalQuery({
+  args: { storageId: v.string() },
+  handler: async (ctx, { storageId }) => isStorageIdReferenced(ctx, storageId),
+});
