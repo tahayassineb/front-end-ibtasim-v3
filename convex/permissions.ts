@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { getAdminSessionRecord, touchAdminSession } from "./adminSessions";
+import { getAdminSessionRecord } from "./adminSessions";
 
 export const adminRole = v.union(
   v.literal("owner"),
@@ -79,6 +79,8 @@ export async function requireAdminSession(
   if (permission && !canRole(resolved.admin.role, permission)) {
     throw new Error("You do not have permission to perform this action.");
   }
-  await touchAdminSession(ctx, resolved.session._id);
+
+  // This guard is used by both mutations and read-only queries. Queries cannot
+  // update lastSeenAt, so session validation itself must remain read-only.
   return { ...resolved.admin, role: effectiveRole(resolved.admin.role) };
 }
