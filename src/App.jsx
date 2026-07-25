@@ -248,7 +248,7 @@ function AppContent() {
           <Route path="/admin/register/:token" element={<AdminRegister />} />
           
           {/* Protected Admin Routes */}
-          <Route element={<AdminRoute><ErrorBoundary><AdminLayout /></ErrorBoundary></AdminRoute>}>
+          <Route element={<ErrorBoundary><AdminRoute><AdminLayout /></AdminRoute></ErrorBoundary>}>
             {/* Dashboard */}
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/dashboard" element={<Navigate to="/admin" />} />

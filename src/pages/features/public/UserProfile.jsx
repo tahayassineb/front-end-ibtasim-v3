@@ -86,6 +86,7 @@ const UserProfile = () => {
       cardConfirmed: 'تم تأكيد الدفع بالبطاقة',
       cardProcessing: 'جاري معالجة دفع البطاقة',
       verifiedOn: 'تم التأكيد في',
+      loggedOut: 'تم تسجيل الخروج', cancelKafalaConfirm: 'هل أنت متأكد من إلغاء الكفالة؟ سيتوقف الدعم الشهري لهذا اليتيم.', cancelKafalaSuccess: 'تم إلغاء الكفالة بنجاح', cancelKafalaError: 'فشل إلغاء الكفالة', cancelKafalaUnexpected: 'حدث خطأ أثناء الإلغاء', donationVerified: '✓ مقبول', donationCompleted: '✓ مكتمل', donationPending: '⏳ قيد الانتظار', donationRejected: '✕ مرفوض', verified: '✓ موثق', myStats: 'إحصائياتي', mySponsorships: 'كفالاتي', loading: 'جاري التحميل...', noSponsorships: 'لا توجد كفالات حالياً', startSponsorship: 'ابدأ كفالة يتيم', nextPayment: 'الدفعة القادمة', renew: 'تجديد', latestDonations: 'آخر التبرعات', currency: 'درهم مغربي', projectsSupported: 'مشاريع مختلفة', activeSponsorships: 'كفالات نشطة', sponsoredChildren: 'يتيم مكفول', accountSettings: '⚙️ إعدادات الحساب', years: 'سنوات', from: 'من', perMonth: 'د.م / شهر',
     },
     fr: {
       editProfile: 'Modifier',
@@ -113,6 +114,7 @@ const UserProfile = () => {
       cardConfirmed: 'Paiement par carte confirmé',
       cardProcessing: 'Paiement par carte en cours',
       verifiedOn: 'Vérifié le',
+      loggedOut: 'Déconnecté', cancelKafalaConfirm: 'Voulez-vous vraiment annuler ce parrainage ? Le soutien mensuel de cet enfant prendra fin.', cancelKafalaSuccess: 'Parrainage annulé avec succès', cancelKafalaError: "Impossible d’annuler le parrainage", cancelKafalaUnexpected: "Une erreur est survenue lors de l’annulation", donationVerified: '✓ Approuvé', donationCompleted: '✓ Terminé', donationPending: '⏳ En attente', donationRejected: '✕ Refusé', verified: '✓ Vérifié', myStats: 'Mes statistiques', mySponsorships: 'Mes parrainages', loading: 'Chargement...', noSponsorships: 'Aucun parrainage pour le moment', startSponsorship: 'Parrainer un enfant', nextPayment: 'Prochain paiement', renew: 'Renouveler', latestDonations: 'Derniers dons', currency: 'Dirham marocain', projectsSupported: 'projets soutenus', activeSponsorships: 'Parrainages actifs', sponsoredChildren: 'enfant parrainé', accountSettings: '⚙️ Paramètres du compte', years: 'ans', from: 'de', perMonth: 'MAD / mois',
     },
     en: {
       editProfile: 'Edit Profile',
@@ -140,6 +142,7 @@ const UserProfile = () => {
       cardConfirmed: 'Card payment confirmed',
       cardProcessing: 'Card payment processing',
       verifiedOn: 'Verified on',
+      loggedOut: 'Logged out', cancelKafalaConfirm: 'Are you sure you want to cancel this sponsorship? This child’s monthly support will stop.', cancelKafalaSuccess: 'Sponsorship cancelled successfully', cancelKafalaError: 'Unable to cancel sponsorship', cancelKafalaUnexpected: 'An error occurred while cancelling', donationVerified: '✓ Approved', donationCompleted: '✓ Completed', donationPending: '⏳ Pending', donationRejected: '✕ Rejected', verified: '✓ Verified', myStats: 'My statistics', mySponsorships: 'My sponsorships', loading: 'Loading...', noSponsorships: 'No sponsorships yet', startSponsorship: 'Sponsor a child', nextPayment: 'Next payment', renew: 'Renew', latestDonations: 'Latest donations', currency: 'Moroccan dirham', projectsSupported: 'projects supported', activeSponsorships: 'Active sponsorships', sponsoredChildren: 'sponsored child', accountSettings: '⚙️ Account settings', years: 'years old', from: 'from', perMonth: 'MAD / month',
     },
   };
   const tx = translations[lang] || translations.ar;
@@ -217,22 +220,22 @@ const UserProfile = () => {
     if (window.confirm(tx.logoutConfirm)) {
       logout();
       navigate('/', { replace: true });
-      showToast(lang === 'ar' ? 'تم تسجيل الخروج' : 'Logged out', 'info');
+      showToast(tx.loggedOut, 'info');
     }
   };
 
   const handleCancelKafala = async (sponsorshipId) => {
-    if (!window.confirm('هل أنت متأكد من إلغاء الكفالة؟ سيتوقف الدعم الشهري لهذا اليتيم.')) return;
+    if (!window.confirm(tx.cancelKafalaConfirm)) return;
     setCancellingId(sponsorshipId);
     try {
       const result = await cancelKafala({ sponsorshipId });
       if (result.success) {
-        showToast('تم إلغاء الكفالة بنجاح', 'success');
+        showToast(tx.cancelKafalaSuccess, 'success');
       } else {
-        showToast(result.error || 'فشل إلغاء الكفالة', 'error');
+        showToast(result.error || tx.cancelKafalaError, 'error');
       }
     } catch {
-      showToast('حدث خطأ أثناء الإلغاء', 'error');
+      showToast(tx.cancelKafalaUnexpected, 'error');
     } finally {
       setCancellingId(null);
     }
@@ -240,10 +243,10 @@ const UserProfile = () => {
 
   const getStatusBadge = (status) => {
     const map = {
-      verified: { bg: '#D1FAE5', color: '#16a34a', label: lang === 'ar' ? '✓ مقبول' : '✓ Verified' },
-      completed: { bg: '#D1FAE5', color: '#16a34a', label: lang === 'ar' ? '✓ مكتمل' : '✓ Completed' },
-      pending: { bg: '#FEF3C7', color: '#b45309', label: lang === 'ar' ? '⏳ قيد الانتظار' : 'Pending' },
-      rejected: { bg: '#FEE2E2', color: '#dc2626', label: lang === 'ar' ? '✕ مرفوض' : 'Rejected' },
+      verified: { bg: '#D1FAE5', color: '#16a34a', label: tx.donationVerified },
+      completed: { bg: '#D1FAE5', color: '#16a34a', label: tx.donationCompleted },
+      pending: { bg: '#FEF3C7', color: '#b45309', label: tx.donationPending },
+      rejected: { bg: '#FEE2E2', color: '#dc2626', label: tx.donationRejected },
     };
     const statusInfo = map[status] || map.pending;
     return <span style={{ display: 'inline-flex', alignItems: 'center', background: statusInfo.bg, color: statusInfo.color, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 100 }}>{statusInfo.label}</span>;
@@ -308,7 +311,7 @@ const UserProfile = () => {
                 <span style={{ background: '#FEF3C7', color: '#b45309', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 100 }}>{(tierLabels[lang] || tierLabels.ar)[getTier(totalDonated, donationCount)]}</span>
               )}
               {(convexUser?.isVerified ?? user?.isVerified) && (
-                <span style={{ background: '#D1FAE5', color: '#16a34a', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 100 }}>{lang === 'ar' ? '✓ موثق' : lang === 'fr' ? '✓ Vérifié' : '✓ Verified'}</span>
+                <span style={{ background: '#D1FAE5', color: '#16a34a', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 100 }}>{tx.verified}</span>
               )}
             </div>
           </div>
@@ -322,12 +325,12 @@ const UserProfile = () => {
 
       <div style={{ maxWidth: 1200, margin: isMobile ? '24px auto' : '48px auto', padding: isMobile ? '0 16px' : '0 28px', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 320px', gap: isMobile ? 16 : 32, alignItems: 'start' }}>
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 12, fontFamily: 'Inter, sans-serif' }}>إحصائياتي</div>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 12, fontFamily: 'Inter, sans-serif' }}>{tx.myStats}</div>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: 16, marginBottom: 28 }}>
             {[
-              { icon: '💰', label: tx.totalDonated, value: formatCurrency ? formatCurrency(totalDonated) : `${totalDonated.toFixed(0)}`, sub: 'درهم مغربي' },
-              { icon: '📋', label: tx.donationsCount, value: donations.length.toString(), sub: 'مشروع مختلف' },
-              { icon: '🤲', label: 'كفالات نشطة', value: activeSponsorships.length.toString(), sub: 'يتيم مكفول' },
+              { icon: '💰', label: tx.totalDonated, value: formatCurrency ? formatCurrency(totalDonated) : `${totalDonated.toFixed(0)}`, sub: tx.currency },
+              { icon: '📋', label: tx.donationsCount, value: donations.length.toString(), sub: tx.projectsSupported },
+              { icon: '🤲', label: tx.activeSponsorships, value: activeSponsorships.length.toString(), sub: tx.sponsoredChildren },
             ].map((stat, index) => (
               <div key={index} style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', padding: 20, boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)' }}>
                 <div style={{ fontSize: 24, marginBottom: 10 }}>{stat.icon}</div>
@@ -338,14 +341,14 @@ const UserProfile = () => {
             ))}
           </div>
 
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 12, fontFamily: 'Inter, sans-serif' }}>كفالاتي</div>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 12, fontFamily: 'Inter, sans-serif' }}>{tx.mySponsorships}</div>
           {isKafalaLoading ? (
-            <div style={{ background: '#F5EBD9', borderRadius: 16, border: '1.5px solid #E8D4B0', padding: 20, marginBottom: 28, textAlign: 'center', color: '#94a3b8' }}>جاري التحميل...</div>
+            <div style={{ background: '#F5EBD9', borderRadius: 16, border: '1.5px solid #E8D4B0', padding: 20, marginBottom: 28, textAlign: 'center', color: '#94a3b8' }}>{tx.loading}</div>
           ) : sponsorships.length === 0 ? (
             <div style={{ background: '#F5EBD9', borderRadius: 16, border: '1.5px solid #E8D4B0', padding: 24, marginBottom: 28, textAlign: 'center' }}>
               <div style={{ fontSize: 32, marginBottom: 8 }}>🤲</div>
-              <div style={{ fontSize: 14, color: '#8B6914', marginBottom: 12 }}>لا توجد كفالات حالياً</div>
-              <Link to="/kafala" style={{ display: 'inline-flex', height: 38, padding: '0 18px', background: '#6B4F12', color: 'white', borderRadius: 100, fontSize: 13, fontWeight: 700, textDecoration: 'none', alignItems: 'center' }}>ابدأ كفالة يتيم</Link>
+              <div style={{ fontSize: 14, color: '#8B6914', marginBottom: 12 }}>{tx.noSponsorships}</div>
+              <Link to="/kafala" style={{ display: 'inline-flex', height: 38, padding: '0 18px', background: '#6B4F12', color: 'white', borderRadius: 100, fontSize: 13, fontWeight: 700, textDecoration: 'none', alignItems: 'center' }}>{tx.startSponsorship}</Link>
             </div>
           ) : (
             <div style={{ marginBottom: 28, display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -365,20 +368,20 @@ const UserProfile = () => {
                         {photo ? <img src={photo} alt={kafala?.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (kafala?.gender === 'female' ? '👧' : '👦')}
                       </div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: '#3D2506' }}>{kafala?.name || '—'}{kafala?.age ? ` — ${kafala.age} سنوات` : ''}</div>
-                        {kafala?.location && <div style={{ fontSize: 12, color: '#8B6914' }}>من {kafala.location}</div>}
-                        <div style={{ fontSize: 16, fontWeight: 800, color: '#6B4F12', marginTop: 4 }}>{kafala?.monthlyPrice ? Number(kafala.monthlyPrice).toFixed(0) : '—'} د.م / شهر</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: '#3D2506' }}>{kafala?.name || '—'}{kafala?.age ? ` — ${kafala.age} ${tx.years}` : ''}</div>
+                        {kafala?.location && <div style={{ fontSize: 12, color: '#8B6914' }}>{tx.from} {kafala.location}</div>}
+                        <div style={{ fontSize: 16, fontWeight: 800, color: '#6B4F12', marginTop: 4 }}>{kafala?.monthlyPrice ? Number(kafala.monthlyPrice).toFixed(0) : '—'} {tx.perMonth}</div>
                       </div>
                       <div style={{ textAlign: 'left', flexShrink: 0 }}>
                         {sponsorship.status === 'active' && sponsorship.paymentMethod !== 'card_whop' && (
                           <>
-                            <div style={{ fontSize: 11, color: '#8B6914' }}>الدفعة القادمة</div>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: '#6B4F12' }}>{new Date(sponsorship.nextRenewalDate).toLocaleDateString('ar-MA')}</div>
+                            <div style={{ fontSize: 11, color: '#8B6914' }}>{tx.nextPayment}</div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: '#6B4F12' }}>{new Date(sponsorship.nextRenewalDate).toLocaleDateString(lang === 'ar' ? 'ar-MA' : lang === 'fr' ? 'fr-FR' : 'en-US')}</div>
                           </>
                         )}
                         {sponsorship.status === 'active' && (
                           <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-                            <Link to={`/kafala/${sponsorship.kafalaId}/renew`} style={{ display: 'inline-flex', height: 30, padding: '0 12px', background: '#6B4F12', color: 'white', borderRadius: 100, fontSize: 11, fontWeight: 700, textDecoration: 'none', alignItems: 'center' }}>تجديد</Link>
+                            <Link to={`/kafala/${sponsorship.kafalaId}/renew`} style={{ display: 'inline-flex', height: 30, padding: '0 12px', background: '#6B4F12', color: 'white', borderRadius: 100, fontSize: 11, fontWeight: 700, textDecoration: 'none', alignItems: 'center' }}>{tx.renew}</Link>
                             <button
                               onClick={() => handleCancelKafala(sponsorship._id)}
                               disabled={isCancelling}
@@ -399,12 +402,12 @@ const UserProfile = () => {
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 12, fontFamily: 'Inter, sans-serif' }}>{tx.donationHistory}</div>
           <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', overflow: 'hidden' }}>
             <div style={{ padding: '18px 20px', borderBottom: '1px solid #E5E9EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontSize: 16, fontWeight: 700 }}>{lang === 'ar' ? 'آخر التبرعات' : tx.donationHistory}</div>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>{tx.latestDonations}</div>
               <span style={{ fontSize: 13, color: '#64748b' }}>({donations.length})</span>
             </div>
 
             {isDonationsLoading ? (
-              <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>جاري التحميل...</div>
+              <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>{tx.loading}</div>
             ) : donations.length === 0 ? (
               <div style={{ padding: 40, textAlign: 'center' }}>
                 <div style={{ fontSize: 40, marginBottom: 12 }}>🤲</div>
@@ -478,7 +481,7 @@ const UserProfile = () => {
           )}
 
           <div style={{ background: 'white', borderRadius: 16, border: '1px solid #E5E9EB', boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)', overflow: 'hidden' }}>
-            <div style={{ padding: '14px 18px', borderBottom: '1px solid #E5E9EB', fontSize: 14, fontWeight: 700 }}>⚙️ إعدادات الحساب</div>
+            <div style={{ padding: '14px 18px', borderBottom: '1px solid #E5E9EB', fontSize: 14, fontWeight: 700 }}>{tx.accountSettings}</div>
             {[
               { icon: '✏️', text: 'تعديل المعلومات الشخصية', action: handleEditToggle },
               { icon: '🔒', text: 'تغيير كلمة المرور' },

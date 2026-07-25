@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
@@ -6,276 +6,44 @@ import { useApp } from '../../../context/AppContext';
 import { convexFileUrl } from '../../../lib/convex';
 import KafalaAvatar from '../../../components/kafala/KafalaAvatar';
 
-const useIsMobile = () => {
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  useEffect(() => {
-    const h = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', h);
-    return () => window.removeEventListener('resize', h);
-  }, []);
-  return isMobile;
+const COPY = {
+  ar: { badge: 'برنامج الكفالة', title: 'اكفل يتيماً وغيّر حياته', subtitle: 'بكفالتك الشهرية، تمنح طفلاً يتيماً التعليم والغذاء والرعاية الصحية التي يستحقها.', start: 'ابدأ الكفالة الآن', all: 'الكل', available: 'متاح للكفالة', sponsored: 'مكفول', sponsoredCount: 'يتيم تحت الرعاية', availableCount: 'متاح للكفالة', monthly: 'شهرياً', listing: 'الأيتام المتاحون للكفالة', loading: 'جاري التحميل...', empty: 'لا توجد كفالات مطابقة حالياً', age: 'سنة', location: 'الموقع', perMonth: 'درهم / شهر', already: 'مكفول بالفعل', sponsor: 'اكفله الآن', sponsorFemale: 'اكفليها الآن', why: 'لماذا الكفالة؟', whyBody: 'توفّر كفالتك الشهرية للطفل التعليم والغذاء والرعاية الصحية والملابس.', discover: 'اكتشف الكفالات المتاحة' },
+  fr: { badge: 'PROGRAMME KAFALA', title: 'Parrainez un orphelin, changez sa vie', subtitle: 'Votre parrainage mensuel offre à un enfant l’éducation, l’alimentation et les soins de santé qu’il mérite.', start: 'Parrainer maintenant', all: 'Tous', available: 'Disponible', sponsored: 'Parrainé', sponsoredCount: 'enfants accompagnés', availableCount: 'disponibles', monthly: 'par mois', listing: 'Enfants disponibles au parrainage', loading: 'Chargement...', empty: 'Aucun parrainage correspondant pour le moment', age: 'ans', location: 'Lieu', perMonth: 'MAD / mois', already: 'Déjà parrainé', sponsor: 'Parrainer maintenant', sponsorFemale: 'Parrainer maintenant', why: 'Pourquoi la Kafala ?', whyBody: 'Votre soutien mensuel couvre l’éducation, l’alimentation, les soins de santé et les vêtements de l’enfant.', discover: 'Découvrir les parrainages disponibles' },
+  en: { badge: 'KAFALA PROGRAM', title: 'Sponsor an orphan and change a life', subtitle: 'Your monthly sponsorship gives a child the education, food, and healthcare they deserve.', start: 'Sponsor now', all: 'All', available: 'Available', sponsored: 'Sponsored', sponsoredCount: 'children supported', availableCount: 'available', monthly: 'per month', listing: 'Children available for sponsorship', loading: 'Loading...', empty: 'No matching sponsorships at the moment', age: 'years old', location: 'Location', perMonth: 'MAD / month', already: 'Already sponsored', sponsor: 'Sponsor now', sponsorFemale: 'Sponsor now', why: 'Why sponsor a child?', whyBody: 'Your monthly sponsorship provides education, food, healthcare, and clothing for a child.', discover: 'Discover available sponsorships' },
 };
 
-// ============================================
-// KAFALA LIST PAGE — Public orphan sponsorship listing
-// ============================================
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => { const update = () => setIsMobile(window.innerWidth < 768); window.addEventListener('resize', update); return () => window.removeEventListener('resize', update); }, []);
+  return isMobile;
+};
 
 export default function KafalaList() {
   const { currentLanguage } = useApp();
   const lang = currentLanguage?.code || 'ar';
-  const [filter, setFilter] = useState('all');
+  const tx = COPY[lang] || COPY.ar;
+  const locale = lang === 'ar' ? 'ar-MA' : lang === 'fr' ? 'fr-FR' : 'en-US';
   const isMobile = useIsMobile();
-
+  const [filter, setFilter] = useState('all');
   const kafalaList = useQuery(api.kafala.getPublicKafalaList, {});
+  const all = kafalaList || [];
+  const availableCount = all.filter((item) => item.status === 'active').length;
+  const sponsoredCount = all.filter((item) => item.status === 'sponsored').length;
+  const filtered = all.filter((item) => filter === 'all' || (filter === 'available' ? item.status === 'active' : item.status === 'sponsored'));
+  const getBio = (value) => typeof value === 'string' ? value : value?.[lang] || value?.ar || value?.fr || value?.en || '';
 
-  const t = {
-    ar: {
-      title: 'كفالة الأيتام',
-      subtitle: 'اكفل يتيماً وأضئ حياته بنور رعايتك',
-      all: 'الكل',
-      available: 'متاح للكفالة',
-      sponsored: 'مكفول',
-      loading: 'جاري التحميل...',
-      empty: 'لا توجد كفالات متاحة حالياً',
-      perMonth: 'درهم / شهر',
-      available_badge: '● متاح',
-      sponsored_badge: '🤲 مكفول',
-      age: 'سنة',
-      sponsor_btn: '🤲 اكفله الآن',
-      sponsor_btn_f: '🤲 اكفلها الآن',
-      sponsored_btn: 'مكفول بالفعل',
-    },
-    fr: {
-      title: 'Kafala — Parrainage',
-      subtitle: 'Parrainer un orphelin et illuminer sa vie',
-      all: 'Tous',
-      available: 'Disponible',
-      sponsored: 'Parrainé',
-      loading: 'Chargement...',
-      empty: 'Aucune kafala disponible',
-      perMonth: 'MAD / mois',
-      available_badge: '● Disponible',
-      sponsored_badge: '🤲 Parrainé',
-      age: 'ans',
-      sponsor_btn: '🤲 Parrainer',
-      sponsor_btn_f: '🤲 Parrainer',
-      sponsored_btn: 'Déjà parrainé',
-    },
-    en: {
-      title: 'Orphan Kafala Sponsorship',
-      subtitle: 'Sponsor an orphan and light up their life',
-      all: 'All',
-      available: 'Available',
-      sponsored: 'Sponsored',
-      loading: 'Loading...',
-      empty: 'No kafala available',
-      perMonth: 'MAD / month',
-      available_badge: '● Available',
-      sponsored_badge: '🤲 Sponsored',
-      age: 'yrs',
-      sponsor_btn: '🤲 Sponsor Now',
-      sponsor_btn_f: '🤲 Sponsor Now',
-      sponsored_btn: 'Already Sponsored',
-    },
-  };
-  const tx = t[lang] || t.ar;
+  if (kafalaList === undefined) return <div style={{ minHeight: '70vh', display: 'grid', placeItems: 'center', color: '#94a3b8', fontFamily: lang === 'ar' ? 'var(--font-arabic)' : 'Inter, sans-serif' }}>{tx.loading}</div>;
 
-  const filtered = (kafalaList || []).filter((k) => {
-    if (filter === 'available') return k.status === 'active';
-    if (filter === 'sponsored') return k.status === 'sponsored';
-    return true;
-  });
-
-  const getPhotoUrl = (k) => {
-    if (!k.photo) return null;
-    return convexFileUrl(k.photo) || k.photo;
-  };
-
-  const getBioText = (bio) => {
-    if (!bio) return '';
-    if (typeof bio === 'string') return bio;
-    return bio[lang] || bio.ar || bio.en || '';
-  };
-
-  const total = (kafalaList || []).length;
-  const availableCount = (kafalaList || []).filter((k) => k.status === 'active').length;
-  const sponsoredCount = (kafalaList || []).filter((k) => k.status === 'sponsored').length;
-
-  if (kafalaList === undefined) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f6f8f8', fontFamily: 'var(--font-arabic)' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🤲</div>
-          <p style={{ color: '#94a3b8' }}>{tx.loading}</p>
-        </div>
+  return <div dir={currentLanguage?.dir || (lang === 'ar' ? 'rtl' : 'ltr')} style={{ minHeight: '100vh', background: '#f6f8f8', color: '#0e1a1b', fontFamily: lang === 'ar' ? 'var(--font-arabic)' : 'Inter, sans-serif' }}>
+    <section style={{ background: 'linear-gradient(160deg,#3D2506,#6B4F12,#C4A882)', padding: isMobile ? '50px 18px' : '70px 28px', color: 'white', textAlign: 'center' }}>
+      <div style={{ maxWidth: 720, margin: 'auto' }}><div style={{ color: '#F5EBD9', fontSize: 12, letterSpacing: '.15em', fontWeight: 900 }}>{tx.badge}</div><h1 style={{ fontSize: isMobile ? 33 : 46, lineHeight: 1.18, margin: '14px 0' }}>{tx.title}</h1><p style={{ maxWidth: 560, margin: '0 auto 28px', color: 'rgba(255,255,255,.84)', lineHeight: 1.8 }}>{tx.subtitle}</p><button type="button" onClick={() => setFilter('available')} style={{ height: 52, padding: '0 28px', border: 'none', borderRadius: 99, background: 'white', color: '#6B4F12', fontFamily: 'inherit', fontWeight: 900, cursor: 'pointer' }}>{tx.start}</button>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: isMobile ? 24 : 48, marginTop: 32, flexWrap: 'wrap' }}><div><b style={{ fontSize: 28 }}>{sponsoredCount}</b><div style={{ color: '#F5EBD9', fontSize: 12 }}>{tx.sponsoredCount}</div></div><div><b style={{ fontSize: 28 }}>{availableCount}</b><div style={{ color: '#F5EBD9', fontSize: 12 }}>{tx.availableCount}</div></div><div><b style={{ fontSize: 28 }}>300 MAD</b><div style={{ color: '#F5EBD9', fontSize: 12 }}>{tx.monthly}</div></div></div>
       </div>
-    );
-  }
-
-  return (
-    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'var(--font-arabic)', color: '#0e1a1b' }}>
-
-      {/* Kafala Hero — warm sand, NOT teal */}
-      <div style={{ background: 'linear-gradient(160deg,#3D2506,#6B4F12,#C4A882)', padding: isMobile ? '48px 20px' : '68px 0', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ maxWidth: 640, margin: '0 auto', padding: isMobile ? '0' : '0 28px', position: 'relative', zIndex: 1 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.18em', color: '#E8D4B0', marginBottom: 12, fontFamily: 'Inter, sans-serif' }}>
-            KAFALA PROGRAM · برنامج الكفالة
-          </div>
-          <h1 style={{ fontSize: 44, fontWeight: 900, color: 'white', marginBottom: 14, lineHeight: 1.1 }}>
-            اكفل <span style={{ color: '#C4A882' }}>يتيماً</span><br />وغيّر حياته
-          </h1>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,.75)', lineHeight: 1.8, marginBottom: 28 }}>
-            بـ 300 درهم شهرياً فقط، توفر لطفل يتيم التعليم والغذاء والرعاية الصحية والحب الذي يحتاجه
-          </p>
-          <button
-            onClick={() => setFilter('available')}
-            style={{ height: 56, padding: '0 36px', background: 'white', color: '#6B4F12', border: 'none', borderRadius: 100, fontSize: 17, fontWeight: 800, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: '0 6px 20px rgba(0,0,0,.2)' }}
-          >
-            🤲 ابدأ الكفالة الآن
-          </button>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: isMobile ? 24 : 40, marginTop: 32, flexWrap: 'wrap' }}>
-            {[
-              { num: sponsoredCount, label: 'يتيم تحت الرعاية' },
-              { num: availableCount, label: 'متاح للكفالة' },
-              { num: '300 د.م', label: 'فقط شهرياً' },
-            ].map((s, i) => (
-              <div key={i} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 28, fontWeight: 900, color: 'white', fontFamily: 'Inter, sans-serif' }}>{s.num}</div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,.65)' }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div style={{ background: 'white', borderBottom: '1px solid #E5E9EB', position: 'sticky', top: 64, zIndex: 40, boxShadow: '0 2px 4px rgba(0,0,0,.03)' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '10px 16px' : '14px 28px', display: 'flex', alignItems: 'center', gap: 10, overflowX: 'auto' }}>
-          {[
-            { id: 'all', label: `الكل (${total})` },
-            { id: 'available', label: `متاح للكفالة (${availableCount})` },
-            { id: 'sponsored', label: `مكفول (${sponsoredCount})` },
-          ].map((f) => (
-            <button
-              key={f.id}
-              onClick={() => setFilter(f.id)}
-              style={{
-                height: 36, padding: '0 18px', borderRadius: 100, fontSize: 13, fontWeight: 500,
-                border: `1.5px solid ${filter === f.id ? '#8B6914' : '#E5E9EB'}`,
-                background: filter === f.id ? '#8B6914' : 'white',
-                color: filter === f.id ? 'white' : '#64748b',
-                cursor: 'pointer',
-                boxShadow: filter === f.id ? '0 4px 14px rgba(196,168,130,.35)' : 'none',
-                fontFamily: 'var(--font-arabic)',
-              }}
-            >
-              {f.label}
-            </button>
-          ))}
-          <div style={{ fontSize: 13, color: '#94a3b8', marginRight: 'auto' }}>يتيم مكفول يعني: ممول شهرياً بالكامل</div>
-        </div>
-      </div>
-
-      {/* Grid */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '24px 16px' : '36px 28px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: '#64748b' }}>
-            الأيتام المتاحون للكفالة{' '}
-            <span style={{ fontSize: 11, fontWeight: 700, background: '#F5EBD9', color: '#8B6914', padding: '2px 10px', borderRadius: 100 }}>
-              {filtered.length}
-            </span>
-          </span>
-        </div>
-
-        {filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '80px 0', color: '#94a3b8' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🤲</div>
-            <p>{tx.empty}</p>
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(auto-fill,minmax(260px,1fr))', gap: isMobile ? 14 : 24 }}>
-            {filtered.map((kafala) => {
-              const isSponsored = kafala.status === 'sponsored';
-              const photoUrl = getPhotoUrl(kafala);
-              const isFemale = kafala.gender === 'female';
-
-              return (
-                <Link
-                  key={kafala._id}
-                  to={`/kafala/${kafala._id}`}
-                  style={{ textDecoration: 'none', color: 'inherit' }}
-                >
-                  <div
-                    style={{
-                      background: 'white',
-                      borderRadius: 20,
-                      border: '1px solid #E5E9EB',
-                      boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)',
-                      overflow: 'hidden',
-                      transition: 'transform .2s,box-shadow .2s',
-                      opacity: isSponsored ? 0.85 : 1,
-                    }}
-                    onMouseEnter={(e) => { if (!isSponsored) { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 10px 15px rgba(0,0,0,.10)'; } }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)'; }}
-                  >
-                    {/* Card top — warm sand gradient */}
-                    <div style={{ padding: '24px 20px 16px', textAlign: 'center', background: 'linear-gradient(180deg,#F5EBD9 0%,white 100%)' }}>
-                      <div style={{ width: 88, height: 88, borderRadius: '50%', background: 'linear-gradient(135deg,#8B6914,#C4A882)', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid white', boxShadow: '0 4px 12px rgba(196,168,130,.4)', overflow: 'hidden' }}>
-                        <KafalaAvatar
-                          gender={kafala.gender}
-                          photo={kafala.photo}
-                          photoUrl={photoUrl}
-                          size={88}
-                        />
-                      </div>
-                      <div style={{ fontSize: 17, fontWeight: 800 }}>{kafala.name}</div>
-                      <div style={{ fontSize: 13, color: '#8B6914', fontWeight: 600, marginTop: 2 }}>{kafala.age} {tx.age}</div>
-                      <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>📍 {kafala.location}</div>
-                      <div style={{ marginTop: 8 }}>
-                        {isSponsored ? (
-                          <span style={{ background: '#E8D4B0', color: '#8B6914', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 100 }}>🤲 مكفول</span>
-                        ) : (
-                          <span style={{ background: '#D1FAE5', color: '#16a34a', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 100 }}>● متاح</span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Card body */}
-                    <div style={{ padding: 16 }}>
-                      <div style={{ fontSize: 20, fontWeight: 900, color: isSponsored ? '#94a3b8' : '#8B6914', textAlign: 'center', marginBottom: 12 }}>
-                        {Number(kafala.monthlyPrice || 300).toLocaleString('fr-MA')} <span style={{ fontSize: 13, fontWeight: 500, color: '#94a3b8' }}>درهم / شهر</span>
-                      </div>
-                      {isSponsored ? (
-                        <button disabled style={{ width: '100%', height: 44, background: '#E8D4B0', color: '#8B6914', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'not-allowed', fontFamily: 'var(--font-arabic)' }}>
-                          مكفول بالفعل
-                        </button>
-                      ) : (
-                        <button style={{ width: '100%', height: 44, background: '#8B6914', color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: '0 4px 14px rgba(196,168,130,.35)' }}>
-                          {isFemale ? tx.sponsor_btn_f : tx.sponsor_btn}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Impact CTA */}
-        <div style={{ background: 'linear-gradient(135deg,#3D2506,#6B4F12)', borderRadius: 20, padding: 36, textAlign: 'center', marginTop: 40 }}>
-          <div style={{ fontSize: 24, fontWeight: 900, color: 'white', marginBottom: 8 }}>💛 لماذا الكفالة؟</div>
-          <div style={{ fontSize: 15, color: 'rgba(255,255,255,.75)', marginBottom: 20 }}>
-            كفالتك الشهرية توفر لليتيم: التعليم، الغذاء، الرعاية الصحية، والملابس — بـ 10 درهم فقط يومياً
-          </div>
-          <button
-            onClick={() => setFilter('available')}
-            style={{ height: 56, padding: '0 36px', background: 'white', color: '#6B4F12', border: 'none', borderRadius: 100, fontSize: 17, fontWeight: 800, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: '0 6px 20px rgba(0,0,0,.2)' }}
-          >
-            ابدأ الكفالة الآن →
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+    </section>
+    <div style={{ background: 'white', borderBottom: '1px solid #E5E9EB', position: 'sticky', top: 64, zIndex: 10 }}><div style={{ maxWidth: 1200, margin: 'auto', padding: '13px 20px', display: 'flex', gap: 10, overflowX: 'auto' }}>{[['all', tx.all, all.length], ['available', tx.available, availableCount], ['sponsored', tx.sponsored, sponsoredCount]].map(([id, label, count]) => <button key={id} type="button" onClick={() => setFilter(id)} style={{ flex: '0 0 auto', height: 36, padding: '0 16px', borderRadius: 99, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 800, border: `1.5px solid ${filter === id ? '#8B6914' : '#E5E9EB'}`, background: filter === id ? '#8B6914' : 'white', color: filter === id ? 'white' : '#64748b' }}>{label} ({count})</button>)}</div></div>
+    <main style={{ maxWidth: 1200, margin: 'auto', padding: isMobile ? '26px 16px 56px' : '42px 28px 64px' }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}><h2 style={{ margin: 0, fontSize: 22 }}>{tx.listing}</h2><span style={{ color: '#8B6914', fontWeight: 900 }}>{filtered.length}</span></div>
+      {filtered.length === 0 ? <div style={{ padding: 64, textAlign: 'center', color: '#64748b', background: 'white', borderRadius: 18 }}>{tx.empty}</div> : <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill,minmax(${isMobile ? '150px' : '255px'},1fr))`, gap: isMobile ? 14 : 22 }}>{filtered.map((item) => { const sponsored = item.status === 'sponsored'; const photoUrl = convexFileUrl(item.photo) || item.photo; return <Link key={item._id} to={`/kafala/${item._id}`} style={{ color: 'inherit', textDecoration: 'none' }}><article style={{ height: '100%', background: 'white', border: '1px solid #E5E9EB', borderRadius: 18, overflow: 'hidden', boxShadow: '0 3px 10px rgba(0,0,0,.05)' }}><div style={{ padding: '22px 16px 16px', textAlign: 'center', background: 'linear-gradient(180deg,#F5EBD9,white)' }}><div style={{ width: 82, height: 82, margin: 'auto', borderRadius: '50%', overflow: 'hidden', background: '#E8D4B0' }}><KafalaAvatar gender={item.gender} photo={item.photo} photoUrl={photoUrl} size={82} /></div><h3 style={{ margin: '10px 0 3px', fontSize: 17 }}>{item.name}</h3><div style={{ fontSize: 13, color: '#8B6914' }}>{item.age} {tx.age}</div>{item.location && <div style={{ fontSize: 12, color: '#64748b', marginTop: 5 }}><span className="material-symbols-outlined no-flip" style={{ fontSize: 14, verticalAlign: 'middle' }}>location_on</span> {item.location}</div>}<span style={{ display: 'inline-block', marginTop: 9, padding: '4px 9px', borderRadius: 99, fontSize: 11, fontWeight: 900, background: sponsored ? '#F5EBD9' : '#DCFCE7', color: sponsored ? '#8B6914' : '#15803D' }}>{sponsored ? tx.sponsored : tx.available}</span></div><div style={{ padding: 16 }}>{getBio(item.bio) && <p style={{ minHeight: 42, margin: '0 0 12px', color: '#64748b', fontSize: 12, lineHeight: 1.65, overflow: 'hidden' }}>{getBio(item.bio)}</p>}<div style={{ color: '#8B6914', textAlign: 'center', fontWeight: 900, fontSize: 19, marginBottom: 12 }}>{Number(item.monthlyPrice || 300).toLocaleString(locale)} <small style={{ color: '#64748b', fontWeight: 600 }}>{tx.perMonth}</small></div><div style={{ height: 42, display: 'grid', placeItems: 'center', borderRadius: 10, background: sponsored ? '#F5EBD9' : '#8B6914', color: sponsored ? '#8B6914' : 'white', fontWeight: 900, fontSize: 13 }}>{sponsored ? tx.already : item.gender === 'female' ? tx.sponsorFemale : tx.sponsor}</div></div></article></Link>; })}</div>}
+      <section style={{ marginTop: 42, background: 'linear-gradient(135deg,#3D2506,#6B4F12)', borderRadius: 20, padding: isMobile ? 26 : 38, color: 'white', textAlign: 'center' }}><h2 style={{ margin: '0 0 10px' }}>{tx.why}</h2><p style={{ maxWidth: 600, margin: '0 auto 20px', lineHeight: 1.7, color: '#F5EBD9' }}>{tx.whyBody}</p><button type="button" onClick={() => setFilter('available')} style={{ border: 'none', borderRadius: 99, background: 'white', color: '#6B4F12', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 900, padding: '12px 20px' }}>{tx.discover}</button></section>
+    </main>
+  </div>;
 }

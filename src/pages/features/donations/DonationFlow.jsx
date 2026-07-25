@@ -20,6 +20,11 @@ const FLOW_COPY = {
 };
 
 const getFlowCopy = (lang) => FLOW_COPY[lang] || FLOW_COPY.ar;
+const getFlowToastCopy = (lang) => ({
+  ar: { resendFailed: 'تعذر إعادة الإرسال', codeResent: 'تمت إعادة إرسال الرمز', copied: 'تم النسخ' },
+  fr: { resendFailed: 'Impossible de renvoyer le code', codeResent: 'Code renvoyé', copied: 'Copié' },
+  en: { resendFailed: 'Unable to resend the code', codeResent: 'Code resent', copied: 'Copied' },
+}[lang] || { resendFailed: 'Unable to resend the code', codeResent: 'Code resent', copied: 'Copied' });
 
 const useViewportWidth = () => {
   const [width, setWidth] = useState(window.innerWidth);
@@ -86,17 +91,18 @@ const ProjectCtx = ({ project, step, amount, lang }) => (
 
 // ─── Step 0: Auth ─────────────────────────────────────────────────────────────
 const Step0Auth = ({ authMode, setAuthMode, authFormData, handleAuthChange, handlePhoneChange, phoneInputRef, countryCode, setCountryCode, showPassword, setShowPassword, showConfirmPassword, setShowConfirmPassword, authErrors, otpSent, otpValues, setOtpValues, otpRefs, otpTimer, setOtpTimer, lang, formatPhoneDisplay, requestOTP, showToast, isNarrow }) => {
+  const toastCopy = getFlowToastCopy(lang);
   const handleResendOtp = async () => {
     try {
       const result = await requestOTP({ phoneNumber: countryCode + authFormData.phone });
       if (!result?.success) {
-        showToast?.(result?.message || (lang === 'ar' ? 'تعذر إعادة الإرسال' : 'Failed to resend'), 'error');
+        showToast?.(result?.message || toastCopy.resendFailed, 'error');
         return;
       }
       setOtpTimer(120);
-      showToast?.(lang === 'ar' ? 'تم إرسال الرمز' : 'Code resent', 'success');
+      showToast?.(toastCopy.codeResent, 'success');
     } catch {
-      showToast?.(lang === 'ar' ? 'تعذر إعادة الإرسال' : 'Failed to resend', 'error');
+      showToast?.(toastCopy.resendFailed, 'error');
     }
   };
   const handleOtpChange = (index, value) => {
@@ -351,9 +357,10 @@ const Step1Amount = ({ donationData, setDonationData, benefitCards, lang }) => {
 // ─── Step 2: Payment Method ───────────────────────────────────────────────────
 const Step2Payment = ({ donationData, setDonationData, bankInfo, showToast, lang }) => {
   const tx = getFlowCopy(lang);
+  const toastCopy = getFlowToastCopy(lang);
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
-    showToast(lang === 'ar' ? 'تم النسخ' : 'Copied', 'success');
+    showToast(toastCopy.copied, 'success');
   };
 
   const METHODS = [

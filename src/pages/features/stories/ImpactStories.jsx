@@ -1,265 +1,70 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery } from 'convex/react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
 import { convexFileUrl } from '../../../lib/convex';
 
-// ============================================
-// BLOG PAGE - المدونة
-// ============================================
+const COPY = {
+  ar: { badge: 'المدونة · القصص', title: 'مدونة الجمعية', subtitle: 'قصص النجاح والأنشطة وآخر أخبار جمعية ابتسام.', all: 'الكل', featured: 'منشور مميز', posts: 'جميع المنشورات', count: (n) => `${n} منشور`, loading: 'جاري تحميل المنشورات...', emptyTitle: 'لا توجد منشورات بعد', emptyBody: 'ستظهر المقالات والأخبار والفعاليات هنا بمجرد نشرها من لوحة الإدارة.', read: 'اقرأ القصة', categories: { education: 'التعليم', water: 'المياه', health: 'الصحة', kafala: 'الكفالة', food: 'الغذاء', housing: 'السكن' }, types: { story: 'قصص نجاح', activity: 'أنشطة وفعاليات', update: 'أخبار وتحديثات' } },
+  fr: { badge: 'BLOG · ACTUALITÉS', title: "Blog de l’association", subtitle: "Histoires de réussite, activités et dernières nouvelles de l’Association Ibtasim.", all: 'Tous', featured: 'À la une', posts: 'Tous les articles', count: (n) => `${n} article${n > 1 ? 's' : ''}`, loading: 'Chargement des articles...', emptyTitle: 'Aucun article pour le moment', emptyBody: 'Les articles, actualités et événements apparaîtront ici une fois publiés depuis le tableau de bord.', read: "Lire l’article", categories: { education: 'Éducation', water: 'Eau', health: 'Santé', kafala: 'Kafala', food: 'Alimentation', housing: 'Logement' }, types: { story: 'Histoires de réussite', activity: 'Activités et événements', update: 'Actualités' } },
+  en: { badge: 'BLOG · STORIES', title: 'Association Blog', subtitle: 'Success stories, activities, and the latest news from Association Ibtasim.', all: 'All', featured: 'Featured', posts: 'All posts', count: (n) => `${n} post${n === 1 ? '' : 's'}`, loading: 'Loading posts...', emptyTitle: 'No posts yet', emptyBody: 'Articles, news, and events will appear here once published from the admin dashboard.', read: 'Read story', categories: { education: 'Education', water: 'Water', health: 'Health', kafala: 'Kafala', food: 'Food', housing: 'Housing' }, types: { story: 'Success stories', activity: 'Activities and events', update: 'News and updates' } },
+};
 
+const ICONS = { education: 'school', water: 'water_drop', health: 'health_and_safety', kafala: 'diversity_1', food: 'restaurant', housing: 'home' };
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
-  }, []);
+  useEffect(() => { const update = () => setIsMobile(window.innerWidth < 768); window.addEventListener('resize', update); return () => window.removeEventListener('resize', update); }, []);
   return isMobile;
 };
 
-const STORIES_COPY = {
-  ar: {
-    hero_badge: 'BLOG · المدونة',
-    title: 'مدونة الجمعية',
-    subtitle: 'قصص النجاح، الأنشطة والفعاليات، وآخر الأخبار من جمعية ابتسام',
-    all: 'الكل',
-    featured_badge: 'FEATURED · المنشور المميز',
-    all_posts: 'جميع المنشورات',
-    posts_count: (n) => `${n} منشور`,
-    loading: 'جاري التحميل...',
-    no_posts_title: 'لا توجد منشورات بعد',
-    no_posts_body: 'ستظهر المقالات والأخبار والفعاليات هنا بمجرد نشرها من لوحة الإدارة',
-  },
-  fr: {
-    hero_badge: 'BLOG · ACTUALITÉS',
-    title: "Blog de l'association",
-    subtitle: "Histoires de succès, activités et dernières nouvelles d'Ibtasim",
-    all: 'Tous',
-    featured_badge: 'À LA UNE',
-    all_posts: 'Tous les articles',
-    posts_count: (n) => `${n} article${n > 1 ? 's' : ''}`,
-    loading: 'Chargement...',
-    no_posts_title: 'Aucun article pour le moment',
-    no_posts_body: 'Les articles, actualités et événements apparaîtront ici une fois publiés depuis le tableau de bord.',
-  },
-  en: {
-    hero_badge: 'BLOG · STORIES',
-    title: 'Association Blog',
-    subtitle: 'Success stories, activities, and latest news from Ibtasim',
-    all: 'All',
-    featured_badge: 'FEATURED',
-    all_posts: 'All Posts',
-    posts_count: (n) => `${n} post${n !== 1 ? 's' : ''}`,
-    loading: 'Loading...',
-    no_posts_title: 'No posts yet',
-    no_posts_body: 'Articles, news, and events will appear here once published from the admin dashboard.',
-  },
-};
-
-const ImpactStories = () => {
-  const { language } = useApp();
+export default function ImpactStories() {
+  const { language, currentLanguage } = useApp();
+  const lang = language || 'ar';
+  const tx = COPY[lang] || COPY.ar;
   const navigate = useNavigate();
-  const [selectedFilter, setSelectedFilter] = useState('all');
-  const [selectedPostType, setSelectedPostType] = useState('all');
   const isMobile = useIsMobile();
+  const [category, setCategory] = useState('all');
+  const [postType, setPostType] = useState('all');
+  const storiesData = useQuery(api.stories.getPublishedStories);
+  const stories = storiesData || [];
+  const categories = [...new Set(stories.map((story) => story.category).filter(Boolean))];
+  const postTypes = [...new Set(stories.map((story) => story.postType).filter(Boolean))];
+  const filtered = stories.filter((story) => (category === 'all' || story.category === category) && (postType === 'all' || story.postType === postType));
+  const featured = filtered.find((story) => story.isFeatured) || filtered[0];
+  const locale = lang === 'ar' ? 'ar-MA' : lang === 'fr' ? 'fr-FR' : 'en-US';
 
-  const convexStories = useQuery(api.stories.getPublishedStories);
-
-  // Real stories from Convex only — no mock fallback
-  const stories = (convexStories || []).map(s => ({
-    ...s,
-    id: s._id,
-    badgeBg: 'rgba(255,255,255,.9)',
-    badgeColor: s.catColor || '#0A5F62',
-    date: s.publishedAt ? new Date(s.publishedAt).toLocaleDateString('ar-MA', { year: 'numeric', month: 'long', day: 'numeric' }) : '',
-  }));
-
-  const CATEGORIES = ['education', 'water', 'health', 'kafala', 'food', 'housing'];
-  const CAT_LABELS = { education: 'التعليم', water: 'المياه', health: 'الصحة', kafala: 'الكفالة', food: 'الغذاء', housing: 'السكن' };
-  const CAT_ICONS  = { education: '🎓', water: '💧', health: '❤️', kafala: '🤲', food: '🍞', housing: '🏠' };
-
-  const sc = STORIES_COPY[language] || STORIES_COPY.ar;
-
-  const filters = [
-    { id: 'all', label: `${sc.all} (${stories.length})`, icon: '' },
-    ...CATEGORIES.map(c => ({
-      id: c,
-      label: `${CAT_LABELS[c]} (${stories.filter(s => s.category === c).length})`,
-      icon: CAT_ICONS[c],
-    })).filter(f => stories.some(s => s.category === f.id)),
-  ];
-
-  const POST_TYPE_LABELS = { story: '🌟 قصص نجاح', activity: '🎉 أنشطة وفعاليات', update: '📢 أخبار وتحديثات' };
-  const hasPostTypes = stories.some(s => s.postType);
-  const filteredStories = stories.filter(s => {
-    const categoryMatch = selectedFilter === 'all' || s.category === selectedFilter;
-    const postTypeMatch = selectedPostType === 'all' || s.postType === selectedPostType;
-    return categoryMatch && postTypeMatch;
-  });
-
-  const featuredStory = stories.find(s => s.isFeatured) || stories[0] || null;
-
-  return (
-    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'var(--font-arabic)', color: '#0e1a1b' }}>
-
-      {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg,#052E2F,#0A5F62,#0d7477)', padding: isMobile ? '40px 20px' : '60px 0' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '0' : '0 28px', textAlign: 'center' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#33C0C0', marginBottom: 12, fontFamily: 'Inter, sans-serif' }}>
-            {sc.hero_badge}
-          </div>
-          <h1 style={{ fontSize: 40, fontWeight: 900, color: 'white', marginBottom: 12 }}>{sc.title}</h1>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,.7)', lineHeight: 1.7, maxWidth: 500, margin: '0 auto 28px' }}>
-            {sc.subtitle}
-          </p>
-          {/* Filter chips */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
-            {filters.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setSelectedFilter(f.id)}
-                style={{
-                  height: 36,
-                  padding: '0 18px',
-                  borderRadius: 100,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  border: '1.5px solid',
-                  borderColor: selectedFilter === f.id ? 'white' : 'rgba(255,255,255,.3)',
-                  background: selectedFilter === f.id ? 'white' : 'transparent',
-                  color: selectedFilter === f.id ? '#0A5F62' : 'white',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-arabic)',
-                }}
-              >
-                {f.icon && <>{f.icon} </>}{f.label}
-              </button>
-            ))}
-          </div>
-          {/* Post type filter — only shown when at least one story has a postType */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-            {[{ id: 'all', label: 'الكل' }, ...Object.entries(POST_TYPE_LABELS).map(([id, label]) => ({ id, label }))].map(pt => (
-              <button key={pt.id} onClick={() => setSelectedPostType(pt.id)}
-                style={{ height: 30, padding: '0 14px', borderRadius: 100, fontSize: 12, fontWeight: 600, border: '1px solid', borderColor: selectedPostType === pt.id ? 'rgba(255,255,255,.8)' : 'rgba(255,255,255,.2)', background: selectedPostType === pt.id ? 'rgba(255,255,255,.15)' : 'transparent', color: 'white', cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}>
-                {pt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+  const StoryCard = ({ story, feature = false }) => {
+    const image = convexFileUrl(story.coverImage);
+    const categoryLabel = tx.categories[story.category] || story.catLabel || story.category;
+    const typeLabel = tx.types[story.postType] || categoryLabel;
+    return <article onClick={() => navigate(`/stories/${story.slug || story._id}`)} style={{ cursor: 'pointer', background: 'white', borderRadius: 18, overflow: 'hidden', border: '1px solid #E5E9EB', boxShadow: feature ? '0 10px 24px rgba(0,0,0,.10)' : '0 3px 10px rgba(0,0,0,.05)', display: feature ? 'grid' : 'block', gridTemplateColumns: feature && !isMobile ? '1fr 1fr' : undefined }}>
+      <div style={{ minHeight: feature ? 260 : 180, background: story.gradient || 'linear-gradient(135deg,#052E2F,#0d7477)', position: 'relative' }}>
+        {image && <img src={image} alt={story.imageAlt || story.title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />}
+        <span style={{ position: 'absolute', bottom: 14, insetInlineStart: 14, padding: '5px 10px', borderRadius: 99, background: 'rgba(255,255,255,.92)', color: story.catColor || '#0A5F62', fontWeight: 800, fontSize: 12 }}><span className="material-symbols-outlined no-flip" style={{ fontSize: 15, verticalAlign: 'middle', marginInlineEnd: 4 }}>{ICONS[story.category] || 'article'}</span>{categoryLabel}</span>
       </div>
-
-      {/* Featured Story — only when there is one */}
-      {featuredStory && (
-        <div style={{ maxWidth: 1200, margin: isMobile ? '28px auto 0' : '48px auto 0', padding: isMobile ? '0 16px' : '0 28px' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 16, fontFamily: 'Inter, sans-serif' }}>
-            {sc.featured_badge}
-          </div>
-          <div style={{ background: 'white', borderRadius: 20, overflow: 'hidden', boxShadow: '0 10px 15px rgba(0,0,0,.10)', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
-            {/* Image / Gradient side */}
-            <div style={{ background: featuredStory.gradient || 'linear-gradient(160deg,#052E2F,#0d7477)', minHeight: isMobile ? 220 : 360, position: 'relative', display: 'flex', alignItems: 'flex-end', padding: 32, overflow: 'hidden' }}>
-              {convexFileUrl(featuredStory.coverImage) && (
-                <img
-                  src={convexFileUrl(featuredStory.coverImage)}
-                  alt=""
-                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              )}
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,.6),transparent)' }} />
-              <span style={{ position: 'relative', zIndex: 1, display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,.15)', backdropFilter: 'blur(8px)', color: 'white', padding: '6px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600 }}>
-                {featuredStory.badgeIcon} {featuredStory.badgeText}
-              </span>
-            </div>
-            {/* Body */}
-            <div style={{ padding: isMobile ? 24 : 40 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', color: '#0d7477', marginBottom: 12, fontFamily: 'Inter, sans-serif' }}>
-                {POST_TYPE_LABELS[featuredStory.postType] || 'المدونة'}
-              </div>
-              <h2 style={{ fontSize: isMobile ? 20 : 26, fontWeight: 800, lineHeight: 1.3, marginBottom: 14 }}>
-                {featuredStory.title}
-              </h2>
-              <p style={{ fontSize: 15, color: '#64748b', lineHeight: 1.85, borderRight: '3px solid #33C0C0', paddingRight: 16, marginBottom: 20 }}>
-                {featuredStory.excerpt}
-              </p>
-              {featuredStory.date && (
-                <div style={{ fontSize: 12, color: '#94a3b8' }}>{featuredStory.date}</div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Stories Grid */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '28px 16px 48px' : '40px 28px 60px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 700 }}>{sc.all_posts}</h2>
-          <div style={{ fontSize: 13, color: '#94a3b8' }}>{sc.posts_count(filteredStories.length)}</div>
-        </div>
-
-        {convexStories === undefined && (
-          <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8', fontSize: 13 }}>{sc.loading}</div>
-        )}
-        {convexStories !== undefined && filteredStories.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '60px 20px', background: 'white', borderRadius: 20, border: '1px solid #E5E9EB' }}>
-            <div style={{ fontSize: 48, marginBottom: 14 }}>📖</div>
-            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>{sc.no_posts_title}</div>
-            <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7 }}>{sc.no_posts_body}</div>
-          </div>
-        )}
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${isMobile ? '100%' : '300px'}, 1fr))`, gap: isMobile ? 16 : 24 }}>
-          {filteredStories.map((story) => (
-            <div
-              key={story.id}
-              onClick={() => navigate('/impact/' + story.id)}
-              style={{
-                background: 'white',
-                borderRadius: 16,
-                border: '1px solid #E5E9EB',
-                overflow: 'hidden',
-                boxShadow: '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)',
-                transition: 'transform .2s,box-shadow .2s',
-                cursor: 'pointer',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 10px 15px rgba(0,0,0,.10)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,.03),0 4px 6px rgba(0,0,0,.05)';
-              }}
-            >
-              {/* Image */}
-              <div style={{ height: isMobile ? 140 : 180, background: story.gradient || 'linear-gradient(135deg,#052E2F,#0d7477)', position: 'relative', overflow: 'hidden' }}>
-                {convexFileUrl(story.coverImage) && (
-                  <img
-                    src={convexFileUrl(story.coverImage)}
-                    alt=""
-                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                )}
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,.5),transparent)' }} />
-                <div style={{ position: 'absolute', bottom: 12, right: 12, zIndex: 1 }}>
-                  <span style={{ background: story.badgeBg, color: story.badgeColor, fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 100 }}>
-                    {story.badgeIcon} {story.badgeText}
-                  </span>
-                </div>
-              </div>
-              {/* Body — title only */}
-              <div style={{ padding: '14px 16px 16px' }}>
-                <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.12em', color: story.catColor, marginBottom: 6, fontFamily: 'Inter, sans-serif' }}>
-                  {story.catLabel}
-                </div>
-                <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.45 }}>{story.title}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-
+      <div style={{ padding: feature ? 32 : 18 }}>
+        <div style={{ color: '#0d7477', fontSize: 11, fontWeight: 900, letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 8 }}>{typeLabel}</div>
+        <h2 style={{ margin: '0 0 10px', fontSize: feature ? 25 : 17, lineHeight: 1.35, fontWeight: 900 }}>{story.title}</h2>
+        {story.excerpt && <p style={{ margin: '0 0 14px', color: '#64748b', lineHeight: 1.7, fontSize: 14 }}>{story.excerpt}</p>}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#64748b', fontSize: 12 }}><span>{story.publishedAt ? new Date(story.publishedAt).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' }) : ''}</span><span style={{ color: '#0d7477', fontWeight: 800 }}>{tx.read} <span className="material-symbols-outlined no-flip" style={{ fontSize: 16, verticalAlign: 'middle' }}>arrow_forward</span></span></div>
       </div>
-    </div>
-  );
-};
+    </article>;
+  };
 
-export default ImpactStories;
+  return <div dir={currentLanguage?.dir || (lang === 'ar' ? 'rtl' : 'ltr')} style={{ minHeight: '100vh', background: '#f6f8f8', color: '#0e1a1b', fontFamily: lang === 'ar' ? 'var(--font-arabic)' : 'Inter, sans-serif' }}>
+    <section style={{ background: 'linear-gradient(135deg,#052E2F,#0A5F62,#0d7477)', padding: isMobile ? '42px 16px' : '64px 28px', textAlign: 'center', color: 'white' }}>
+      <div style={{ maxWidth: 780, margin: 'auto' }}><div style={{ fontWeight: 900, letterSpacing: '.14em', fontSize: 12, color: '#8ee4e4' }}>{tx.badge}</div><h1 style={{ margin: '12px 0', fontSize: isMobile ? 32 : 42 }}>{tx.title}</h1><p style={{ margin: '0 auto 25px', maxWidth: 600, lineHeight: 1.7, color: 'rgba(255,255,255,.8)' }}>{tx.subtitle}</p>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>{['all', ...categories].map((item) => <button key={item} onClick={() => setCategory(item)} style={{ border: `1px solid ${category === item ? 'white' : 'rgba(255,255,255,.4)'}`, background: category === item ? 'white' : 'transparent', color: category === item ? '#0A5F62' : 'white', borderRadius: 99, padding: '8px 14px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 800 }}>{item === 'all' ? tx.all : tx.categories[item] || item}</button>)}</div>
+        {postTypes.length > 0 && <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>{['all', ...postTypes].map((item) => <button key={item} onClick={() => setPostType(item)} style={{ border: 'none', background: postType === item ? 'rgba(255,255,255,.22)' : 'transparent', color: 'white', borderRadius: 99, padding: '6px 12px', cursor: 'pointer', fontFamily: 'inherit' }}>{item === 'all' ? tx.all : tx.types[item] || item}</button>)}</div>}
+      </div>
+    </section>
+    <main style={{ maxWidth: 1180, margin: 'auto', padding: isMobile ? '28px 16px 56px' : '46px 28px 64px' }}>
+      {storiesData === undefined ? <div style={{ textAlign: 'center', padding: 64, color: '#64748b' }}>{tx.loading}</div> : stories.length === 0 ? <div style={{ textAlign: 'center', padding: 64, background: 'white', borderRadius: 18, border: '1px solid #E5E9EB' }}><span className="material-symbols-outlined no-flip" style={{ fontSize: 48, color: '#0d7477' }}>auto_stories</span><h2>{tx.emptyTitle}</h2><p style={{ color: '#64748b' }}>{tx.emptyBody}</p></div> : <>
+        {featured && <><div style={{ fontSize: 12, letterSpacing: '.12em', fontWeight: 900, color: '#0d7477', marginBottom: 14 }}>{tx.featured}</div><StoryCard story={featured} feature /></>}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '40px 0 18px' }}><h2 style={{ margin: 0, fontSize: 24 }}>{tx.posts}</h2><span style={{ color: '#64748b' }}>{tx.count(filtered.length)}</span></div>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill,minmax(${isMobile ? '100%' : '280px'},1fr))`, gap: 20 }}>{filtered.filter((story) => story._id !== featured?._id).map((story) => <StoryCard key={story._id} story={story} />)}</div>
+      </>}
+    </main>
+  </div>;
+}

@@ -80,6 +80,11 @@ const Register = () => {
   };
 
   const tx = translations[lang] || translations.ar;
+  const toastCopy = {
+    ar: { codeSent: 'تم إرسال الرمز', accountCreated: 'تم إنشاء الحساب', resendFailed: 'تعذر إعادة الإرسال', codeResent: 'تمت إعادة إرسال الرمز', registrationFailed: 'تعذر إنشاء الحساب', verificationFailed: 'تعذر التحقق من الرمز' },
+    fr: { codeSent: 'Code envoyé', accountCreated: 'Compte créé', resendFailed: 'Impossible de renvoyer le code', codeResent: 'Code renvoyé', registrationFailed: 'Impossible de créer le compte', verificationFailed: 'Impossible de vérifier le code' },
+    en: { codeSent: 'Code sent', accountCreated: 'Account created', resendFailed: 'Unable to resend the code', codeResent: 'Code resent', registrationFailed: 'Unable to create account', verificationFailed: 'Unable to verify the code' },
+  }[lang] || translations.en;
 
   const validateEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
   const validatePhone = (v) => validatePhoneByCountry(v, countryCode);
@@ -142,9 +147,9 @@ const Register = () => {
       if (!otpResult.success) { showToast(otpResult.message, 'error'); setIsLoading(false); return; }
       setOtpSent(true);
       setOtpTimer(120);
-      showToast(lang === 'ar' ? 'تم إرسال الرمز' : 'Code sent', 'success');
+      showToast(toastCopy.codeSent, 'success');
     } catch (err) {
-      showToast(err.message || 'Registration failed', 'error');
+      showToast(err.message || toastCopy.registrationFailed, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -161,10 +166,10 @@ const Register = () => {
       const userId = verifyResult.userId || registeredUserId;
       if (userId && password) await setUserPassword({ userId, password });
       login({ id: userId, name: fullName, phone: fullPhone, email, avatar: null, role: 'user' });
-      showToast(lang === 'ar' ? 'تم إنشاء الحساب' : 'Account created', 'success');
+      showToast(toastCopy.accountCreated, 'success');
       navigate(returnUrl, { replace: true });
     } catch (err) {
-      showToast(err.message || 'Verification failed', 'error');
+      showToast(err.message || toastCopy.verificationFailed, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -193,7 +198,7 @@ const Register = () => {
         <div style={{ textAlign: 'center', padding: '12px 20px 16px' }}>
           <div style={{ width: 52, height: 52, background: '#0d7477', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: 22, margin: '0 auto 10px', boxShadow: '0 4px 14px rgba(13,116,119,.25)' }}>ا</div>
           <div style={{ fontSize: 18, fontWeight: 900 }}>
-            {currentStep === 1 ? 'إنشاء حساب' : currentStep === 2 ? 'التحقق من الهاتف' : 'أكمل ملفك الشخصي'}
+            {currentStep === 1 ? tx.step1Title : tx.step2Title}
           </div>
         </div>
 
@@ -257,12 +262,12 @@ const Register = () => {
                       try {
                         const result = await requestOTP({ phoneNumber: countryCode + phone });
                         if (!result?.success) {
-                          showToast(result?.message || (lang === 'ar' ? 'تعذر إعادة الإرسال' : 'Failed to resend'), 'error');
+                          showToast(result?.message || toastCopy.resendFailed, 'error');
                           return;
                         }
                         setOtpTimer(120);
-                        showToast(lang === 'ar' ? 'تم إرسال الرمز' : 'Code resent', 'success');
-                      } catch (e) { showToast(lang === 'ar' ? 'تعذر إعادة الإرسال' : 'Failed to resend', 'error'); }
+                        showToast(toastCopy.codeResent, 'success');
+                      } catch (e) { showToast(toastCopy.resendFailed, 'error'); }
                     }}
                     style={{ color: '#0d7477', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-arabic)', fontSize: 13 }}
                   >

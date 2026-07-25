@@ -37,6 +37,12 @@ const COUNTRIES = [
   { code: 'MA-OTHER', name: 'Other', nameAr: 'أخرى', nameFr: 'Autre', flag: '🌍', dialCode: '' },
 ];
 
+const UI_COPY = {
+  ar: { search: 'بحث...', empty: 'لا توجد نتائج' },
+  fr: { search: 'Rechercher...', empty: 'Aucun résultat' },
+  en: { search: 'Search...', empty: 'No results found' },
+};
+
 const CountryCodeSelector = ({
   value,
   onChange,
@@ -47,6 +53,7 @@ const CountryCodeSelector = ({
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const containerRef = useRef(null);
+  const copy = UI_COPY[lang] || UI_COPY.en;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -125,7 +132,7 @@ const CountryCodeSelector = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={lang === 'ar' ? 'بحث...' : lang === 'fr' ? 'Rechercher...' : 'Search...'}
+                placeholder={copy.search}
                 className="w-full h-10 pl-10 pr-4 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary"
                 onClick={(e) => e.stopPropagation()}
               />
@@ -136,7 +143,7 @@ const CountryCodeSelector = ({
           <div className="max-h-60 overflow-y-auto">
             {filteredCountries.length === 0 ? (
               <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                {lang === 'ar' ? 'لا توجد نتائج' : lang === 'fr' ? 'Aucun résultat' : 'No results found'}
+                {copy.empty}
               </div>
             ) : (
               filteredCountries.map((country) => (
