@@ -63,6 +63,7 @@ import AdminErrorLogs from './pages/features/admin/AdminErrorLogs';
 import AdminActivity from './pages/features/admin/AdminActivity';
 import AdminTeamPerformance from './pages/features/admin/AdminTeamPerformance';
 import AdminReceipts from './pages/features/admin/AdminReceipts';
+import AdminSiteContent from './pages/features/admin/content/AdminSiteContent';
 
 // ============================================
 // SCROLL TO TOP ON ROUTE CHANGE
@@ -280,6 +281,7 @@ function AppContent() {
 
             {/* Stories */}
             <Route path="/admin/stories" element={<AdminStories />} />
+            <Route path="/admin/content" element={<AdminSiteContent />} />
 
             {/* Kafala Management */}
             <Route path="/admin/kafala" element={<AdminKafala />} />

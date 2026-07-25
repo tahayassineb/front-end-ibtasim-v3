@@ -210,6 +210,8 @@ export const createKafala = mutation({
     bio: v.object({ ar: v.string(), fr: v.string(), en: v.string() }),
     photo: v.optional(v.string()),
     monthlyPrice: v.number(), // In MAD
+    annualPrice: v.optional(v.number()),
+    availablePlans: v.optional(v.array(v.union(v.literal("monthly"), v.literal("annual")))),
     isFeatured: v.optional(v.boolean()),
     featuredOrder: v.optional(v.number()),
     slug: v.optional(v.string()),
@@ -219,6 +221,9 @@ export const createKafala = mutation({
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.adminId, "content:write");
+    const availablePlans = args.availablePlans?.length ? [...new Set(args.availablePlans)] : ["monthly", "annual"];
+    if (args.monthlyPrice <= 0) throw new Error("يجب أن يكون مبلغ الكفالة الشهرية أكبر من صفر.");
+    if (availablePlans.includes("annual") && (!args.annualPrice || args.annualPrice <= 0)) throw new Error("يجب تحديد مبلغ صالح للكفالة السنوية.");
     const now = Date.now();
     let featuredOrder = args.featuredOrder;
     if (args.isFeatured && !featuredOrder) {
@@ -236,6 +241,8 @@ export const createKafala = mutation({
       bio: args.bio,
       photo: args.photo,
       monthlyPrice: args.monthlyPrice,
+      annualPrice: args.annualPrice,
+      availablePlans,
       currency: "MAD",
       status: "draft",
       isFeatured: args.isFeatured ?? false,
@@ -305,6 +312,8 @@ export const updateKafala = mutation({
     bio: v.optional(v.object({ ar: v.string(), fr: v.string(), en: v.string() })),
     photo: v.optional(v.string()),
     monthlyPrice: v.optional(v.number()),
+    annualPrice: v.optional(v.number()),
+    availablePlans: v.optional(v.array(v.union(v.literal("monthly"), v.literal("annual")))),
     isFeatured: v.optional(v.boolean()),
     featuredOrder: v.optional(v.number()),
     status: v.optional(
@@ -321,6 +330,12 @@ export const updateKafala = mutation({
     const { kafalaId, adminId, ...fields } = args;
     const current = await ctx.db.get(kafalaId);
     if (!current) throw new Error("الكفالة غير موجودة");
+    const nextPlans = fields.availablePlans ?? current.availablePlans ?? ["monthly", "annual"];
+    const nextMonthlyPrice = fields.monthlyPrice ?? current.monthlyPrice;
+    const nextAnnualPrice = fields.annualPrice ?? current.annualPrice ?? Math.round(nextMonthlyPrice * 12 * 0.9);
+    if (!nextPlans.length) throw new Error("اختر خطة كفالة واحدة على الأقل.");
+    if (nextMonthlyPrice <= 0) throw new Error("يجب أن يكون مبلغ الكفالة الشهرية أكبر من صفر.");
+    if (nextPlans.includes("annual") && nextAnnualPrice <= 0) throw new Error("يجب تحديد مبلغ صالح للكفالة السنوية.");
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
     for (const [key, val] of Object.entries(fields)) {
       if (val !== undefined) updates[key] = val;
@@ -441,6 +456,7 @@ export const createSponsorship = mutation({
       v.literal("cash_agency")
     ),
     isAnonymous: v.optional(v.boolean()),
+    planType: v.union(v.literal("monthly"), v.literal("annual")),
   },
   handler: async (ctx, args) => {
     // Guard: ensure kafala is still available
@@ -449,6 +465,8 @@ export const createSponsorship = mutation({
     if (kafala.status !== "active") {
       throw new Error("هذا اليتيم مكفول بالفعل");
     }
+    const availablePlans = kafala.availablePlans?.length ? kafala.availablePlans : ["monthly", "annual"];
+    if (!availablePlans.includes(args.planType)) throw new Error("خطة الكفالة المختارة غير متاحة.");
 
     // Guard against duplicate pending/active sponsorship for same user+kafala
     const existingSponsorship = await ctx.db
@@ -469,7 +487,11 @@ export const createSponsorship = mutation({
     }
 
     const now = Date.now();
-    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+    const periodDays = args.planType === "annual" ? 365 : 30;
+    const periodMs = periodDays * 24 * 60 * 60 * 1000;
+    const amount = args.planType === "annual"
+      ? (kafala.annualPrice ?? Math.round(kafala.monthlyPrice * 12 * 0.9))
+      : kafala.monthlyPrice;
 
     // Create sponsorship record
     const sponsorshipId = await ctx.db.insert("kafalaSponsorship", {
@@ -477,7 +499,8 @@ export const createSponsorship = mutation({
       userId: args.userId,
       paymentMethod: args.paymentMethod,
       startDate: now,
-      nextRenewalDate: now + thirtyDays,
+      nextRenewalDate: now + periodMs,
+      planType: args.planType,
       status: "pending_payment",
       createdAt: now,
       updatedAt: now,
@@ -494,12 +517,13 @@ export const createSponsorship = mutation({
       kafalaId: args.kafalaId,
       userId: args.userId,
       sponsorshipId,
-      amount: kafala.monthlyPrice,
+      amount,
+      planType: args.planType,
       currency: "MAD",
       paymentMethod: args.paymentMethod,
       status: donationStatus,
       periodStart: now,
-      periodEnd: now + thirtyDays,
+      periodEnd: now + periodMs,
       isAnonymous: args.isAnonymous ?? false,
       createdAt: now,
       updatedAt: now,
@@ -614,10 +638,11 @@ export const verifyKafalaDonation = mutation({
       });
 
       // Activate sponsorship + extend renewal date (reset reminder tracking)
-      const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+      const periodDays = donation.planType === "annual" ? 365 : 30;
+      const periodMs = periodDays * 24 * 60 * 60 * 1000;
       await ctx.db.patch(donation.sponsorshipId, {
         status: "active",
-        nextRenewalDate: now + thirtyDays,
+        nextRenewalDate: now + periodMs,
         remindersSent: [],
         updatedAt: now,
       });
@@ -698,7 +723,8 @@ export const processKafalaWhopPayment = mutation({
     if (donation.status === "verified") return;
 
     const now = Date.now();
-    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+    const periodDays = donation.planType === "annual" ? 365 : 30;
+    const periodMs = periodDays * 24 * 60 * 60 * 1000;
 
     // Verify donation
     await ctx.db.patch(args.donationId, {
@@ -714,7 +740,7 @@ export const processKafalaWhopPayment = mutation({
       status: "active",
       whopSubscriptionId: args.whopSubscriptionId,
       whopPlanId: args.whopPlanId,
-      nextRenewalDate: now + thirtyDays,
+      nextRenewalDate: now + periodMs,
       updatedAt: now,
     });
 
@@ -769,21 +795,26 @@ export const extendKafalaSponsorship = mutation({
     if (existingWithSamePayment) return; // Already processed this exact payment
 
     const now = Date.now();
-    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+    const periodDays = sponsorship.planType === "annual" ? 365 : 30;
+    const periodMs = periodDays * 24 * 60 * 60 * 1000;
+    const renewalAmount = sponsorship.planType === "annual"
+      ? (kafala.annualPrice ?? Math.round(kafala.monthlyPrice * 12 * 0.9))
+      : kafala.monthlyPrice;
 
     // Create new donation record for this renewal cycle
     const donationId = await ctx.db.insert("kafalaDonations", {
       kafalaId: sponsorship.kafalaId,
       userId: sponsorship.userId,
       sponsorshipId: args.sponsorshipId,
-      amount: kafala.monthlyPrice,
+      amount: renewalAmount,
+      planType: sponsorship.planType ?? "monthly",
       currency: "MAD",
       paymentMethod: "card_whop",
       status: "verified",
       whopPaymentId: args.whopPaymentId,
       whopSubscriptionId: sponsorship.whopSubscriptionId,
       periodStart: now,
-      periodEnd: now + thirtyDays,
+      periodEnd: now + periodMs,
       isAnonymous: false,
       verifiedAt: now,
       createdAt: now,
@@ -792,7 +823,7 @@ export const extendKafalaSponsorship = mutation({
 
     // Push the renewal date forward 30 days, link latest donation, reset reminder tracking
     await ctx.db.patch(args.sponsorshipId, {
-      nextRenewalDate: now + thirtyDays,
+      nextRenewalDate: now + periodMs,
       lastDonationId: donationId,
       remindersSent: [],
       updatedAt: now,
@@ -813,6 +844,14 @@ export const extendKafalaSponsorship = mutation({
 export const getSponsorshipById = query({
   args: { sponsorshipId: v.id("kafalaSponsorship") },
   handler: async (ctx, args) => ctx.db.get(args.sponsorshipId),
+});
+
+export const getKafalaCheckoutDonation = query({
+  args: { donationId: v.id("kafalaDonations"), kafalaId: v.id("kafala") },
+  handler: async (ctx, args) => {
+    const donation = await ctx.db.get(args.donationId);
+    return donation?.kafalaId === args.kafalaId ? donation : null;
+  },
 });
 
 /**
@@ -912,18 +951,23 @@ export const renewKafalaDonation = mutation({
     if (!kafala) throw new Error("الكفالة غير موجودة");
 
     const now = Date.now();
-    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+    const periodDays = sponsorship.planType === "annual" ? 365 : 30;
+    const periodMs = periodDays * 24 * 60 * 60 * 1000;
+    const renewalAmount = sponsorship.planType === "annual"
+      ? (kafala.annualPrice ?? Math.round(kafala.monthlyPrice * 12 * 0.9))
+      : kafala.monthlyPrice;
 
     const donationId = await ctx.db.insert("kafalaDonations", {
       kafalaId: sponsorship.kafalaId,
       userId: sponsorship.userId,
       sponsorshipId: args.sponsorshipId,
-      amount: kafala.monthlyPrice,
+      amount: renewalAmount,
+      planType: sponsorship.planType ?? "monthly",
       currency: "MAD",
       paymentMethod: args.paymentMethod,
       status: args.paymentMethod === "card_whop" ? "pending" : "awaiting_receipt",
       periodStart: now,
-      periodEnd: now + thirtyDays,
+      periodEnd: now + periodMs,
       isAnonymous: args.isAnonymous ?? false,
       createdAt: now,
       updatedAt: now,

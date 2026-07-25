@@ -55,7 +55,14 @@ export const createKafalaWhopCheckout = action({
     });
     if (!kafala) throw new Error("الكفالة غير موجودة");
 
-    const priceInMAD = kafala.monthlyPrice;
+    const donation: any = await ctx.runQuery(api.kafala.getKafalaCheckoutDonation, {
+      donationId: args.donationId,
+      kafalaId: args.kafalaId,
+    });
+    if (!donation) throw new Error("سجل دفع الكفالة غير موجود.");
+
+    const priceInMAD = donation.amount;
+    const billingPeriod = donation.planType === "annual" ? 365 : 30;
 
     // ── Determine currency and amount ────────────────────────────────────────
     const isMorocco = !args.userCountry || args.userCountry === "MA";
@@ -86,7 +93,7 @@ export const createKafalaWhopCheckout = action({
       company_id: companyId,
       product_id: productId,
       plan_type: "renewal",
-      billing_period: 30,
+      billing_period: billingPeriod,
       renewal_price: renewalPrice,
       base_currency: planCurrency,
       visibility: "hidden",

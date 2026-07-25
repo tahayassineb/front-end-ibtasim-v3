@@ -5,6 +5,7 @@ import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
 import { convexFileUrl } from '../../../lib/convex';
 import { formatMAD } from '../../../lib/money';
+import { mergeContent, parseSiteContent, SITE_CONTENT_KEY } from '../../../lib/siteContent';
 
 const getText = (value, lang) => {
   if (!value) return '';
@@ -35,7 +36,9 @@ const CategoryIcon = ({ icon }) => icon?.type === 'image'
 export default function ProjectsList() {
   const { currentLanguage } = useApp();
   const lang = currentLanguage?.code || 'ar';
-  const tx = COPY[lang] || COPY.ar;
+  const siteContentRaw = useQuery(api.config.getConfig, { key: SITE_CONTENT_KEY });
+  const siteContent = parseSiteContent(siteContentRaw);
+  const tx = mergeContent(COPY[lang] || COPY.ar, siteContent.translations?.[lang]?.projects);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');

@@ -369,6 +369,17 @@ export const startWhopCheckout = action({
     }
 
     const amountMAD = validateAmountMAD(args.amount);
+    const project = await ctx.runQuery(api.projects.getProjectById, { projectId: args.projectId });
+    if (!project) throw new Error("Project not found.");
+    if (project.minimumDonation !== undefined && amountMAD < project.minimumDonation) {
+      throw new Error(`Minimum donation is ${project.minimumDonation} MAD.`);
+    }
+    if (project.maximumDonation !== undefined && amountMAD > project.maximumDonation) {
+      throw new Error(`Maximum donation is ${project.maximumDonation} MAD.`);
+    }
+    if (project.allowCustomDonation === false && project.donationAmounts?.length && !project.donationAmounts.includes(amountMAD)) {
+      throw new Error("Select one of the donation amounts configured for this project.");
+    }
     const redirectUrl = `${convexSiteUrl}/donate/success`;
     const paymentAttemptId = await ctx.runMutation(internal.payments.createCardPaymentAttempt, args);
 

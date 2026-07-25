@@ -51,10 +51,10 @@ export const createCategory = mutation({
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.adminId, "content:write");
     const slug = args.slug.trim().toLowerCase().replace(/[^a-z0-9_]+/g, "_").replace(/^_|_$/g, "");
-    if (!slug) throw new Error("A category slug is required.");
-    if (Object.values(args.name).some((value) => !value.trim())) throw new Error("Arabic, French, and English names are required.");
+    if (!slug) throw new Error("يجب إدخال معرّف صالح للفئة.");
+    if (Object.values(args.name).some((value) => !value.trim())) throw new Error("يجب إدخال اسم الفئة بالعربية والفرنسية والإنجليزية.");
     const existing = await ctx.db.query("projectCategories").withIndex("by_slug", (q) => q.eq("slug", slug)).first();
-    if (existing) throw new Error("This category slug already exists.");
+    if (existing) throw new Error("معرّف هذه الفئة مستخدم من قبل.");
     const all = await ctx.db.query("projectCategories").collect();
     const now = Date.now();
     const categoryId = await ctx.db.insert("projectCategories", {
@@ -73,7 +73,7 @@ export const updateCategory = mutation({
     await requireAdmin(ctx, args.adminId, "content:write");
     const category = await ctx.db.get(args.categoryId);
     if (!category) return false;
-    if (args.name && Object.values(args.name).some((value) => !value.trim())) throw new Error("Arabic, French, and English names are required.");
+    if (args.name && Object.values(args.name).some((value) => !value.trim())) throw new Error("يجب إدخال اسم الفئة بالعربية والفرنسية والإنجليزية.");
     await ctx.db.patch(args.categoryId, { ...(args.name ? { name: args.name } : {}), ...(args.icon ? { icon: args.icon } : {}), ...(args.sortOrder !== undefined ? { sortOrder: args.sortOrder } : {}), updatedAt: Date.now() });
     return true;
   },

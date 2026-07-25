@@ -5,6 +5,7 @@ import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
 import { convexFileUrl } from '../../../lib/convex';
 import KafalaAvatar from '../../../components/kafala/KafalaAvatar';
+import { mergeContent, parseSiteContent, SITE_CONTENT_KEY } from '../../../lib/siteContent';
 
 const COPY = {
   ar: { badge: 'برنامج الكفالة', title: 'اكفل يتيماً وغيّر حياته', subtitle: 'بكفالتك الشهرية، تمنح طفلاً يتيماً التعليم والغذاء والرعاية الصحية التي يستحقها.', start: 'ابدأ الكفالة الآن', all: 'الكل', available: 'متاح للكفالة', sponsored: 'مكفول', sponsoredCount: 'يتيم تحت الرعاية', availableCount: 'متاح للكفالة', monthly: 'شهرياً', listing: 'الأيتام المتاحون للكفالة', loading: 'جاري التحميل...', empty: 'لا توجد كفالات مطابقة حالياً', age: 'سنة', location: 'الموقع', perMonth: 'درهم / شهر', already: 'مكفول بالفعل', sponsor: 'اكفله الآن', sponsorFemale: 'اكفليها الآن', why: 'لماذا الكفالة؟', whyBody: 'توفّر كفالتك الشهرية للطفل التعليم والغذاء والرعاية الصحية والملابس.', discover: 'اكتشف الكفالات المتاحة' },
@@ -21,7 +22,9 @@ const useIsMobile = () => {
 export default function KafalaList() {
   const { currentLanguage } = useApp();
   const lang = currentLanguage?.code || 'ar';
-  const tx = COPY[lang] || COPY.ar;
+  const siteContentRaw = useQuery(api.config.getConfig, { key: SITE_CONTENT_KEY });
+  const siteContent = parseSiteContent(siteContentRaw);
+  const tx = mergeContent(COPY[lang] || COPY.ar, siteContent.translations?.[lang]?.kafala);
   const locale = lang === 'ar' ? 'ar-MA' : lang === 'fr' ? 'fr-FR' : 'en-US';
   const isMobile = useIsMobile();
   const [filter, setFilter] = useState('all');

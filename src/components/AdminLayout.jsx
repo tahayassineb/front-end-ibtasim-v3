@@ -15,6 +15,7 @@ const sections = [
       { path: '/admin/projects/categories', label: 'فئات المشاريع', icon: 'category' },
       { path: '/admin/kafala', label: 'الكفالة', icon: 'diversity_1' },
       { path: '/admin/stories', label: 'القصص', icon: 'auto_stories' },
+      { path: '/admin/content', label: 'تخصيص الموقع', icon: 'edit_square' },
     ],
   },
   {

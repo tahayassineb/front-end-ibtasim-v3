@@ -52,6 +52,10 @@ export const getProjects = query({
     startDate: v.number(),
     endDate: v.optional(v.number()),
     benefitCards: v.optional(v.array(v.object({ icon: v.string(), value: v.string(), label: v.string() }))),
+    donationAmounts: v.optional(v.array(v.number())),
+    minimumDonation: v.optional(v.number()),
+    maximumDonation: v.optional(v.number()),
+    allowCustomDonation: v.optional(v.boolean()),
   })),
   handler: async (ctx, args) => {
     const status = args.status;
@@ -104,6 +108,10 @@ export const getProjects = query({
       startDate: p.startDate,
       endDate: p.endDate,
       benefitCards: p.benefitCards,
+      donationAmounts: p.donationAmounts,
+      minimumDonation: p.minimumDonation,
+      maximumDonation: p.maximumDonation,
+      allowCustomDonation: p.allowCustomDonation,
     }));
   },
 });
@@ -130,6 +138,10 @@ export const getProjectById = query({
       startDate: v.number(),
       endDate: v.optional(v.number()),
       benefitCards: v.optional(v.array(v.object({ icon: v.string(), value: v.string(), label: v.string() }))),
+      donationAmounts: v.optional(v.array(v.number())),
+      minimumDonation: v.optional(v.number()),
+      maximumDonation: v.optional(v.number()),
+      allowCustomDonation: v.optional(v.boolean()),
     }),
     v.null()
   ),
@@ -156,6 +168,10 @@ export const getProjectById = query({
       startDate: project.startDate,
       endDate: project.endDate,
       benefitCards: project.benefitCards,
+      donationAmounts: project.donationAmounts,
+      minimumDonation: project.minimumDonation,
+      maximumDonation: project.maximumDonation,
+      allowCustomDonation: project.allowCustomDonation,
     };
   },
 });
@@ -187,6 +203,10 @@ export const getFeaturedProjects = query({
     mainImage: v.string(),
     featuredOrder: v.number(),
     benefitCards: v.optional(v.array(v.object({ icon: v.string(), value: v.string(), label: v.string() }))),
+    donationAmounts: v.optional(v.array(v.number())),
+    minimumDonation: v.optional(v.number()),
+    maximumDonation: v.optional(v.number()),
+    allowCustomDonation: v.optional(v.boolean()),
   })),
   handler: async (ctx, args) => {
     // Query all featured projects (isFeatured=true) regardless of featuredOrder value
@@ -211,6 +231,10 @@ export const getFeaturedProjects = query({
       mainImage: p.mainImage,
       featuredOrder: p.featuredOrder ?? index + 1,
       benefitCards: p.benefitCards,
+      donationAmounts: p.donationAmounts,
+      minimumDonation: p.minimumDonation,
+      maximumDonation: p.maximumDonation,
+      allowCustomDonation: p.allowCustomDonation,
     }));
   },
 });
@@ -242,6 +266,10 @@ export const createProject = mutation({
     featuredOrder: v.optional(v.number()),
     createdBy: v.id("admins"),
     benefitCards: v.optional(v.array(v.object({ icon: v.string(), value: v.string(), label: v.string() }))),
+    donationAmounts: v.optional(v.array(v.number())),
+    minimumDonation: v.optional(v.number()),
+    maximumDonation: v.optional(v.number()),
+    allowCustomDonation: v.optional(v.boolean()),
     slug: v.optional(v.string()),
     metaTitle: v.optional(v.string()),
     metaDescription: v.optional(v.string()),
@@ -251,6 +279,9 @@ export const createProject = mutation({
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.createdBy, "content:write");
     await requireActiveProjectCategory(ctx, args.category);
+    if (args.minimumDonation !== undefined && args.minimumDonation <= 0) throw new Error("Minimum donation must be greater than zero.");
+    if (args.maximumDonation !== undefined && args.minimumDonation !== undefined && args.maximumDonation < args.minimumDonation) throw new Error("Maximum donation cannot be lower than the minimum.");
+    if (args.donationAmounts?.some((amount) => amount <= 0)) throw new Error("Donation options must be greater than zero.");
     const now = Date.now();
 
     // Auto-assign featuredOrder when isFeatured=true and no order is given
@@ -284,6 +315,10 @@ export const createProject = mutation({
       isFeatured: args.isFeatured || false,
       featuredOrder: featuredOrder,
       benefitCards: args.benefitCards,
+      donationAmounts: args.donationAmounts,
+      minimumDonation: args.minimumDonation,
+      maximumDonation: args.maximumDonation,
+      allowCustomDonation: args.allowCustomDonation ?? true,
       slug: args.slug || slugify(args.title.ar || args.title.fr || args.title.en),
       metaTitle: args.metaTitle || args.title.ar || args.title.fr || args.title.en,
       metaDescription: args.metaDescription || excerpt(args.description.ar || args.description.fr || args.description.en),
@@ -336,6 +371,10 @@ export const updateProject = mutation({
       isFeatured: v.optional(v.boolean()),
       featuredOrder: v.optional(v.number()),
       benefitCards: v.optional(v.array(v.object({ icon: v.string(), value: v.string(), label: v.string() }))),
+      donationAmounts: v.optional(v.array(v.number())),
+      minimumDonation: v.optional(v.number()),
+      maximumDonation: v.optional(v.union(v.number(), v.null())),
+      allowCustomDonation: v.optional(v.boolean()),
       slug: v.optional(v.string()),
       metaTitle: v.optional(v.string()),
       metaDescription: v.optional(v.string()),
@@ -351,9 +390,15 @@ export const updateProject = mutation({
     if (args.updates.category && args.updates.category !== project.category) {
       await requireActiveProjectCategory(ctx, args.updates.category);
     }
+    const nextMinimum = args.updates.minimumDonation ?? project.minimumDonation;
+    const nextMaximum = args.updates.maximumDonation === null ? undefined : (args.updates.maximumDonation ?? project.maximumDonation);
+    if (nextMinimum !== undefined && nextMinimum <= 0) throw new Error("Minimum donation must be greater than zero.");
+    if (nextMaximum !== undefined && nextMinimum !== undefined && nextMaximum < nextMinimum) throw new Error("Maximum donation cannot be lower than the minimum.");
+    if (args.updates.donationAmounts?.some((amount) => amount <= 0)) throw new Error("Donation options must be greater than zero.");
 
     // Map storage IDs to database field names
     const updates: any = { ...args.updates };
+    if (updates.maximumDonation === null) updates.maximumDonation = undefined;
     if (updates.title && !updates.slug && !project.slug) {
       updates.slug = slugify(updates.title.ar || updates.title.fr || updates.title.en);
     }

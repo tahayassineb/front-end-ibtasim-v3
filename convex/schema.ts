@@ -94,6 +94,12 @@ export default defineSchema({
     goalAmount: v.number(), // In MAD
     raisedAmount: v.number(), // In MAD
     currency: v.literal("MAD"),
+    // Per-project donation controls. Optional for backward compatibility with
+    // projects created before the CMS exposed these settings.
+    donationAmounts: v.optional(v.array(v.number())),
+    minimumDonation: v.optional(v.number()),
+    maximumDonation: v.optional(v.number()),
+    allowCustomDonation: v.optional(v.boolean()),
     
     // Media
     mainImage: v.string(), // Storage URL
@@ -392,6 +398,8 @@ export default defineSchema({
     bio: v.object({ ar: v.string(), fr: v.string(), en: v.string() }),
     photo: v.optional(v.string()), // storageId — fallback: grey silhouette by gender
     monthlyPrice: v.number(),      // In MAD
+    annualPrice: v.optional(v.number()),
+    availablePlans: v.optional(v.array(v.union(v.literal("monthly"), v.literal("annual")))),
     currency: v.literal("MAD"),
     status: v.union(
       v.literal("draft"),
@@ -436,6 +444,7 @@ export default defineSchema({
       v.literal("cancelled")
     ),
     lastDonationId: v.optional(v.id("kafalaDonations")),
+    planType: v.optional(v.union(v.literal("monthly"), v.literal("annual"))),
     remindersSent: v.optional(v.array(v.string())), // e.g. ["10", "5", "3", "1"]
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -453,6 +462,7 @@ export default defineSchema({
     userId: v.id("users"),
     sponsorshipId: v.id("kafalaSponsorship"),
     amount: v.number(),    // In MAD
+    planType: v.optional(v.union(v.literal("monthly"), v.literal("annual"))),
     currency: v.literal("MAD"),
     paymentMethod: v.union(
       v.literal("card_whop"),

@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useMutation } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
-import CountryCodeSelector, { validatePhoneByCountry, formatPhoneForDisplay } from '../../../components/CountryCodeSelector';
+import CountryCodeSelector, { validatePhoneByCountry } from '../../../components/CountryCodeSelector';
 
 // ============================================
 // LOGIN PAGE - Phone + Password Authentication
@@ -12,7 +12,7 @@ import CountryCodeSelector, { validatePhoneByCountry, formatPhoneForDisplay } fr
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { t, currentLanguage, login, showToast } = useApp();
+  const { currentLanguage, login, showToast } = useApp();
 
   const loginWithPassword = useMutation(api.auth.loginWithPassword);
 
@@ -26,7 +26,6 @@ const Login = () => {
   const phoneInputRef = useRef(null);
   const cursorPositionRef = useRef(0);
 
-  const isRTL = currentLanguage.dir === 'rtl';
   const lang = currentLanguage.code;
 
   const returnUrl = location.state?.returnUrl || '/';
@@ -51,6 +50,7 @@ const Login = () => {
       socialProof: '+4,200 متبرع',
       socialProofText: 'انضم إلى',
       socialProofSuffix: 'يثقون بنا',
+      needHelp: 'تحتاج مساعدة؟', brand: 'ابتسام', accreditedCharity: 'جمعية خيرية معتمدة', trustBadges: ['SSL محمي', 'معتمد رسمياً', 'دعم 24/7'], loginSuccess: 'تم تسجيل الدخول',
     },
     fr: {
       welcome: 'Bienvenue 👋',
@@ -71,6 +71,7 @@ const Login = () => {
       socialProof: '+4 200 donateurs',
       socialProofText: 'Rejoignez',
       socialProofSuffix: 'qui nous font confiance',
+      needHelp: 'Besoin d’aide ?', brand: 'Ibtasim', accreditedCharity: 'Association caritative agréée', trustBadges: ['SSL sécurisé', 'Officiellement agréée', 'Assistance 24 h/24'], loginSuccess: 'Connexion réussie',
     },
     en: {
       welcome: 'Welcome Back 👋',
@@ -91,6 +92,7 @@ const Login = () => {
       socialProof: '+4,200 donors',
       socialProofText: 'Join',
       socialProofSuffix: 'who trust us',
+      needHelp: 'Need help?', brand: 'Ibtasim', accreditedCharity: 'Accredited charity', trustBadges: ['SSL protected', 'Officially accredited', '24/7 support'], loginSuccess: 'Signed in',
     },
   };
 
@@ -141,7 +143,7 @@ const Login = () => {
           isVerified: result.user.isVerified,
         };
         login(userData);
-        showToast(lang === 'ar' ? 'تم تسجيل الدخول' : lang === 'fr' ? 'Connecté' : 'Logged in', 'success');
+        showToast(tx.loginSuccess, 'success');
         navigate(returnUrl, { replace: true });
       } else {
         setErrors({ password: result.message || tx.loginError });
@@ -157,7 +159,7 @@ const Login = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F0F7F7', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 20px', fontFamily: 'var(--font-arabic)', color: '#0e1a1b' }}>
+    <div dir={currentLanguage.dir} style={{ minHeight: '100vh', background: '#F0F7F7', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 20px', fontFamily: 'var(--font-arabic)', color: '#0e1a1b' }}>
       <div style={{ width: '100%', maxWidth: 390, display: 'flex', flexDirection: 'column' }}>
 
         {/* Top bar */}
@@ -168,14 +170,14 @@ const Login = () => {
           >
             ←
           </button>
-          <div style={{ fontSize: 13, color: '#0d7477', fontWeight: 600 }}>تحتاج مساعدة؟</div>
+          <div style={{ fontSize: 13, color: '#0d7477', fontWeight: 600 }}>{tx.needHelp}</div>
         </div>
 
         {/* Logo section */}
         <div style={{ textAlign: 'center', padding: '24px 20px 20px' }}>
           <div style={{ width: 60, height: 60, background: '#0d7477', borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: 26, margin: '0 auto 12px', boxShadow: '0 4px 14px rgba(13,116,119,.25)' }}>ا</div>
-          <div style={{ fontSize: 22, fontWeight: 900 }}>ابتسام</div>
-          <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>جمعية خيرية معتمدة</div>
+          <div style={{ fontSize: 22, fontWeight: 900 }}>{tx.brand}</div>
+          <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>{tx.accreditedCharity}</div>
         </div>
 
         {/* Auth card */}
@@ -267,9 +269,9 @@ const Login = () => {
             {tx.socialProofText} <strong style={{ color: '#0A5F62' }}>{tx.socialProof}</strong> {tx.socialProofSuffix}
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
-            {[['🔒', 'SSL محمي'], ['✓', 'معتمد رسمياً'], ['💬', 'دعم 24/7']].map(([icon, label]) => (
+            {[['lock', tx.trustBadges[0]], ['verified', tx.trustBadges[1]], ['support_agent', tx.trustBadges[2]]].map(([icon, label]) => (
               <span key={label} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 12px', background: 'white', border: '1px solid #E5E9EB', borderRadius: 100, fontSize: 11, fontWeight: 600, color: '#64748b', boxShadow: '0 2px 4px rgba(0,0,0,.03)' }}>
-                {icon} {label}
+                <span className="material-symbols-outlined no-flip" style={{ fontSize: 15 }}>{icon}</span> {label}
               </span>
             ))}
           </div>

@@ -298,6 +298,18 @@ export const createDonation = mutation({
   returns: v.id("donations"),
   handler: async (ctx, args) => {
     const now = Date.now();
+    const project = await ctx.db.get(args.projectId);
+    if (!project) throw new Error("Project not found.");
+    if (args.amount <= 0) throw new Error("Donation amount must be greater than zero.");
+    if (project.minimumDonation !== undefined && args.amount < project.minimumDonation) {
+      throw new Error(`Minimum donation is ${project.minimumDonation} MAD.`);
+    }
+    if (project.maximumDonation !== undefined && args.amount > project.maximumDonation) {
+      throw new Error(`Maximum donation is ${project.maximumDonation} MAD.`);
+    }
+    if (project.allowCustomDonation === false && project.donationAmounts?.length && !project.donationAmounts.includes(args.amount)) {
+      throw new Error("Select one of the donation amounts configured for this project.");
+    }
     
     // Determine initial status based on payment method
     let initialStatus: "pending" | "awaiting_receipt" | "awaiting_verification" = "pending";

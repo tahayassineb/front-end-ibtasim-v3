@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../../context/AppContext';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
+import { mergeContent, parseSiteContent, SITE_CONTENT_KEY } from '../../../lib/siteContent';
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -19,10 +20,10 @@ const useIsMobile = () => {
 
 const COPY = {
   ar: {
-    hero_badge: 'CONTACT US · تواصل معنا',
+    hero_badge: 'تواصل معنا',
     hero_title: 'تواصل معنا',
     hero_sub: 'نحن هنا للإجابة على جميع استفساراتك — فريقنا يرد في غضون 24 ساعة',
-    form_badge: 'SEND MESSAGE',
+    form_badge: 'أرسل رسالة',
     form_title: 'أرسل لنا رسالة',
     form_sub: 'سواء كان لديك سؤال حول التبرع، أو مشروع، أو الكفالة — نحن نسمعك',
     name: 'الاسم الكامل *',
@@ -33,15 +34,15 @@ const COPY = {
     name_ph: 'محمد العلوي',
     subject_ph: 'استفسار حول التبرع',
     message_ph: 'اكتب رسالتك هنا...',
-    send: 'إرسال الرسالة 📨',
+    send: 'إرسال الرسالة',
     sending: 'جاري الإرسال...',
-    privacy: '🔒 بياناتك محمية ولن تُشارك مع أي طرف ثالث',
+    privacy: 'بياناتك محمية ولن تُشارك مع أي طرف ثالث',
     sent_title: 'تم إرسال رسالتك بنجاح!',
     sent_body: 'شكراً على تواصلك معنا — سيقوم فريقنا بالرد عليك في غضون 24 ساعة على أبعد تقدير',
     send_another: 'إرسال رسالة أخرى',
-    info_badge: 'CONTACT INFO',
+    info_badge: 'بيانات التواصل',
     info_title: 'معلومات التواصل',
-    hours_title: '⏰ أوقات العمل',
+    hours_title: 'أوقات العمل',
     mon_fri: 'الاثنين — الجمعة',
     sat: 'السبت',
     sun: 'الأحد',
@@ -116,7 +117,10 @@ const COPY = {
 const Contact = () => {
   const { language } = useApp();
   const isMobile = useIsMobile();
-  const c = COPY[language] || COPY.ar;
+  const siteContentRaw = useQuery(api.config.getConfig, { key: SITE_CONTENT_KEY });
+  const siteContent = parseSiteContent(siteContentRaw);
+  const contactOverrides = siteContent.translations?.[language]?.contact || {};
+  const c = mergeContent(COPY[language] || COPY.ar, { hero_title: contactOverrides.title, hero_sub: contactOverrides.subtitle });
   const [formData, setFormData] = useState({ name: '', phone: '', email: '', subject: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);

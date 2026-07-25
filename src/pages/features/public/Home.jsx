@@ -5,15 +5,11 @@ import { api } from '../../../../convex/_generated/api';
 import { useApp } from '../../../context/AppContext';
 import { convexFileUrl } from '../../../lib/convex';
 import { formatMAD } from '../../../lib/money';
+import { mergeContent, parseSiteContent, SITE_CONTENT_KEY } from '../../../lib/siteContent';
 
 const heroImage = 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=1800&q=84';
 const summaryImage = 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=1400&q=82';
-const projectImageA = 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=1400&q=82';
-const projectImageB = 'https://images.unsplash.com/photo-1606761568499-6d2451b23c66?auto=format&fit=crop&w=1400&q=82';
 const kafalaHeroImage = 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?auto=format&fit=crop&w=1400&q=82';
-const kafalaPreviewA = 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=900&q=82';
-const kafalaPreviewB = 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?auto=format&fit=crop&w=900&q=82';
-const kafalaPreviewC = 'https://images.unsplash.com/photo-1519457431-44ccd64a579b?auto=format&fit=crop&w=900&q=82';
 const aboutImage = 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1400&q=82';
 const contactImage = 'https://images.unsplash.com/photo-1518281361980-b26bfd556770?auto=format&fit=crop&w=1600&q=82';
 
@@ -263,82 +259,6 @@ copy.en.contact = {
   footer: 'Every contribution can become the start of stability for a child and a family.',
 };
 
-const fallbackProjects = [
-  {
-    _id: 'fallback-eid',
-    slug: 'eid-clothing',
-    image: projectImageA,
-    raisedAmount: 650,
-    goalAmount: 1000,
-    tag: { ar: 'مشروع موسمي', fr: 'Projet saisonnier', en: 'Seasonal project' },
-    title: { ar: 'كسوة العيد', fr: "Tenue de l'Aid", en: 'Eid clothing' },
-    description: {
-      ar: 'فرحة العيد لا تكتمل حين يشعر طفل أنه مختلف عن باقي الأطفال. مساهمتك تساعده على اختيار لباسه بنفسه وبكرامة.',
-      fr: "Aider un enfant a choisir sa tenue de l'Aid avec dignite.",
-      en: 'Help a child choose Eid clothing with dignity and belonging.',
-    },
-  },
-  {
-    _id: 'fallback-ramadan',
-    slug: 'ramadan-basket',
-    image: projectImageB,
-    raisedAmount: 720,
-    goalAmount: 1000,
-    tag: { ar: 'مشروع غذائي', fr: 'Projet alimentaire', en: 'Food support' },
-    title: { ar: 'قفة رمضان', fr: 'Panier Ramadan', en: 'Ramadan basket' },
-    description: {
-      ar: 'دعم غذائي يخفف عبء الشهر الكريم عن أسر الأيتام، ويمنح الأسرة مساحة من الطمأنينة.',
-      fr: 'Un soutien alimentaire pour les familles pendant Ramadan.',
-      en: 'Food support that reduces the Ramadan burden on orphan families.',
-    },
-  },
-];
-
-const fallbackKafala = [
-  {
-    _id: 'fallback-kafala-a',
-    image: kafalaPreviewA,
-    title: {
-      ar: 'طفل يحتاج إلى دعم دراسي ورعاية شهرية',
-      fr: 'Un enfant a besoin de soutien scolaire et de soins',
-      en: 'A child needs school support and monthly care',
-    },
-    description: {
-      ar: 'تساعدك كفالتك على توفير تعليم جيد، متابعة يومية، واحتياجات أساسية تمنحه الاستقرار والثقة.',
-      fr: "Votre kafala aide a assurer l'education, le suivi et les besoins essentiels.",
-      en: 'Your sponsorship supports education, daily follow-up, and essential needs.',
-    },
-  },
-  {
-    _id: 'fallback-kafala-b',
-    image: kafalaPreviewB,
-    title: {
-      ar: 'طفلة تحتاج إلى كفالة تساعد أسرتها على الاستقرار',
-      fr: 'Une fille a besoin d’un soutien familial stable',
-      en: 'A girl needs sponsorship that steadies her family',
-    },
-    description: {
-      ar: 'تساعد كفالتك على تخفيف احتياجات الأسرة الأساسية ودعم التعليم والرعاية النفسية للطفلة.',
-      fr: "La kafala soutient la famille, l'education et l'accompagnement.",
-      en: 'Your sponsorship helps cover essential family needs while supporting education and care.',
-    },
-  },
-  {
-    _id: 'fallback-kafala-c',
-    image: kafalaPreviewC,
-    title: {
-      ar: 'طفل يحتاج إلى كفالة تمنحه متابعة ورعاية أكثر استقراراً',
-      fr: 'Un enfant a besoin d’un accompagnement plus stable',
-      en: 'A child needs sponsorship with steadier follow-up and care',
-    },
-    description: {
-      ar: 'تمنح الكفالة دعماً ثابتاً يساعد الطفل على الاستمرار في التعلم والعيش في محيط أكثر طمأنينة وثباتاً.',
-      fr: 'La kafala offre un soutien stable qui renforce l’apprentissage et la sécurité.',
-      en: 'Sponsorship provides stable support that strengthens learning and day-to-day security.',
-    },
-  },
-];
-
 const getText = (value, lang) => {
   if (!value) return '';
   if (typeof value === 'string') return value;
@@ -421,7 +341,16 @@ export default function Home() {
   const { language, currentLanguage } = useApp();
   const lang = currentLanguage?.code || language || 'ar';
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
-  const t = copy[lang] || copy.ar;
+  const siteContentRaw = useQuery(api.config.getConfig, { key: SITE_CONTENT_KEY });
+  const siteContent = parseSiteContent(siteContentRaw);
+  const t = mergeContent(copy[lang] || copy.ar, siteContent.translations?.[lang]?.home);
+  const sectionImages = {
+    hero: convexFileUrl(siteContent.images?.hero) || siteContent.images?.hero || heroImage,
+    summary: convexFileUrl(siteContent.images?.summary) || siteContent.images?.summary || summaryImage,
+    kafala: convexFileUrl(siteContent.images?.kafala) || siteContent.images?.kafala || kafalaHeroImage,
+    about: convexFileUrl(siteContent.images?.about) || siteContent.images?.about || aboutImage,
+    contact: convexFileUrl(siteContent.images?.contact) || siteContent.images?.contact || contactImage,
+  };
   const statsRef = useRef(null);
   const [statValues, setStatValues] = useState(() => t.stats.items.map(() => 0));
 
@@ -431,13 +360,11 @@ export default function Home() {
   const kafala = useQuery(api.kafala.getPublicKafalaList, { featured: true, limit: 4 });
 
   const visibleProjects = useMemo(() => {
-    const liveProjects = (projects || []).slice(0, 2);
-    return [...liveProjects, ...fallbackProjects].slice(0, 2);
+    return (projects || []).slice(0, 2);
   }, [projects]);
 
   const visibleKafala = useMemo(() => {
-    const liveKafala = (kafala || []).slice(0, 3);
-    return [...liveKafala, ...fallbackKafala].slice(0, 3);
+    return (kafala || []).slice(0, 3);
   }, [kafala]);
 
   useEffect(() => {
@@ -521,7 +448,7 @@ export default function Home() {
 
           <div className="home-v2__hero-visual home-reveal" aria-hidden="true">
             <div className="home-v2__hero-image">
-              <img src={heroImage} alt="" loading="eager" />
+              <img src={sectionImages.hero} alt="" loading="eager" />
             </div>
           </div>
         </div>
@@ -551,7 +478,7 @@ export default function Home() {
       <section className="home-v2__summary home-reveal">
         <div className="home-v2__shell home-v2__summary-grid">
           <div className="home-v2__summary-media">
-            <img src={summaryImage} alt="" loading="lazy" />
+            <img src={sectionImages.summary} alt="" loading="lazy" />
           </div>
           <div className="home-v2__summary-copy">
             <p className="home-v2__kicker home-reveal" style={{ '--reveal-delay': '40ms' }}>{t.summary.kicker}</p>
@@ -588,16 +515,15 @@ export default function Home() {
 
           <div className="home-v2__project-list">
             {visibleProjects.map((project, index) => {
-              const image = resolveImage(project, index === 0 ? projectImageA : projectImageB);
+              const image = resolveImage(project);
               const title = getFirstText(project, lang, ['title', 'name']);
               const description = getFirstText(project, lang, ['shortDescription', 'description']);
-              const tag = getText(project.tag, lang) || getText(fallbackProjects[index].tag, lang);
+              const tag = getText(project.tag, lang) || getText(project.category, lang);
               const raised = project.raisedAmount || project.raised || 0;
               const goal = project.goalAmount || project.goal || 1000;
               const percent = goal > 0 ? Math.min(Math.round((raised / goal) * 100), 100) : 0;
-              const isFallback = String(project._id || '').startsWith('fallback-');
-              const projectPath = isFallback ? '/projects' : `/projects/${project.slug || project._id}`;
-              const actionPath = isFallback ? '/projects' : `/donate/${project._id}`;
+              const projectPath = `/projects/${project.slug || project._id}`;
+              const actionPath = `/donate/${project._id}`;
 
               return (
                 <article
@@ -607,7 +533,7 @@ export default function Home() {
                   style={{ cursor: 'pointer' }}
                 >
                   <div className="home-v2__project-image">
-                    <img src={image} alt={title} loading="lazy" />
+                    {image ? <img src={image} alt={title} loading="lazy" /> : <span className="material-symbols-outlined no-flip" style={{ fontSize: 54, color: '#94a3b8' }}>image_not_supported</span>}
                   </div>
                   <div className="home-v2__project-copy">
                     <span className="home-v2__project-tag">{tag}</span>
@@ -642,7 +568,7 @@ export default function Home() {
         <div className="home-v2__shell">
           <div className="home-v2__kafala-top">
             <div className="home-v2__kafala-visual">
-              <img src={kafalaHeroImage} alt="" loading="lazy" />
+              <img src={sectionImages.kafala} alt="" loading="lazy" />
               <aside className="home-v2__kafala-quote">{t.kafala.quote}</aside>
             </div>
             <div className="home-v2__kafala-copy">
@@ -670,14 +596,11 @@ export default function Home() {
 
           <div className="home-v2__kafala-cases">
             {visibleKafala.map((item, index) => {
-              const title = getFirstText(item, lang, ['title', 'name', 'childName', 'fullName']) || getText(fallbackKafala[index].title, lang);
-              const description = getFirstText(item, lang, ['description', 'summary', 'bio', 'shortDescription']) || getText(fallbackKafala[index].description, lang);
-              const fallbackImage = index === 0 ? kafalaPreviewA : index === 1 ? kafalaPreviewB : kafalaPreviewC;
-              const resolvedImage = resolveImage(item, fallbackImage);
-              const isFallback = String(item._id || '').startsWith('fallback-');
-              const detailPath = isFallback ? '/kafala' : `/kafala/${item.slug || item._id}`;
-
-              const sponsorPath = isFallback ? '/kafala' : `/kafala/${item._id}/sponsor`;
+              const title = getFirstText(item, lang, ['title', 'name', 'childName', 'fullName']);
+              const description = getFirstText(item, lang, ['description', 'summary', 'bio', 'shortDescription']);
+              const resolvedImage = resolveImage(item);
+              const detailPath = `/kafala/${item.slug || item._id}`;
+              const sponsorPath = `/kafala/${item._id}/sponsor`;
 
               return (
                 <article
@@ -687,7 +610,7 @@ export default function Home() {
                   onClick={() => navigate(detailPath)}
                 >
                   <div className="home-v2__kafala-card-image">
-                    <img src={resolvedImage} alt={title} loading="lazy" />
+                    {resolvedImage ? <img src={resolvedImage} alt={title} loading="lazy" /> : <span className="material-symbols-outlined no-flip" style={{ fontSize: 54, color: '#94a3b8' }}>person</span>}
                   </div>
                   <div className="home-v2__kafala-card-copy">
                     <h3>{title}</h3>
@@ -719,7 +642,7 @@ export default function Home() {
       <section className="home-v2__about home-reveal">
         <div className="home-v2__shell home-v2__about-grid">
           <div className="home-v2__about-media">
-            <img src={aboutImage} alt="" loading="lazy" />
+            <img src={sectionImages.about} alt="" loading="lazy" />
             <div className="home-v2__about-badge">
               <span>{t.about.badgeTop}</span>
               <strong>{t.about.badgeMain}</strong>
@@ -772,7 +695,7 @@ export default function Home() {
             </div>
 
             <div className="home-v2__contact-image">
-              <img src={contactImage} alt="" loading="lazy" />
+              <img src={sectionImages.contact} alt="" loading="lazy" />
             </div>
           </div>
         </div>

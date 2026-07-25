@@ -1,6 +1,9 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../../../context/AppContext';
+import { useQuery } from 'convex/react';
+import { api } from '../../../../convex/_generated/api';
+import { mergeContent, parseSiteContent, SITE_CONTENT_KEY } from '../../../lib/siteContent';
 
 const introImage = 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=1600&q=84';
 const missionImage = 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=1400&q=82';
@@ -333,7 +336,10 @@ export default function About() {
   const { language, currentLanguage } = useApp();
   const lang = currentLanguage?.code || language || 'ar';
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
-  const t = copy[lang] || copy.ar;
+  const siteContentRaw = useQuery(api.config.getConfig, { key: SITE_CONTENT_KEY });
+  const siteContent = parseSiteContent(siteContentRaw);
+  const aboutOverrides = siteContent.translations?.[lang]?.about || {};
+  const t = mergeContent(copy[lang] || copy.ar, { intro: { title: aboutOverrides.title, lead: aboutOverrides.lead } });
 
   useRevealMotion();
 

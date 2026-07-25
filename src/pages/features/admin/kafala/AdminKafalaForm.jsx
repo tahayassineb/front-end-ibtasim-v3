@@ -58,6 +58,8 @@ export default function AdminKafalaForm() {
     { id: 2, icon: '🍞', label: 'الغذاء',  price: '100' },
     { id: 3, icon: '🏥', label: 'الصحة',   price: '80'  },
   ]);
+  const [annualPrice, setAnnualPrice] = useState('3240');
+  const [availablePlans, setAvailablePlans] = useState(['monthly', 'annual']);
   const [photo, setPhoto]         = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [existingPhoto, setExistingPhoto] = useState(null);
@@ -78,6 +80,8 @@ export default function AdminKafalaForm() {
       setLocation(existingKafala.location || '');
       setBio(existingKafala.bio || { ar: '', fr: '', en: '' });
       const totalMadFromDB = Math.round(existingKafala.monthlyPrice || 0);
+      setAnnualPrice(String(existingKafala.annualPrice || Math.round(totalMadFromDB * 12 * 0.9)));
+      setAvailablePlans(existingKafala.availablePlans?.length ? existingKafala.availablePlans : ['monthly', 'annual']);
       setNeeds([
         { id: 1, icon: '📚', label: 'التعليم', price: String(Math.round(totalMadFromDB * 0.4)) },
         { id: 2, icon: '🍞', label: 'الغذاء',  price: String(Math.round(totalMadFromDB * 0.33)) },
@@ -110,6 +114,8 @@ export default function AdminKafalaForm() {
     if (!bio.ar.trim())   { showToast?.('القصة بالعربية مطلوبة', 'error'); return false; }
     if (needs.length === 0)  { showToast?.('أضف احتياجاً واحداً على الأقل', 'error'); return false; }
     if (totalMAD < 1)        { showToast?.('السعر الشهري مطلوب', 'error'); return false; }
+    if (!availablePlans.length) { showToast?.('اختر خطة كفالة واحدة على الأقل', 'error'); return false; }
+    if (availablePlans.includes('annual') && Number(annualPrice) < 1) { showToast?.('أدخل مبلغاً صالحاً للخطة السنوية', 'error'); return false; }
     return true;
   };
 
@@ -119,20 +125,21 @@ export default function AdminKafalaForm() {
     try {
       const photoStorageId = await uploadPhoto();
       const monthlyPrice   = totalMAD;
+      const annualPriceValue = Math.round(Number(annualPrice) || 0);
 
       if (isEdit) {
         await updateKafala({
           adminId: adminUser?.id,
           kafalaId: id, name, gender, age: Number(age),
           location, bio, photo: photoStorageId || undefined,
-          monthlyPrice,
+          monthlyPrice, annualPrice: annualPriceValue, availablePlans,
           ...(publish ? { status: 'active' } : {}),
         });
         showToast?.(publish ? 'تم نشر الكفالة' : 'تم حفظ التغييرات', 'success');
       } else {
         const adminId = adminUser?.id;
         if (!adminId) throw new Error('لم يتم التعرف على الأدمن');
-        await createKafala({ adminId, name, gender, age: Number(age), location, bio, photo: photoStorageId || undefined, monthlyPrice });
+        await createKafala({ adminId, name, gender, age: Number(age), location, bio, photo: photoStorageId || undefined, monthlyPrice, annualPrice: annualPriceValue, availablePlans });
         showToast?.(publish ? 'تم إنشاء الكفالة. انشرها من قائمة الكفالات' : 'تم حفظ الكفالة كمسودة', 'success');
       }
       navigate('/admin/kafala');
@@ -290,6 +297,33 @@ export default function AdminKafalaForm() {
         <div style={{ background: KBG, borderRadius: 12, padding: 14, marginTop: 14, border: `1px solid ${K100}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: KDARK }}>إجمالي الكفالة الشهرية:</div>
           <div style={{ fontSize: 24, fontWeight: 900, color: KDARK, fontFamily: 'Inter, sans-serif' }}>{totalMAD} درهم/شهر</div>
+        </div>
+      </Section>
+
+      <Section icon={<span className="material-symbols-outlined no-flip">payments</span>} title="خيارات الكفالة المتاحة للمتبرع">
+        <div style={{ fontSize: 12, color: TEXT2, lineHeight: 1.7, marginBottom: 14 }}>
+          اختر الخطط التي ستظهر في مسار الكفالة وحدد مبلغ الخطة السنوية. مبلغ الخطة الشهرية هو مجموع الاحتياجات أعلاه.
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 12 }}>
+          {[
+            { id: 'monthly', label: 'الخطة الشهرية', amount: `${totalMAD} درهم / شهر` },
+            { id: 'annual', label: 'الخطة السنوية', amount: `${Number(annualPrice || 0).toLocaleString('fr-MA')} درهم / سنة` },
+          ].map((plan) => {
+            const checked = availablePlans.includes(plan.id);
+            return (
+              <button key={plan.id} type="button" onClick={() => setAvailablePlans((current) => checked ? current.filter((planId) => planId !== plan.id) : [...current, plan.id])}
+                style={{ padding: 14, borderRadius: 12, border: `2px solid ${checked ? KDARK : BORDER}`, background: checked ? KBG : 'white', color: KDARK, cursor: 'pointer', textAlign: 'right', fontFamily: 'var(--font-arabic)' }}>
+                <span className="material-symbols-outlined no-flip" style={{ verticalAlign: 'middle', marginLeft: 8 }}>{checked ? 'check_box' : 'check_box_outline_blank'}</span>
+                <strong>{plan.label}</strong>
+                <div style={{ marginTop: 6, fontSize: 12, color: TEXT2 }}>{plan.amount}</div>
+              </button>
+            );
+          })}
+        </div>
+        <div style={{ marginTop: 14 }}>
+          <div style={fieldLabel}>مبلغ الخطة السنوية بالدرهم</div>
+          <input type="number" min="1" value={annualPrice} onChange={(event) => setAnnualPrice(event.target.value)} disabled={!availablePlans.includes('annual')}
+            style={{ ...fieldInput, maxWidth: 280, direction: 'ltr', fontFamily: 'Inter, sans-serif', opacity: availablePlans.includes('annual') ? 1 : 0.55 }} />
         </div>
       </Section>
 

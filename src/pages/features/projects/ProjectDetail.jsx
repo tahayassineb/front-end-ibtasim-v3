@@ -373,8 +373,8 @@ const ProjectDetail = ({ preview = false }) => {
 
             {/* Certification box */}
             <div style={{ marginTop: 20, padding: 14, background: '#F0F7F7', borderRadius: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#0A5F62', marginBottom: 6 }}>✓ جمعية معتمدة رسمياً</div>
-              <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.6 }}>تبرعاتكم تصل مباشرة إلى المشروع · نشر تقارير دورية للإنجاز</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#0A5F62', marginBottom: 6 }}>✓ {tx.certified}</div>
+              <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.6 }}>{tx.certificationBody}</div>
             </div>
           </div>
 

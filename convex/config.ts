@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { requireAdmin } from "./permissions";
 
 // ============================================
 // CONFIG QUERIES
@@ -56,6 +57,18 @@ export const setConfig = mutation({
     } else {
       await ctx.db.insert("config", { key, value, updatedAt: Date.now() });
     }
+    return null;
+  },
+});
+
+export const setAdminConfig = mutation({
+  args: { adminId: v.id("admins"), key: v.string(), value: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { adminId, key, value }) => {
+    await requireAdmin(ctx, adminId, "content:write");
+    const existing = await ctx.db.query("config").withIndex("by_key", (q) => q.eq("key", key)).first();
+    if (existing) await ctx.db.patch(existing._id, { value, updatedAt: Date.now() });
+    else await ctx.db.insert("config", { key, value, updatedAt: Date.now() });
     return null;
   },
 });

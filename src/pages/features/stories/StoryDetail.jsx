@@ -4,6 +4,7 @@ import { useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { convexFileUrl } from '../../../lib/convex';
 import { updatePageSeo } from '../../../lib/seo';
+import { useApp } from '../../../context/AppContext';
 
 // ============================================
 // STORY DETAIL PAGE — Full story view
@@ -19,23 +20,23 @@ const useIsMobile = () => {
   return isMobile;
 };
 
+const COPY = {
+  ar: { loading: 'جاري التحميل...', notFound: 'القصة غير موجودة', back: 'العودة للقصص', backAll: 'العودة لجميع القصص', more: 'اقرأ قصصاً أخرى' },
+  fr: { loading: 'Chargement...', notFound: 'Article introuvable', back: 'Retour aux articles', backAll: 'Retour à tous les articles', more: 'Lire d’autres articles' },
+  en: { loading: 'Loading...', notFound: 'Story not found', back: 'Back to stories', backAll: 'Back to all stories', more: 'Read more stories' },
+};
+
 export default function StoryDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { currentLanguage } = useApp();
+  const lang = currentLanguage?.code || 'ar';
+  const tx = COPY[lang] || COPY.ar;
+  const locale = lang === 'ar' ? 'ar-MA' : lang === 'fr' ? 'fr-FR' : 'en-US';
+  const dir = currentLanguage?.dir || (lang === 'ar' ? 'rtl' : 'ltr');
 
   const story = useQuery(api.stories.getPublishedStoryBySlugOrId, id ? { ref: id } : 'skip');
-
-  {
-    void (
-      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-arabic)' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>📖</div>
-          <p style={{ color: '#94a3b8' }}>جاري التحميل...</p>
-        </div>
-      </div>
-    );
-  }
 
   useEffect(() => {
     if (!story) return;
@@ -62,7 +63,7 @@ export default function StoryDetail() {
       <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-arabic)' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>...</div>
-          <p style={{ color: '#94a3b8' }}>Loading...</p>
+          <p style={{ color: '#94a3b8' }}>{tx.loading}</p>
         </div>
       </div>
     );
@@ -72,23 +73,23 @@ export default function StoryDetail() {
     return (
       <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-arabic)', gap: 16 }}>
         <div style={{ fontSize: 48 }}>📭</div>
-        <div style={{ fontSize: 18, fontWeight: 700 }}>القصة غير موجودة</div>
+        <div style={{ fontSize: 18, fontWeight: 700 }}>{tx.notFound}</div>
         <button
           onClick={() => navigate('/impact')}
           style={{ height: 44, padding: '0 22px', borderRadius: 100, fontSize: 14, fontWeight: 600, background: '#E6F4F4', color: '#0A5F62', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-arabic)' }}
         >
-          ← العودة للقصص
+          {tx.back}
         </button>
       </div>
     );
   }
 
   const date = story.publishedAt
-    ? new Date(story.publishedAt).toLocaleDateString('ar-MA', { year: 'numeric', month: 'long', day: 'numeric' })
+    ? new Date(story.publishedAt).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' })
     : '';
 
   return (
-    <div style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'var(--font-arabic)', color: '#0e1a1b', overflowX: 'hidden' }}>
+    <div dir={dir} style={{ background: '#f6f8f8', minHeight: '100vh', fontFamily: 'var(--font-arabic)', color: '#0e1a1b', overflowX: 'hidden' }}>
 
       {/* Hero — use cover image if available, otherwise gradient */}
       <div style={{
@@ -117,7 +118,7 @@ export default function StoryDetail() {
           onClick={() => navigate('/impact')}
           style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#0A5F62', fontSize: 13, fontWeight: 600, cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'var(--font-arabic)', padding: 0 }}
         >
-          ← العودة لجميع القصص
+          {tx.backAll}
         </button>
       </div>
 
@@ -158,7 +159,7 @@ export default function StoryDetail() {
             onClick={() => navigate('/impact')}
             style={{ height: 48, padding: '0 28px', background: '#0d7477', color: 'white', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-arabic)', boxShadow: '0 4px 14px rgba(13,116,119,.25)' }}
           >
-            ← اقرأ قصصاً أخرى
+            {tx.more}
           </button>
         </div>
       </div>

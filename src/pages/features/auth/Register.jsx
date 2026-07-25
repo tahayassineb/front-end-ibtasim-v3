@@ -12,7 +12,7 @@ import CountryCodeSelector, { validatePhoneByCountry, formatPhoneForDisplay } fr
 const Register = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { t, currentLanguage, login, showToast } = useApp();
+  const { currentLanguage, login, showToast } = useApp();
 
   const registerUser = useMutation(api.auth.registerUser);
   const requestOTP = useMutation(api.auth.requestOTP);
@@ -74,9 +74,10 @@ const Register = () => {
       passwordError: '6 أحرف على الأقل',
       confirmPasswordError: 'كلمات المرور غير متطابقة',
       steps: ['الهاتف', 'التحقق', 'البيانات'],
+      and: 'و', privacyNote: 'رقمك محمي ولن يُستخدم للإعلانات',
     },
-    fr: { step1Title: 'Entrez votre numéro', step1Sub: 'Nous vous enverrons un code de vérification', step2Title: 'Code de vérification 📱', step2Sub: 'Entrez le code à 6 chiffres', step3Title: 'Vos informations', step3Sub: 'Vos données sont sécurisées', phoneLabel: 'Numéro de téléphone', phonePlaceholder: '6 XX XX XX XX', fullNameLabel: 'Nom complet *', fullNamePlaceholder: 'Jean Dupont', emailLabel: 'Email', emailPlaceholder: 'exemple@mail.com', passwordLabel: 'Mot de passe *', confirmPasswordLabel: 'Confirmer *', sendOtp: 'Envoyer le code →', verifyOtp: 'Confirmer ✓', createAccount: 'Créer le compte 🎉', haveAccount: 'Vous avez un compte?', loginNow: 'Connexion', resendLabel: 'Pas reçu?', resendLink: 'Renvoyer', termsText: 'En créant un compte, j\'accepte les', termsLink: "Conditions", privacyLink: "Confidentialité", fullNameError: 'Nom requis', emailError: 'Email invalide', phoneError: 'Numéro invalide', passwordError: '6 caractères minimum', confirmPasswordError: 'Mots de passe différents', steps: ['Tél.', 'Vérif.', 'Infos'] },
-    en: { step1Title: 'Enter your phone', step1Sub: 'We will send a verification code', step2Title: 'Verification Code 📱', step2Sub: 'Enter the 6-digit code', step3Title: 'Your information', step3Sub: 'Your data is safe', phoneLabel: 'Phone Number', phonePlaceholder: '6 XX XX XX XX', fullNameLabel: 'Full Name *', fullNamePlaceholder: 'John Doe', emailLabel: 'Email', emailPlaceholder: 'example@mail.com', passwordLabel: 'Password *', confirmPasswordLabel: 'Confirm *', sendOtp: 'Send code →', verifyOtp: 'Confirm ✓', createAccount: 'Create Account 🎉', haveAccount: 'Have an account?', loginNow: 'Login', resendLabel: 'Not received?', resendLink: 'Resend', termsText: 'By creating an account, I agree to the', termsLink: 'Terms', privacyLink: 'Privacy', fullNameError: 'Name required', emailError: 'Invalid email', phoneError: 'Invalid phone', passwordError: '6 characters minimum', confirmPasswordError: 'Passwords do not match', steps: ['Phone', 'Verify', 'Details'] },
+    fr: { step1Title: 'Entrez votre numéro', step1Sub: 'Nous vous enverrons un code de vérification', step2Title: 'Code de vérification 📱', step2Sub: 'Entrez le code à 6 chiffres', step3Title: 'Vos informations', step3Sub: 'Vos données sont sécurisées', phoneLabel: 'Numéro de téléphone', phonePlaceholder: '6 XX XX XX XX', fullNameLabel: 'Nom complet *', fullNamePlaceholder: 'Jean Dupont', emailLabel: 'Email', emailPlaceholder: 'exemple@mail.com', passwordLabel: 'Mot de passe *', confirmPasswordLabel: 'Confirmer *', sendOtp: 'Envoyer le code →', verifyOtp: 'Confirmer ✓', createAccount: 'Créer le compte 🎉', haveAccount: 'Vous avez un compte?', loginNow: 'Connexion', resendLabel: 'Pas reçu?', resendLink: 'Renvoyer', termsText: 'En créant un compte, j\'accepte les', termsLink: "Conditions", privacyLink: "Confidentialité", fullNameError: 'Nom requis', emailError: 'Email invalide', phoneError: 'Numéro invalide', passwordError: '6 caractères minimum', confirmPasswordError: 'Mots de passe différents', steps: ['Tél.', 'Vérif.', 'Infos'], and: 'et la', privacyNote: 'Votre numéro est protégé et ne sera pas utilisé à des fins publicitaires' },
+    en: { step1Title: 'Enter your phone', step1Sub: 'We will send a verification code', step2Title: 'Verification Code 📱', step2Sub: 'Enter the 6-digit code', step3Title: 'Your information', step3Sub: 'Your data is safe', phoneLabel: 'Phone Number', phonePlaceholder: '6 XX XX XX XX', fullNameLabel: 'Full Name *', fullNamePlaceholder: 'John Doe', emailLabel: 'Email', emailPlaceholder: 'example@mail.com', passwordLabel: 'Password *', confirmPasswordLabel: 'Confirm *', sendOtp: 'Send code →', verifyOtp: 'Confirm ✓', createAccount: 'Create Account 🎉', haveAccount: 'Have an account?', loginNow: 'Login', resendLabel: 'Not received?', resendLink: 'Resend', termsText: 'By creating an account, I agree to the', termsLink: 'Terms', privacyLink: 'Privacy', fullNameError: 'Name required', emailError: 'Invalid email', phoneError: 'Invalid phone', passwordError: '6 characters minimum', confirmPasswordError: 'Passwords do not match', steps: ['Phone', 'Verify', 'Details'], and: 'and the', privacyNote: 'Your number is protected and will not be used for advertising' },
   };
 
   const tx = translations[lang] || translations.ar;
@@ -181,7 +182,7 @@ const Register = () => {
   const labelStyle = { display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F0F7F7', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 20px', fontFamily: 'var(--font-arabic)', color: '#0e1a1b' }}>
+    <div dir={currentLanguage.dir} style={{ minHeight: '100vh', background: '#F0F7F7', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 20px', fontFamily: 'var(--font-arabic)', color: '#0e1a1b' }}>
       <div style={{ width: '100%', maxWidth: 390 }}>
 
         {/* Top bar */}
@@ -267,7 +268,7 @@ const Register = () => {
                         }
                         setOtpTimer(120);
                         showToast(toastCopy.codeResent, 'success');
-                      } catch (e) { showToast(toastCopy.resendFailed, 'error'); }
+                      } catch { showToast(toastCopy.resendFailed, 'error'); }
                     }}
                     style={{ color: '#0d7477', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-arabic)', fontSize: 13 }}
                   >
@@ -336,7 +337,7 @@ const Register = () => {
 
               {/* Terms */}
               <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16, lineHeight: 1.6 }}>
-                {tx.termsText} <span style={{ color: '#0d7477', fontWeight: 600, cursor: 'pointer' }}>{tx.termsLink}</span> و<span style={{ color: '#0d7477', fontWeight: 600, cursor: 'pointer' }}>{tx.privacyLink}</span>
+                {tx.termsText} <span style={{ color: '#0d7477', fontWeight: 600, cursor: 'pointer' }}>{tx.termsLink}</span> {tx.and} <span style={{ color: '#0d7477', fontWeight: 600, cursor: 'pointer' }}>{tx.privacyLink}</span>
               </div>
 
               <button
@@ -357,7 +358,7 @@ const Register = () => {
 
         {/* Privacy note */}
         <div style={{ padding: 16, textAlign: 'center' }}>
-          <div style={{ fontSize: 12, color: '#94a3b8' }}>🔒 رقمك محمي ولن يُستخدم للإعلانات</div>
+          <div style={{ fontSize: 12, color: '#94a3b8', display: 'inline-flex', alignItems: 'center', gap: 4 }}><span className="material-symbols-outlined no-flip" style={{ fontSize: 15 }}>lock</span>{tx.privacyNote}</div>
         </div>
       </div>
     </div>

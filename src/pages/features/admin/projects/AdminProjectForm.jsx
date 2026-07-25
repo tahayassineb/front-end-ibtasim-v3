@@ -98,6 +98,10 @@ export default function AdminProjectForm() {
     description: { ar: '', fr: '', en: '' },
     impact: { ar: '', fr: '', en: '' },
     goal: '',
+    donationAmounts: '100, 200, 500, 1000, 2000, 5000',
+    minimumDonation: '10',
+    maximumDonation: '',
+    allowCustomDonation: true,
     category: 'education',
     location: '',
     beneficiaries: '',
@@ -130,6 +134,10 @@ export default function AdminProjectForm() {
         shortDescription: existingProject.shortDescription || prev.shortDescription,
         category: existingProject.category || prev.category,
         goal: existingProject.goalAmount ? Math.round(existingProject.goalAmount) : prev.goal,
+        donationAmounts: (existingProject.donationAmounts || [100, 200, 500, 1000, 2000, 5000]).join(', '),
+        minimumDonation: String(existingProject.minimumDonation ?? 10),
+        maximumDonation: existingProject.maximumDonation ? String(existingProject.maximumDonation) : '',
+        allowCustomDonation: existingProject.allowCustomDonation ?? true,
         featured: existingProject.isFeatured ?? prev.featured,
         mainImage: existingProject.mainImage || prev.mainImage,
         mainImageStorageId: existingProject.mainImage || null,
@@ -164,7 +172,7 @@ export default function AdminProjectForm() {
       setFormData(prev => ({ ...prev, mainImage: previewUrl }));
       const { storageId, optimization } = await uploadFileToConvex(file, getUploadUrlMutation);
       setFormData(prev => ({ ...prev, mainImage: previewUrl, mainImageStorageId: storageId }));
-      showToast(optimization.optimized ? `Image optimized ${formatBytes(optimization.originalSize)} -> ${formatBytes(optimization.finalSize)}` : 'Image uploaded', 'success');
+      showToast(optimization.optimized ? `تم تحسين الصورة من ${formatBytes(optimization.originalSize)} إلى ${formatBytes(optimization.finalSize)}` : 'تم رفع الصورة', 'success');
     } catch {
       showToast('خطأ في رفع الصورة', 'error');
       setFormData(prev => ({ ...prev, mainImage: '', mainImageStorageId: null }));
@@ -229,6 +237,12 @@ export default function AdminProjectForm() {
       if (!formData.mainImageStorageId) {
         showToast('يرجى رفع الصورة الرئيسية', 'error'); setIsLoading(false); return;
       }
+      const donationAmounts = [...new Set(String(formData.donationAmounts).split(/[،,\s]+/).map(Number).filter((value) => Number.isFinite(value) && value > 0))].sort((a, b) => a - b);
+      const minimumDonation = Math.round(Number(formData.minimumDonation) || 0);
+      const maximumDonation = formData.maximumDonation === '' ? undefined : Math.round(Number(formData.maximumDonation) || 0);
+      if (!donationAmounts.length) { showToast('أضف مبلغ تبرع مقترحاً واحداً على الأقل', 'error'); setIsLoading(false); return; }
+      if (minimumDonation <= 0) { showToast('يجب أن يكون الحد الأدنى للتبرع أكبر من صفر', 'error'); setIsLoading(false); return; }
+      if (maximumDonation !== undefined && maximumDonation < minimumDonation) { showToast('الحد الأقصى يجب أن يكون أكبر من الحد الأدنى', 'error'); setIsLoading(false); return; }
       const status = statusOverride || formData.status || 'draft';
       const validGalleryIds = (formData.galleryStorageIds || []).filter(Boolean);
       if (isEditMode) {
@@ -240,6 +254,10 @@ export default function AdminProjectForm() {
             shortDescription: formData.shortDescription,
             category: formData.category,
             goalAmount: Math.round(parseFloat(formData.goal) || 0),
+            donationAmounts,
+            minimumDonation,
+            maximumDonation: maximumDonation ?? null,
+            allowCustomDonation: formData.allowCustomDonation,
             mainImageStorageId: formData.mainImageStorageId,
             galleryStorageIds: validGalleryIds,
             status,
@@ -264,6 +282,10 @@ export default function AdminProjectForm() {
           shortDescription: formData.shortDescription,
           category: formData.category,
           goalAmount: Math.round(parseFloat(formData.goal) || 0),
+          donationAmounts,
+          minimumDonation,
+          maximumDonation,
+          allowCustomDonation: formData.allowCustomDonation,
           mainImageStorageId: formData.mainImageStorageId,
           galleryStorageIds: validGalleryIds,
           status,
@@ -342,12 +364,12 @@ export default function AdminProjectForm() {
               disabled={categories !== undefined && categories.length === 0}
               style={{ ...fieldInput, cursor: 'pointer' }}
             >
-              {categories !== undefined && categories.length === 0 && <option value="">Set up categories first</option>}
+              {categories !== undefined && categories.length === 0 && <option value="">أنشئ فئة أولاً</option>}
               {(categories || []).map((category) => (
                 <option key={category.slug} value={category.slug}>{category.icon.type === 'emoji' ? category.icon.value : ''} {category.name[language] || category.name.ar}</option>
               ))}
             </select>
-            {categories !== undefined && categories.length === 0 && <div style={{ marginTop: 7, fontSize: 12, color: '#64748b' }}>Open <Link to="/admin/projects/categories" style={{ color: PRIMARY, fontWeight: 800 }}>Project categories</Link> and restore or create the first category before creating a project.</div>}
+            {categories !== undefined && categories.length === 0 && <div style={{ marginTop: 7, fontSize: 12, color: '#64748b' }}>افتح <Link to="/admin/projects/categories" style={{ color: PRIMARY, fontWeight: 800 }}>إدارة فئات المشاريع</Link> ثم أنشئ أو استرجع فئة قبل إنشاء المشروع.</div>}
           </div>
 
           {/* Location */}
@@ -440,6 +462,30 @@ export default function AdminProjectForm() {
             <div style={fieldHint}>عدد الأشخاص المستفيدين من المشروع</div>
           </div>
         </div>
+        <div style={{ height: 1, background: BORDER, margin: '20px 0' }} />
+        <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 5 }}>خيارات مبالغ التبرع</div>
+        <div style={{ fontSize: 12, color: TEXT2, lineHeight: 1.7, marginBottom: 14 }}>حدّد المبالغ التي ستظهر للمتبرع لهذا المشروع، مفصولة بفاصلة. مثال: 100، 250، 500، 1000</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', gap: 12 }}>
+          <div>
+            <div style={fieldLabel}>المبالغ المقترحة (درهم)</div>
+            <input value={formData.donationAmounts} onChange={e => set('donationAmounts', e.target.value)} placeholder="100، 250، 500، 1000" dir="ltr" style={{ ...fieldInput, fontFamily: 'Inter, sans-serif' }} />
+          </div>
+          <div>
+            <div style={fieldLabel}>الحد الأدنى</div>
+            <input type="number" min="1" value={formData.minimumDonation} onChange={e => set('minimumDonation', e.target.value)} dir="ltr" style={{ ...fieldInput, fontFamily: 'Inter, sans-serif' }} />
+          </div>
+          <div>
+            <div style={fieldLabel}>الحد الأقصى (اختياري)</div>
+            <input type="number" min="1" value={formData.maximumDonation} onChange={e => set('maximumDonation', e.target.value)} placeholder="بدون حد" dir="ltr" style={{ ...fieldInput, fontFamily: 'Inter, sans-serif' }} />
+          </div>
+        </div>
+        <ToggleRow
+          title="السماح بمبلغ مخصص"
+          desc="إذا أوقفته، يمكن للمتبرع اختيار أحد المبالغ المقترحة فقط"
+          checked={formData.allowCustomDonation}
+          onChange={() => set('allowCustomDonation', !formData.allowCustomDonation)}
+          last
+        />
       </Section>
 
       {/* ── Section 2b: Benefit Cards ── */}
